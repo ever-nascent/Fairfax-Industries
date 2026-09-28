@@ -15,6 +15,7 @@ const {
   addPair,
   removePair,
   buildEmbed,
+  getMenu,
   deleteMenu,
   listMenus,
 } = require('../../utils/reactionRoles');
@@ -145,6 +146,14 @@ module.exports = {
 
     if (sub === 'delete') {
       const messageId = interaction.options.getString('message-id');
+      const menu = await getMenu(messageId);
+      if (!menu || menu.guildId !== guildId) {
+        await interaction.reply({
+          embeds: [embed(`There is no Reaction Role Menu with the ID \`${messageId}\` in this server.`)],
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
       await deleteMenu(messageId);
       await interaction.reply({
         embeds: [embed(`Stopped tracking menu \`${messageId}\`.\n(The message itself is untouched.)`)],
