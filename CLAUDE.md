@@ -20,6 +20,7 @@ Deadlock community Discord server for Zechariah's content (TikTok Live + Twitch)
 | `src/config.js` | `GUILD_ID` (1553860143639167086) and `BRAND_COLOR` (placeholder blurple). |
 | `src/utils/xp.js` | XP curve, souls, Soul Urn, leaderboard, XP settings. `src/utils/rankCard.js` draws the /rank card (`@napi-rs/canvas`). Test: `node --test` (runs in a temp `DATA_DIR`, never the live `data/`). |
 | `src/utils/heroes.js`, `src/utils/shop.js` | Hero list (same as `setup.py HEROES`), hero art (render, else chat icon), sampled hero colours; the `/shop` hero card view. Dropdown handler: `src/components/shop.js`. |
+| `test/` | `node --test` (XP, storage, reaction roles). Runs in a temp `DATA_DIR`, never the live `data/`. |
 | `src/utils/lfg.js` | LFG roles, region channels, lobby lifecycle. Creates missing roles/channels on startup. |
 | `Start Bot.bat` | Installs deps on first run, registers slash commands (`npm run deploy`), starts the bot. |
 | `assets/` | Hero chat icons (`heroes/`), hero renders for Shop cards (`hero_renders/`, from `setup.py hero-renders`), rank icons, region emoji drafts (`regions/make_regions.py`), stickers. Credits in `assets/CREDITS.txt`. |
@@ -31,7 +32,7 @@ Reaction roles, welcome/goodbye, and the storage/loader scaffolding were ported 
 
 ## Bot features
 
-- `/reaction-roles` (Manage Roles): emoji → role menus, single or multi mode.
+- `/reaction-roles` (Manage Roles): emoji → role menus, single or multi mode. Drafts are saved in `data/` (survive restarts); max 20 options per menu; refuses roles the bot can't give (above its role, managed, @everyone).
 - `/lfg mode` (anyone, run inside an `#lfg-<region>` channel): pings the LFG role, posts an embed, and creates a voice lobby in the LFG category. Ranked uses the runner's rank role and locks the lobby to rank ±1 (Eternus: Eternus only). One open lobby per person. The lobby is deleted after N min empty, and its post is deleted with it.
 - `/lfg-config` (Manage Channels): `close`, `timeout`, `lobby-category`, `mode`, `show`.
 - `/welcome`, `/goodbye` (Manage Server): text or embed, placeholders. Off until configured.
@@ -61,4 +62,5 @@ Reaction roles, welcome/goodbye, and the storage/loader scaffolding were ported 
 4. Emojis (parked): region emoji drafts v3 are in `assets/regions` (item-card style, not yet approved/uploaded; boost level 1 means plenty of slots now). Hero emojis are done (`:<hero>:`). Patron icons exist in the Deadlock Graphical Library (credit: Lovely).
 5. Stickers: 4 more are listed in `setup.py` `STICKERS`. Boost level 1 is reached, so they can go up now (ask first).
 6. Unconfirmed runs: `setup.py layout`, `rank-emojis`, `/welcome config`, `/goodbye config`. Default channels (e.g. #general) not in the layout still need a decision.
+   - **LFG pings (test later):** the bot creates the LFG roles as not mentionable. Unconfirmed whether a bot with Administrator can still notify a non-mentionable role (an old Discord bug said no). Test: run `/lfg` while a second account holds the LFG role. If it doesn't get notified, options are: make the 13 LFG roles mentionable (any member could ping them), or have the bot make the role mentionable only while it posts the ping.
 7. Later: server colours, staff/Mod role, running the bot 24/7, TikTok/Twitch go-live alerts.

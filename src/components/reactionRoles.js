@@ -8,7 +8,7 @@ async function handlePost(interaction) {
   const [, draftUserId] = interaction.customId.split(':');
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const draft = getDraft(interaction.guildId, draftUserId);
+  const draft = await getDraft(interaction.guildId, draftUserId);
   if (!draft) {
     await interaction.editReply({
       embeds: [replyEmbed('This draft has expired. Start a new one with `/reaction-roles new`.')],
@@ -30,7 +30,7 @@ async function handlePost(interaction) {
   }
 
   await saveMenu(message.id, interaction.guildId, channel.id, draft);
-  clearDraft(interaction.guildId, draftUserId);
+  await clearDraft(interaction.guildId, draftUserId);
 
   await interaction.editReply({ embeds: [replyEmbed(`Posted in ${channel}.`)] });
 }

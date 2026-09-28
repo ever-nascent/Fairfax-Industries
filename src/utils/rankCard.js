@@ -7,9 +7,14 @@ const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const ASSETS = path.join(__dirname, '..', '..', 'assets');
 GlobalFonts.registerFromPath(path.join(ASSETS, 'fonts', 'Radiance-Bold.woff2'), 'Radiance');
 GlobalFonts.registerFromPath(path.join(ASSETS, 'fonts', 'Retaildemo-bold.woff2'), 'Retail');
-// Names can hold characters the game fonts lack; fall back to Windows fonts for those.
-// ponytail: Windows font names; if the bot moves to a Linux host, add Noto fonts here.
-const TEXT_FONT = 'Radiance, "Segoe UI", "Yu Gothic", "Malgun Gothic", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif';
+// Names can hold characters the game fonts lack; fall back to system fonts for those.
+// Windows fonts first (the bot runs on Windows), then common Linux ones in case it moves to a Linux host.
+const TEXT_FONT = [
+  'Radiance',
+  '"Segoe UI"', '"Yu Gothic"', '"Malgun Gothic"', '"Segoe UI Emoji"', '"Segoe UI Symbol"',
+  '"Noto Sans"', '"Noto Sans CJK JP"', '"Noto Sans CJK KR"', '"WenQuanYi Zen Hei"', '"Noto Color Emoji"', '"DejaVu Sans"',
+  'sans-serif',
+].join(', ');
 
 const W = 1000;
 const H = 300;
