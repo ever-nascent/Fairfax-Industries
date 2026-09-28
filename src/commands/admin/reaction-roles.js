@@ -15,6 +15,7 @@ const {
   addPair,
   removePair,
   buildEmbed,
+  getMenu,
   deleteMenu,
   listMenus,
 } = require('../../utils/reactionRoles');
@@ -27,7 +28,6 @@ module.exports = {
       sub
         .setName('new')
         .setDescription('Start a new reaction role menu draft (discards any unfinished draft)')
-        .addStringOption((option) => option.setName('title').setDescription('Embed title').setRequired(true))
         .addChannelOption((option) =>
           option
             .setName('channel')
@@ -45,6 +45,7 @@ module.exports = {
               { name: 'Single (only the most recent reaction keeps a role)', value: 'single' },
             ),
         )
+        .addStringOption((option) => option.setName('title').setDescription('Embed title'))
         .addStringOption((option) =>
           option.setName('description').setDescription('Embed description (shown above the options)'),
         )
@@ -61,7 +62,7 @@ module.exports = {
       sub
         .setName('remove')
         .setDescription('Remove an option from the current draft')
-        .addStringOption((option) => option.setName('emoji').setDescription('Emoji to remove').setRequired(true)),
+        .addRoleOption((option) => option.setName('role').setDescription('Role to remove').setRequired(true)),
     )
     .addSubcommand((sub) => sub.setName('preview').setDescription('Preview the draft and get a button to post it'))
     .addSubcommand((sub) =>
@@ -119,10 +120,10 @@ module.exports = {
       }
 
       if (sub === 'remove') {
-        const emoji = interaction.options.getString('emoji');
-        const removed = removePair(draft, emoji);
+        const role = interaction.options.getRole('role');
+        const removed = removePair(draft, role);
         await interaction.reply({
-          embeds: [embed(removed ? `Removed ${emoji}.` : `${emoji} wasn't in the draft.`)],
+          embeds: [embed(removed ? `Removed ${role}.` : `${role} wasn't in the draft.`)],
           flags: MessageFlags.Ephemeral,
         });
         return;
@@ -130,7 +131,7 @@ module.exports = {
 
       if (draft.pairs.length === 0) {
         await interaction.reply({
-          embeds: [embed('Add at least one option before previewing.')],
+          embeds: [embed('Please add at least one role before previewing')],
           flags: MessageFlags.Ephemeral,
         });
         return;
@@ -145,6 +146,14 @@ module.exports = {
 
     if (sub === 'delete') {
       const messageId = interaction.options.getString('message-id');
+      const menu = await getMenu(messageId);
+      if (!menu || menu.guildId !== guildId) {
+        await interaction.reply({
+          embeds: [embed(`There is no Reaction Role Menu with the ID \`${messageId}\` in this server.`)],
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
       await deleteMenu(messageId);
       await interaction.reply({
         embeds: [embed(`Stopped tracking menu \`${messageId}\`.\n(The message itself is untouched.)`)],
@@ -156,12 +165,12 @@ module.exports = {
     if (sub === 'list') {
       const menus = await listMenus(guildId);
       if (menus.length === 0) {
-        await interaction.reply({ embeds: [embed('No active reaction role menus.')], flags: MessageFlags.Ephemeral });
+        await interaction.reply({ embeds: [embed("There are no active Reaction Role Menu's in this server")], flags: MessageFlags.Ephemeral });
         return;
       }
       const lines = menus.map(
         ([messageId, menu]) =>
-          `\`${messageId}\` in <#${menu.channelId}> — ${menu.mode}, ${Object.keys(menu.roles).length} option(s)`,
+          `\`${messageId}\` in <#${menu.channelId}> — ${menu.mode === 'single' ? 'Single' : 'Multi'}, ${Object.keys(menu.roles).length} Choice(s)`,
       );
       await interaction.reply({
         embeds: [embed(lines.join('\n')).setTitle('Reaction Role Menus')],

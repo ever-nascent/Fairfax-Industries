@@ -1,26 +1,24 @@
 const { MessageFlags } = require('discord.js');
 const { getDraft, clearDraft, buildEmbed, saveMenu } = require('../utils/reactionRoles');
+const { replyEmbed } = require('../utils/embeds');
 
 // "Post" button on a reaction-role draft preview: sends the menu embed to the
 // draft's target channel, seeds the reactions, and persists the menu.
 async function handlePost(interaction) {
   const [, draftUserId] = interaction.customId.split(':');
-  if (interaction.user.id !== draftUserId) {
-    await interaction.reply({ content: "This isn't your draft to post.", flags: MessageFlags.Ephemeral });
-    return;
-  }
-
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const draft = getDraft(interaction.guildId, draftUserId);
   if (!draft) {
-    await interaction.editReply('This draft has expired. Start a new one with `/reaction-roles new`.');
+    await interaction.editReply({
+      embeds: [replyEmbed('This draft has expired. Start a new one with `/reaction-roles new`.')],
+    });
     return;
   }
 
   const channel = await interaction.guild.channels.fetch(draft.channelId).catch(() => null);
   if (!channel) {
-    await interaction.editReply('The target channel no longer exists.');
+    await interaction.editReply({ embeds: [replyEmbed('The intended channel for this message no longer exists')] });
     return;
   }
 
@@ -34,7 +32,7 @@ async function handlePost(interaction) {
   await saveMenu(message.id, interaction.guildId, channel.id, draft);
   clearDraft(interaction.guildId, draftUserId);
 
-  await interaction.editReply(`Posted in ${channel}.`);
+  await interaction.editReply({ embeds: [replyEmbed(`Posted in ${channel}.`)] });
 }
 
 module.exports = [

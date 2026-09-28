@@ -31,15 +31,14 @@ function addPair(draft, raw, role) {
   draft.pairs.push({ key, display, roleId: role.id });
 }
 
-function removePair(draft, raw) {
-  const { key } = parseEmoji(raw);
+function removePair(draft, role) {
   const before = draft.pairs.length;
-  draft.pairs = draft.pairs.filter((pair) => pair.key !== key);
+  draft.pairs = draft.pairs.filter((pair) => pair.roleId !== role.id);
   return draft.pairs.length < before;
 }
 
 function buildEmbed(draft) {
-  const lines = draft.pairs.map((pair) => `${pair.display} — <@&${pair.roleId}>`).join('\n');
+  const lines = draft.pairs.map((pair) => `> ${pair.display} \`-\` <@&${pair.roleId}>`).join('\n');
   return new EmbedBuilder()
     .setTitle(draft.title || null)
     .setDescription([draft.description, lines].filter(Boolean).join('\n\n') || null)
