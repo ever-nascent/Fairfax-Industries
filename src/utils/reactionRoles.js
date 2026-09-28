@@ -31,11 +31,10 @@ function addPair(draft, raw, role) {
   draft.pairs.push({ key, display, roleId: role.id });
 }
 
-function removePair(draft, raw) {
-  const { key } = parseEmoji(raw);
-  const removed = draft.pairs.find((pair) => pair.key === key) ?? null;
-  draft.pairs = draft.pairs.filter((pair) => pair.key !== key);
-  return removed;
+function removePair(draft, role) {
+  const before = draft.pairs.length;
+  draft.pairs = draft.pairs.filter((pair) => pair.roleId !== role.id);
+  return draft.pairs.length < before;
 }
 
 function buildEmbed(draft) {

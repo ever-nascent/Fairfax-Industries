@@ -61,7 +61,7 @@ module.exports = {
       sub
         .setName('remove')
         .setDescription('Remove an option from the current draft')
-        .addStringOption((option) => option.setName('emoji').setDescription('Emoji to remove').setRequired(true)),
+        .addRoleOption((option) => option.setName('role').setDescription('Role to remove').setRequired(true)),
     )
     .addSubcommand((sub) => sub.setName('preview').setDescription('Preview the draft and get a button to post it'))
     .addSubcommand((sub) =>
@@ -119,10 +119,10 @@ module.exports = {
       }
 
       if (sub === 'remove') {
-        const emoji = interaction.options.getString('emoji');
-        const removed = removePair(draft, emoji);
+        const role = interaction.options.getRole('role');
+        const removed = removePair(draft, role);
         await interaction.reply({
-          embeds: [embed(removed ? `Removed <@&${removed.roleId}>.` : `${emoji} wasn't in the draft.`)],
+          embeds: [embed(removed ? `Removed ${role}.` : `${role} wasn't in the draft.`)],
           flags: MessageFlags.Ephemeral,
         });
         return;
