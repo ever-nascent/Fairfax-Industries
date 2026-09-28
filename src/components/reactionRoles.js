@@ -10,7 +10,9 @@ async function handlePost(interaction) {
 
   const draft = getDraft(interaction.guildId, draftUserId);
   if (!draft) {
-    await interaction.editReply('This draft has expired. Start a new one with `/reaction-roles new`.');
+    await interaction.editReply({
+      embeds: [replyEmbed('This draft has expired. Start a new one with `/reaction-roles new`.')],
+    });
     return;
   }
 
