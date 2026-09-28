@@ -18,7 +18,8 @@ Deadlock community Discord server for Zechariah's content (TikTok Live + Twitch)
 | `setup.py` | One-off server setup over Discord REST (Python). Double-click → numbered menu. Commands: `check`, `community`, `rank-icons`, `rank-emojis`, `hero-icons`, `hero-emojis`, `stickers`, `layout`. Idempotent: safe to re-run. |
 | `src/` | The bot (Node, discord.js v14). `index.js` entry, `commands/<category>/*.js` auto-loaded, `events/*.js` auto-loaded, `components/` button routes, `storage/` JSON files in `data/`. |
 | `src/config.js` | `GUILD_ID` (1553860143639167086) and `BRAND_COLOR` (placeholder blurple). |
-| `src/utils/xp.js` | XP curve, souls, Soul Urn, leaderboard, XP settings. `src/utils/rankCard.js` draws the /rank card (`@napi-rs/canvas`). Test: `node --test` (runs in a temp `DATA_DIR`, never the live `data/`). |
+| `src/utils/xp.js` | XP curve, souls, Soul Urn, leaderboard, XP settings. `src/utils/rankCard.js` draws the /rank card (`@napi-rs/canvas`). |
+| `test/` | `node --test` (XP, storage, reaction roles). Runs in a temp `DATA_DIR`, never the live `data/`. |
 | `src/utils/lfg.js` | LFG roles, region channels, lobby lifecycle. Creates missing roles/channels on startup. |
 | `Start Bot.bat` | Installs deps on first run, registers slash commands (`npm run deploy`), starts the bot. |
 | `assets/` | Rank icons, region emoji drafts (`regions/make_regions.py`), stickers. Credits in `assets/CREDITS.txt`. |
@@ -30,7 +31,7 @@ Reaction roles, welcome/goodbye, and the storage/loader scaffolding were ported 
 
 ## Bot features
 
-- `/reaction-roles` (Manage Roles): emoji → role menus, single or multi mode.
+- `/reaction-roles` (Manage Roles): emoji → role menus, single or multi mode. Drafts are saved in `data/` (survive restarts); max 20 options per menu; refuses roles the bot can't give (above its role, managed, @everyone).
 - `/lfg mode` (anyone, run inside an `#lfg-<region>` channel): pings the LFG role, posts an embed, and creates a voice lobby in the LFG category. Ranked uses the runner's rank role and locks the lobby to rank ±1 (Eternus: Eternus only). One open lobby per person. The lobby is deleted after N min empty, and its post is deleted with it.
 - `/lfg-config` (Manage Channels): `close`, `timeout`, `lobby-category`, `mode`, `show`.
 - `/welcome`, `/goodbye` (Manage Server): text or embed, placeholders. Off until configured.
