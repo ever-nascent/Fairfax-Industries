@@ -6,11 +6,6 @@ const { replyEmbed } = require('../utils/embeds');
 // draft's target channel, seeds the reactions, and persists the menu.
 async function handlePost(interaction) {
   const [, draftUserId] = interaction.customId.split(':');
-  if (interaction.user.id !== draftUserId) {
-    await interaction.reply({ content: "This isn't your draft to post.", flags: MessageFlags.Ephemeral });
-    return;
-  }
-
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const draft = getDraft(interaction.guildId, draftUserId);
