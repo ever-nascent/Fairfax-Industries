@@ -3,7 +3,7 @@ const { leaderboard, progress, MAX_LEVEL } = require('../../utils/xp');
 const { renderLeaderboard, CARD_COLOR } = require('../../utils/rankCard');
 
 module.exports = {
-  data: new SlashCommandBuilder().setName('leaderboard').setDescription('Top 10 members by level'),
+  data: new SlashCommandBuilder().setName('leaderboard').setDescription('The 10 biggest high rollers in the joint, ranked by level. Think you made the cut?'),
 
   async execute(interaction) {
     const top = await leaderboard(10);

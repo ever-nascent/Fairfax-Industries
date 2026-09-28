@@ -54,7 +54,7 @@ Not enforceable by roles: Eternus' "within 3 subranks" rule (subranks aren't tra
 | Soul Urn amounts | 100 on day 1, +20 per day in a row, max 220 from day 7. Days reset at midnight UTC |
 | Voice XP | 10 XP/min when on; needs 2+ people in the channel, not deafened, not the AFK channel |
 | Daily Soul Urn | `/urn` once a day for souls; streak bonus grows each day in a row, resets on a missed day |
-| Leaderboard | `/leaderboard`: top 10, no prize. Image in the rank-card style (flask per row, gold/silver/bronze top 3, souls), subtitle = server name |
+| Leaderboard | `/leaderboard`: top 10, no prize. Image in the rank-card style (flask per row, gold/silver/bronze top 3, souls), subtitle = server name. Command description: "The 10 biggest high rollers in the joint, ranked by level. Think you made the cut?" |
 | Souls emoji | `:souls:` (wiki souls icon) before every soul count in messages; the bot uploads it on startup if missing |
 | /xp-config, /lfg replies | Green embeds (`REPLY_COLOR`), plain wording (no Shopkeeper voice for staff config). /lfg no-rank reply links #roles. The /lfg post itself stays as is (purple) |
 | Bot replies | Always previewed (Discord mock) and approved before building. /rank on a bot = Shopkeeper line (own line for himself, 3 rotating for other bots) |
