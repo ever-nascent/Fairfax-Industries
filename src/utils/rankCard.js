@@ -39,7 +39,8 @@ function flaskPath(g, x, y, r, R, neck) {
 }
 
 // `fill` 0..1 = how far the liquid is up the flask (XP progress into the current level).
-function drawFlask(g, x, y, R, level, fill) {
+// `colors` swaps the liquid/glow for hero cards.
+function drawFlask(g, x, y, R, level, fill, { liquid = C.liquid, glow = C.glow } = {}) {
   const t = 0.135 * R; // outline thickness
   flaskPath(g, x, y, R, R, NECK);
   g.fillStyle = g.strokeStyle = C.outline;
@@ -54,7 +55,7 @@ function drawFlask(g, x, y, R, level, fill) {
   g.beginPath();
   g.arc(x, y, R - t, 0, Math.PI * 2);
   g.clip();
-  g.fillStyle = C.liquid;
+  g.fillStyle = liquid;
   g.fillRect(x - R, y + (R - t) * (1 - 2 * fill), 2 * R, 2 * R);
   g.restore();
 
@@ -69,9 +70,9 @@ function drawFlask(g, x, y, R, level, fill) {
   const m2 = g.measureText(txt);
   const baseline = y + 0.03 * R + (m2.actualBoundingBoxAscent - m2.actualBoundingBoxDescent) / 2;
   g.save();
-  g.shadowColor = C.glow;
+  g.shadowColor = glow;
   g.shadowBlur = 0.3 * R;
-  g.fillStyle = C.glow;
+  g.fillStyle = glow;
   for (let i = 0; i < 3; i++) g.fillText(txt, x, baseline);
   g.restore();
   g.fillStyle = C.digit;
@@ -89,30 +90,71 @@ function fit(g, text, maxWidth) {
 const fmt = (n) => n.toLocaleString('en-US');
 let soulsIcon;
 
-// { name, level, into, need, souls, maxLevel } -> PNG buffer
-async function renderRankCard({ name, level, into, need, souls, maxLevel }) {
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+// Blend colour `a` towards `b` by t (0..1), both '#rrggbb'.
+const mix = (a, b, t) => `rgb(${hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t)).join(',')})`;
+
+// Hero art on the right, fading out towards the text on the left and the XP bar below.
+// A full render fills the card's height; a chat icon (stand-in until renders are downloaded) sits smaller.
+function drawHeroArt(g, { image, isRender }) {
+  const layer = createCanvas(W, H);
+  const l = layer.getContext('2d');
+  const h = isRender ? H * 1.15 : 190;
+  const w = h * (image.width / image.height);
+  const x = isRender ? W - w - 10 : W - w - 70;
+  l.drawImage(image, x, isRender ? 0 : 18, w, h);
+  l.globalCompositeOperation = 'destination-in';
+  const fade = l.createLinearGradient(Math.max(x, 560), 0, Math.max(x, 560) + 140, 0);
+  fade.addColorStop(0, 'rgba(0,0,0,0)');
+  fade.addColorStop(1, 'rgba(0,0,0,1)');
+  l.fillStyle = fade;
+  l.fillRect(0, 0, W, H);
+  const bottom = l.createLinearGradient(0, 190, 0, H);
+  bottom.addColorStop(0, 'rgba(0,0,0,1)');
+  bottom.addColorStop(1, 'rgba(0,0,0,0.35)');
+  l.fillStyle = bottom;
+  l.fillRect(0, 0, W, H);
+  g.drawImage(layer, 0, 0);
+}
+
+// { name, level, into, need, souls, maxLevel, hero? } -> PNG buffer.
+// hero = { image, isRender, color } (from heroes.heroArt) turns it into that hero's card:
+// the hero's art, and their colour on the XP bar, flask liquid, background tint and text accents.
+async function renderRankCard({ name, level, into, need, souls, maxLevel, hero }) {
   soulsIcon ??= await loadImage(path.join(ASSETS, 'card', 'souls.png'));
   const c = createCanvas(W, H);
   const g = c.getContext('2d');
+  const accent = hero?.color ?? C.liquid;
+  const flask = hero ? { liquid: accent, glow: mix(accent, '#000000', 0.75) } : {};
 
   g.beginPath();
   g.roundRect(0, 0, W, H, 24);
   g.clip();
-  g.fillStyle = C.bg;
+  g.fillStyle = hero ? mix(C.bg, accent, 0.1) : C.bg;
   g.fillRect(0, 0, W, H);
   const p = level >= maxLevel ? 1 : into / need;
-  drawFlask(g, 130, 142, 80, level, p);
 
-  // Big faded souls mark on the right (hero cards replace this with the hero's art).
-  g.globalAlpha = 0.06;
-  g.drawImage(soulsIcon, W - 230, 25, 145, 145 * (soulsIcon.height / soulsIcon.width));
-  g.globalAlpha = 1;
+  if (hero) {
+    // Soft glow of the hero's colour behind the art.
+    const glow = g.createRadialGradient(W - 170, 110, 20, W - 170, 110, 420);
+    glow.addColorStop(0, mix(C.bg, accent, 0.35));
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = glow;
+    g.fillRect(0, 0, W, H);
+    drawHeroArt(g, hero);
+  } else {
+    // Big faded souls mark on the right.
+    g.globalAlpha = 0.06;
+    g.drawImage(soulsIcon, W - 230, 25, 145, 145 * (soulsIcon.height / soulsIcon.width));
+    g.globalAlpha = 1;
+  }
+  drawFlask(g, 130, 142, 80, level, p, flask);
 
   g.textAlign = 'left';
   g.fillStyle = C.text;
   g.font = `46px ${TEXT_FONT}`;
   g.fillText(fit(g, name, 480), 225, 100);
-  g.fillStyle = C.muted;
+  g.fillStyle = hero ? mix(accent, '#ffffff', 0.25) : C.muted;
   g.font = `26px ${TEXT_FONT}`;
   g.fillText(`LEVEL ${level}`, 227, 138);
 
@@ -135,7 +177,7 @@ async function renderRankCard({ name, level, into, need, souls, maxLevel }) {
   g.roundRect(x0, y0, bw, bh, bh / 2);
   g.fill();
   if (p > 0) {
-    g.fillStyle = C.liquid;
+    g.fillStyle = accent;
     g.beginPath();
     g.roundRect(x0 + 4, y0 + 4, Math.max(bh - 8, (bw - 8) * p), bh - 8, (bh - 8) / 2);
     g.fill();
@@ -220,7 +262,8 @@ async function renderLeaderboard(serverName, rows) {
   return c.toBuffer('image/png');
 }
 
-// Embed colour for a plain card (the flask liquid). Hero cards will use the hero's colour.
-const CARD_COLOR = parseInt(C.liquid.slice(1), 16);
+// Embed colour for a plain card (the flask liquid). Hero cards use the hero's colour (cardColor).
+const cardColor = (hexColor) => parseInt(hexColor.slice(1), 16);
+const CARD_COLOR = cardColor(C.liquid);
 
-module.exports = { renderRankCard, renderLeaderboard, CARD_COLOR };
+module.exports = { renderRankCard, renderLeaderboard, CARD_COLOR, cardColor };
