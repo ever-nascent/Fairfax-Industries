@@ -122,7 +122,7 @@ module.exports = {
         const emoji = interaction.options.getString('emoji');
         const removed = removePair(draft, emoji);
         await interaction.reply({
-          embeds: [embed(removed ? `Removed ${emoji}.` : `${emoji} wasn't in the draft.`)],
+          embeds: [embed(removed ? `Removed <@&${removed.roleId}>.` : `${emoji} wasn't in the draft.`)],
           flags: MessageFlags.Ephemeral,
         });
         return;
