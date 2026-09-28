@@ -1,9 +1,9 @@
 const { EmbedBuilder } = require('discord.js');
 const { BRAND_COLOR } = require('../config');
 
-// Shared machinery for the user-customizable embed templates (greeting
-// messages, level-up announcements): the stored config shape, the slash
-// command options that edit it, and the builder that renders it.
+// Shared machinery for the user-customizable embed templates (welcome and
+// goodbye messages): the stored config shape, the slash command options that
+// edit it, and the builder that renders it.
 
 const CLEAR_HINT = "'clear' to reset";
 
@@ -64,12 +64,10 @@ const EMBED_OPTIONS = [
 ];
 
 // Adds the shared embed-customization options (plus the timestamp toggle) to a
-// subcommand builder. `descriptionHint` lists the placeholders the description
-// field supports, e.g. '{user} {level}'.
-function addEmbedTemplateOptions(sub, { descriptionHint = '' } = {}) {
+// subcommand builder.
+function addEmbedTemplateOptions(sub) {
   for (const { option, hint } of EMBED_OPTIONS) {
-    const extra = option === 'description' && descriptionHint ? `${descriptionHint}. ` : '';
-    sub.addStringOption((o) => o.setName(option).setDescription(`${hint}. ${extra}${CLEAR_HINT}`));
+    sub.addStringOption((o) => o.setName(option).setDescription(`${hint}. ${CLEAR_HINT}`));
   }
   sub.addBooleanOption((o) => o.setName('timestamp').setDescription('Show the current time in the embed'));
   return sub;

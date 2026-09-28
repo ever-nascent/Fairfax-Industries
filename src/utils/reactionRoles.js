@@ -1,13 +1,17 @@
 const { EmbedBuilder } = require('discord.js');
 const { getStore } = require('../storage');
-const { createDraftStore } = require('./drafts');
 const { BRAND_COLOR } = require('../config');
 
-const drafts = createDraftStore();
+// Discord allows 20 unique reactions per message.
+const MAX_OPTIONS = 20;
 
 function store() {
   return getStore('reactionRoleMenus');
 }
+
+// Unposted drafts, one per (server, member). Saved to data/ so a restart doesn't lose them.
+const drafts = () => getStore('reactionRoleDrafts');
+const draftKey = (guildId, userId) => `${guildId}_${userId}`;
 
 function parseEmoji(raw) {
   const text = raw.trim();
@@ -21,8 +25,28 @@ function emojiKey(emoji) {
   return emoji.id ?? emoji.name;
 }
 
-function startDraft(guildId, userId, { title, description, channelId, mode, color }) {
-  return drafts.start(guildId, userId, { title, description, channelId, mode, color, pairs: [] });
+async function startDraft(guildId, userId, { title, description, channelId, mode, color }) {
+  return drafts().set(draftKey(guildId, userId), { title, description, channelId, mode, color, pairs: [] });
+}
+
+const getDraft = (guildId, userId) => drafts().get(draftKey(guildId, userId));
+const saveDraft = (guildId, userId, draft) => drafts().set(draftKey(guildId, userId), draft);
+const clearDraft = (guildId, userId) => drafts().delete(draftKey(guildId, userId));
+
+// Why the bot can't hand out this role, or null if it can.
+function roleProblem(role, guild) {
+  if (role.id === guild.id) return "@everyone can't be a reaction role.";
+  if (role.managed) return `${role} belongs to a bot or integration, so it can't be given out.`;
+  if (role.comparePositionTo(guild.members.me.roles.highest) >= 0) {
+    return `I can't give ${role}: it's at or above my highest role. Drag my role above it in Server Settings → Roles, then try again.`;
+  }
+  return null;
+}
+
+// True if the draft is full and `raw` isn't already in it (re-adding an emoji replaces its role).
+function draftIsFull(draft, raw) {
+  const { key } = parseEmoji(raw);
+  return draft.pairs.length >= MAX_OPTIONS && !draft.pairs.some((pair) => pair.key === key);
 }
 
 function addPair(draft, raw, role) {
@@ -69,9 +93,13 @@ async function listMenus(guildId) {
 }
 
 module.exports = {
+  MAX_OPTIONS,
   startDraft,
-  getDraft: drafts.get,
-  clearDraft: drafts.clear,
+  getDraft,
+  saveDraft,
+  clearDraft,
+  roleProblem,
+  draftIsFull,
   addPair,
   removePair,
   buildEmbed,

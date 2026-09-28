@@ -17,15 +17,17 @@ module.exports = {
     .addUserOption((o) => o.setName('member').setDescription('Whose card to show')),
 
   async execute(interaction) {
-    const target = interaction.options.getMember('member') ?? interaction.member;
-    if (target.user.bot) {
+    // Works for someone who left the server too: their XP is kept (like on /leaderboard), shown under their username.
+    const target = interaction.options.getUser('member') ?? interaction.user;
+    const member = target.id === interaction.user.id ? interaction.member : interaction.options.getMember('member');
+    if (target.bot) {
       const line = target.id === interaction.client.user.id ? SELF_LINE : BOT_LINES[Math.floor(Math.random() * BOT_LINES.length)];
       return interaction.reply({ embeds: [new EmbedBuilder().setColor(CARD_COLOR).setDescription(line)], flags: MessageFlags.Ephemeral });
     }
     await interaction.deferReply();
     const user = await getUser(target.id);
     const { level, into, need } = progress(user.xp);
-    const png = await renderRankCard({ name: target.displayName, level, into, need, souls: user.souls, maxLevel: MAX_LEVEL });
+    const png = await renderRankCard({ name: member?.displayName ?? target.username, level, into, need, souls: user.souls, maxLevel: MAX_LEVEL });
     await interaction.editReply({
       embeds: [new EmbedBuilder().setColor(CARD_COLOR).setImage('attachment://rank.png')],
       files: [new AttachmentBuilder(png, { name: 'rank.png' })],

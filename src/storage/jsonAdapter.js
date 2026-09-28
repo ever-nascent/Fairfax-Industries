@@ -79,30 +79,15 @@ function createJsonStore(collection) {
     },
     // Atomically read the current value for a key, run it through `mutator`, and
     // persist the result. The whole sequence holds the collection lock, so
-    // concurrent updates can't lose each other's writes.
+    // concurrent updates can't lose each other's writes. If `mutator` returns the
+    // value it was given unchanged, nothing is written.
     async update(key, mutator) {
       return withLock(collection, async () => {
         const data = readCollection(collection);
-        const next = mutator(data[key] ?? null);
-        data[key] = next;
-        await writeCollection(collection, data);
-        return next;
-      });
-    },
-    // Atomically read several keys, run them through `mutator`, and persist the
-    // result. `mutator` receives an object of { key: value|null } for the
-    // requested keys and returns an object of the keys to write (null/undefined
-    // values are skipped, so a no-op path can return the input untouched). The
-    // whole sequence holds the collection lock, so a multi-key change like a
-    // balance transfer can't be split or interleaved with other writes.
-    async updateMany(keys, mutator) {
-      return withLock(collection, async () => {
-        const data = readCollection(collection);
-        const current = Object.fromEntries(keys.map((key) => [key, data[key] ?? null]));
+        const current = data[key] ?? null;
         const next = mutator(current);
-        for (const key of Object.keys(next)) {
-          if (next[key] != null) data[key] = next[key];
-        }
+        if (next === current) return next;
+        data[key] = next;
         await writeCollection(collection, data);
         return next;
       });

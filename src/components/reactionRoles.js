@@ -12,7 +12,7 @@ async function handlePost(interaction) {
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const draft = getDraft(interaction.guildId, draftUserId);
+  const draft = await getDraft(interaction.guildId, draftUserId);
   if (!draft) {
     await interaction.editReply('This draft has expired. Start a new one with `/reaction-roles new`.');
     return;
@@ -32,7 +32,7 @@ async function handlePost(interaction) {
   }
 
   await saveMenu(message.id, interaction.guildId, channel.id, draft);
-  clearDraft(interaction.guildId, draftUserId);
+  await clearDraft(interaction.guildId, draftUserId);
 
   await interaction.editReply(`Posted in ${channel}.`);
 }
