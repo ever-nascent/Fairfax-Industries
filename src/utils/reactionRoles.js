@@ -38,7 +38,7 @@ function removePair(draft, role) {
 }
 
 function buildEmbed(draft) {
-  const lines = draft.pairs.map((pair) => `${pair.display} — <@&${pair.roleId}>`).join('\n');
+  const lines = draft.pairs.map((pair) => `${pair.display} - <@&${pair.roleId}>`).join('\n');
   return new EmbedBuilder()
     .setTitle(draft.title || null)
     .setDescription([draft.description, lines].filter(Boolean).join('\n\n') || null)
