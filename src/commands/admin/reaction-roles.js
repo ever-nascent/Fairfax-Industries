@@ -130,7 +130,7 @@ module.exports = {
 
       if (draft.pairs.length === 0) {
         await interaction.reply({
-          embeds: [embed('Add at least one option before previewing.')],
+          embeds: [embed('Please add at least one role before previewing')],
           flags: MessageFlags.Ephemeral,
         });
         return;
