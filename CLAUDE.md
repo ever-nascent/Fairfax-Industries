@@ -60,4 +60,5 @@ Reaction roles, welcome/goodbye, and the storage/loader scaffolding were ported 
 4. Emojis (parked): region emoji drafts v3 are in `assets/regions` (item-card style, not yet approved/uploaded; boost level 1 means plenty of slots now). Hero emojis are done (`:<hero>:`). Patron icons exist in the Deadlock Graphical Library (credit: Lovely).
 5. Stickers: 4 more are listed in `setup.py` `STICKERS`. Boost level 1 is reached, so they can go up now (ask first).
 6. Unconfirmed runs: `setup.py layout`, `rank-emojis`, `/welcome config`, `/goodbye config`. Default channels (e.g. #general) not in the layout still need a decision.
+   - **LFG pings (test later):** the bot creates the LFG roles as not mentionable. Unconfirmed whether a bot with Administrator can still notify a non-mentionable role (an old Discord bug said no). Test: run `/lfg` while a second account holds the LFG role. If it doesn't get notified, options are: make the 13 LFG roles mentionable (any member could ping them), or have the bot make the role mentionable only while it posts the ping.
 7. Later: server colours, staff/Mod role, running the bot 24/7, TikTok/Twitch go-live alerts.

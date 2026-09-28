@@ -93,6 +93,7 @@ The old names Alchemist, Arcanist and Archon were retired in the July 30, 2026 u
 
 ## Open questions (next)
 
+- LFG pings: test whether they notify (LFG roles are not mentionable; see CLAUDE.md task 6)
 - Which roles members can pick (e.g. ping roles, rank, region, platform)
 - Channel layout
 - Server colors (bot embeds currently use a placeholder blurple)
