@@ -18,7 +18,7 @@ async function handlePost(interaction) {
 
   const channel = await interaction.guild.channels.fetch(draft.channelId).catch(() => null);
   if (!channel) {
-    await interaction.editReply('The target channel no longer exists.');
+    await interaction.editReply({ embeds: [replyEmbed('The destined channel for this message no longer exists')] });
     return;
   }
 
