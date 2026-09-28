@@ -40,7 +40,7 @@ When a lobby closes for any reason (empty timeout, staff close, deleted by hand)
 
 Not enforceable by roles: Eternus' "within 3 subranks" rule (subranks aren't tracked).
 
-## XP / levels (step 1 built: XP, souls, /rank, /urn, /leaderboard, /xp-config; Shop not built)
+## XP / levels (step 1 built: XP, souls, /rank, /urn, /leaderboard, /xp-config; Shop: hero card preview built, buying not built)
 
 | Rule | Decision |
 |------|----------|
@@ -72,6 +72,9 @@ Not enforceable by roles: Eternus' "within 3 subranks" rule (subranks aren't tra
 | Default card | Same plain card for everyone, **no hero** |
 | Hero cards | Bought in the Shop, one per hero, **3,200 souls** each. Uses the hero's main art from deadlock.wiki (`File:<Hero>_Render.png`) and the hero's own colours on the XP bar, flask liquid, background tint and text accents |
 | Shop preview | Dropdown to pick a hero; the embed image updates to preview that hero's card before buying |
+| Preview details (built, awaiting check) | `/shop` reply is only visible to the person who ran it. Two dropdowns (38 heroes, 25 max per dropdown): Abrams – McGinnis, Mina – Yamato, each option with the hero's `:<hero>:` emoji. Picking a hero redraws the card with **your own** name, level and souls. Embed colour = hero colour. Wording is a placeholder (not approved) |
+| Hero art files | `setup.py hero-renders` downloads the renders into `assets/hero_renders` (trimmed, 600 px tall). Until a hero's render is there, the card uses their chat icon |
+| Hero colours | **Sampled from the art** (the most common strong hue), not hand-picked. Any hero can be overridden in `COLOR_OVERRIDES` in `src/utils/heroes.js`. Colours change once the renders replace the chat icons |
 
 ### The Shop
 
@@ -105,3 +108,4 @@ The old names Alchemist, Arcanist and Archon were retired in the July 30, 2026 u
 | LFG (`/lfg`, `/lfg-config`) | Built | New |
 | Welcome / goodbye (`/welcome`, `/goodbye`) | Ported, off until configured | Velvets-Discord-Bot |
 | XP / souls (`/rank`, `/urn`, `/leaderboard`, `/xp-config`) | Built (step 1) | New |
+| Shop: hero card preview (`/shop`) | Built, awaiting check. Buying/equipping not built | New |
