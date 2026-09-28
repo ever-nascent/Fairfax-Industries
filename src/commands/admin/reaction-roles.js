@@ -156,7 +156,7 @@ module.exports = {
     if (sub === 'list') {
       const menus = await listMenus(guildId);
       if (menus.length === 0) {
-        await interaction.reply({ embeds: [embed('No active reaction role menus.')], flags: MessageFlags.Ephemeral });
+        await interaction.reply({ embeds: [embed("There are no active Reaction Role Menu's in this server")], flags: MessageFlags.Ephemeral });
         return;
       }
       const lines = menus.map(
