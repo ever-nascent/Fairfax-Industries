@@ -1,0 +1,9 @@
+Deadlock-style assets from the Deadlock Graphical Library by Lovely (Radiance font, item card style reference):
+https://drive.google.com/drive/folders/1PvXmXNP9MLTSjOmg7fUGChsqaE3hxyh7
+
+Hero chat icons (assets/heroes): deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
+Map shapes: Natural Earth via the world-atlas package (public domain).
+
+Rank card / urn (assets/fonts, assets/card): Radiance and Retail fonts, the souls icon, the Soul Urn icon and Soul Urn render from deadlock.wiki
+(https://deadlock.wiki), game art by Valve. Level flask shape/colours traced from the in-game HUD.
