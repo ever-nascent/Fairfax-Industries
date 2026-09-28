@@ -148,15 +148,8 @@ module.exports = {
 
       if (sub === 'remove') {
         const role = interaction.options.getRole('role');
-        const emoji = interaction.options.getString('emoji');
-        const target = role ?? emoji;
-        const removed = target ? removePair(draft, target) : false;
+        const removed = removePair(draft, role);
         if (removed) await saveDraft(guildId, userId, draft);
-
-        await interaction.reply({
-          embeds: [embed(removed ? `Removed ${target}.` : `${target ?? 'That entry'} wasn't in the draft.`)],
-          flags: MessageFlags.Ephemeral,
-        });
         await interaction.reply({
           embeds: [embed(removed ? `Removed ${role}.` : `${role} wasn't in the draft.`)],
           flags: MessageFlags.Ephemeral,
@@ -185,9 +178,6 @@ module.exports = {
       if (!menu || menu.guildId !== guildId) {
         await interaction.reply({
           embeds: [embed(`There is no Reaction Role Menu with the ID \`${messageId}\` in this server. \`/reaction-roles list\` shows the IDs.`)],
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
           flags: MessageFlags.Ephemeral,
         });
         return;
