@@ -15,13 +15,14 @@ Deadlock community Discord server for Zechariah's content (TikTok Live + Twitch)
 
 | Path | What |
 |------|------|
-| `setup.py` | One-off server setup over Discord REST (Python). Double-click → numbered menu. Commands: `check`, `community`, `rank-icons`, `rank-emojis`, `hero-icons`, `hero-emojis`, `stickers`, `layout`. Idempotent: safe to re-run. |
+| `setup.py` | One-off server setup over Discord REST (Python). Double-click → numbered menu. Commands: `check`, `community`, `rank-icons`, `rank-emojis`, `hero-icons`, `hero-emojis`, `hero-renders`, `stickers`, `layout`. Idempotent: safe to re-run. |
 | `src/` | The bot (Node, discord.js v14). `index.js` entry, `commands/<category>/*.js` auto-loaded, `events/*.js` auto-loaded, `components/` button routes, `storage/` JSON files in `data/`. |
 | `src/config.js` | `GUILD_ID` (1553860143639167086) and `BRAND_COLOR` (placeholder blurple). |
 | `src/utils/xp.js` | XP curve, souls, Soul Urn, leaderboard, XP settings. `src/utils/rankCard.js` draws the /rank card (`@napi-rs/canvas`). Test: `node --test` (runs in a temp `DATA_DIR`, never the live `data/`). |
+| `src/utils/heroes.js`, `src/utils/shop.js` | Hero list (same as `setup.py HEROES`), hero art (render, else chat icon), sampled hero colours; the `/shop` hero card view. Dropdown handler: `src/components/shop.js`. |
 | `src/utils/lfg.js` | LFG roles, region channels, lobby lifecycle. Creates missing roles/channels on startup. |
 | `Start Bot.bat` | Installs deps on first run, registers slash commands (`npm run deploy`), starts the bot. |
-| `assets/` | Rank icons, region emoji drafts (`regions/make_regions.py`), stickers. Credits in `assets/CREDITS.txt`. |
+| `assets/` | Hero chat icons (`heroes/`), hero renders for Shop cards (`hero_renders/`, from `setup.py hero-renders`), rank icons, region emoji drafts (`regions/make_regions.py`), stickers. Credits in `assets/CREDITS.txt`. |
 | `.env` | `DISCORD_TOKEN`. **Secret: never print, log, or commit it.** |
 | `data/` | **Live bot data** (XP, souls, settings). The bot runs on his PC; never delete or overwrite these files. |
 
@@ -35,6 +36,7 @@ Reaction roles, welcome/goodbye, and the storage/loader scaffolding were ported 
 - `/lfg-config` (Manage Channels): `close`, `timeout`, `lobby-category`, `mode`, `show`.
 - `/welcome`, `/goodbye` (Manage Server): text or embed, placeholders. Off until configured.
 - XP: chat XP (cooldown), optional voice XP, level-ups pay souls. `/rank`, `/urn` (daily souls, streaks), `/leaderboard` (image), a `:souls:` emoji the bot uploads on startup, `/xp-config` (Manage Server: `chat`, `voice`, `level-up-channel`, `show`). Level-up announcements are off until a channel is set.
+- `/shop` (only the runner sees it): hero card section. Two dropdowns with hero emojis; picking one redraws the embed image as that hero's card with the runner's stats. Buying/equipping not built yet.
 
 ## Deadlock facts (verified Sept 2026; re-check before relying on them)
 
@@ -54,7 +56,7 @@ Reaction roles, welcome/goodbye, and the storage/loader scaffolding were ported 
    - Heroes (pick any, ~5–6 per message): Abrams, Bebop, Calico, Dynamo, Grey Talon, Holliday / Haze, Infernus, Ivy, Kelvin, Lady Geist / Lash, McGinnis, Mirage, Mo & Krill, Paradox / Pocket, Seven, Shiv, Sinclair, Vindicta / Viscous, Vyper, Warden, Wraith, Yamato / Billy, The Doorman, Drifter, Mina, Paige, Victor / Apollo, Celeste, Graves, Rem, Silver, Venator.
    - Patron (pick one): The Archmother, The Hidden King.
    - Rank (pick one, the existing 11 rank roles), LFG pings (existing 13 roles), Stream pings (new role).
-2. **XP / levels / souls + hero-card Shop**: all decisions in `server-plan.md` ("XP / levels"). Step 1 (XP, souls, /rank plain card, /urn, /leaderboard, /xp-config) is built, awaiting his Discord check. Card sits in an embed coloured like the card; flask liquid = XP progress. `/urn` shows the wiki urn icon + one urn voice line. Later: give `/leaderboard` personality. Next: level-up message wording (examples sent), then the Shop with hero cards (dropdown preview, hero colours, 3,200 souls each).
+2. **XP / levels / souls + hero-card Shop**: all decisions in `server-plan.md` ("XP / levels"). Step 1 (XP, souls, /rank plain card, /urn, /leaderboard, /xp-config) is built, awaiting his Discord check. Shop hero card preview (`/shop`) is built, awaiting his check (needs `setup.py hero-renders` for the real art; mock in `Claude outputs/shop-preview.png`). Card sits in an embed coloured like the card; flask liquid = XP progress. `/urn` shows the wiki urn icon + one urn voice line. Later: give `/leaderboard` personality. Next: level-up message wording (examples sent), then Shop buying (3,200 souls each) and choosing which owned card `/rank` shows.
 3. **Rename the bot to "The Shopkeeper"** (username + server nickname) and give its messages his voice: a chatty New York shop owner, gambler, Knicks fan. Write original lines, not copied voice lines. Applies to `/lfg` posts/replies, welcome/goodbye defaults, and staff replies.
 4. Emojis (parked): region emoji drafts v3 are in `assets/regions` (item-card style, not yet approved/uploaded; boost level 1 means plenty of slots now). Hero emojis are done (`:<hero>:`). Patron icons exist in the Deadlock Graphical Library (credit: Lovely).
 5. Stickers: 4 more are listed in `setup.py` `STICKERS`. Boost level 1 is reached, so they can go up now (ask first).

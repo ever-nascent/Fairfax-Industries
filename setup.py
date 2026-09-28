@@ -8,6 +8,7 @@ Usage:
     py setup.py rank-emojis-> uploads assets/ranks/*.png as server emojis (skips ones that exist)
     py setup.py hero-icons -> downloads each hero's chat icon from deadlock.wiki into assets/heroes
     py setup.py hero-emojis-> uploads assets/heroes/*.png as server emojis (skips ones that exist)
+    py setup.py hero-renders-> downloads each hero's full render from deadlock.wiki into assets/hero_renders (Shop cards)
     py setup.py stickers   -> copies the stickers listed in STICKERS into the server
     (or just double-click and pick from the menu)
 
@@ -292,6 +293,51 @@ def hero_emojis(session: requests.Session):
     upload_emojis(session, HERO_DIR, "", "hero-icons")
 
 
+RENDER_DIR = Path(__file__).with_name("assets") / "hero_renders"
+RENDER_HEIGHT = 600  # the card is 300 px tall; 2x keeps it sharp without bloating the repo
+
+
+def hero_renders(session: requests.Session):
+    """Download each hero's main art (wiki "File:<Hero>_Render.png") into assets/hero_renders for the
+    Shop's hero cards. Touches nothing in Discord. The bot uses the chat icon for any hero missing here."""
+    try:
+        from PIL import Image
+    except ImportError:
+        import subprocess
+        print("Installing Pillow (image library, first time only)...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "pillow"])
+        from PIL import Image
+    RENDER_DIR.mkdir(parents=True, exist_ok=True)
+    web = requests.Session()
+    web.headers["User-Agent"] = "Mozilla/5.0 (fairfax-setup)"
+    titles = "|".join(f"File:{h}_Render.png" for h in HEROES)
+    pages = web.get(WIKI_API, timeout=30, params={
+        "action": "query", "titles": titles, "prop": "imageinfo", "iiprop": "url", "format": "json",
+    }).json()["query"]
+    alias = {n["to"]: n["from"] for n in pages.get("normalized", [])}   # wiki's title -> ours
+    urls = {alias.get(p["title"], p["title"]): p["imageinfo"][0]["url"]
+            for p in pages["pages"].values() if "imageinfo" in p}
+    ok = 0
+    for hero in HEROES:
+        url = urls.get(f"File:{hero}_Render.png")
+        if not url:
+            print(f"[FAIL] {hero}: no File:{hero}_Render.png on the wiki")
+            continue
+        img = Image.open(BytesIO(web.get(url, timeout=60).content)).convert("RGBA")
+        bbox = img.getbbox()  # trim the empty transparent border
+        if bbox:
+            img = img.crop(bbox)
+        if img.height > RENDER_HEIGHT:
+            img = img.resize((round(img.width * RENDER_HEIGHT / img.height), RENDER_HEIGHT), Image.LANCZOS)
+        path = RENDER_DIR / (re.sub(r"[^a-z0-9]+", "_", hero.lower()).strip("_") + ".png")  # mo_krill.png
+        img.save(path, "PNG", optimize=True)
+        ok += 1
+        print(f"[ok] {path.name}  ({img.width}x{img.height}, {path.stat().st_size // 1024} KB)")
+    print(f"\nSaved {ok}/{len(HEROES)} renders to {RENDER_DIR}")
+    print("CHECKPOINT PASSED - restart the bot, then /shop and pick a hero"
+          if ok == len(HEROES) else "CHECKPOINT FAILED - see FAIL lines above")
+
+
 # Stickers copied from other servers: (source sticker id, new name, emoji tag, description, format)
 # format "png" = static (resized onto a 320x320 canvas); "gif" = animated (uploaded as-is)
 STICKERS = [
@@ -484,6 +530,7 @@ COMMANDS = {
     "rank-emojis": rank_emojis,
     "hero-icons": hero_icons,
     "hero-emojis": hero_emojis,
+    "hero-renders": hero_renders,
     "stickers": stickers,
     "layout": layout,
 }
