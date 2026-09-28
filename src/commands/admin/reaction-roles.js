@@ -27,7 +27,6 @@ module.exports = {
       sub
         .setName('new')
         .setDescription('Start a new reaction role menu draft (discards any unfinished draft)')
-        .addStringOption((option) => option.setName('title').setDescription('Embed title').setRequired(true))
         .addChannelOption((option) =>
           option
             .setName('channel')
@@ -45,6 +44,7 @@ module.exports = {
               { name: 'Single (only the most recent reaction keeps a role)', value: 'single' },
             ),
         )
+        .addStringOption((option) => option.setName('title').setDescription('Embed title'))
         .addStringOption((option) =>
           option.setName('description').setDescription('Embed description (shown above the options)'),
         )
