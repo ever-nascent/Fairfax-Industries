@@ -33,9 +33,9 @@ function addPair(draft, raw, role) {
 
 function removePair(draft, raw) {
   const { key } = parseEmoji(raw);
-  const before = draft.pairs.length;
+  const removed = draft.pairs.find((pair) => pair.key === key) ?? null;
   draft.pairs = draft.pairs.filter((pair) => pair.key !== key);
-  return draft.pairs.length < before;
+  return removed;
 }
 
 function buildEmbed(draft) {
