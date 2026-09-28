@@ -10,8 +10,12 @@ const {
 const { replyEmbed: embed } = require('../../utils/embeds');
 const { requirePermission } = require('../../utils/permissions');
 const {
+  MAX_OPTIONS,
   startDraft,
   getDraft,
+  saveDraft,
+  roleProblem,
+  draftIsFull,
   addPair,
   removePair,
   buildEmbed,
@@ -24,6 +28,8 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('reaction-roles')
     .setDescription('Build reaction role menus.')
+    // Hidden from members without Manage Roles (checked again below).
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
     .addSubcommand((sub) =>
       sub
         .setName('new')
@@ -83,10 +89,18 @@ module.exports = {
 
     if (sub === 'new') {
       const channel = interaction.options.getChannel('channel');
-      startDraft(guildId, userId, {
+      const color = interaction.options.getString('color');
+      if (color && !/^#?[0-9a-f]{6}$/i.test(color)) {
+        await interaction.reply({
+          embeds: [embed("That color isn't a hex code. Use 6 digits like `#5865F2`.")],
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      await startDraft(guildId, userId, {
         title: interaction.options.getString('title'),
         description: interaction.options.getString('description'),
-        color: interaction.options.getString('color'),
+        color: color && (color.startsWith('#') ? color : `#${color}`),
         channelId: channel.id,
         mode: interaction.options.getString('mode'),
       });
@@ -102,7 +116,7 @@ module.exports = {
     }
 
     if (sub === 'add' || sub === 'remove' || sub === 'preview') {
-      const draft = getDraft(guildId, userId);
+      const draft = await getDraft(guildId, userId);
       if (!draft) {
         await interaction.reply({
           embeds: [embed('No draft in progress. Start one with `/reaction-roles new`.')],
@@ -114,14 +128,35 @@ module.exports = {
       if (sub === 'add') {
         const emoji = interaction.options.getString('emoji');
         const role = interaction.options.getRole('role');
+        const problem = roleProblem(role, interaction.guild);
+        if (problem) {
+          await interaction.reply({ embeds: [embed(problem)], flags: MessageFlags.Ephemeral });
+          return;
+        }
+        if (draftIsFull(draft, emoji)) {
+          await interaction.reply({
+            embeds: [embed(`A menu can have at most ${MAX_OPTIONS} options (Discord's reaction limit). Start a second menu for the rest.`)],
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
         addPair(draft, emoji, role);
+        await saveDraft(guildId, userId, draft);
         await interaction.reply({ embeds: [embed(`Added ${emoji} - ${role}.`)], flags: MessageFlags.Ephemeral });
         return;
       }
 
       if (sub === 'remove') {
         const role = interaction.options.getRole('role');
-        const removed = removePair(draft, role);
+        const emoji = interaction.options.getString('emoji');
+        const target = role ?? emoji;
+        const removed = target ? removePair(draft, target) : false;
+        if (removed) await saveDraft(guildId, userId, draft);
+
+        await interaction.reply({
+          embeds: [embed(removed ? `Removed ${target}.` : `${target ?? 'That entry'} wasn't in the draft.`)],
+          flags: MessageFlags.Ephemeral,
+        });
         await interaction.reply({
           embeds: [embed(removed ? `Removed ${role}.` : `${role} wasn't in the draft.`)],
           flags: MessageFlags.Ephemeral,
@@ -145,11 +180,14 @@ module.exports = {
     }
 
     if (sub === 'delete') {
-      const messageId = interaction.options.getString('message-id');
+      const messageId = interaction.options.getString('message-id').trim();
       const menu = await getMenu(messageId);
       if (!menu || menu.guildId !== guildId) {
         await interaction.reply({
-          embeds: [embed(`There is no Reaction Role Menu with the ID \`${messageId}\` in this server.`)],
+          embeds: [embed(`There is no Reaction Role Menu with the ID \`${messageId}\` in this server. \`/reaction-roles list\` shows the IDs.`)],
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
           flags: MessageFlags.Ephemeral,
         });
         return;

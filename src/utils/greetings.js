@@ -15,7 +15,6 @@ function configKey(guildId, type) {
 
 function defaultText(type) {
   if (type === 'welcome') return 'Welcome {user} to {server}!';
-  if (type === 'boost') return 'Thank you {user} for boosting {server}! It now has {boost} boosts. 💜';
   return '{user} has left {server}.';
 }
 
@@ -89,14 +88,14 @@ async function replyWithPreview(interaction, type, config, note) {
 
 const PLACEHOLDER_HINT = '{user} {username} {tag} {server} {guild} {boost} {memberCount}';
 
-const LABELS = { welcome: 'welcome', goodbye: 'goodbye', boost: 'boost' };
-
 function buildGreetingCommand(type) {
-  const label = LABELS[type] ?? type;
+  const label = type;
 
   return new SlashCommandBuilder()
     .setName(type)
     .setDescription(`Configure the ${label} message.`)
+    // Hidden from members without Manage Server (checked again when run).
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .addSubcommand((sub) => {
       sub
         .setName('config')

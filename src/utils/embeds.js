@@ -1,15 +1,10 @@
 const { EmbedBuilder } = require('discord.js');
-const { BRAND_COLOR, REPLY_COLOR } = require('../config');
+const { REPLY_COLOR } = require('../config');
 
-// The bot-wide one-liner reply embed: brand color + description. Chain extra
-// builder calls (setTitle, addFields, …) onto the result where needed.
-function brandEmbed(description) {
-  return new EmbedBuilder().setColor(BRAND_COLOR).setDescription(description);
-}
-
-// A short reply in the green reply colour.
+// A short reply in the green reply colour. Chain extra builder calls
+// (setTitle, addFields, …) onto the result where needed.
 function replyEmbed(description) {
   return new EmbedBuilder().setColor(REPLY_COLOR).setDescription(description);
 }
 
-module.exports = { brandEmbed, replyEmbed };
+module.exports = { replyEmbed };
