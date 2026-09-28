@@ -1,0 +1,17 @@
+{
+  "name": "fairfax-industries-bot",
+  "version": "0.1.0",
+  "description": "Fairfax Industries Discord bot (discord.js). Reaction roles ported from Velvets-Discord-Bot.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.9",
+    "discord.js": "^14.27.0",
+    "dotenv": "^16.4.5"
+  }
+}
