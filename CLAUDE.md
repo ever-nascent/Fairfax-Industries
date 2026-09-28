@@ -27,7 +27,7 @@ Deadlock community Discord server for Zechariah's content (TikTok Live + Twitch)
 | `.env` | `DISCORD_TOKEN`. **Secret: never print, log, or commit it.** |
 | `data/` | **Live bot data** (XP, souls, settings). The bot runs on his PC; never delete or overwrite these files. |
 
-Reaction roles, welcome/goodbye, and the storage/loader scaffolding were ported from
+Reaction roles and the storage/loader scaffolding were ported from
 `D:\Projects\Discord Bots\Velvets-Discord-Bot` (a separate, larger bot; read-only reference).
 
 ## Bot features
@@ -35,7 +35,6 @@ Reaction roles, welcome/goodbye, and the storage/loader scaffolding were ported 
 - `/reaction-roles` (Manage Roles): emoji → role menus, single or multi mode. Drafts are saved in `data/` (survive restarts); max 20 options per menu; refuses roles the bot can't give (above its role, managed, @everyone).
 - `/lfg mode` (anyone, run inside an `#lfg-<region>` channel): pings the LFG role, posts an embed, and creates a voice lobby in the LFG category. Ranked uses the runner's rank role and locks the lobby to rank ±1 (Eternus: Eternus only). One open lobby per person. The lobby is deleted after N min empty, and its post is deleted with it.
 - `/lfg-config` (Manage Channels): `close`, `timeout`, `lobby-category`, `mode`, `show`.
-- `/welcome`, `/goodbye` (Manage Server): text or embed, placeholders. Off until configured.
 - XP: chat XP (cooldown), optional voice XP, level-ups pay souls. `/rank`, `/urn` (daily souls, streaks), `/leaderboard` (image), a `:souls:` emoji the bot uploads on startup, `/xp-config` (Manage Server: `chat`, `voice`, `level-up-channel`, `show`). Level-up announcements are off until a channel is set.
 - `/shop` (only the runner sees it): hero card section. Two dropdowns with hero emojis; picking one redraws the embed image as that hero's card with the runner's stats. Buying/equipping not built yet.
 
@@ -58,9 +57,9 @@ Reaction roles, welcome/goodbye, and the storage/loader scaffolding were ported 
    - Patron (pick one): The Archmother, The Hidden King.
    - Rank (pick one, the existing 11 rank roles), LFG pings (existing 13 roles), Stream pings (new role).
 2. **XP / levels / souls + hero-card Shop**: all decisions in `server-plan.md` ("XP / levels"). Step 1 (XP, souls, /rank plain card, /urn, /leaderboard, /xp-config) is built, awaiting his Discord check. Shop hero card preview (`/shop`) is built, awaiting his check (needs `setup.py hero-renders` for the real art; mock in `Claude outputs/shop-preview.png`). Card sits in an embed coloured like the card; flask liquid = XP progress. `/urn` shows the wiki urn icon + one urn voice line. Later: give `/leaderboard` personality. Next: level-up message wording (examples sent), then Shop buying (3,200 souls each) and choosing which owned card `/rank` shows.
-3. **Rename the bot to "The Shopkeeper"** (username + server nickname) and give its messages his voice: a chatty New York shop owner, gambler, Knicks fan. Write original lines, not copied voice lines. Applies to `/lfg` posts/replies, welcome/goodbye defaults, and staff replies.
+3. **Rename the bot to "The Shopkeeper"** (username + server nickname) and give its messages his voice: a chatty New York shop owner, gambler, Knicks fan. Write original lines, not copied voice lines. Applies to `/lfg` posts/replies and staff replies.
 4. Emojis (parked): region emoji drafts v3 are in `assets/regions` (item-card style, not yet approved/uploaded; boost level 1 means plenty of slots now). Hero emojis are done (`:<hero>:`). Patron icons exist in the Deadlock Graphical Library (credit: Lovely).
 5. Stickers: 4 more are listed in `setup.py` `STICKERS`. Boost level 1 is reached, so they can go up now (ask first).
-6. Unconfirmed runs: `setup.py layout`, `rank-emojis`, `/welcome config`, `/goodbye config`. Default channels (e.g. #general) not in the layout still need a decision.
+6. Unconfirmed runs: `setup.py layout`, `rank-emojis`. Default channels (e.g. #general) not in the layout still need a decision.
    - **LFG pings (test later):** the bot creates the LFG roles as not mentionable. Unconfirmed whether a bot with Administrator can still notify a non-mentionable role (an old Discord bug said no). Test: run `/lfg` while a second account holds the LFG role. If it doesn't get notified, options are: make the 13 LFG roles mentionable (any member could ping them), or have the bot make the role mentionable only while it posts the ping.
 7. Later: server colours, staff/Mod role, running the bot 24/7, TikTok/Twitch go-live alerts.

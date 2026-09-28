@@ -107,6 +107,6 @@ The old names Alchemist, Arcanist and Archon were retired in the July 30, 2026 u
 |---------|--------|--------|
 | Reaction roles (`/reaction-roles`) | Ported | Velvets-Discord-Bot |
 | LFG (`/lfg`, `/lfg-config`) | Built | New |
-| Welcome / goodbye (`/welcome`, `/goodbye`) | Ported, off until configured | Velvets-Discord-Bot |
+| Welcome / goodbye (`/welcome`, `/goodbye`) | Removed (Sept 28, 2026) | Velvets-Discord-Bot |
 | XP / souls (`/rank`, `/urn`, `/leaderboard`, `/xp-config`) | Built (step 1) | New |
 | Shop: hero card preview (`/shop`) | Built, awaiting check. Buying/equipping not built | New |
