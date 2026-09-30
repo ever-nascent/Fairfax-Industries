@@ -5,11 +5,10 @@ const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { getStore } = require('../storage');
-const { changeSouls } = require('./xp');
 const { soulsText, boldSouls } = require('./format');
-const { pickRandom, shortId } = require('./random');
+const { pickRandom } = require('./random');
 const { ASSETS, loadSouls, seeded, halftone, grain, grainAndVignette } = require('./art');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'doorman'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x8c1d24, name: 'The Baroness Hotel', icon: path.join(ART, 'hotel_guest.png'), art: ART, prefix: 'doorman' }; // burgundy; his ult icon
@@ -334,11 +333,8 @@ async function view({ id, rooms, ...message }) {
 
 // Takes the bet and opens a new game. Returns a message payload, or { error } if they can't play.
 async function startGame(user, name, bet) {
-  const error = await takeBet(user.id, bet);
+  const { error, id } = await openGame(games(), user.id, bet, () => ({ userId: user.id, name, bet, prize: crypto.randomInt(3), pick: null, opened: null, done: false }));
   if (error) return { error };
-  const id = shortId();
-  const game = { userId: user.id, name, bet, prize: crypto.randomInt(3), pick: null, opened: null, done: false, at: Date.now() };
-  await games().set(id, game);
   return view({
     id,
     rooms: ROOMS.map(() => ({})),
@@ -415,7 +411,7 @@ async function finishGame(id, userId, choice) {
   if (!game) return null;
   const final = choice === 'switch' ? otherRoom(game.pick, game.opened) : game.pick;
   const won = final === game.prize;
-  const user = await changeSouls(userId, won ? winnings(game.bet) : 0);
+  const user = await pay(userId, won ? winnings(game.bet) : 0);
   await games().delete(id);
   return resultView(id, game, final, won, user.souls);
 }

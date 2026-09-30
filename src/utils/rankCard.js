@@ -266,31 +266,4 @@ async function renderLeaderboard(serverName, rows) {
 const cardColor = (hexColor) => parseInt(hexColor.slice(1), 16);
 const CARD_COLOR = cardColor(C.liquid);
 
-// One piece of an emoji bar drawn like the XP bar (the /trivia streak is a row of these):
-// part 'left' | 'mid' | 'right' (the ends are rounded), on = filled. 128 px square PNG.
-function renderBarPiece(part, on) {
-  const S = 128;
-  const h = 60; // bar thickness
-  const y = (S - h) / 2;
-  const pad = 8; // like the gap between the XP bar's track and its fill
-  const x0 = part === 'left' ? 6 : 0;
-  const x1 = part === 'right' ? S - 6 : S;
-  const round = (r) => (part === 'left' ? [r, 0, 0, r] : part === 'right' ? [0, r, r, 0] : 0);
-  const c = createCanvas(S, S);
-  const g = c.getContext('2d');
-  g.fillStyle = '#0a0e0d';
-  g.beginPath();
-  g.roundRect(x0, y, x1 - x0, h, round(h / 2));
-  g.fill();
-  if (on) {
-    const l = part === 'left' ? x0 + pad : 0;
-    const r = part === 'right' ? x1 - pad : S;
-    g.fillStyle = C.liquid;
-    g.beginPath();
-    g.roundRect(l, y + pad, r - l, h - 2 * pad, round((h - 2 * pad) / 2));
-    g.fill();
-  }
-  return c.toBuffer('image/png');
-}
-
-module.exports = { renderRankCard, renderLeaderboard, renderBarPiece, drawFlask, fit, TEXT_FONT, CARD_COLOR, cardColor };
+module.exports = { renderRankCard, renderLeaderboard, drawFlask, fit, TEXT_FONT, CARD_COLOR, cardColor };

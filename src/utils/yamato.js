@@ -5,12 +5,11 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { getStore } = require('../storage');
-const { changeSouls } = require('./xp');
 const { fmt, soulsText, boldSouls } = require('./format');
-const { pickRandom, shortId } = require('./random');
+const { pickRandom } = require('./random');
 const { ASSETS } = require('./art');
-const { ensureEmoji } = require('./guild');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage } = require('./casino');
+const { findEmoji } = require('./guild');
+const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'yamato'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x7b5ea7, name: "Yamato's Dojo", icon: path.join(ART, 'power_slash.png'), art: ART, prefix: 'yamato' };
@@ -24,7 +23,7 @@ const AGAIN_ID = 'duel_again'; // custom id: duel_again:<bet>:<player id>[:<othe
 const winnings = (bet) => Math.floor(bet * PAYOUT);
 
 // Power Slash beats Flying Strike, Flying Strike beats Crimson Slash, Crimson Slash beats Power Slash.
-// emoji: the server's emoji once uploaded (ensureStanceEmojis), a plain one until then.
+// emoji: the server's emoji found on startup (loadStanceEmojis), a plain one until then.
 const STANCES = {
   power: { label: 'Power Slash', file: 'power_slash.png', emoji: '🗡️', beats: 'flying' },
   flying: { label: 'Flying Strike', file: 'flying_strike.png', emoji: '🌀', beats: 'crimson' },
@@ -74,10 +73,10 @@ const staked = (game) => (!solo(game) && game.phase === 'pick' ? game.bet * 2 : 
 const refunds = (game) =>
   !solo(game) && game.phase === 'pick' ? [[game.userId, game.bet], [game.opponentId, game.bet]] : [[game.userId, game.bet]];
 
-// On startup: the stances' icons as server emojis (buttons and results show them).
-async function ensureStanceEmojis(guild) {
+// On startup: the stances' server emojis (buttons and results show them).
+function loadStanceEmojis(guild) {
   for (const [key, stance] of Object.entries(STANCES)) {
-    stance.emoji = (await ensureEmoji(guild, NAMES[key], path.join(ART, stance.file))).toString();
+    stance.emoji = findEmoji(guild, NAMES[key]).toString();
   }
 }
 
@@ -117,15 +116,12 @@ function pickView(id, game) {
 async function startGame(user, name, bet, opponent = null) {
   if (opponent?.bot) return { error: 'Bots do not duel. Pick a member, or leave the opponent empty to face Yamato.' };
   if (opponent?.id === user.id) return { error: 'You cannot duel yourself. Pick another member, or leave it empty to face Yamato.' };
-  const error = await takeBet(user.id, bet);
-  if (error) return { error };
-  const id = shortId();
-  const game = {
-    userId: user.id, name, bet, done: false, at: Date.now(), picks: {},
+  const { error, id, game } = await openGame(games(), user.id, bet, () => ({
+    userId: user.id, name, bet, done: false, picks: {},
     opponentId: opponent?.id ?? null, opponentName: opponent ? opponent.globalName ?? opponent.username : 'Yamato',
     phase: opponent ? 'invite' : 'pick', yamato: opponent ? null : Object.keys(STANCES)[crypto.randomInt(3)],
-  };
-  await games().set(id, game);
+  }));
+  if (error) return { error };
   return opponent ? inviteView(id, game) : pickView(id, game);
 }
 
@@ -178,7 +174,7 @@ async function accept(id, userId) {
     return game;
   });
   if (!game) {
-    await changeSouls(userId, current.bet);
+    await pay(userId, current.bet);
     return null;
   }
   return pickView(id, game);
@@ -190,7 +186,7 @@ async function decline(id, userId) {
   if (userId !== current.opponentId) return { error: `Only ${current.opponentName} can turn this challenge down.` };
   const game = await games().take(id, (g) => g.phase === 'invite');
   if (!game) return null;
-  await changeSouls(game.userId, game.bet);
+  await pay(game.userId, game.bet);
   return view({
     lines: [`${mention(game.opponentId)} turned down ${mention(game.userId)}'s challenge.`, `${boldSouls(game.bet)} went back to ${mention(game.userId)}.`],
     footer: '"No shame in walking away. Only in never drawing."',
@@ -224,12 +220,12 @@ async function choose(id, userId, stance) {
   const outcome = solo(game) ? versus(stance, game.yamato) : versus(game.picks[game.userId], game.picks[game.opponentId]);
   let balance; // the challenger's, shown against Yamato
   if (solo(game)) {
-    balance = (await changeSouls(game.userId, outcome > 0 ? winnings(game.bet) : outcome === 0 ? game.bet : 0)).souls;
+    balance = (await pay(game.userId, outcome > 0 ? winnings(game.bet) : outcome === 0 ? game.bet : 0)).souls;
   } else if (outcome === 0) {
-    await changeSouls(game.opponentId, game.bet);
-    await changeSouls(game.userId, game.bet);
+    await pay(game.opponentId, game.bet);
+    await pay(game.userId, game.bet);
   } else {
-    await changeSouls(outcome > 0 ? game.userId : game.opponentId, pot(game));
+    await pay(outcome > 0 ? game.userId : game.opponentId, pot(game));
   }
   await games().delete(id);
   return resultView(game, outcome, balance);
@@ -259,6 +255,6 @@ async function timeoutView(id, game, balance) {
 }
 
 module.exports = {
-  games, staked, refunds, timeoutView, ensureStanceEmojis, startGame, play,
+  games, staked, refunds, timeoutView, loadStanceEmojis, startGame, play,
   STANCES, versus, winnings, WIN_LINES, LOSE_LINES, DRAW_LINES, DUEL_LINES, TIMEOUT_LINES, BUTTON_ID, AGAIN_ID, PVP,
 };

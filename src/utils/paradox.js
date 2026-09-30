@@ -6,12 +6,11 @@ const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { getStore } = require('../storage');
-const { changeSouls } = require('./xp');
 const { encodeGif } = require('./gif');
 const { fmt, soulsText, boldSouls } = require('./format');
-const { pickRandom, shortId } = require('./random');
+const { pickRandom } = require('./random');
 const { ASSETS, halftone, grain, grainAndVignette } = require('./art');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'paradox'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xc24fa0, name: 'Borrowed Time', icon: path.join(ART, 'pulse_grenade.png'), art: ART, prefix: 'paradox' }; // magenta; Pulse Grenade
@@ -353,12 +352,8 @@ async function view(id, game) {
 
 // Takes the bet and spins the first hour. Returns a message payload, or { error }.
 async function startGame(user, name, bet, hour = crypto.randomInt(12) + 1) {
-  const error = await takeBet(user.id, bet);
-  if (error) return { error };
-  const id = shortId();
-  const game = { userId: user.id, name, bet, prize: bet, hour, history: [[hour]], done: false, lost: false, version: 0, at: Date.now() };
-  await games().set(id, game);
-  return view(id, game);
+  const { error, id, game } = await openGame(games(), user.id, bet, () => ({ userId: user.id, name, bet, prize: bet, hour, history: [[hour]], done: false, lost: false, version: 0 }));
+  return error ? { error } : view(id, game);
 }
 
 // A button press. Returns a message payload, { error } (shown only to the clicker), or null (stale click).
@@ -375,7 +370,7 @@ async function move(id, userId, action, next = nextHour) {
   });
   if (!game) return null;
   if (!game.done) return view(id, game);
-  const user = await changeSouls(userId, game.lost ? 0 : game.prize);
+  const user = await pay(userId, game.lost ? 0 : game.prize);
   await games().delete(id);
   return view(id, { ...game, balance: user.souls });
 }

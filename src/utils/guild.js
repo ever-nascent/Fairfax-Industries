@@ -17,13 +17,12 @@ async function findOrCreateChannel(guild, options, savedId) {
   return channel;
 }
 
-// The server emoji called `name`, uploaded from `attachment` (a file path or a PNG buffer) if it's missing.
-async function ensureEmoji(guild, name, attachment) {
+// The server emoji called `name`. Emojis live in Discord (upload new ones with setup.py *-emojis), so this only
+// looks them up; it throws if one is missing, and the caller keeps its plain fallback.
+function findEmoji(guild, name) {
   const found = guild.emojis.cache.find((e) => e.name === name);
-  if (found) return found;
-  const emoji = await guild.emojis.create({ attachment, name, reason: 'Used in bot messages' });
-  console.log(`[setup] Uploaded the :${name}: emoji`);
-  return emoji;
+  if (!found) throw new Error(`no :${name}: emoji in the server`);
+  return found;
 }
 
-module.exports = { isAllowedGuild, ourGuild, findOrCreateChannel, ensureEmoji };
+module.exports = { isAllowedGuild, ourGuild, findOrCreateChannel, findEmoji };

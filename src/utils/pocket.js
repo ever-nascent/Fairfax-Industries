@@ -4,11 +4,10 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { getStore } = require('../storage');
-const { changeSouls } = require('./xp');
 const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
-const { pickRandom, shuffle, shortId } = require('./random');
+const { pickRandom, shuffle } = require('./random');
 const { ASSETS } = require('./art');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'pocket'); // portraits from the deadlock-api.com assets API ("synth"), icon from deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xf46f0b, name: "Pocket's Suitcases", icon: path.join(ART, 'satchel.png'), art: ART, prefix: 'pocket' }; // orange; Enchanter's Satchel
@@ -274,15 +273,11 @@ function view(id, game) {
 
 // Takes the bet and packs the cases. Returns a message payload, or { error }.
 async function startGame(user, name, bet, values = shuffled()) {
-  const error = await takeBet(user.id, bet);
-  if (error) return { error };
-  const id = shortId();
-  const game = {
+  const { error, id, game } = await openGame(games(), user.id, bet, () => ({
     userId: user.id, name, bet, values, mine: null, opened: [], round: 0, phase: 'pick', toOpen: 0,
-    offer: 0, last: null, done: false, prize: 0, how: null, version: 0, at: Date.now(),
-  };
-  await games().set(id, game);
-  return view(id, game);
+    offer: 0, last: null, done: false, prize: 0, how: null, version: 0,
+  }));
+  return error ? { error } : view(id, game);
 }
 
 // A button press. Returns a message payload, { error } (shown only to the clicker), or null (stale click).
@@ -299,7 +294,7 @@ async function move(id, userId, action) {
   });
   if (!game) return null;
   if (!game.done) return view(id, game);
-  const user = await changeSouls(userId, game.prize);
+  const user = await pay(userId, game.prize);
   await games().delete(id);
   return view(id, { ...game, balance: user.souls });
 }

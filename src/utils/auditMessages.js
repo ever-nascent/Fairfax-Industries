@@ -42,7 +42,9 @@ function save() {
   }
   if (!dirty) return;
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(FILE, JSON.stringify(messages));
+  // temp file + rename, like the main store: a crash mid-write can't leave half a file (which would wipe the memory)
+  fs.writeFileSync(`${FILE}.tmp`, JSON.stringify(messages));
+  fs.renameSync(`${FILE}.tmp`, FILE);
   dirty = false;
 }
 
@@ -84,11 +86,13 @@ async function remember(message) {
   const attachments = [...message.attachments.values()];
   for (const [i, a] of attachments.entries()) {
     if (!a.contentType?.startsWith('image/') || a.size > MAX_IMAGE_BYTES) continue;
-    const response = await fetch(a.url).catch(() => null);
+    const response = await fetch(a.url, { signal: AbortSignal.timeout(20_000) }).catch(() => null);
     if (!response?.ok) continue;
     const copy = `${message.id}-${i}${path.extname(a.name) || '.png'}`;
     fs.mkdirSync(FILES_DIR, { recursive: true });
-    fs.writeFileSync(path.join(FILES_DIR, copy), Buffer.from(await response.arrayBuffer()));
+    const data = await response.arrayBuffer().catch(() => null); // a timeout can also hit while the body downloads
+    if (!data) continue;
+    fs.writeFileSync(path.join(FILES_DIR, copy), Buffer.from(data));
     // Deleted while downloading: its log entry has gone out already, so the copy isn't needed.
     if (all()[message.id] !== entry) {
       fs.rmSync(path.join(FILES_DIR, copy), { force: true });

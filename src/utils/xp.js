@@ -3,10 +3,9 @@
 const { EmbedBuilder } = require('discord.js');
 const { getStore } = require('../storage');
 const { CARD_COLOR } = require('./rankCard');
-const { SOULS_PNG } = require('./art');
 const { setSoulsEmoji, soulsText } = require('./format');
 const { pickRandom } = require('./random');
-const { ensureEmoji } = require('./guild');
+const { findEmoji } = require('./guild');
 
 const MAX_LEVEL = 99;
 const DEFAULTS = {
@@ -234,9 +233,9 @@ async function leaderboard(count = 10) {
     .slice(0, count);
 }
 
-// The server's :souls: emoji, put in front of every soul count (format.js). Uploaded on startup if missing.
-async function ensureSoulsEmoji(guild) {
-  setSoulsEmoji((await ensureEmoji(guild, 'souls', SOULS_PNG)).toString());
+// The server's :souls: emoji, put in front of every soul count (format.js). Found on startup.
+function loadSoulsEmoji(guild) {
+  setSoulsEmoji(findEmoji(guild, 'souls').toString());
 }
 
 // The Shopkeeper's level-up lines (original, in his voice). {member} and {level} are filled in.
@@ -267,7 +266,7 @@ async function announceLevelUp(guild, userId, result) {
 
 module.exports = {
   announceLevelUp,
-  ensureSoulsEmoji,
+  loadSoulsEmoji,
   MAX_LEVEL,
   URN_MAX_DAYS,
   BOOST_PRICE,

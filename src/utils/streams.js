@@ -6,6 +6,7 @@ const { EmbedBuilder } = require('discord.js');
 const { getStore } = require('../storage');
 const { TWITCH_LOGIN, TIKTOK_LOGIN, STREAM_CHANNEL_ID } = require('../config');
 
+const TIMEOUT = () => AbortSignal.timeout(15_000); // a hung request would stall that platform's checks for good
 const RECONNECT_GRACE_MS = 10 * 60_000; // a drop + reconnect within this doesn't ping again
 const store = () => getStore('twitch'); // named before TikTok was added; holds both platforms
 let token = null;
@@ -18,11 +19,12 @@ async function helix(path) {
       const r = await fetch('https://id.twitch.tv/oauth2/token', {
         method: 'POST',
         body: new URLSearchParams({ client_id: id, client_secret: secret, grant_type: 'client_credentials' }),
+        signal: TIMEOUT(),
       });
       if (!r.ok) throw new Error(`Twitch login failed (${r.status}). Run setup.py twitch again.`);
       token = (await r.json()).access_token;
     }
-    const r = await fetch(`https://api.twitch.tv/helix/${path}`, { headers: { 'Client-Id': id, Authorization: `Bearer ${token}` } });
+    const r = await fetch(`https://api.twitch.tv/helix/${path}`, { headers: { 'Client-Id': id, Authorization: `Bearer ${token}` }, signal: TIMEOUT() });
     if (r.status === 401) { token = null; continue; } // token expired: get a new one, retry once
     if (!r.ok) throw new Error(`Twitch ${path} -> ${r.status}`);
     return (await r.json()).data;
@@ -50,6 +52,7 @@ async function twitchLive() {
 async function tiktokLive() {
   const r = await fetch(`https://www.tiktok.com/api-live/user/room/?aid=1988&sourceType=54&uniqueId=${TIKTOK_LOGIN}`, {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36' },
+    signal: TIMEOUT(),
   });
   if (!r.ok) throw new Error(`TikTok -> ${r.status}`);
   const { data, message } = await r.json();
