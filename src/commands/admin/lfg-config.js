@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags, EmbedBuilder } = require('discord.js');
 const { requirePermission } = require('../../utils/permissions');
 const { REPLY_COLOR } = require('../../config');
-const { replyEmbed } = require('../../utils/embeds');
+const { replyEmbed, privateReply } = require('../../utils/embeds');
 const { MODES, getSettings, updateSettings, closeLobby, isLobby, openLobbies } = require('../../utils/lfg');
 
 const modeChoices = Object.entries(MODES).map(([value, m]) => ({ name: m.label, value }));
@@ -53,7 +53,7 @@ module.exports = {
 
   async execute(interaction) {
     if (!(await requirePermission(interaction, PermissionFlagsBits.ManageChannels))) return;
-    const reply = (text) => interaction.reply({ embeds: [replyEmbed(text)], flags: MessageFlags.Ephemeral });
+    const reply = (text) => privateReply(interaction, text);
     const sub = interaction.options.getSubcommand();
     const guildId = interaction.guildId;
 

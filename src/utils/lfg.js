@@ -2,6 +2,7 @@
 // and their auto-cleanup. The bot creates anything missing when it starts.
 const { ChannelType } = require('discord.js');
 const { getStore } = require('../storage');
+const { findOrCreateChannel } = require('./guild');
 
 // Current Deadlock ranks (July 30, 2026 Ranked Mode update), lowest -> highest.
 const RANKS = [
@@ -31,6 +32,8 @@ const DEFAULT_TIMEOUT_MINUTES = 5; // delete a lobby after this long with nobody
 let timeoutMinutes = DEFAULT_TIMEOUT_MINUTES;
 
 const lfgRoleName = (rank) => `LFG ${rank}`;
+// Every LFG ping role, in the order the #roles LFG Pings dropdown lists them.
+const PING_ROLES = [MODES.standard.lfgRole, MODES.streetbrawl.lfgRole, ...RANKS.map(lfgRoleName)];
 
 // Ranked parties in Deadlock: max 1 rank apart; Eternus can only queue with Eternus.
 function joinableRanks(rank) {
@@ -61,28 +64,18 @@ async function ensureInfrastructure(guild) {
 
   const names = [
     ...RANKS, // rank roles members hold (given by a reaction-role menu)
-    MODES.standard.lfgRole,
-    MODES.streetbrawl.lfgRole,
-    ...RANKS.map(lfgRoleName), // ping roles
+    ...PING_ROLES,
   ];
   for (const name of names) await ensureRole(guild, name, saved.roles);
 
   const cache = guild.channels.cache;
-  let lfgCategory = cache.find((c) => c.type === ChannelType.GuildCategory && c.name === LFG_CATEGORY);
-  if (!lfgCategory) {
-    lfgCategory = await guild.channels.create({ name: LFG_CATEGORY, type: ChannelType.GuildCategory });
-    console.log(`[lfg] Created category ${LFG_CATEGORY}`);
-  }
+  const lfgCategory = await findOrCreateChannel(guild, { name: LFG_CATEGORY, type: ChannelType.GuildCategory }, saved.lfgCategoryId);
+  saved.lfgCategoryId = lfgCategory.id; // saved so renaming the category in Discord doesn't make a new one
 
   saved.regionChannels ??= {};
   for (const [key, region] of Object.entries(REGIONS)) {
-    let ch = cache.get(saved.regionChannels[key]) ||
-      cache.find((c) => c.type === ChannelType.GuildText && c.name === region.channel);
-    if (!ch) {
-      ch = await guild.channels.create({ name: region.channel, type: ChannelType.GuildText, parent: lfgCategory.id });
-      console.log(`[lfg] Created #${region.channel}`);
-    }
-    saved.regionChannels[key] = ch.id;
+    const options = { name: region.channel, type: ChannelType.GuildText, parent: lfgCategory.id };
+    saved.regionChannels[key] = (await findOrCreateChannel(guild, options, saved.regionChannels[key])).id;
   }
 
   // Lobby category: whatever /lfg-config set, unless it's gone or the old "LFG Lobbies".
@@ -208,9 +201,9 @@ async function reconcile(client) {
 module.exports = {
   RANKS,
   MODES,
-  REGIONS,
   regionForChannel,
   lfgRoleName,
+  PING_ROLES,
   joinableRanks,
   ensureInfrastructure,
   getSettings,

@@ -1,4 +1,4 @@
-const { isAllowedGuild } = require('../utils/guildLock');
+const { isAllowedGuild } = require('../utils/guild');
 const { getSettings, addXp, announceLevelUp } = require('../utils/xp');
 
 // Chat XP: one counted message per cooldown, random XP between min and max.

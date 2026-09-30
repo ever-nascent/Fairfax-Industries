@@ -9,7 +9,10 @@ Usage:
     py setup.py hero-icons -> downloads each hero's chat icon from deadlock.wiki into assets/heroes
     py setup.py hero-emojis-> uploads assets/heroes/*.png as server emojis (skips ones that exist)
     py setup.py hero-renders-> downloads each hero's full render from deadlock.wiki into assets/hero_renders (Shop cards)
+    py setup.py trivia     -> builds assets/trivia (voice lines + ability icons from deadlock.wiki) for /trivia
     py setup.py stickers   -> copies the stickers listed in STICKERS into the server
+    py setup.py shop-emojis-> uploads assets/shop/*.png as server emojis, e.g. :hideout: (skips ones that exist)
+    py setup.py twitch     -> saves your Twitch app keys to .env so the bot can announce when you go live
     (or just double-click and pick from the menu)
 
 More phases (channels, roles, onboarding...) get added as we go.
@@ -30,6 +33,7 @@ from dotenv import load_dotenv
 API = "https://discord.com/api/v10"
 GUILD_ID = "1553860143639167086"
 ENV_PATH = Path(__file__).with_name(".env")
+ASSETS = Path(__file__).with_name("assets")
 
 ADMINISTRATOR = 1 << 3  # permission bit, see docs: Permissions -> Bitwise Permission Flags
 
@@ -165,31 +169,42 @@ RANKS = [
     ("ascendant", "xrank10_lg_psd.png.pagespeed.ic.YolWCYhRR_.png"),
     ("eternus",   "xrank11_lg_psd.png.pagespeed.ic._3b3yCdqIl.png"),
 ]
-RANK_DIR = Path(__file__).with_name("assets") / "ranks"
+RANK_DIR = ASSETS / "ranks"
 EMOJI_PREFIX = "rank_"          # emoji names become :rank_initiate:, :rank_seeker:, ...
 EMOJI_SIZE = 128                # Discord shows emojis at up to 128x128
 EMOJI_MAX_BYTES = 256 * 1024    # Discord's emoji file size limit
 
 
-def to_emoji_png(raw: bytes) -> bytes:
-    """Fit the image into a transparent 128x128 square and return PNG bytes."""
+def pil_image():
+    """Pillow's Image module, installed on first use (imported here so other commands work without it)."""
     try:
-        from PIL import Image  # imported here so other commands work without Pillow
+        from PIL import Image
     except ImportError:
         import subprocess
         print("Installing Pillow (image library, first time only)...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pillow"])
         from PIL import Image
+    return Image
+
+
+def to_square_png(raw: bytes, size: int, trim: bool = False) -> bytes:
+    """Center the image on a transparent size x size canvas (keeps its aspect ratio) and return PNG bytes.
+    trim: cut the empty transparent border first, so a badge fills the emoji."""
+    Image = pil_image()
     img = Image.open(BytesIO(raw)).convert("RGBA")
-    bbox = img.getbbox()            # trim empty transparent border so the badge fills the emoji
-    if bbox:
-        img = img.crop(bbox)
-    img.thumbnail((EMOJI_SIZE, EMOJI_SIZE), Image.LANCZOS)
-    canvas = Image.new("RGBA", (EMOJI_SIZE, EMOJI_SIZE), (0, 0, 0, 0))
-    canvas.paste(img, ((EMOJI_SIZE - img.width) // 2, (EMOJI_SIZE - img.height) // 2), img)
+    if trim and img.getbbox():
+        img = img.crop(img.getbbox())
+    img.thumbnail((size, size), Image.LANCZOS)
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    canvas.paste(img, ((size - img.width) // 2, (size - img.height) // 2), img)
     out = BytesIO()
     canvas.save(out, "PNG", optimize=True)
     return out.getvalue()
+
+
+def slug(name: str) -> str:
+    """File and emoji name for a hero, same as src/utils/heroes.js: "Mo & Krill" -> mo_krill."""
+    return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
 
 
 def rank_icons(session: requests.Session):
@@ -207,7 +222,7 @@ def rank_icons(session: requests.Session):
         else:
             print(f"[FAIL] {name}: couldn't download ({r.status_code})")
             continue
-        png = to_emoji_png(r.content)
+        png = to_square_png(r.content, EMOJI_SIZE, trim=True)
         path = RANK_DIR / f"{i:02d}_{name}.png"
         path.write_bytes(png)
         size_ok = len(png) <= EMOJI_MAX_BYTES
@@ -247,6 +262,14 @@ def upload_emojis(session: requests.Session, folder: Path, prefix: str, download
     print("\nCHECKPOINT PASSED" if not missing else "\nCHECKPOINT FAILED - some emojis missing")
 
 
+# Shop section icons (e.g. hideout.png = the minimap Stairs icon, redrawn at 128 px).
+SHOP_DIR = ASSETS / "shop"
+
+
+def shop_emojis(session: requests.Session):
+    upload_emojis(session, SHOP_DIR, "", "(the icons are already in assets/shop)")
+
+
 # Heroes (Category:Heroes on deadlock.wiki, Sept 2026). Each hero page shows a 128x128
 # "chat icon" in its gallery, which is the wiki file "File:<Hero>.png".
 HEROES = [
@@ -256,7 +279,7 @@ HEROES = [
     "Pocket", "Rem", "Seven", "Shiv", "Silver", "Sinclair", "Venator", "Victor",
     "Vindicta", "Viscous", "Vyper", "Warden", "Wraith", "Yamato",
 ]
-HERO_DIR = Path(__file__).with_name("assets") / "heroes"
+HERO_DIR = ASSETS / "heroes"
 WIKI_API = "https://deadlock.wiki/api.php"
 
 
@@ -278,8 +301,8 @@ def hero_icons(session: requests.Session):
         if not url:
             print(f"[FAIL] {hero}: no chat icon on the wiki")
             continue
-        png = to_emoji_png(web.get(url, timeout=30).content)
-        path = HERO_DIR / (re.sub(r"[^a-z0-9]+", "_", hero.lower()).strip("_") + ".png")  # mo_krill.png
+        png = to_square_png(web.get(url, timeout=30).content, EMOJI_SIZE, trim=True)
+        path = HERO_DIR / f"{slug(hero)}.png"
         path.write_bytes(png)
         size_ok = len(png) <= EMOJI_MAX_BYTES
         ok += size_ok
@@ -293,20 +316,14 @@ def hero_emojis(session: requests.Session):
     upload_emojis(session, HERO_DIR, "", "hero-icons")
 
 
-RENDER_DIR = Path(__file__).with_name("assets") / "hero_renders"
+RENDER_DIR = ASSETS / "hero_renders"
 RENDER_HEIGHT = 600  # the card is 300 px tall; 2x keeps it sharp without bloating the repo
 
 
 def hero_renders(session: requests.Session):
     """Download each hero's main art (wiki "File:<Hero>_Render.png") into assets/hero_renders for the
     Shop's hero cards. Touches nothing in Discord. The bot uses the chat icon for any hero missing here."""
-    try:
-        from PIL import Image
-    except ImportError:
-        import subprocess
-        print("Installing Pillow (image library, first time only)...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "pillow"])
-        from PIL import Image
+    Image = pil_image()
     RENDER_DIR.mkdir(parents=True, exist_ok=True)
     web = requests.Session()
     web.headers["User-Agent"] = "Mozilla/5.0 (fairfax-setup)"
@@ -329,13 +346,167 @@ def hero_renders(session: requests.Session):
             img = img.crop(bbox)
         if img.height > RENDER_HEIGHT:
             img = img.resize((round(img.width * RENDER_HEIGHT / img.height), RENDER_HEIGHT), Image.LANCZOS)
-        path = RENDER_DIR / (re.sub(r"[^a-z0-9]+", "_", hero.lower()).strip("_") + ".png")  # mo_krill.png
+        path = RENDER_DIR / f"{slug(hero)}.png"
         img.save(path, "PNG", optimize=True)
         ok += 1
         print(f"[ok] {path.name}  ({img.width}x{img.height}, {path.stat().st_size // 1024} KB)")
     print(f"\nSaved {ok}/{len(HEROES)} renders to {RENDER_DIR}")
     print("CHECKPOINT PASSED - restart the bot, then /shop and pick a hero"
           if ok == len(HEROES) else "CHECKPOINT FAILED - see FAIL lines above")
+
+
+TRIVIA_DIR = ASSETS / "trivia"
+# Words that give the answer away if a line contains them (besides the hero's own name).
+TRIVIA_ALIASES = {
+    "Mo & Krill": ["Maurice", "Momo", "Mo", "Krill"],
+    "Sinclair": ["Henry", "Savannah"],
+    "Lady Geist": ["Geist"],
+    "Grey Talon": ["Talon"],
+    "The Doorman": ["Doorman"],
+}
+# Sections of a "<Hero>/Voice lines" page that aren't the hero talking (or aren't in the game).
+TRIVIA_SKIP_SECTIONS = ("conversation", "other character", "removed", "unused", "navigation")
+
+
+def clean_wiki_text(text: str) -> str:
+    text = re.sub(r"\[\[(?:[^|\]]*\|)?([^\]]*)\]\]", r"\1", text)   # [[link|shown]] -> shown
+    text = re.sub(r"<[^>]+>", "", text).replace("''", "")          # html tags, ''italics''
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def trivia(session: requests.Session):
+    """Build assets/trivia/trivia.json for /trivia: each hero's own voice lines and their 4 abilities (+ icons),
+    from deadlock.wiki. Touches nothing in Discord. Re-run after new heroes or patches."""
+    import json
+    (TRIVIA_DIR / "abilities").mkdir(parents=True, exist_ok=True)
+    web = requests.Session()
+    web.headers["User-Agent"] = "Mozilla/5.0 (fairfax-setup)"
+    heroes = []
+    for hero in HEROES:
+        page = web.get(WIKI_API, timeout=30, params={
+            "action": "parse", "page": f"{hero}/Voice lines", "prop": "wikitext", "format": "json",
+        }).json()
+        if "parse" not in page:
+            print(f"[FAIL] {hero}: no '{hero}/Voice lines' page on the wiki")
+            continue
+        text = page["parse"]["wikitext"]["*"]
+        names = [w for w in re.split(r"[\s&]+", hero) if w and w != "The"] + TRIVIA_ALIASES.get(hero, [])
+        giveaway = re.compile(r"\b(" + "|".join(map(re.escape, names)) + r")\b", re.IGNORECASE)
+        lines, seen = [], set()
+        # level-2 sections ("== Select ==" or "==Select=="); keep only the hero's own lines
+        for section in re.split(r"\n(?===\s*[^=\s])", "\n" + text):
+            title = section.strip().split("\n", 1)[0].lower()
+            if any(skip in title for skip in TRIVIA_SKIP_SECTIONS):
+                continue
+            rows = section.split("\n")
+            for i, row in enumerate(rows):
+                found = re.search(r"\{\{Audio link\|[^|}]*\|([^}]*)\}\}", row)
+                if not found:
+                    continue
+                raw = found.group(1)
+                # Yamato speaks Japanese: the wiki puts the English translation in the next table cell
+                if re.search(r"[぀-ヿ一-鿿]", raw):
+                    after = rows[i + 1] if i + 1 < len(rows) else ""
+                    if not after.startswith("|") or after.startswith(("|-", "|}")):
+                        continue
+                    raw = after[1:]
+                line = clean_wiki_text(raw)
+                if (len(line) < 25 or len(line) > 150 or line[0] in "([" or "[" in line
+                        or giveaway.search(line) or line.lower() in seen):
+                    continue
+                seen.add(line.lower())
+                lines.append(line)
+        abilities = [clean_wiki_text(a) for a in re.findall(r"===\s*\{\{AbilityIcon\|([^}]+)\}\}\s*===", text)][:4]
+        heroes.append({"name": hero, "slug": re.sub(r"[^a-z0-9]+", "_", hero.lower()).strip("_"),
+                       "lines": lines, "abilities": abilities})
+        print(f"[{'ok' if lines and len(abilities) == 4 else 'FAIL'}] {hero}: {len(lines)} lines, "
+              f"abilities: {', '.join(abilities) or 'none found'}")
+
+    # ability icons ("File:<Ability>.png"), 50 titles per wiki query
+    wanted = [a for h in heroes for a in h["abilities"]]
+    urls = {}
+    for i in range(0, len(wanted), 50):
+        pages = web.get(WIKI_API, timeout=30, params={
+            "action": "query", "titles": "|".join(f"File:{a}.png" for a in wanted[i:i + 50]),
+            "prop": "imageinfo", "iiprop": "url", "format": "json",
+        }).json()["query"]
+        alias = {n["to"]: n["from"] for n in pages.get("normalized", [])}
+        urls.update({alias.get(p["title"], p["title"]): p["imageinfo"][0]["url"]
+                     for p in pages["pages"].values() if "imageinfo" in p})
+    for h in heroes:
+        icons = []
+        for ability in h["abilities"]:
+            url = urls.get(f"File:{ability}.png")
+            if not url:
+                print(f"[FAIL] no icon for {ability} ({h['name']})")
+                continue
+            file = re.sub(r"[^a-z0-9]+", "_", ability.lower()).strip("_") + ".png"
+            (TRIVIA_DIR / "abilities" / file).write_bytes(web.get(url, timeout=30).content)
+            icons.append({"name": ability, "icon": file})
+        h["abilities"] = icons
+    (TRIVIA_DIR / "trivia.json").write_text(json.dumps(heroes, indent=1, ensure_ascii=False), encoding="utf-8")
+    total = sum(len(h["lines"]) for h in heroes)
+    icons = sum(len(h["abilities"]) for h in heroes)
+    print(f"\nSaved {len(heroes)}/{len(HEROES)} heroes, {total} voice lines, {icons} ability icons to {TRIVIA_DIR}")
+    print("CHECKPOINT PASSED - restart the bot, then /trivia"
+          if len(heroes) == len(HEROES) and icons == 4 * len(HEROES) else "CHECKPOINT FAILED - see FAIL lines above")
+    trivia_items(web)
+
+
+def trivia_items(web: requests.Session):
+    """Build assets/trivia/items.json (+ item art) for /trivia's item questions: every shop item (tiers 1-4)
+    with its cost, tier, the % stats on its card and what it upgrades into, from the wiki's item data and English labels."""
+    import json
+    raw = lambda page: web.get("https://deadlock.wiki/index.php", timeout=60,
+                               params={"title": page, "action": "raw"}).json()
+    cards, lang = raw("Data:ItemCards.json"), raw("Data:Lang en.json")
+    slots = {"Weapon": "Weapon", "Armor": "Vitality", "Tech": "Spirit"}
+    items = []
+    into = {}  # component key -> names of the items it builds into
+    for card in cards.values():
+        if card.get("Name") and not card.get("IsDisabled"):
+            for key in card.get("Components") or []:
+                into.setdefault(key, []).append(card["Name"])
+    for card in cards.values():
+        if not card.get("Name") or card.get("IsDisabled") or card.get("Tier") not in (1, 2, 3, 4):
+            continue
+        stats = []
+        for key, info in card.items():
+            if not key.startswith("Info"):
+                continue
+            for s in (info.get("Main") or []) + (info.get("Alt") or []):
+                label, prefix = lang.get(f"{s['Key']}_label"), lang.get(f"{s['Key']}_prefix")
+                if lang.get(f"{s['Key']}_postfix") != "%" or not label or isinstance(s["Value"], str):
+                    continue
+                sign = "+" if prefix == "+" or (prefix == "{s:sign}" and s["Value"] >= 0) else "-" if prefix == "-" else ""
+                stats.append({"label": label, "value": s["Value"], "sign": sign})
+        # a label twice on one card (e.g. innate and active Bullet Resist) would make the blank ambiguous
+        stats = [s for s in stats if sum(t["label"] == s["label"] for t in stats) == 1]
+        items.append({"name": card["Name"], "slot": slots[card["Slot"]], "tier": card["Tier"], "cost": card["Cost"],
+                      "icon": re.sub(r"[^a-z0-9]+", "_", card["Name"].lower()).strip("_") + ".png", "stats": stats,
+                      "into": sorted(into.get(card["Key"], []))})
+
+    (TRIVIA_DIR / "items").mkdir(parents=True, exist_ok=True)
+    urls = {}
+    for i in range(0, len(items), 50):
+        pages = web.get(WIKI_API, timeout=30, params={
+            "action": "query", "titles": "|".join(f"File:{it['name']}.png" for it in items[i:i + 50]),
+            "prop": "imageinfo", "iiprop": "url", "format": "json",
+        }).json()["query"]
+        alias = {n["to"]: n["from"] for n in pages.get("normalized", [])}
+        urls.update({alias.get(p["title"], p["title"]): p["imageinfo"][0]["url"]
+                     for p in pages["pages"].values() if "imageinfo" in p})
+    kept = []
+    for it in items:
+        url = urls.get(f"File:{it['name']}.png")
+        if not url:
+            print(f"[FAIL] no art for {it['name']} (left out)")
+            continue
+        (TRIVIA_DIR / "items" / it["icon"]).write_bytes(web.get(url, timeout=30).content)
+        kept.append(it)
+    kept.sort(key=lambda it: (it["tier"], it["name"]))
+    (TRIVIA_DIR / "items.json").write_text(json.dumps(kept, indent=1, ensure_ascii=False), encoding="utf-8")
+    print(f"\nSaved {len(kept)} items ({sum(len(it['stats']) for it in kept)} % stats) to {TRIVIA_DIR / 'items.json'}")
 
 
 # Stickers copied from other servers: (source sticker id, new name, emoji tag, description, format)
@@ -350,26 +521,9 @@ STICKERS = [
     ("1426338652933460079", "excited", "🤩", "Wide-eyed excited grin", "png"),
     ("1293210080631853076", "golden staff", "🪄", "Showing off a golden staff", "png"),
 ]
-STICKER_DIR = Path(__file__).with_name("assets") / "stickers"
+STICKER_DIR = ASSETS / "stickers"
 STICKER_SIZE = 320               # Discord sticker size
 STICKER_MAX_BYTES = 512 * 1024   # Discord sticker file limit
-
-
-def to_sticker_png(raw: bytes) -> bytes:
-    """Center the image on a transparent 320x320 canvas (keeps its aspect ratio)."""
-    try:
-        from PIL import Image
-    except ImportError:
-        import subprocess
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "pillow"])
-        from PIL import Image
-    img = Image.open(BytesIO(raw)).convert("RGBA")
-    img.thumbnail((STICKER_SIZE, STICKER_SIZE), Image.LANCZOS)
-    canvas = Image.new("RGBA", (STICKER_SIZE, STICKER_SIZE), (0, 0, 0, 0))
-    canvas.paste(img, ((STICKER_SIZE - img.width) // 2, (STICKER_SIZE - img.height) // 2), img)
-    out = BytesIO()
-    canvas.save(out, "PNG", optimize=True)
-    return out.getvalue()
 
 
 def stickers(session: requests.Session):
@@ -388,7 +542,7 @@ def stickers(session: requests.Session):
             print(f"[FAIL] '{name}': couldn't download sticker {sticker_id} ({r.status_code})")
             continue
         # Animated GIFs are uploaded untouched (resizing would drop frames).
-        data = r.content if fmt == "gif" else to_sticker_png(r.content)
+        data = r.content if fmt == "gif" else to_square_png(r.content, STICKER_SIZE)
         path = STICKER_DIR / f"{name.replace(' ', '_')}.{fmt}"
         path.write_bytes(data)
         if len(data) > STICKER_MAX_BYTES:
@@ -426,6 +580,7 @@ LAYOUT = [
         ("rules", TEXT, True),
         ("welcome", TEXT, True),
         ("announcements", ANNOUNCEMENT, True),
+        ("streams-and-uploads", TEXT, True),  # the bot posts Twitch/TikTok go-live alerts here (STREAM_CHANNEL_ID in src/config.js)
         ("roles", TEXT, True),
     ]),
     ("Text Channels", [
@@ -523,6 +678,29 @@ def layout(session: requests.Session):
     print("\nCHECKPOINT PASSED - check the channel list in Discord")
 
 
+def twitch(session: requests.Session):
+    """Ask for the Twitch app's Client ID + Secret, check them with Twitch, save them to .env."""
+    from dotenv import set_key
+    print("Make an app at https://dev.twitch.tv/console/apps (Register Your Application):")
+    print("  Name: anything, e.g. Fairfax Bot | OAuth Redirect URL: https://localhost (then Add) | Category: Chat Bot")
+    print("  Client Type: Confidential. Then Manage -> copy Client ID, press New Secret, copy it.\n")
+    client_id = input("Client ID: ").strip()
+    secret = getpass.getpass("Client Secret (input is hidden): ").strip()
+    r = requests.post("https://id.twitch.tv/oauth2/token", timeout=30, data={
+        "client_id": client_id, "client_secret": secret, "grant_type": "client_credentials"})
+    if not r.ok:
+        sys.exit(f"FAIL: Twitch didn't accept those ({r.status_code}). Nothing saved. Check both and try again.")
+    headers = {"Client-Id": client_id, "Authorization": f"Bearer {r.json()['access_token']}"}
+    login = re.search(r"TWITCH_LOGIN: '([^']+)'", Path(__file__).with_name("src").joinpath("config.js").read_text(encoding="utf-8")).group(1)
+    users = requests.get(f"https://api.twitch.tv/helix/users?login={login}", headers=headers, timeout=30).json().get("data")
+    if not users:
+        sys.exit(f"FAIL: Twitch has no channel called '{login}'. Nothing saved.")
+    set_key(ENV_PATH, "TWITCH_CLIENT_ID", client_id, quote_mode="never")
+    set_key(ENV_PATH, "TWITCH_CLIENT_SECRET", secret, quote_mode="never")
+    print(f"[ok] Keys work and found {users[0]['display_name']} on Twitch. Saved to {ENV_PATH.name}.")
+    print("\nCHECKPOINT PASSED - restart the bot (Start Bot.bat); alerts are on in #streams-and-uploads")
+
+
 COMMANDS = {
     "check": check,
     "community": community,
@@ -531,8 +709,11 @@ COMMANDS = {
     "hero-icons": hero_icons,
     "hero-emojis": hero_emojis,
     "hero-renders": hero_renders,
+    "trivia": trivia,
     "stickers": stickers,
+    "shop-emojis": shop_emojis,
     "layout": layout,
+    "twitch": twitch,
 }
 
 

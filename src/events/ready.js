@@ -1,4 +1,4 @@
-const { isAllowedGuild } = require('../utils/guildLock');
+const { isAllowedGuild } = require('../utils/guild');
 
 module.exports = {
   name: 'clientReady',

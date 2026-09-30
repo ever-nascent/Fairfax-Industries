@@ -1,0 +1,3000 @@
+[
+ {
+  "name": "Close Quarters",
+  "slot": "Weapon",
+  "tier": 1,
+  "cost": 800,
+  "icon": "close_quarters.png",
+  "stats": [
+   {
+    "label": "Melee Resist",
+    "value": 20,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 20,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Point Blank"
+  ]
+ },
+ {
+  "name": "Extended Magazine",
+  "slot": "Weapon",
+  "tier": 1,
+  "cost": 800,
+  "icon": "extended_magazine.png",
+  "stats": [
+   {
+    "label": "Max Ammo",
+    "value": 30,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 8,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Escalating Resilience",
+   "Titanic Magazine"
+  ]
+ },
+ {
+  "name": "Extra Charge",
+  "slot": "Spirit",
+  "tier": 1,
+  "cost": 800,
+  "icon": "extra_charge.png",
+  "stats": [],
+  "into": [
+   "Rapid Recharge"
+  ]
+ },
+ {
+  "name": "Extra Health",
+  "slot": "Vitality",
+  "tier": 1,
+  "cost": 800,
+  "icon": "extra_health.png",
+  "stats": [],
+  "into": [
+   "Colossus",
+   "Fortitude"
+  ]
+ },
+ {
+  "name": "Extra Regen",
+  "slot": "Vitality",
+  "tier": 1,
+  "cost": 800,
+  "icon": "extra_regen.png",
+  "stats": [],
+  "into": [
+   "Healing Booster"
+  ]
+ },
+ {
+  "name": "Extra Spirit",
+  "slot": "Spirit",
+  "tier": 1,
+  "cost": 800,
+  "icon": "extra_spirit.png",
+  "stats": [],
+  "into": [
+   "Improved Spirit",
+   "Surge of Power"
+  ]
+ },
+ {
+  "name": "Extra Stamina",
+  "slot": "Vitality",
+  "tier": 1,
+  "cost": 800,
+  "icon": "extra_stamina.png",
+  "stats": [
+   {
+    "label": "Stamina Recovery",
+    "value": 12,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Arcane Surge",
+   "Kinetic Dash",
+   "Stamina Mastery"
+  ]
+ },
+ {
+  "name": "Golden Goose Egg",
+  "slot": "Spirit",
+  "tier": 1,
+  "cost": 800,
+  "icon": "golden_goose_egg.png",
+  "stats": [
+   {
+    "label": "Damage Penalty",
+    "value": -15,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Grit",
+  "slot": "Vitality",
+  "tier": 1,
+  "cost": 800,
+  "icon": "grit.png",
+  "stats": [],
+  "into": [
+   "Guardian Ward",
+   "Reactive Barrier",
+   "Spirit Shielding",
+   "Weapon Shielding"
+  ]
+ },
+ {
+  "name": "Headshot Booster",
+  "slot": "Weapon",
+  "tier": 1,
+  "cost": 800,
+  "icon": "headshot_booster.png",
+  "stats": [],
+  "into": [
+   "Headhunter"
+  ]
+ },
+ {
+  "name": "Healing Rite",
+  "slot": "Vitality",
+  "tier": 1,
+  "cost": 800,
+  "icon": "healing_rite.png",
+  "stats": [],
+  "into": [
+   "Healing Nova",
+   "Rescue Beam"
+  ]
+ },
+ {
+  "name": "High-Velocity Rounds",
+  "slot": "Weapon",
+  "tier": 1,
+  "cost": 800,
+  "icon": "high_velocity_rounds.png",
+  "stats": [
+   {
+    "label": "Bullet Velocity",
+    "value": 60,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 8,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Armor Piercing Rounds",
+   "Express Shot",
+   "Opening Rounds",
+   "Sharpshooter"
+  ]
+ },
+ {
+  "name": "Melee Lifesteal",
+  "slot": "Vitality",
+  "tier": 1,
+  "cost": 800,
+  "icon": "melee_lifesteal.png",
+  "stats": [
+   {
+    "label": "Melee Damage",
+    "value": 12,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Lifestrike"
+  ]
+ },
+ {
+  "name": "Monster Rounds",
+  "slot": "Weapon",
+  "tier": 1,
+  "cost": 800,
+  "icon": "monster_rounds.png",
+  "stats": [
+   {
+    "label": "Weapon Damage vs. NPCs",
+    "value": 25,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Resist vs. NPCs",
+    "value": 25,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Cultist Sacrifice"
+  ]
+ },
+ {
+  "name": "Mystic Burst",
+  "slot": "Spirit",
+  "tier": 1,
+  "cost": 800,
+  "icon": "mystic_burst.png",
+  "stats": [],
+  "into": [
+   "Tankbuster"
+  ]
+ },
+ {
+  "name": "Mystic Expansion",
+  "slot": "Spirit",
+  "tier": 1,
+  "cost": 800,
+  "icon": "mystic_expansion.png",
+  "stats": [
+   {
+    "label": "Ability Range",
+    "value": 20,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Ballistic Enchantment",
+   "Greater Expansion"
+  ]
+ },
+ {
+  "name": "Mystic Regeneration",
+  "slot": "Spirit",
+  "tier": 1,
+  "cost": 800,
+  "icon": "mystic_regeneration.png",
+  "stats": [],
+  "into": [
+   "Radiant Regeneration"
+  ]
+ },
+ {
+  "name": "Rapid Rounds",
+  "slot": "Weapon",
+  "tier": 1,
+  "cost": 800,
+  "icon": "rapid_rounds.png",
+  "stats": [
+   {
+    "label": "Fire Rate",
+    "value": 9,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Burst Fire",
+   "Swift Striker"
+  ]
+ },
+ {
+  "name": "Rebuttal",
+  "slot": "Vitality",
+  "tier": 1,
+  "cost": 800,
+  "icon": "rebuttal.png",
+  "stats": [
+   {
+    "label": "Melee Resist",
+    "value": 18,
+    "sign": "+"
+   },
+   {
+    "label": "Bonus Damage",
+    "value": 30,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Restorative Shot",
+  "slot": "Weapon",
+  "tier": 1,
+  "cost": 800,
+  "icon": "restorative_shot.png",
+  "stats": [
+   {
+    "label": "Weapon Damage",
+    "value": 6,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Rusted Barrel",
+  "slot": "Spirit",
+  "tier": 1,
+  "cost": 800,
+  "icon": "rusted_barrel.png",
+  "stats": [
+   {
+    "label": "Fire Rate",
+    "value": 32,
+    "sign": "-"
+   },
+   {
+    "label": "Bullet Resist",
+    "value": -8,
+    "sign": ""
+   }
+  ],
+  "into": [
+   "Disarming Hex"
+  ]
+ },
+ {
+  "name": "Spirit Strike",
+  "slot": "Spirit",
+  "tier": 1,
+  "cost": 800,
+  "icon": "spirit_strike.png",
+  "stats": [],
+  "into": [
+   "Spirit Snatch"
+  ]
+ },
+ {
+  "name": "Sprint Boots",
+  "slot": "Vitality",
+  "tier": 1,
+  "cost": 800,
+  "icon": "sprint_boots.png",
+  "stats": [],
+  "into": [
+   "Enduring Speed",
+   "Shadow Weave",
+   "Trophy Collector"
+  ]
+ },
+ {
+  "name": "Active Reload",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "active_reload.png",
+  "stats": [
+   {
+    "label": "Max Ammo",
+    "value": 20,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 25,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Lifesteal",
+    "value": 16,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Arcane Surge",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "arcane_surge.png",
+  "stats": [
+   {
+    "label": "Stamina Recovery",
+    "value": 12,
+    "sign": "+"
+   },
+   {
+    "label": "Ability Range",
+    "value": 12,
+    "sign": "+"
+   },
+   {
+    "label": "Ability Duration",
+    "value": 15,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Battle Vest",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "battle_vest.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 18,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 18,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 7,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Bullet Lifesteal",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "bullet_lifesteal.png",
+  "stats": [
+   {
+    "label": "Bullet Lifesteal",
+    "value": 13,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 6,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Fury Trance",
+   "Leech",
+   "Vampiric Burst"
+  ]
+ },
+ {
+  "name": "Bullet Resist Shredder",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "bullet_resist_shredder.png",
+  "stats": [
+   {
+    "label": "Weapon Damage",
+    "value": 9,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Cold Front",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "cold_front.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 6,
+    "sign": "+"
+   },
+   {
+    "label": "Move Speed",
+    "value": 48,
+    "sign": "-"
+   }
+  ],
+  "into": [
+   "Arctic Blast"
+  ]
+ },
+ {
+  "name": "Compress Cooldown",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "compress_cooldown.png",
+  "stats": [
+   {
+    "label": "Ability Cooldown Reduction",
+    "value": 18,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Superior Cooldown"
+  ]
+ },
+ {
+  "name": "Debuff Reducer",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "debuff_reducer.png",
+  "stats": [
+   {
+    "label": "Debuff Resist",
+    "value": 25,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Spellbreaker",
+   "Unstoppable"
+  ]
+ },
+ {
+  "name": "Duration Extender",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "duration_extender.png",
+  "stats": [
+   {
+    "label": "Ability Duration",
+    "value": 22,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Superior Duration"
+  ]
+ },
+ {
+  "name": "Enchanter's Emblem",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "enchanter_s_emblem.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 18,
+    "sign": "+"
+   },
+   {
+    "label": "Ability Cooldown Reduction",
+    "value": 5,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Enduring Speed",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "enduring_speed.png",
+  "stats": [
+   {
+    "label": "Slow Resist",
+    "value": 25,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Juggernaut"
+  ]
+ },
+ {
+  "name": "Fleetfoot",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "fleetfoot.png",
+  "stats": [
+   {
+    "label": "Weapon Damage",
+    "value": 6,
+    "sign": "+"
+   },
+   {
+    "label": "Slide Distance",
+    "value": 35,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Resist",
+    "value": 6,
+    "sign": "+"
+   },
+   {
+    "label": "Slow Resist",
+    "value": 40,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Guardian Ward",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "guardian_ward.png",
+  "stats": [
+   {
+    "label": "Ability Range",
+    "value": 8,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Divine Barrier"
+  ]
+ },
+ {
+  "name": "Healbane",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "healbane.png",
+  "stats": [
+   {
+    "label": "Healing Reduction",
+    "value": -35,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Healing Booster",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "healing_booster.png",
+  "stats": [
+   {
+    "label": "Healing Effectiveness",
+    "value": 20,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Healing Tempo"
+  ]
+ },
+ {
+  "name": "Improved Spirit",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "improved_spirit.png",
+  "stats": [],
+  "into": [
+   "Boundless Spirit"
+  ]
+ },
+ {
+  "name": "Intensifying Magazine",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "intensifying_magazine.png",
+  "stats": [
+   {
+    "label": "Max Ammo",
+    "value": 20,
+    "sign": "+"
+   },
+   {
+    "label": "Max Weapon Damage",
+    "value": 45,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Kinetic Dash",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "kinetic_dash.png",
+  "stats": [
+   {
+    "label": "Stamina Recovery",
+    "value": 12,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 25,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Long Range",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "long_range.png",
+  "stats": [
+   {
+    "label": "Weapon Fall-off Range",
+    "value": 8,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 40,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Sharpshooter"
+  ]
+ },
+ {
+  "name": "Melee Charge",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "melee_charge.png",
+  "stats": [
+   {
+    "label": "Heavy Melee Distance",
+    "value": 50,
+    "sign": "+"
+   },
+   {
+    "label": "Melee Damage",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Resist",
+    "value": 6,
+    "sign": "+"
+   },
+   {
+    "label": "Bonus Heavy Damage",
+    "value": 25,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Crushing Fists"
+  ]
+ },
+ {
+  "name": "Mystic Shot",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "mystic_shot.png",
+  "stats": [],
+  "into": []
+ },
+ {
+  "name": "Mystic Slow",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "mystic_slow.png",
+  "stats": [
+   {
+    "label": "Move Speed",
+    "value": 24,
+    "sign": "-"
+   },
+   {
+    "label": "Dash Distance",
+    "value": -10,
+    "sign": ""
+   }
+  ],
+  "into": [
+   "Lightning Scroll"
+  ]
+ },
+ {
+  "name": "Mystic Vulnerability",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "mystic_vulnerability.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 8,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Escalating Exposure"
+  ]
+ },
+ {
+  "name": "Opening Rounds",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "opening_rounds.png",
+  "stats": [
+   {
+    "label": "Bullet Velocity",
+    "value": 60,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Quicksilver Reload",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "quicksilver_reload.png",
+  "stats": [
+   {
+    "label": "Fire Rate",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Bullets Reloaded",
+    "value": 100,
+    "sign": ""
+   }
+  ],
+  "into": [
+   "Mercurial Magnum"
+  ]
+ },
+ {
+  "name": "Reactive Barrier",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "reactive_barrier.png",
+  "stats": [],
+  "into": [
+   "Indomitable"
+  ]
+ },
+ {
+  "name": "Recharging Rush",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "recharging_rush.png",
+  "stats": [
+   {
+    "label": "Max Ammo",
+    "value": 20,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 10,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Restorative Locket",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "restorative_locket.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 8,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Return Fire",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "return_fire.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Damage Returned",
+    "value": 65,
+    "sign": ""
+   },
+   {
+    "label": "Spirit Damage Returned",
+    "value": 25,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Slowing Bullets",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "slowing_bullets.png",
+  "stats": [
+   {
+    "label": "Move Speed",
+    "value": 24,
+    "sign": "-"
+   },
+   {
+    "label": "Dash Distance",
+    "value": -20,
+    "sign": ""
+   }
+  ],
+  "into": [
+   "Weighted Shots"
+  ]
+ },
+ {
+  "name": "Slowing Hex",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "slowing_hex.png",
+  "stats": [
+   {
+    "label": "Move Speed",
+    "value": 16,
+    "sign": "-"
+   },
+   {
+    "label": "Dash Distance",
+    "value": -26,
+    "sign": ""
+   }
+  ],
+  "into": [
+   "Vortex Web"
+  ]
+ },
+ {
+  "name": "Spirit Lifesteal",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "spirit_lifesteal.png",
+  "stats": [
+   {
+    "label": "Spirit Lifesteal",
+    "value": 13,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Infuser",
+   "Leech",
+   "Spiritual Overflow"
+  ]
+ },
+ {
+  "name": "Spirit Sap",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "spirit_sap.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": -9,
+    "sign": ""
+   }
+  ],
+  "into": [
+   "Focus Lens"
+  ]
+ },
+ {
+  "name": "Spirit Shielding",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "spirit_shielding.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 18,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Spirit Shredder Bullets",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "spirit_shredder_bullets.png",
+  "stats": [
+   {
+    "label": "Spirit Lifesteal",
+    "value": 10,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Spirit Rend"
+  ]
+ },
+ {
+  "name": "Split Shot",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "split_shot.png",
+  "stats": [
+   {
+    "label": "Weapon Damage per Stack",
+    "value": 8,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Stalker",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "stalker.png",
+  "stats": [
+   {
+    "label": "Footstep Sound Distance",
+    "value": -50,
+    "sign": ""
+   },
+   {
+    "label": "Bullet Resist",
+    "value": -6,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Suppressor",
+  "slot": "Spirit",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "suppressor.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 8,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 28,
+    "sign": "-"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Swift Striker",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "swift_striker.png",
+  "stats": [
+   {
+    "label": "Fire Rate",
+    "value": 20,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Titanic Magazine",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "titanic_magazine.png",
+  "stats": [
+   {
+    "label": "Max Ammo",
+    "value": 100,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 14,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Trophy Collector",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "trophy_collector.png",
+  "stats": [
+   {
+    "label": "Weapon Damage vs. NPCs",
+    "value": -15,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Weakening Headshot",
+  "slot": "Weapon",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "weakening_headshot.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": -12,
+    "sign": ""
+   }
+  ],
+  "into": [
+   "Crippling Headshot"
+  ]
+ },
+ {
+  "name": "Weapon Shielding",
+  "slot": "Vitality",
+  "tier": 2,
+  "cost": 1600,
+  "icon": "weapon_shielding.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 18,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Alchemical Fire",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "alchemical_fire.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": -7,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Ballistic Enchantment",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "ballistic_enchantment.png",
+  "stats": [
+   {
+    "label": "Weapon Damage per Stack",
+    "value": 20,
+    "sign": "+"
+   },
+   {
+    "label": "Ability Range",
+    "value": 22,
+    "sign": "+"
+   },
+   {
+    "label": "Non-Hero Weapon Damage",
+    "value": 5,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Berserker",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "berserker.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 8,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage per Stack",
+    "value": 7,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Blood Tribute",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "blood_tribute.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 8,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 35,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Bullet Resilience",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "bullet_resilience.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 30,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Burst Fire",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "burst_fire.png",
+  "stats": [
+   {
+    "label": "Slide Distance",
+    "value": 50,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Counterspell",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "counterspell.png",
+  "stats": [],
+  "into": []
+ },
+ {
+  "name": "Cultist Sacrifice",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "cultist_sacrifice.png",
+  "stats": [
+   {
+    "label": "Weapon Damage vs. NPCs",
+    "value": 30,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Resist vs. NPCs",
+    "value": 30,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Ability Range",
+    "value": 12,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Decay",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "decay.png",
+  "stats": [
+   {
+    "label": "Healing Reduction",
+    "value": -50,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Disarming Hex",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "disarming_hex.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": -13,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Dispel Magic",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "dispel_magic.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 10,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Escalating Resilience",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "escalating_resilience.png",
+  "stats": [
+   {
+    "label": "Max Ammo",
+    "value": 35,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 18,
+    "sign": "+"
+   },
+   {
+    "label": "Max Bullet Resist",
+    "value": 30,
+    "sign": ""
+   },
+   {
+    "label": "Bullet Resist per Stack",
+    "value": 2,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Express Shot",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "express_shot.png",
+  "stats": [
+   {
+    "label": "Bullet Velocity",
+    "value": 60,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 8,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Fortitude",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "fortitude.png",
+  "stats": [
+   {
+    "label": "Max Health Regen",
+    "value": 2.25,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Fury Trance",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "fury_trance.png",
+  "stats": [
+   {
+    "label": "Bullet Lifesteal",
+    "value": 14,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 6,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 32,
+    "sign": ""
+   },
+   {
+    "label": "Spirit Resist",
+    "value": 40,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Greater Expansion",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "greater_expansion.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Ability Range",
+    "value": 30,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Headhunter",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "headhunter.png",
+  "stats": [
+   {
+    "label": "Weapon Damage",
+    "value": 5,
+    "sign": "+"
+   },
+   {
+    "label": "Heal Per Headshot",
+    "value": 4,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Healing Nova",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "healing_nova.png",
+  "stats": [
+   {
+    "label": "Ability Range",
+    "value": 5,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Heroic Aura",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "heroic_aura.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 17,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 26,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Hollow Point",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "hollow_point.png",
+  "stats": [
+   {
+    "label": "Weapon Damage",
+    "value": 35,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Resist",
+    "value": -10,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Hunter's Aura",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "hunter_s_aura.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": -10,
+    "sign": ""
+   },
+   {
+    "label": "Fire Rate",
+    "value": 15,
+    "sign": "-"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Knockdown",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "knockdown.png",
+  "stats": [
+   {
+    "label": "Ability Range",
+    "value": 5,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Lifestrike",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "lifestrike.png",
+  "stats": [
+   {
+    "label": "Melee Damage",
+    "value": 16,
+    "sign": "+"
+   },
+   {
+    "label": "Move Speed",
+    "value": 48,
+    "sign": "-"
+   },
+   {
+    "label": "Melee Hit Heal",
+    "value": 35,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Majestic Leap",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "majestic_leap.png",
+  "stats": [
+   {
+    "label": "Air Control",
+    "value": 50,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Metal Skin",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "metal_skin.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 12,
+    "sign": "+"
+   },
+   {
+    "label": "Dash Distance",
+    "value": -20,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Point Blank",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "point_blank.png",
+  "stats": [
+   {
+    "label": "Melee Resist",
+    "value": 30,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 50,
+    "sign": "+"
+   },
+   {
+    "label": "Move Speed",
+    "value": 20,
+    "sign": "-"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Radiant Regeneration",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "radiant_regeneration.png",
+  "stats": [],
+  "into": []
+ },
+ {
+  "name": "Rapid Recharge",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "rapid_recharge.png",
+  "stats": [
+   {
+    "label": "Faster Time Between Charges",
+    "value": 30,
+    "sign": "+"
+   },
+   {
+    "label": "Cooldown Reduction For Charged Abilities",
+    "value": 14,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Rescue Beam",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "rescue_beam.png",
+  "stats": [
+   {
+    "label": "Ability Range",
+    "value": 6,
+    "sign": "+"
+   },
+   {
+    "label": "Heal Amount",
+    "value": 20,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Shadow Weave",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "shadow_weave.png",
+  "stats": [
+   {
+    "label": "Ambush Fire Rate",
+    "value": 25,
+    "sign": "+"
+   },
+   {
+    "label": "Ambush Melee Damage",
+    "value": 25,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Sharpshooter",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "sharpshooter.png",
+  "stats": [
+   {
+    "label": "Weapon Fall-off Range",
+    "value": 20,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Zoom",
+    "value": 25,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Velocity",
+    "value": 60,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Silence Wave",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "silence_wave.png",
+  "stats": [],
+  "into": []
+ },
+ {
+  "name": "Spirit Rend",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "spirit_rend.png",
+  "stats": [
+   {
+    "label": "Spirit Lifesteal",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Spirit Resist",
+    "value": -7,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Spirit Resilience",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "spirit_resilience.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 30,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Spirit Snatch",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "spirit_snatch.png",
+  "stats": [
+   {
+    "label": "Melee Damage",
+    "value": 7,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Stamina Mastery",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "stamina_mastery.png",
+  "stats": [
+   {
+    "label": "Stamina Recovery",
+    "value": 18,
+    "sign": "+"
+   },
+   {
+    "label": "Air Jump/Dash Distance",
+    "value": 23,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Superior Cooldown",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "superior_cooldown.png",
+  "stats": [
+   {
+    "label": "Ability Cooldown Reduction",
+    "value": 20,
+    "sign": "+"
+   }
+  ],
+  "into": [
+   "Transcendent Cooldown"
+  ]
+ },
+ {
+  "name": "Superior Duration",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "superior_duration.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 8,
+    "sign": "+"
+   },
+   {
+    "label": "Ability Duration",
+    "value": 28,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Surge of Power",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "surge_of_power.png",
+  "stats": [
+   {
+    "label": "Fire Rate Bonus",
+    "value": 20,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Tankbuster",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "tankbuster.png",
+  "stats": [
+   {
+    "label": "Current Health Damage",
+    "value": 7.5,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Tesla Bullets",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "tesla_bullets.png",
+  "stats": [
+   {
+    "label": "Proc Chance",
+    "value": 15,
+    "sign": ""
+   }
+  ],
+  "into": [
+   "Capacitor"
+  ]
+ },
+ {
+  "name": "Torment Pulse",
+  "slot": "Spirit",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "torment_pulse.png",
+  "stats": [
+   {
+    "label": "Melee Resist",
+    "value": 18,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Toxic Bullets",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "toxic_bullets.png",
+  "stats": [
+   {
+    "label": "Healing Reduction",
+    "value": -35,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Veil Walker",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "veil_walker.png",
+  "stats": [],
+  "into": []
+ },
+ {
+  "name": "Warp Stone",
+  "slot": "Vitality",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "warp_stone.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 30,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Weighted Shots",
+  "slot": "Weapon",
+  "tier": 3,
+  "cost": 3200,
+  "icon": "weighted_shots.png",
+  "stats": [
+   {
+    "label": "Weapon Damage",
+    "value": 30,
+    "sign": "+"
+   },
+   {
+    "label": "Debuff Resist",
+    "value": 22,
+    "sign": "+"
+   },
+   {
+    "label": "Stamina Recovery",
+    "value": -14,
+    "sign": ""
+   },
+   {
+    "label": "Move Speed",
+    "value": 24,
+    "sign": "-"
+   },
+   {
+    "label": "Dash Distance",
+    "value": -20,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Arctic Blast",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "arctic_blast.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 10,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Armor Piercing Rounds",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "armor_piercing_rounds.png",
+  "stats": [
+   {
+    "label": "Bullet Velocity",
+    "value": 60,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 8,
+    "sign": "+"
+   },
+   {
+    "label": "Proc Chance",
+    "value": 55,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Boundless Spirit",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "boundless_spirit.png",
+  "stats": [
+   {
+    "label": "Spirit Power",
+    "value": 15,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Capacitor",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "capacitor.png",
+  "stats": [
+   {
+    "label": "Fire Rate",
+    "value": 5,
+    "sign": "+"
+   },
+   {
+    "label": "Proc Chance",
+    "value": 20,
+    "sign": ""
+   },
+   {
+    "label": "Max Move Speed",
+    "value": 60,
+    "sign": "-"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Cheat Death",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "cheat_death.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 15,
+    "sign": "+"
+   },
+   {
+    "label": "Damage Reduction",
+    "value": -60,
+    "sign": ""
+   },
+   {
+    "label": "Healing Reduction",
+    "value": -60,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Colossus",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "colossus.png",
+  "stats": [
+   {
+    "label": "Base Health",
+    "value": 25,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 15,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Resist",
+    "value": 35,
+    "sign": ""
+   },
+   {
+    "label": "Spirit Resist",
+    "value": 35,
+    "sign": ""
+   },
+   {
+    "label": "Melee Damage",
+    "value": 30,
+    "sign": "+"
+   },
+   {
+    "label": "Move Speed",
+    "value": 24,
+    "sign": "-"
+   },
+   {
+    "label": "Model Scale",
+    "value": 20,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Crippling Headshot",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "crippling_headshot.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": -16,
+    "sign": ""
+   },
+   {
+    "label": "Spirit Resist",
+    "value": -16,
+    "sign": ""
+   },
+   {
+    "label": "Healing Reduction",
+    "value": -35,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Crushing Fists",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "crushing_fists.png",
+  "stats": [
+   {
+    "label": "Heavy Melee Distance",
+    "value": 60,
+    "sign": "+"
+   },
+   {
+    "label": "Melee Damage",
+    "value": 22,
+    "sign": "+"
+   },
+   {
+    "label": "Bonus Heavy Damage",
+    "value": 25,
+    "sign": "+"
+   },
+   {
+    "label": "Ammo",
+    "value": 15,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Cursed Relic",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "cursed_relic.png",
+  "stats": [
+   {
+    "label": "Damage Penalty",
+    "value": -25,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Divine Barrier",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "divine_barrier.png",
+  "stats": [
+   {
+    "label": "Ability Range",
+    "value": 10,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Diviner's Kevlar",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "diviner_s_kevlar.png",
+  "stats": [
+   {
+    "label": "Ability Duration",
+    "value": 15,
+    "sign": "+"
+   },
+   {
+    "label": "Ultimate Cooldown Reduction",
+    "value": 10,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Echo Shard",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "echo_shard.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 5,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Resist",
+    "value": 5,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Escalating Exposure",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "escalating_exposure.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 17,
+    "sign": "+"
+   },
+   {
+    "label": "Spirit Amp per Stack",
+    "value": 4.5,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Ethereal Shift",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "ethereal_shift.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 30,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Focus Lens",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "focus_lens.png",
+  "stats": [
+   {
+    "label": "Fire Rate",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Damage On Expire",
+    "value": 35,
+    "sign": ""
+   },
+   {
+    "label": "Spirit Resist",
+    "value": -9,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Frenzy",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "frenzy.png",
+  "stats": [
+   {
+    "label": "Bullet Lifesteal",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Debuff Resist",
+    "value": 40,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Glass Cannon",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "glass_cannon.png",
+  "stats": [
+   {
+    "label": "Weapon Damage",
+    "value": 80,
+    "sign": "+"
+   },
+   {
+    "label": "Max Health",
+    "value": -13,
+    "sign": ""
+   },
+   {
+    "label": "Fire Rate per Kill",
+    "value": 7,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Healing Tempo",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "healing_tempo.png",
+  "stats": [
+   {
+    "label": "Healing Effectiveness",
+    "value": 25,
+    "sign": "+"
+   },
+   {
+    "label": "Spirit Resist",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 35,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Indomitable",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "indomitable.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Spirit Resist",
+    "value": 10,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Infuser",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "infuser.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 10,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Inhibitor",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "inhibitor.png",
+  "stats": [
+   {
+    "label": "Weapon Damage",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Damage Penalty",
+    "value": -30,
+    "sign": ""
+   },
+   {
+    "label": "Healing Reduction",
+    "value": -40,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Juggernaut",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "juggernaut.png",
+  "stats": [
+   {
+    "label": "Slow Resist",
+    "value": 50,
+    "sign": "+"
+   },
+   {
+    "label": "Melee Resist",
+    "value": 25,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 40,
+    "sign": "-"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Leech",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "leech.png",
+  "stats": [
+   {
+    "label": "Spirit Lifesteal",
+    "value": 28,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Lifesteal",
+    "value": 28,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 12,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Lightning Scroll",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "lightning_scroll.png",
+  "stats": [
+   {
+    "label": "Move Speed",
+    "value": 24,
+    "sign": "-"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Lucky Shot",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "lucky_shot.png",
+  "stats": [
+   {
+    "label": "Max Ammo",
+    "value": 30,
+    "sign": "+"
+   },
+   {
+    "label": "Bonus Weapon Damage",
+    "value": 100,
+    "sign": "+"
+   },
+   {
+    "label": "Proc Chance",
+    "value": 25,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Magic Carpet",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "magic_carpet.png",
+  "stats": [
+   {
+    "label": "Ability Duration",
+    "value": 15,
+    "sign": "+"
+   },
+   {
+    "label": "Gravity Scale",
+    "value": -15,
+    "sign": ""
+   },
+   {
+    "label": "Air Control",
+    "value": 25,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Mercurial Magnum",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "mercurial_magnum.png",
+  "stats": [
+   {
+    "label": "Max Ammo",
+    "value": 20,
+    "sign": "+"
+   },
+   {
+    "label": "Base Bullet Damage",
+    "value": 20,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 22,
+    "sign": "+"
+   },
+   {
+    "label": "Bullets Reloaded",
+    "value": 100,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Mystic Reverb",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "mystic_reverb.png",
+  "stats": [
+   {
+    "label": "Spirit Lifesteal",
+    "value": 8,
+    "sign": "+"
+   },
+   {
+    "label": "Imbued Lifesteal",
+    "value": 22,
+    "sign": "+"
+   },
+   {
+    "label": "Move Speed",
+    "value": 32,
+    "sign": "-"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Phantom Strike",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "phantom_strike.png",
+  "stats": [
+   {
+    "label": "Weapon Damage",
+    "value": 15,
+    "sign": "+"
+   },
+   {
+    "label": "Move Speed",
+    "value": 40,
+    "sign": "-"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Plated Armor",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "plated_armor.png",
+  "stats": [
+   {
+    "label": "Deflection Percent",
+    "value": 30,
+    "sign": ""
+   },
+   {
+    "label": "On-Hit Prevention Percent",
+    "value": 50,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Refresher",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "refresher.png",
+  "stats": [],
+  "into": []
+ },
+ {
+  "name": "Ricochet",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "ricochet.png",
+  "stats": [
+   {
+    "label": "Fire Rate",
+    "value": 18,
+    "sign": "+"
+   },
+   {
+    "label": "Ricochet Damage",
+    "value": 65,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Scourge",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "scourge.png",
+  "stats": [
+   {
+    "label": "Max Health per second",
+    "value": 2.3,
+    "sign": ""
+   },
+   {
+    "label": "Spirit Resist",
+    "value": 40,
+    "sign": "+"
+   },
+   {
+    "label": "Debuff Resist",
+    "value": 20,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Silencer",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "silencer.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 12,
+    "sign": "+"
+   },
+   {
+    "label": "Spirit Damage Reduction",
+    "value": -25,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Siphon Bullets",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "siphon_bullets.png",
+  "stats": [
+   {
+    "label": "Weapon Damage",
+    "value": 15,
+    "sign": "+"
+   },
+   {
+    "label": "Bullet Resist",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Hero Lifesteal",
+    "value": 2.5,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Spellbreaker",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "spellbreaker.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 18,
+    "sign": "+"
+   },
+   {
+    "label": "Debuff Resist",
+    "value": 25,
+    "sign": "+"
+   },
+   {
+    "label": "Spirit Damage Reduction",
+    "value": 65,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Spellslinger",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "spellslinger.png",
+  "stats": [
+   {
+    "label": "Ability Cooldown Reduction",
+    "value": 5,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 11,
+    "sign": "+"
+   },
+   {
+    "label": "Reload Time",
+    "value": -10,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Spirit Burn",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "spirit_burn.png",
+  "stats": [
+   {
+    "label": "Ability Range",
+    "value": 6,
+    "sign": "+"
+   },
+   {
+    "label": "Healing Reduction",
+    "value": -70,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Spiritual Overflow",
+  "slot": "Weapon",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "spiritual_overflow.png",
+  "stats": [
+   {
+    "label": "Ability Duration",
+    "value": 13,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 25,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Transcendent Cooldown",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "transcendent_cooldown.png",
+  "stats": [
+   {
+    "label": "Ability Cooldown Reduction",
+    "value": 25,
+    "sign": "+"
+   },
+   {
+    "label": "Item Cooldown Reduction",
+    "value": 25,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Unstoppable",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "unstoppable.png",
+  "stats": [
+   {
+    "label": "Debuff Resist",
+    "value": 25,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Vampiric Burst",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "vampiric_burst.png",
+  "stats": [
+   {
+    "label": "Bullet Resist",
+    "value": 10,
+    "sign": "+"
+   },
+   {
+    "label": "Weapon Damage",
+    "value": 6,
+    "sign": "+"
+   },
+   {
+    "label": "Fire Rate",
+    "value": 34,
+    "sign": ""
+   },
+   {
+    "label": "Ammo",
+    "value": 75,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Vortex Web",
+  "slot": "Spirit",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "vortex_web.png",
+  "stats": [
+   {
+    "label": "Ability Range",
+    "value": 8,
+    "sign": "+"
+   },
+   {
+    "label": "Move Speed",
+    "value": 28,
+    "sign": "-"
+   },
+   {
+    "label": "Dash Distance",
+    "value": -36,
+    "sign": ""
+   }
+  ],
+  "into": []
+ },
+ {
+  "name": "Witchmail",
+  "slot": "Vitality",
+  "tier": 4,
+  "cost": 6400,
+  "icon": "witchmail.png",
+  "stats": [
+   {
+    "label": "Spirit Resist",
+    "value": 22,
+    "sign": "+"
+   }
+  ],
+  "into": []
+ }
+]

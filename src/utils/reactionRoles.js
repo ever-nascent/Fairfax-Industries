@@ -1,13 +1,16 @@
 const { EmbedBuilder } = require('discord.js');
 const { getStore } = require('../storage');
 const { BRAND_COLOR } = require('../config');
+const { isAllowedGuild } = require('./guild');
 
 // Discord allows 20 unique reactions per message.
 const MAX_OPTIONS = 20;
 
-function store() {
-  return getStore('reactionRoleMenus');
-}
+// Reason on role changes from a menu; the audit log shows these as picked by the member (see auditLog.js).
+const SELF_PICKED = 'Self-picked from a #roles menu';
+
+// Posted menus. key: message id
+const store = () => getStore('reactionRoleMenus');
 
 // Unposted drafts, one per (server, member). Saved to data/ so a restart doesn't lose them.
 const drafts = () => getStore('reactionRoleDrafts');
@@ -86,6 +89,20 @@ async function deleteMenu(messageId) {
   await store().delete(messageId);
 }
 
+// A reaction on a posted menu: { menu, roleId, member }, or null if it's nothing to act on
+// (a bot, another server, a message that isn't a menu, an emoji that isn't on the menu).
+async function menuReaction(reaction, user) {
+  if (user.bot) return null;
+  if (reaction.partial) reaction = await reaction.fetch().catch(() => reaction);
+  const { guild } = reaction.message;
+  if (!guild || !isAllowedGuild(guild.id)) return null;
+  const menu = await getMenu(reaction.message.id);
+  const roleId = menu?.roles[emojiKey(reaction.emoji)];
+  if (!roleId) return null;
+  const member = await guild.members.fetch(user.id).catch(() => null);
+  return member && { menu, roleId, member, message: reaction.message };
+}
+
 async function listMenus(guildId) {
   const all = await store().all();
   return Object.entries(all).filter(([, menu]) => menu.guildId === guildId);
@@ -93,6 +110,7 @@ async function listMenus(guildId) {
 
 module.exports = {
   MAX_OPTIONS,
+  SELF_PICKED,
   startDraft,
   getDraft,
   saveDraft,
@@ -106,6 +124,6 @@ module.exports = {
   getMenu,
   deleteMenu,
   listMenus,
-  parseEmoji,
+  menuReaction,
   emojiKey,
 };

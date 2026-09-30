@@ -18,7 +18,14 @@ async function main() {
       GatewayIntentBits.GuildMembers, // needed to give/remove roles
       GatewayIntentBits.GuildMessageReactions, // needed to see reactions
       GatewayIntentBits.GuildVoiceStates, // needed to see who is in LFG lobbies / voice XP
-      GatewayIntentBits.GuildMessages, // chat XP (message content isn't needed)
+      GatewayIntentBits.GuildMessages, // chat XP, audit log
+      // Audit log: message text (privileged, switched on in the Developer Portal), Discord's own audit log entries,
+      // invite uses, AutoMod actions, poll votes.
+      GatewayIntentBits.MessageContent,
+      GatewayIntentBits.GuildModeration,
+      GatewayIntentBits.GuildInvites,
+      GatewayIntentBits.AutoModerationExecution,
+      GatewayIntentBits.GuildMessagePolls,
     ],
     // Partials let the bot react to reactions on messages posted before it started.
     partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User, Partials.GuildMember],

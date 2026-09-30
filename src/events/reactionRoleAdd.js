@@ -1,36 +1,23 @@
-const { isAllowedGuild } = require('../utils/guildLock');
-const { getMenu, emojiKey } = require('../utils/reactionRoles');
+const { menuReaction, emojiKey, SELF_PICKED } = require('../utils/reactionRoles');
 
+// Reacting on a menu gives the role. Single-choice menus also take back the member's other choice.
 module.exports = {
   name: 'messageReactionAdd',
   async execute(reaction, user) {
-    if (user.bot) return;
-    if (reaction.partial) reaction = await reaction.fetch().catch(() => reaction);
-    if (!reaction.message.guild || !isAllowedGuild(reaction.message.guild.id)) return;
-
-    const menu = await getMenu(reaction.message.id);
-    if (!menu) return;
-
-    const roleId = menu.roles[emojiKey(reaction.emoji)];
-    if (!roleId) return;
-
-    const member = await reaction.message.guild.members.fetch(user.id).catch(() => null);
-    if (!member) return;
+    const found = await menuReaction(reaction, user);
+    if (!found) return;
+    const { menu, roleId, member, message } = found;
 
     if (menu.mode === 'single') {
-      const message = await reaction.message.fetch().catch(() => null);
-      if (message) {
-        for (const otherReaction of message.reactions.cache.values()) {
-          const otherRoleId = menu.roles[emojiKey(otherReaction.emoji)];
-          if (!otherRoleId || otherRoleId === roleId) continue;
-          await otherReaction.users.remove(user.id).catch(() => null);
-          if (member.roles.cache.has(otherRoleId)) await member.roles.remove(otherRoleId).catch(() => null);
-        }
+      const full = await message.fetch().catch(() => null);
+      for (const other of full?.reactions.cache.values() ?? []) {
+        const otherRoleId = menu.roles[emojiKey(other.emoji)];
+        if (!otherRoleId || otherRoleId === roleId) continue;
+        await other.users.remove(user.id).catch(() => null);
+        if (member.roles.cache.has(otherRoleId)) await member.roles.remove(otherRoleId, SELF_PICKED).catch(() => null);
       }
     }
 
-    await member.roles
-      .add(roleId)
-      .catch((error) => console.error('[reactionRoles] Failed to add role:', error.message));
+    await member.roles.add(roleId, SELF_PICKED).catch((error) => console.error('[reactionRoles] Failed to add role:', error.message));
   },
 };
