@@ -10,11 +10,38 @@ function filePathFor(collection) {
   return path.join(DATA_DIR, `${collection}.json`);
 }
 
+// Each collection is read from disk once and kept in memory; every write goes to disk too (write-through).
+// Only this process writes data/, so the copy can't go stale. Callers get clones, so nothing they do to a
+// returned value changes the cache without going through set/update.
+const cache = new Map(); // collection -> parsed data
+const pending = new Set(); // collections changed in memory but not yet on disk (deferred writes)
+let flushTimer = null;
+const FLUSH_MS = 5000;
+
 function readCollection(collection) {
-  const filePath = filePathFor(collection);
-  if (!fs.existsSync(filePath)) return {};
-  return JSON.parse(fs.readFileSync(filePath, 'utf8') || '{}');
+  if (!cache.has(collection)) {
+    const filePath = filePathFor(collection);
+    cache.set(collection, fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8') || '{}') : {});
+  }
+  return cache.get(collection);
 }
+
+// Writes every collection with deferred changes, synchronously (also runs on exit).
+function flushPending() {
+  clearTimeout(flushTimer);
+  flushTimer = null;
+  for (const collection of pending) {
+    try {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      fs.writeFileSync(filePathFor(collection), JSON.stringify(cache.get(collection), null, 2));
+    } catch (error) {
+      console.error(`[storage] Could not save ${collection}:`, error.message);
+      continue;
+    }
+    pending.delete(collection);
+  }
+}
+process.on('exit', flushPending);
 
 const RETRYABLE_RENAME_CODES = new Set(['EPERM', 'EBUSY', 'EACCES']);
 const RENAME_RETRY_DELAYS_MS = [25, 50, 100, 200, 400];
@@ -26,6 +53,7 @@ const RENAME_RETRY_DELAYS_MS = [25, 50, 100, 200, 400];
 // fall back to a plain copy (non-atomic, but far better than losing the write
 // or crashing the caller).
 async function writeCollection(collection, data) {
+  pending.delete(collection); // this write carries any deferred changes too
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const filePath = filePathFor(collection);
   const tmpPath = `${filePath}.${process.pid}.tmp`;
@@ -60,12 +88,12 @@ async function writeCollection(collection, data) {
 function createJsonStore(collection) {
   return {
     async get(key) {
-      return readCollection(collection)[key] ?? null;
+      return structuredClone(readCollection(collection)[key] ?? null);
     },
     async set(key, value) {
       return withLock(collection, async () => {
         const data = readCollection(collection);
-        data[key] = value;
+        data[key] = structuredClone(value);
         await writeCollection(collection, data);
         return value;
       });
@@ -81,14 +109,18 @@ function createJsonStore(collection) {
     // persist the result. The whole sequence holds the collection lock, so
     // concurrent updates can't lose each other's writes. If `mutator` returns the
     // value it was given unchanged, nothing is written.
-    async update(key, mutator) {
+    // `defer: true`: the change is kept in memory and written within FLUSH_MS (or by the next normal write to
+    // this collection, or on exit). Only for changes that can be lost in a crash, like chat XP.
+    async update(key, mutator, { defer = false } = {}) {
       return withLock(collection, async () => {
         const data = readCollection(collection);
-        const current = data[key] ?? null;
+        const current = structuredClone(data[key] ?? null);
         const next = mutator(current);
         if (next === current) return next;
-        data[key] = next;
-        await writeCollection(collection, data);
+        data[key] = structuredClone(next);
+        if (!defer) return writeCollection(collection, data).then(() => next);
+        pending.add(collection);
+        flushTimer ??= setTimeout(flushPending, FLUSH_MS).unref();
         return next;
       });
     },
@@ -97,7 +129,7 @@ function createJsonStore(collection) {
     async take(key, predicate) {
       return withLock(collection, async () => {
         const data = readCollection(collection);
-        const current = data[key] ?? null;
+        const current = structuredClone(data[key] ?? null);
         if (!current || !predicate(current)) return null;
         delete data[key];
         await writeCollection(collection, data);
@@ -105,9 +137,9 @@ function createJsonStore(collection) {
       });
     },
     async all() {
-      return readCollection(collection);
+      return structuredClone(readCollection(collection));
     },
   };
 }
 
-module.exports = { createJsonStore, DATA_DIR };
+module.exports = { createJsonStore, DATA_DIR, flushPending };

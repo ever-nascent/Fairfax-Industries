@@ -29,7 +29,7 @@ const TRIVIA_STEP = 5;
 const TRIVIA_MAX_STREAK = 10; // 25, 30 ... 70 at 10 in a row
 const TRIVIA_DAILY = 10; // right answers that pay per UTC day; after that trivia is for fun
 
-// ponytail: every write rewrites data/xp.json. Fine for one community server; move to SQLite if it gets slow.
+// ponytail: a write rewrites data/xp.json (chat/voice XP is batched, see addXp). Fine for one community server; move to SQLite if it gets slow.
 const users = () => getStore('xp'); // key: user id (the bot only serves one server)
 const settings = () => getStore('xpSettings'); // key: guild id
 
@@ -64,14 +64,14 @@ async function getUser(userId) {
 
 // Changes one user inside the store lock. `change(user)` edits the copy it gets and returns the result for
 // the caller; the file is only written if the user actually changed.
-async function updateUser(userId, change) {
+async function updateUser(userId, change, options) {
   let result;
   await users().update(userId, (current) => {
     const user = { ...blankUser(), ...current };
     const before = JSON.stringify(user);
     result = change(user);
     return JSON.stringify(user) === before ? current : user;
-  });
+  }, options);
   return result;
 }
 
@@ -105,7 +105,7 @@ function addXp(userId, amount, { fromChat = false, cooldownSeconds = 0 } = {}) {
     user.level = level;
     user.souls += souls;
     return { user, gained, souls };
-  });
+  }, { defer: true }); // chat/voice XP is written within a few seconds, not on every message
 }
 
 // Daily Soul Urn. Days are UTC calendar days; claiming on consecutive days grows the streak.

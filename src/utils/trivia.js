@@ -283,12 +283,20 @@ async function iconTile(file) {
   return tiles.get(file);
 }
 
+// Item icons are 200 px (156 items, ~25 MB decoded), so they're kept after the first load, like the blurred PNGs.
+const itemImages = new Map();
+const itemImage = (file) => itemImages.get(file) ?? itemImages.set(file, loadImage(path.join(DIR, 'items', file))).get(file);
+
+const blurs = new Map();
 async function blurred(file) {
-  const c = createCanvas(200, 200);
-  const g = c.getContext('2d');
-  g.filter = 'blur(10px)';
-  g.drawImage(await loadImage(path.join(DIR, 'items', file)), 0, 0, 200, 200);
-  return c.toBuffer('image/png');
+  if (!blurs.has(file)) {
+    const c = createCanvas(200, 200);
+    const g = c.getContext('2d');
+    g.filter = 'blur(10px)';
+    g.drawImage(await itemImage(file), 0, 0, 200, 200);
+    blurs.set(file, c.toBuffer('image/png'));
+  }
+  return blurs.get(file);
 }
 
 // The end of an upgrade question: the item on top, a line down to everything it builds into.
@@ -313,7 +321,7 @@ async function upgradeGraph(name) {
     g.beginPath();
     g.roundRect(cx - S / 2, top, S, S, 10);
     g.clip();
-    g.drawImage(await loadImage(path.join(DIR, 'items', item.icon)), cx - S / 2, top, S, S);
+    g.drawImage(await itemImage(item.icon), cx - S / 2, top, S, S);
     g.restore();
     g.strokeStyle = SLOT_COLORS[item.slot];
     g.lineWidth = 4;
