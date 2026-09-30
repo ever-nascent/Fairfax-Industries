@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, ChannelType, PermissionFlagsBits, EmbedBuilder, MessageFlags } = require('discord.js');
 const { BRAND_COLOR } = require('../../config');
-const { replyEmbed } = require('../../utils/embeds');
+const { replyEmbed, privateReply } = require('../../utils/embeds');
 const {
   RANKS,
   MODES,
@@ -30,7 +30,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    const reply = (text) => interaction.reply({ embeds: [replyEmbed(text)], flags: MessageFlags.Ephemeral });
+    const reply = (text) => privateReply(interaction, text);
     const { guild, member, user } = interaction;
     const mode = interaction.options.getString('mode');
     const cfg = await getSettings(guild.id);
@@ -96,11 +96,27 @@ module.exports = {
     }
 
     const lfgChannel = interaction.channel;
-    const message = await lfgChannel.send({
-      content: `<@&${pingRoleId}>`,
-      embeds: [embed],
-      allowedMentions: { roles: [pingRoleId] }, // ping only the LFG role; the runner is shown, not pinged
-    });
+    const message = await lfgChannel
+      .send({
+        content: `<@&${pingRoleId}>`,
+        embeds: [embed],
+        allowedMentions: { roles: [pingRoleId] }, // ping only the LFG role; the runner is shown, not pinged
+      })
+      .catch((error) => console.error('[lfg] Post failed:', error.message));
+    // No post, no lobby: delete the voice channel so it isn't left behind, and tell the runner.
+    if (!message) {
+      await voice.delete('LFG post failed').catch(() => null);
+      const failed = replyEmbed('An error occurred while posting your LFG. The lobby has been removed. Please run `/lfg` again.')
+        .setColor(0xed4245) // Discord red: an error
+        .setTitle('LFG Not Created')
+        .addFields(
+          { name: 'Mode', value: label, inline: true },
+          { name: 'Region', value: region.label, inline: true },
+          { name: 'Lobby', value: 'Removed', inline: true },
+        )
+        .setTimestamp();
+      return interaction.editReply({ embeds: [failed] });
+    }
 
     await registerLobby(interaction.client, voice, {
       ownerId: user.id,

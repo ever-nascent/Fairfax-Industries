@@ -7,3 +7,44 @@ Map shapes: Natural Earth via the world-atlas package (public domain).
 
 Rank card / urn (assets/fonts, assets/card): Radiance and Retail fonts, the souls icon, the Soul Urn icon and Soul Urn render from deadlock.wiki
 (https://deadlock.wiki), game art by Valve. Level flask shape/colours traced from the in-game HUD.
+
+The Doorman game (assets/doorman): the Doorman's double door (from "Doorman Reference Sheet"), the Baroness Hotel interior
+(from "Baroness Hotel Guest Interior") and the Doorman portraits ("The Doorman card", "Doorman Gloat", "Doorman Critical") and his Hotel Guest ability icon from deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
+Wraith's Table (assets/wraith): her Card Trick cards (cut from "Wraith Reference Sheet"), her portraits ("Wraith card", "Wraith Gloat", "Wraith Critical")
+and the Card Trick ability icon from deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
+Rabbit in the Hat (assets/sinclair): Sinclair's hero-select background ("Sinclair select background", cropped), the rabbit (cut from
+"Sinclair Reference Sheet"), his portraits ("Sinclair card", "Sinclair Gloat", "Sinclair Critical") and the Rabbit Hex ability icon
+from deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
+Borrowed Time (assets/paradox): Paradox's hero-select background ("Paradox select background", cropped), her portraits
+("Paradox card", "Paradox Gloat", "Paradox Critical") and the Pulse Grenade ability icon from deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
+Yamato's Duel of Stances (assets/yamato): Yamato's portraits ("Yamato card", "Yamato Gloat", "Yamato Critical") and his Power Slash,
+Flying Strike and Crimson Slash ability icons from deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
+Silver's Shotgun Roulette (assets/silver): Silver's portraits ("Silver card", "Silver Gloat Portrait", "Silver Critical Health") and the Slam Fire
+ability icon from deadlock.wiki (https://deadlock.wiki), game art by Valve. The shell and charge emojis (white, like the in-game icons) are drawn by assets/silver/make_shells.js.
+
+Holliday's Powder Keg (assets/holliday): Holliday's portraits (card, gloat, critical) and hero-select background (cropped, half size)
+from the deadlock-api.com assets API (https://assets.deadlock-api.com), and the Powder Keg ability icon from deadlock.wiki
+(https://deadlock.wiki), game art by Valve.
+
+Bebop's Bombs (assets/bebop): Bebop's portraits ("Bebop card", "Bebop Gloat", "Bebop Critical") and the Sticky Bomb ability icon
+from deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
+Rem's Remling Race (assets/rem): Rem's portraits ("Rem card", "Rem Gloat (Familiar)", "Rem Critical (Familar)") and the Lil Helpers ability icon
+from deadlock.wiki (https://deadlock.wiki), game art by Valve. The five Remling emojis (remling_<colour>.png) are that icon recoloured.
+
+Shop (assets/shop): hideout.png is the Deadlock minimap Stairs icon (deadlock.wiki "Stairs.png"), redrawn as vector at 128 px.
+The /shop banner art in assets/shop/art (curiosity_shop.png = "The Curiosity Shop in-game.png", shop_icon.png = "MinimapShopIcon.png",
+rejuv.png = "Mid-Boss.png"; the in-game shop screen "Weapon shop.png" was the style reference)
+is from deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
+Lockle item art (assets/lockle/items): the in-game shop item art, downloaded from deadlock-api.com (assets-bucket.deadlock-api.com) the first time each item shows up, game art by Valve. Layout modelled on lockle.app.
+
+Trivia host (assets/dynamo): the Dynamo portraits ("Dynamo card", "Dynamo Gloat", "Dynamo Critical") and his Singularity
+ability icon from deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
+Pocket's Suitcases (assets/pocket): Pocket portraits (synth_card, synth_card_gloat, synth_card_critical) from the deadlock-api.com assets API and the Enchanter's Satchel icon from deadlock.wiki (https://deadlock.wiki), game art by Valve.

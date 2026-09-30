@@ -1,12 +1,9 @@
 // Draws the /rank card: the in-game level flask, name, level, souls and a big XP bar.
 // Flask colours and shape were sampled/traced from a Deadlock screenshot; fonts are the game's
 // (Retail, Radiance) from deadlock.wiki.
-const path = require('node:path');
-const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
-
-const ASSETS = path.join(__dirname, '..', '..', 'assets');
-GlobalFonts.registerFromPath(path.join(ASSETS, 'fonts', 'Radiance-Bold.woff2'), 'Radiance');
-GlobalFonts.registerFromPath(path.join(ASSETS, 'fonts', 'Retaildemo-bold.woff2'), 'Retail');
+const { createCanvas } = require('@napi-rs/canvas');
+const { loadSouls } = require('./art'); // also registers the Radiance + Retail fonts
+const { fmt } = require('./format');
 // Names can hold characters the game fonts lack; fall back to system fonts for those.
 // Windows fonts first (the bot runs on Windows), then common Linux ones in case it moves to a Linux host.
 const TEXT_FONT = [
@@ -92,8 +89,6 @@ function fit(g, text, maxWidth) {
   return s.join('') + '…';
 }
 
-const fmt = (n) => n.toLocaleString('en-US');
-let soulsIcon;
 
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 // Blend colour `a` towards `b` by t (0..1), both '#rrggbb'.
@@ -126,7 +121,7 @@ function drawHeroArt(g, { image, isRender }) {
 // hero = { image, isRender, color } (from heroes.heroArt) turns it into that hero's card:
 // the hero's art, and their colour on the XP bar, flask liquid, background tint and text accents.
 async function renderRankCard({ name, level, into, need, souls, maxLevel, hero }) {
-  soulsIcon ??= await loadImage(path.join(ASSETS, 'card', 'souls.png'));
+  const soulsIcon = await loadSouls();
   const c = createCanvas(W, H);
   const g = c.getContext('2d');
   const accent = hero?.color ?? C.liquid;
@@ -199,7 +194,7 @@ const MEDAL = ['#e8c267', '#c9d1d4', '#c98a5a']; // gold, silver, bronze
 
 // Leaderboard image in the same style. rows: [{ name, level, fill (0..1), xp, souls }], best first.
 async function renderLeaderboard(serverName, rows) {
-  soulsIcon ??= await loadImage(path.join(ASSETS, 'card', 'souls.png'));
+  const soulsIcon = await loadSouls();
   const HEAD = 130;
   const RH = 84; // row height
   const LH = HEAD + rows.length * RH + 24;
@@ -271,4 +266,31 @@ async function renderLeaderboard(serverName, rows) {
 const cardColor = (hexColor) => parseInt(hexColor.slice(1), 16);
 const CARD_COLOR = cardColor(C.liquid);
 
-module.exports = { renderRankCard, renderLeaderboard, CARD_COLOR, cardColor };
+// One piece of an emoji bar drawn like the XP bar (the /trivia streak is a row of these):
+// part 'left' | 'mid' | 'right' (the ends are rounded), on = filled. 128 px square PNG.
+function renderBarPiece(part, on) {
+  const S = 128;
+  const h = 60; // bar thickness
+  const y = (S - h) / 2;
+  const pad = 8; // like the gap between the XP bar's track and its fill
+  const x0 = part === 'left' ? 6 : 0;
+  const x1 = part === 'right' ? S - 6 : S;
+  const round = (r) => (part === 'left' ? [r, 0, 0, r] : part === 'right' ? [0, r, r, 0] : 0);
+  const c = createCanvas(S, S);
+  const g = c.getContext('2d');
+  g.fillStyle = '#0a0e0d';
+  g.beginPath();
+  g.roundRect(x0, y, x1 - x0, h, round(h / 2));
+  g.fill();
+  if (on) {
+    const l = part === 'left' ? x0 + pad : 0;
+    const r = part === 'right' ? x1 - pad : S;
+    g.fillStyle = C.liquid;
+    g.beginPath();
+    g.roundRect(l, y + pad, r - l, h - 2 * pad, round((h - 2 * pad) / 2));
+    g.fill();
+  }
+  return c.toBuffer('image/png');
+}
+
+module.exports = { renderRankCard, renderLeaderboard, renderBarPiece, drawFlask, fit, TEXT_FONT, CARD_COLOR, cardColor };

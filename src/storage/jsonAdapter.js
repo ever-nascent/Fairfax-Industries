@@ -92,10 +92,22 @@ function createJsonStore(collection) {
         return next;
       });
     },
+    // Deletes `key` if `predicate(value)` holds, inside the lock, so nothing can change it in between.
+    // Returns the deleted value, or null.
+    async take(key, predicate) {
+      return withLock(collection, async () => {
+        const data = readCollection(collection);
+        const current = data[key] ?? null;
+        if (!current || !predicate(current)) return null;
+        delete data[key];
+        await writeCollection(collection, data);
+        return current;
+      });
+    },
     async all() {
       return readCollection(collection);
     },
   };
 }
 
-module.exports = { createJsonStore };
+module.exports = { createJsonStore, DATA_DIR };

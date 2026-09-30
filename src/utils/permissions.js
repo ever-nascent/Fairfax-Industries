@@ -14,4 +14,4 @@ async function requirePermission(interaction, permissionFlag) {
   return false;
 }
 
-module.exports = { OWNER_OVERRIDE_ID, hasPermission, requirePermission };
+module.exports = { requirePermission };

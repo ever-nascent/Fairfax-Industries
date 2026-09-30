@@ -1,5 +1,5 @@
 const { MessageFlags } = require('discord.js');
-const { isAllowedGuild } = require('../utils/guildLock');
+const { isAllowedGuild } = require('../utils/guild');
 const { findComponentRoute } = require('../components');
 
 module.exports = {

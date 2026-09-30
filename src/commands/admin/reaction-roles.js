@@ -7,7 +7,7 @@ const {
   ButtonStyle,
   MessageFlags,
 } = require('discord.js');
-const { replyEmbed: embed } = require('../../utils/embeds');
+const { replyEmbed, privateReply } = require('../../utils/embeds');
 const { requirePermission } = require('../../utils/permissions');
 const {
   MAX_OPTIONS,
@@ -86,17 +86,12 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
     const guildId = interaction.guildId;
     const userId = interaction.user.id;
+    const reply = (text) => privateReply(interaction, text);
 
     if (sub === 'new') {
       const channel = interaction.options.getChannel('channel');
       const color = interaction.options.getString('color');
-      if (color && !/^#?[0-9a-f]{6}$/i.test(color)) {
-        await interaction.reply({
-          embeds: [embed("That color isn't a hex code. Use 6 digits like `#5865F2`.")],
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
+      if (color && !/^#?[0-9a-f]{6}$/i.test(color)) return reply("That color isn't a hex code. Use 6 digits like `#5865F2`.");
       await startDraft(guildId, userId, {
         title: interaction.options.getString('title'),
         description: interaction.options.getString('description'),
@@ -104,107 +99,57 @@ module.exports = {
         channelId: channel.id,
         mode: interaction.options.getString('mode'),
       });
-      await interaction.reply({
-        embeds: [
-          embed(
-            `Draft started for ${channel}.\nUse \`/reaction-roles add\` to add options,\nthen \`/reaction-roles preview\` when ready.`,
-          ),
-        ],
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
+      return reply(`Draft started for ${channel}.\nUse \`/reaction-roles add\` to add options,\nthen \`/reaction-roles preview\` when ready.`);
     }
 
     if (sub === 'add' || sub === 'remove' || sub === 'preview') {
       const draft = await getDraft(guildId, userId);
-      if (!draft) {
-        await interaction.reply({
-          embeds: [embed('No draft in progress. Start one with `/reaction-roles new`.')],
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
+      if (!draft) return reply('No draft in progress. Start one with `/reaction-roles new`.');
 
       if (sub === 'add') {
         const emoji = interaction.options.getString('emoji');
         const role = interaction.options.getRole('role');
         const problem = roleProblem(role, interaction.guild);
-        if (problem) {
-          await interaction.reply({ embeds: [embed(problem)], flags: MessageFlags.Ephemeral });
-          return;
-        }
+        if (problem) return reply(problem);
         if (draftIsFull(draft, emoji)) {
-          await interaction.reply({
-            embeds: [embed(`A menu can have at most ${MAX_OPTIONS} options (Discord's reaction limit). Start a second menu for the rest.`)],
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
+          return reply(`A menu can have at most ${MAX_OPTIONS} options (Discord's reaction limit). Start a second menu for the rest.`);
         }
         addPair(draft, emoji, role);
         await saveDraft(guildId, userId, draft);
-        await interaction.reply({ embeds: [embed(`Added ${emoji} - ${role}.`)], flags: MessageFlags.Ephemeral });
-        return;
+        return reply(`Added ${emoji} - ${role}.`);
       }
 
       if (sub === 'remove') {
         const role = interaction.options.getRole('role');
         const removed = removePair(draft, role);
         if (removed) await saveDraft(guildId, userId, draft);
-        await interaction.reply({
-          embeds: [embed(removed ? `Removed ${role}.` : `${role} wasn't in the draft.`)],
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
+        return reply(removed ? `Removed ${role}.` : `${role} wasn't in the draft.`);
       }
 
-      if (draft.pairs.length === 0) {
-        await interaction.reply({
-          embeds: [embed('Please add at least one role before previewing')],
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
-
+      if (draft.pairs.length === 0) return reply('Please add at least one role before previewing');
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`rr_post:${userId}`).setLabel('Post').setStyle(ButtonStyle.Success),
       );
-      await interaction.reply({ embeds: [buildEmbed(draft)], components: [row], flags: MessageFlags.Ephemeral });
-      return;
+      return interaction.reply({ embeds: [buildEmbed(draft)], components: [row], flags: MessageFlags.Ephemeral });
     }
 
     if (sub === 'delete') {
       const messageId = interaction.options.getString('message-id').trim();
       const menu = await getMenu(messageId);
       if (!menu || menu.guildId !== guildId) {
-        await interaction.reply({
-          embeds: [embed(`There is no Reaction Role Menu with the ID \`${messageId}\` in this server. \`/reaction-roles list\` shows the IDs.`)],
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
+        return reply(`There is no Reaction Role Menu with the ID \`${messageId}\` in this server. \`/reaction-roles list\` shows the IDs.`);
       }
       await deleteMenu(messageId);
-      await interaction.reply({
-        embeds: [embed(`Stopped tracking menu \`${messageId}\`.\n(The message itself is untouched.)`)],
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
+      return reply(`Stopped tracking menu \`${messageId}\`.\n(The message itself is untouched.)`);
     }
 
-    if (sub === 'list') {
-      const menus = await listMenus(guildId);
-      if (menus.length === 0) {
-        await interaction.reply({ embeds: [embed("There are no active Reaction Role Menu's in this server")], flags: MessageFlags.Ephemeral });
-        return;
-      }
-      const lines = menus.map(
-        ([messageId, menu]) =>
-          `\`${messageId}\` in <#${menu.channelId}> — ${menu.mode === 'single' ? 'Single' : 'Multi'}, ${Object.keys(menu.roles).length} Choice(s)`,
-      );
-      await interaction.reply({
-        embeds: [embed(lines.join('\n')).setTitle('Reaction Role Menus')],
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
+    // list
+    const menus = await listMenus(guildId);
+    if (menus.length === 0) return reply("There are no active Reaction Role Menu's in this server");
+    const lines = menus.map(
+      ([messageId, menu]) =>
+        `\`${messageId}\` in <#${menu.channelId}> — ${menu.mode === 'single' ? 'Single' : 'Multi'}, ${Object.keys(menu.roles).length} Choice(s)`,
+    );
+    return interaction.reply({ embeds: [replyEmbed(lines.join('\n')).setTitle('Reaction Role Menus')], flags: MessageFlags.Ephemeral });
   },
 };

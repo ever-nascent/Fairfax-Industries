@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags, EmbedBuilder } = require('discord.js');
 const { requirePermission } = require('../../utils/permissions');
 const { REPLY_COLOR } = require('../../config');
-const { replyEmbed } = require('../../utils/embeds');
+const { privateReply } = require('../../utils/embeds');
 const { getSettings, updateSettings } = require('../../utils/xp');
 
 module.exports = {
@@ -48,7 +48,7 @@ module.exports = {
 
   async execute(interaction) {
     if (!(await requirePermission(interaction, PermissionFlagsBits.ManageGuild))) return;
-    const reply = (text) => interaction.reply({ embeds: [replyEmbed(text)], flags: MessageFlags.Ephemeral });
+    const reply = (text) => privateReply(interaction, text);
     const sub = interaction.options.getSubcommand();
     const guildId = interaction.guildId;
 

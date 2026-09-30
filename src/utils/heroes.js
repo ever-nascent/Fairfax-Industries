@@ -1,11 +1,11 @@
 // The 38 heroes for Shop hero cards: names, art, colours and their server emojis.
-// Art: the hero's full render (assets/hero_renders, `setup.py hero-renders`); until a render is
-// downloaded, the hero's chat icon (assets/heroes) stands in. Colours are sampled from that art.
+// Art comes in two styles (sold separately in the Shop): 'icon' = the hero's chat icon (assets/heroes),
+// 'portrait' = their full-body render (assets/heroes/full body, `Get-DeadlockFullBody.ps1`; the icon
+// stands in if a render is missing). Colours are sampled from the art.
 const fs = require('node:fs');
 const path = require('node:path');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
-
-const ASSETS = path.join(__dirname, '..', '..', 'assets');
+const { ASSETS } = require('./art');
 
 // Same list and order as setup.py HEROES (deadlock.wiki Category:Heroes, Sept 2026).
 const NAMES = [
@@ -24,19 +24,29 @@ const getHero = (slug) => bySlug.get(slug) ?? null;
 // Hand-picked colours win over the sampled ones: { slug: '#rrggbb' }. Empty until one needs fixing.
 const COLOR_OVERRIDES = {};
 
-const renderPath = (slug) => path.join(ASSETS, 'hero_renders', `${slug}.png`);
+const renderPath = (slug) => path.join(ASSETS, 'heroes', 'full body', `${slug}.png`);
 const iconPath = (slug) => path.join(ASSETS, 'heroes', `${slug}.png`);
 
-// Loaded once per hero: { image, isRender, color }.
+// Loaded once per hero and style: { image, isRender, color }.
 const cache = new Map();
 
-async function heroArt(slug) {
-  if (!cache.has(slug)) {
-    const isRender = fs.existsSync(renderPath(slug));
-    const image = await loadImage(isRender ? renderPath(slug) : iconPath(slug));
-    cache.set(slug, { image, isRender, color: COLOR_OVERRIDES[slug] ?? sampleColor(image) });
+// The full-body files are ~1440 px tall (~10 MB each once decoded); the card draws them ~345 px tall,
+// so keep a 400 px copy in memory instead.
+function shrink(image, height = 400) {
+  if (image.height <= height) return image;
+  const c = createCanvas(Math.round(image.width * (height / image.height)), height);
+  c.getContext('2d').drawImage(image, 0, 0, c.width, c.height);
+  return c;
+}
+
+async function heroArt(slug, style = 'portrait') {
+  const key = `${slug}:${style}`;
+  if (!cache.has(key)) {
+    const isRender = style === 'portrait' && fs.existsSync(renderPath(slug));
+    const image = shrink(await loadImage(isRender ? renderPath(slug) : iconPath(slug)));
+    cache.set(key, { image, isRender, color: COLOR_OVERRIDES[slug] ?? sampleColor(image) });
   }
-  return cache.get(slug);
+  return cache.get(key);
 }
 
 function rgbToHsl(r, g, b) {
@@ -99,4 +109,4 @@ function heroEmoji(guild, slug) {
   return e ? { id: e.id, name: e.name } : undefined;
 }
 
-module.exports = { HEROES, getHero, heroArt, heroEmoji, sampleColor, slugOf };
+module.exports = { HEROES, getHero, heroArt, heroEmoji };

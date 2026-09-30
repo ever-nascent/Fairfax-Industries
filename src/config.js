@@ -6,4 +6,9 @@ module.exports = {
   BRAND_COLOR: 0x5865f2,
   // Green of the level flask. Used for short bot replies (approved per reply, see server-plan.md).
   REPLY_COLOR: 0x6aa98a,
+  // Channel the go-live alerts are posted in (#streams-and-uploads). Right-click a channel > Copy Channel ID.
+  STREAM_CHANNEL_ID: '1554191144080908408',
+  // Go-live alerts: Twitch channel name and TikTok username (after the @).
+  TWITCH_LOGIN: 'charmedvt',
+  TIKTOK_LOGIN: 'charmed.dl',
 };
