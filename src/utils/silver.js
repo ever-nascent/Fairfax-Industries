@@ -5,12 +5,11 @@
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { getStore } = require('../storage');
-const { changeSouls } = require('./xp');
 const { fmt, soulsText, boldSouls } = require('./format');
-const { pickRandom, shuffle, randomInt, shortId } = require('./random');
+const { pickRandom, shuffle, randomInt } = require('./random');
 const { ASSETS } = require('./art');
-const { ensureEmoji } = require('./guild');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage } = require('./casino');
+const { findEmoji } = require('./guild');
+const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'silver'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x9aa5b1, name: "Silver's Shotgun Roulette", icon: path.join(ART, 'slam_fire.png'), art: ART, prefix: 'silver' };
@@ -52,13 +51,13 @@ const refunds = (game) =>
   !solo(game) && game.phase === 'play' ? [[game.userId, game.bet], [game.opponentId, game.bet]] : [[game.userId, game.bet]];
 const nameOf = (game, id) => (id === game.userId ? game.name : game.opponentName);
 
-// emoji: the server's emojis once uploaded (ensureShellEmojis), a plain one until then.
+// emoji: the server's emojis found on startup (loadShellEmojis), a plain one until then.
 const SHELLS = {
   live: { name: 'shell_live', emoji: '🔴' }, blank: { name: 'shell_blank', emoji: '🔵' },
   charge: { name: 'charge', emoji: '❤️' }, lost: { name: 'charge_lost', emoji: '🖤' },
 };
-async function ensureShellEmojis(guild) {
-  for (const shell of Object.values(SHELLS)) shell.emoji = (await ensureEmoji(guild, shell.name, path.join(ART, `${shell.name}.png`))).toString();
+function loadShellEmojis(guild) {
+  for (const shell of Object.values(SHELLS)) shell.emoji = findEmoji(guild, shell.name).toString();
 }
 
 // ---- rules -------------------------------------------------------------------------------------
@@ -158,17 +157,14 @@ function playView(id, game) {
 async function startGame(user, name, bet, opponent = null) {
   if (opponent?.bot) return { error: 'Bots do not play roulette. Pick a member, or leave the opponent empty to face Silver.' };
   if (opponent?.id === user.id) return { error: 'You cannot play yourself. Pick another member, or leave it empty to face Silver.' };
-  const error = await takeBet(user.id, bet);
-  if (error) return { error };
-  const id = shortId();
   const otherId = opponent?.id ?? SILVER;
-  const game = {
-    userId: user.id, name, bet, done: false, at: Date.now(),
+  const { error, id, game } = await openGame(games(), user.id, bet, () => ({
+    userId: user.id, name, bet, done: false,
     opponentId: opponent?.id ?? null, opponentName: opponent ? opponent.globalName ?? opponent.username : 'Silver',
     phase: opponent ? 'invite' : 'play', players: [user.id, otherId], charges: { [user.id]: CHARGES, [otherId]: CHARGES },
     shells: loadShells(), turn: user.id, log: [],
-  };
-  await games().set(id, game);
+  }));
+  if (error) return { error };
   return opponent ? inviteView(id, game) : playView(id, game);
 }
 
@@ -211,7 +207,7 @@ async function accept(id, userId) {
     return game;
   });
   if (!game) {
-    await changeSouls(userId, current.bet);
+    await pay(userId, current.bet);
     return null;
   }
   return playView(id, game);
@@ -223,7 +219,7 @@ async function decline(id, userId) {
   if (userId !== current.opponentId) return { error: `Only ${current.opponentName} can turn this challenge down.` };
   const game = await games().take(id, (g) => g.phase === 'invite');
   if (!game) return null;
-  await changeSouls(game.userId, game.bet);
+  await pay(game.userId, game.bet);
   return view({
     lines: [`${mention(game.opponentId)} turned down ${mention(game.userId)}'s challenge.`, `${boldSouls(game.bet)} went back to ${mention(game.userId)}.`],
     footer: '"Smart. Nobody walks away from this table with everything."',
@@ -250,8 +246,8 @@ async function shoot(id, userId, atSelf) {
   if (!game.done) return playView(id, game);
 
   let balance;
-  if (solo(game)) balance = (await changeSouls(game.userId, game.winner === game.userId ? winnings(game.bet) : 0)).souls;
-  else await changeSouls(game.winner, pot(game));
+  if (solo(game)) balance = (await pay(game.userId, game.winner === game.userId ? winnings(game.bet) : 0)).souls;
+  else await pay(game.winner, pot(game));
   await games().delete(id);
   return resultView(game, balance);
 }
@@ -281,6 +277,6 @@ async function timeoutView(id, game, balance) {
 }
 
 module.exports = {
-  games, staked, refunds, timeoutView, ensureShellEmojis, startGame, move,
+  games, staked, refunds, timeoutView, loadShellEmojis, startGame, move,
   loadShells, fire, play, silverShoots, count, winnings, CHARGES, SILVER, BUTTON_ID, AGAIN_ID, PVP,
 };

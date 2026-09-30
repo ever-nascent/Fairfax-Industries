@@ -5,11 +5,10 @@ const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { getStore } = require('../storage');
-const { changeSouls } = require('./xp');
 const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
 const { pickRandom, shortId } = require('./random');
 const { ASSETS, loadSouls, seeded, halftone, grain, grainAndVignette } = require('./art');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage } = require('./casino');
+const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage, pay, stake } = require('./casino');
 
 const ART = path.join(ASSETS, 'wraith'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xc2408f, name: "Wraith's Table", icon: path.join(ART, 'card_trick.png'), art: ART, prefix: 'wraith' }; // magenta; Card Trick
@@ -585,7 +584,7 @@ async function view(id, game, name) {
 // Pays out a finished game, forgets it, and returns the result message.
 async function finish(id, game, userId) {
   const paid = game.hands.reduce((sum, h) => sum + payout(h), 0);
-  const user = await changeSouls(userId, paid);
+  const user = await pay(userId, paid);
   await games().delete(id);
   return view(id, { ...game, balance: user.souls }, game.name);
 }
@@ -608,7 +607,7 @@ async function move(id, userId, action) {
   if (current.userId !== userId) return { error: `That's ${current.name}'s seat. Take your own with \`/mini-game\`.` };
   if (!moves(current).includes(action)) return null;
   const cost = extraCost(current, action);
-  if (cost && !(await changeSouls(userId, -cost))) {
+  if (cost && !(await stake(userId, cost))) {
     return { error: `You need ${soulsIcon()}${fmt(cost)} more Souls to ${MOVE_LABELS[action].toLowerCase()}.` };
   }
   let next = null;
@@ -618,7 +617,7 @@ async function move(id, userId, action) {
     return next;
   });
   if (!next) {
-    if (cost) await changeSouls(userId, cost); // the click didn't count, give the extra bet back
+    if (cost) await pay(userId, cost); // the click didn't count, give the extra bet back
     return null;
   }
   if (next.done) return finish(id, next, userId);

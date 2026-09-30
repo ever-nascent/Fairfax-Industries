@@ -3,7 +3,7 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { MessageFlags } = require('discord.js');
-const { takeBet, betCommand, gameButtons, expireGames, MIN_BET, TIME_LIMIT_MINUTES } = require('../src/utils/casino');
+const { takeBet, openGame, betCommand, gameButtons, expireGames, MIN_BET, TIME_LIMIT_MINUTES } = require('../src/utils/casino');
 const { getStore } = require('../src/storage');
 const { changeSouls, getUser } = require('../src/utils/xp');
 
@@ -148,4 +148,19 @@ test("each game's time's-up message: the host gloats with a time's-up line, the 
     assert.strictEqual(game.staked(saved), 100);
     assert.strictEqual(view.components[0].components[0].data.custom_id, `${game.AGAIN_ID}:100:${user.id}`);
   }
+});
+
+test('openGame: takes the bet and saves the game; a failed save gives the bet back', async () => {
+  await changeSouls('open-user', 500);
+  const saved = {};
+  const store = { set: async (id, g) => { saved[id] = g; } };
+  const { id, game } = await openGame(store, 'open-user', 100, () => ({ userId: 'open-user', bet: 100 }));
+  assert.strictEqual(saved[id], game);
+  assert.ok(game.at);
+  assert.strictEqual((await getUser('open-user')).souls, 400);
+
+  const broken = { set: async () => { throw new Error('disk full'); } };
+  await assert.rejects(openGame(broken, 'open-user', 100, () => ({})), /disk full/);
+  assert.strictEqual((await getUser('open-user')).souls, 400);
+  assert.deepStrictEqual(await openGame(store, 'open-user', 5, () => ({})), { error: `The minimum bet is ${MIN_BET} Souls.` });
 });

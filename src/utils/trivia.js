@@ -8,8 +8,7 @@ const {
 } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { getUser, triviaAnswer, TRIVIA_MAX_STREAK } = require('./xp');
-const { renderBarPiece } = require('./rankCard');
-const { ensureEmoji } = require('./guild');
+const { findEmoji } = require('./guild');
 const { heroEmoji } = require('./heroes');
 const { fmt, soulsIcon } = require('./format');
 const { randomInt, pickRandom, shuffle, shortId } = require('./random');
@@ -512,21 +511,21 @@ async function guess(roundId, userId, choice, guild, now = Date.now()) {
 }
 
 // The streak bar: `length` emoji pieces drawn like the /rank XP bar, filled up to the streak (/trivia: 10,
-// /urn: 7). Uploaded on startup (ensureStreakEmojis); plain ▰▱ until then.
+// /urn: 7). Found on startup (loadStreakEmojis); plain ▰▱ until then.
 const barEmojis = {}; // 'left_on' -> '<:streak_left_on:id>'
 const barPart = (i, length) => (i === 0 ? 'left' : i === length - 1 ? 'right' : 'mid');
 const streakBar = (streak, length = TRIVIA_MAX_STREAK) =>
   Array.from({ length }, (_, i) => barEmojis[`${barPart(i, length)}_${i < streak ? 'on' : 'off'}`] ?? (i < streak ? '▰' : '▱')).join('');
 
-async function ensureStreakEmojis(guild) {
+function loadStreakEmojis(guild) {
   for (const part of ['left', 'mid', 'right']) {
     for (const on of [true, false]) {
       const key = `${part}_${on ? 'on' : 'off'}`;
-      barEmojis[key] = (await ensureEmoji(guild, `streak_${key}`, renderBarPiece(part, on))).toString();
+      barEmojis[key] = findEmoji(guild, `streak_${key}`).toString();
     }
   }
 }
 
 module.exports = {
-  startRound, guess, roundError, answerModal, upgradeGraph, makeQuestion, splitLine, streakBar, ensureStreakEmojis, heroes, items, RIGHT_LINES, WRONG_LINES, TIMEOUT_LINES, MODES, BUTTON_ID, NEXT_ID, TYPE_ID, MAX_LABEL, MENU_SIZE,
+  startRound, guess, roundError, answerModal, upgradeGraph, makeQuestion, splitLine, streakBar, loadStreakEmojis, heroes, items, RIGHT_LINES, WRONG_LINES, TIMEOUT_LINES, MODES, BUTTON_ID, NEXT_ID, TYPE_ID, MAX_LABEL, MENU_SIZE,
 };

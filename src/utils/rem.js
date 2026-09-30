@@ -4,12 +4,11 @@
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { getStore } = require('../storage');
-const { changeSouls } = require('./xp');
-const { ensureEmoji } = require('./guild');
+const { findEmoji } = require('./guild');
 const { soulsText, boldSouls } = require('./format');
-const { pickRandom, shuffle, shortId, randomInt } = require('./random');
+const { pickRandom, shuffle, randomInt } = require('./random');
 const { ASSETS } = require('./art');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'rem'); // deadlock.wiki (portraits, Lil Helpers icon), Remlings drawn from that icon, see assets/CREDITS.txt
 const HOST = { color: 0x7b6cf6, name: "Rem's Remling Race", icon: path.join(ART, 'lil_helpers.png'), art: ART, prefix: 'rem' }; // Lil Helpers
@@ -24,7 +23,7 @@ const AGAIN_ID = 'remling_again'; // custom id: remling_again:<bet>:<player id>
 
 const COLOURS = ['red', 'blue', 'green', 'yellow', 'pink'];
 const NAMES = ['Red', 'Blue', 'Green', 'Yellow', 'Pink'];
-const emoji = ['🔴', '🔵', '🟢', '🟡', '🩷']; // the server's :remling_<colour>: once uploaded (ensureRemlingEmojis)
+const emoji = ['🔴', '🔵', '🟢', '🟡', '🩷']; // the server's :remling_<colour>: found on startup (loadRemlingEmojis)
 
 // Rem: a sleepy, friendly little familiar: naps and pillows, "buddies", dropped g's ("somethin'", "'em", "I'mma"),
 // pouty when it loses (deadlock.wiki "Rem/Voice lines"). Original lines in that voice; one goes in the footer.
@@ -142,12 +141,8 @@ function endView(id, game) {
 
 // Takes the bet and sets up the race. Returns a message payload, or { error }.
 async function startGame(user, name, bet, race = makeRace()) {
-  const error = await takeBet(user.id, bet);
-  if (error) return { error };
-  const id = shortId();
-  const game = { userId: user.id, name, bet, ...race, pick: null, at: Date.now() };
-  await games().set(id, game);
-  return startView(id, game);
+  const { error, id, game } = await openGame(games(), user.id, bet, () => ({ userId: user.id, name, bet, ...race, pick: null }));
+  return error ? { error } : startView(id, game);
 }
 
 // casino.js calls this once the start message is up: the race edits it.
@@ -168,7 +163,7 @@ async function run(id, edit, tickMs = TICK_MS) {
   const done = await games().take(id, (g) => g.pick !== null); // taken inside the lock, so it can only be paid once
   if (!done) return;
   const won = done.pick === done.winner;
-  const user = await changeSouls(done.userId, won ? prizeFor(done.bet, done.odds[done.pick]) : 0);
+  const user = await pay(done.userId, won ? prizeFor(done.bet, done.odds[done.pick]) : 0);
   await edit({ ...endView(id, { ...done, balance: user.souls }), attachments: [] });
 }
 
@@ -204,13 +199,13 @@ async function timeoutView(id, game, balance) {
 }
 
 // On startup: the Remling icons as :remling_<colour>: emojis, used in the lanes and buttons.
-async function ensureRemlingEmojis(guild) {
+function loadRemlingEmojis(guild) {
   for (const [i, colour] of COLOURS.entries()) {
-    emoji[i] = (await ensureEmoji(guild, `remling_${colour}`, path.join(ART, `remling_${colour}.png`))).toString();
+    emoji[i] = findEmoji(guild, `remling_${colour}`).toString();
   }
 }
 
 module.exports = {
-  games, staked, timeoutView, ensureRemlingEmojis, startGame, posted, run, pick, makeRace, raceFor, oddsFor, prizeFor,
+  games, staked, timeoutView, loadRemlingEmojis, startGame, posted, run, pick, makeRace, raceFor, oddsFor, prizeFor,
   SHARES, FINISH, BUTTON_ID, AGAIN_ID,
 };

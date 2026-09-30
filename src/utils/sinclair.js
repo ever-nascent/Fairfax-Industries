@@ -6,11 +6,10 @@ const { ButtonStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { encodeGif } = require('./gif');
 const { getStore } = require('../storage');
-const { changeSouls } = require('./xp');
 const { soulsText, boldSouls } = require('./format');
-const { pickRandom, shortId } = require('./random');
+const { pickRandom } = require('./random');
 const { ASSETS, halftone, grain, grainAndVignette } = require('./art');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'sinclair'); // deadlock.wiki, see assets/CREDITS.txt
 // the pale sage of his select art; his Rabbit Hex icon
@@ -252,10 +251,8 @@ async function renderShuffle() {
 
 // Takes the bet, hides the rabbit, shows the shuffle. Returns a message payload, or { error }.
 async function startGame(user, name, bet) {
-  const error = await takeBet(user.id, bet);
+  const { error, id } = await openGame(games(), user.id, bet, () => ({ userId: user.id, name, bet, rabbit: crypto.randomInt(3), done: false }));
   if (error) return { error };
-  const id = shortId();
-  await games().set(id, { userId: user.id, name, bet, rabbit: crypto.randomInt(3), done: false, at: Date.now() });
   return gameMessage(HOST, {
     lines: [`${name} bet ${boldSouls(bet)}.`, 'Sinclair shuffles the hats...', '**Where is the rabbit?**'],
     buttons: HX.map((_, i) => [`${BUTTON_ID}:${id}:${i}`, `Hat ${i + 1}`, ButtonStyle.Secondary]),
@@ -277,7 +274,7 @@ async function pickHat(id, userId, pick) {
   });
   if (!game) return null;
   const won = pick === game.rabbit;
-  const user = await changeSouls(userId, won ? winnings(game.bet) : 0);
+  const user = await pay(userId, won ? winnings(game.bet) : 0);
   await games().delete(id);
   return gameMessage(HOST, {
     lines: [

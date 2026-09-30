@@ -6,15 +6,38 @@ const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBu
 const { changeSouls } = require('./xp');
 const { fmt, soulsText } = require('./format');
 const { replyEmbed, privateReply } = require('./embeds');
+const { shortId } = require('./random');
 
 const MIN_BET = 10;
 const TIME_LIMIT_MINUTES = 5; // a game with no click for this long is called off and the bet goes back
 
-// Takes the bet. Returns an error message, or null once the souls are taken.
+// Every game moves souls through these four, nothing else:
+//   takeBet(userId, bet)   the opening bet, with the minimum check. Returns an error message, or null once taken.
+//   stake(userId, amount)  any other money in (double down, split). Returns the user, or null if they can't afford it.
+//   pay(userId, amount) winnings, a refund or a pot. Returns the user (amount 0 just reads the balance).
+//   openGame(...)          takeBet + saving the new game, refunding the bet if the save fails.
+const stake = (userId, amount) => changeSouls(userId, -amount);
+const pay = (userId, amount) => changeSouls(userId, amount);
+
 async function takeBet(userId, bet) {
   if (!Number.isInteger(bet) || bet < MIN_BET) return `The minimum bet is ${fmt(MIN_BET)} Souls.`;
-  if (!(await changeSouls(userId, -bet))) return `You don't have ${soulsText(bet)} to bet.`;
+  if (!(await stake(userId, bet))) return `You don't have ${soulsText(bet)} to bet.`;
   return null;
+}
+
+// Takes the bet and saves the new game (`build()` returns it; `at` is added). Returns { error } or { id, game }.
+async function openGame(store, userId, bet, build) {
+  const error = await takeBet(userId, bet);
+  if (error) return { error };
+  const id = shortId();
+  try {
+    const game = { ...build(), at: Date.now() };
+    await store.set(id, game);
+    return { id, game };
+  } catch (e) {
+    await pay(userId, bet); // nothing was saved, so the timeout refund can't cover it
+    throw e;
+  }
 }
 
 // Once a game is over: the Bet / Won / Balance fields and a Play Again button for the same bet (only its player can press it).
@@ -189,17 +212,17 @@ async function expireGames(client, gameModules, now = Date.now()) {
       // refunds(g): [[user id, souls]] when more than the first player staked (a duel)
       let user;
       for (const [userId, amount] of game.refunds?.(g) ?? [[g.userId, game.staked(g)]]) {
-        const refunded = await changeSouls(userId, amount);
+        const refunded = await pay(userId, amount);
         if (userId === g.userId) user = refunded;
       }
       console.log(`[games] ${game.BUTTON_ID} ${id} timed out, returned ${game.staked(g)} Souls`);
       if (!g.messageId) continue;
       const channel = await client.channels.fetch(g.channelId).catch(() => null);
       await channel?.messages
-        .edit(g.messageId, { ...(await game.timeoutView(id, g, user.souls)), attachments: [] })
+        .edit(g.messageId, { ...(await game.timeoutView(id, g, user?.souls ?? 0)), attachments: [] })
         .catch((error) => console.error('[games] Could not edit a timed-out game:', error.message));
     }
   }
 }
 
-module.exports = { MIN_BET, TIME_LIMIT_MINUTES, takeBet, resultFields, playAgainButton, gameMessage, betCommand, gameButtons, timeoutMessage, expireGames };
+module.exports = { MIN_BET, TIME_LIMIT_MINUTES, takeBet, stake, pay, openGame, resultFields, playAgainButton, gameMessage, betCommand, gameButtons, timeoutMessage, expireGames };

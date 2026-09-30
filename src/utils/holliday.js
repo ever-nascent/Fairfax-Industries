@@ -8,11 +8,10 @@ const { ButtonStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { encodeGif } = require('./gif');
 const { getStore } = require('../storage');
-const { changeSouls } = require('./xp');
 const { fmt, soulsText, boldSouls } = require('./format');
-const { pickRandom, shortId } = require('./random');
+const { pickRandom } = require('./random');
 const { ASSETS, seeded, halftone, grain, grainAndVignette, loadSouls, drawSouls } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, takeBet } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'holliday'); // deadlock-api.com + deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xd9782d, name: "Holliday's Powder Keg", icon: path.join(ART, 'powder_keg.png'), art: ART, prefix: 'holliday' }; // orange; Powder Keg
@@ -430,10 +429,8 @@ async function endView(id, game) {
 // Takes the bet and picks where the keg blows. Returns a message payload, or { error }.
 // The fuse starts once the message is up (posted).
 async function startGame(user, name, bet, crash = crashPoint()) {
-  const error = await takeBet(user.id, bet);
+  const { error, id } = await openGame(games(), user.id, bet, () => ({ userId: user.id, name, bet, crash, done: false }));
   if (error) return { error };
-  const id = shortId();
-  await games().set(id, { userId: user.id, name, bet, crash, done: false, at: Date.now() });
   return gameMessage(HOST, {
     lines: [`<@${user.id}> put ${boldSouls(bet)} on the keg.`, 'The longer you wait, the more it pays. **Cash Out before it blows.**'],
     image: { name: `fuse_${id}.gif`, data: await renderFuse(bet) },
@@ -448,7 +445,7 @@ async function settle(id, canEnd, outcome) {
   const game = await games().take(id, (g) => Boolean(g.startedAt) && canEnd(g));
   if (!game) return null;
   const ended = { ...game, done: true, ...outcome(game) };
-  const user = await changeSouls(game.userId, ended.lost ? 0 : prize(ended));
+  const user = await pay(game.userId, ended.lost ? 0 : prize(ended));
   return { ...ended, balance: user.souls };
 }
 

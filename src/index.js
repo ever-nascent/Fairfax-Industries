@@ -1,8 +1,9 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, REST } = require('discord.js');
 const { loadCommands } = require('./handlers/loadCommands');
 const { loadEvents } = require('./handlers/loadEvents');
-const { initStorage } = require('./storage');
+const { initStorage, getStore } = require('./storage');
+const { deployCommands } = require('./deploy-commands');
 
 async function main() {
   if (!process.env.DISCORD_TOKEN) {
@@ -33,7 +34,16 @@ async function main() {
   client.commands = loadCommands();
 
   client.on('error', (error) => console.error('[client] Unhandled error from an event handler:', error));
+  client.on('shardError', (error) => console.error('[client] Connection error:', error.message));
+  client.on('warn', (message) => console.warn('[client] Warning:', message));
+  client.on('shardDisconnect', (event, id) => console.warn(`[client] Shard ${id} disconnected (code ${event.code}); discord.js will reconnect`));
   loadEvents(client);
+  // Slash commands are registered here, only when one changed, so a host only needs `npm start`. A failure isn't fatal: the old ones keep working.
+  client.once('clientReady', () =>
+    deployCommands(client.commands, new REST().setToken(process.env.DISCORD_TOKEN), getStore('commands')).catch((error) =>
+      console.error('[deploy] Could not register slash commands (run `npm run deploy` later):', error.message),
+    ),
+  );
 
   await client.login(process.env.DISCORD_TOKEN);
 
@@ -47,6 +57,8 @@ async function main() {
 }
 
 process.on('unhandledRejection', (error) => console.error('[fatal] Unhandled promise rejection:', error));
+// Everything is saved to files as it happens, so a stray error in a timer or callback is logged and the bot keeps running.
+process.on('uncaughtException', (error) => console.error('[fatal] Uncaught exception:', error));
 
 main().catch((error) => {
   console.error('[fatal] Failed to start bot:', error);

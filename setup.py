@@ -8,10 +8,11 @@ Usage:
     py setup.py rank-emojis-> uploads assets/ranks/*.png as server emojis (skips ones that exist)
     py setup.py hero-icons -> downloads each hero's chat icon from deadlock.wiki into assets/heroes
     py setup.py hero-emojis-> uploads assets/heroes/*.png as server emojis (skips ones that exist)
-    py setup.py hero-renders-> downloads each hero's full render from deadlock.wiki into assets/hero_renders (Shop cards)
+    py setup.py hero-renders-> downloads each hero's full render from deadlock.wiki into assets/heroes/full body (Shop cards)
     py setup.py trivia     -> builds assets/trivia (voice lines + ability icons from deadlock.wiki) for /trivia
     py setup.py stickers   -> copies the stickers listed in STICKERS into the server
     py setup.py shop-emojis-> uploads assets/shop/*.png as server emojis, e.g. :hideout: (skips ones that exist)
+    py setup.py layout     -> creates/moves the channels into the LAYOUT order (never deletes anything except the old #lfg setup)
     py setup.py twitch     -> saves your Twitch app keys to .env so the bot can announce when you go live
     (or just double-click and pick from the menu)
 
@@ -316,12 +317,12 @@ def hero_emojis(session: requests.Session):
     upload_emojis(session, HERO_DIR, "", "hero-icons")
 
 
-RENDER_DIR = ASSETS / "hero_renders"
+RENDER_DIR = ASSETS / "heroes" / "full body"   # where the bot looks (same folder Get-DeadlockFullBody.ps1 fills)
 RENDER_HEIGHT = 600  # the card is 300 px tall; 2x keeps it sharp without bloating the repo
 
 
 def hero_renders(session: requests.Session):
-    """Download each hero's main art (wiki "File:<Hero>_Render.png") into assets/hero_renders for the
+    """Download each hero's main art (wiki "File:<Hero>_Render.png") into assets/heroes/full body for the
     Shop's hero cards. Touches nothing in Discord. The bot uses the chat icon for any hero missing here."""
     Image = pil_image()
     RENDER_DIR.mkdir(parents=True, exist_ok=True)

@@ -1,10 +1,10 @@
 const { MessageFlags } = require('discord.js');
 
-// Optional: a user id that passes every permission gate. Unset = nobody bypasses.
-const OWNER_OVERRIDE_ID = process.env.OWNER_OVERRIDE_ID || null;
+// The owner (config.js) passes every permission gate.
+const { OWNER_ID } = require('../config');
 
 function hasPermission(interaction, permissionFlag) {
-  if (OWNER_OVERRIDE_ID && interaction.user.id === OWNER_OVERRIDE_ID) return true;
+  if (interaction.user.id === OWNER_ID) return true;
   return interaction.memberPermissions?.has(permissionFlag) ?? false;
 }
 

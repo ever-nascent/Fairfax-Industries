@@ -4,12 +4,11 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { getStore } = require('../storage');
-const { changeSouls } = require('./xp');
-const { ensureEmoji } = require('./guild');
+const { findEmoji } = require('./guild');
 const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
-const { pickRandom, shortId } = require('./random');
+const { pickRandom } = require('./random');
 const { ASSETS } = require('./art');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'bebop'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xd9822b, name: "Bebop's Bombs", icon: path.join(ART, 'sticky_bomb.png'), art: ART, prefix: 'bebop' }; // copper; Sticky Bomb
@@ -22,7 +21,7 @@ const BUTTON_ID = 'mines'; // custom id: mines:<game id>:<tile index|cash>
 const AGAIN_ID = 'mines_again'; // custom id: mines_again:<bet>:<player id>
 const HIDDEN = '❔';
 const BOOM = '💥';
-let bombEmoji = '💣'; // the server's :sticky_bomb: once uploaded (ensureBombEmoji)
+let bombEmoji = '💣'; // the server's :sticky_bomb: found on startup (loadBombEmoji)
 
 // Bebop: a scrappy junkyard robot who talks like a Londoner, loves a fight and hates losing to organics
 // (deadlock.wiki "Bebop/Voice lines"). Original lines in his voice; one goes in the footer.
@@ -159,12 +158,8 @@ function view(id, game) {
 
 // Takes the bet and hides the bombs. Returns a message payload, or { error }.
 async function startGame(user, name, bet, bombs = placeBombs()) {
-  const error = await takeBet(user.id, bet);
-  if (error) return { error };
-  const id = shortId();
-  const game = { userId: user.id, name, bet, bombs, picked: [], done: false, lost: false, hit: null, version: 0, at: Date.now() };
-  await games().set(id, game);
-  return view(id, game);
+  const { error, id, game } = await openGame(games(), user.id, bet, () => ({ userId: user.id, name, bet, bombs, picked: [], done: false, lost: false, hit: null, version: 0 }));
+  return error ? { error } : view(id, game);
 }
 
 // A button press. Returns a message payload, { error } (shown only to the clicker), or null (stale click).
@@ -181,7 +176,7 @@ async function move(id, userId, action) {
   });
   if (!game) return null;
   if (!game.done) return view(id, game);
-  const user = await changeSouls(userId, game.lost ? 0 : prizeFor(game.bet, game.picked.length));
+  const user = await pay(userId, game.lost ? 0 : prizeFor(game.bet, game.picked.length));
   await games().delete(id);
   return view(id, { ...game, balance: user.souls });
 }
@@ -196,8 +191,8 @@ async function timeoutView(id, game, balance) {
 }
 
 // On startup: his Sticky Bomb icon as the :sticky_bomb: emoji, shown on the bombs once a game is over.
-async function ensureBombEmoji(guild) {
-  bombEmoji = (await ensureEmoji(guild, 'sticky_bomb', path.join(ART, 'sticky_bomb.png'))).toString();
+function loadBombEmoji(guild) {
+  bombEmoji = findEmoji(guild, 'sticky_bomb').toString();
 }
 
 module.exports = {
@@ -211,7 +206,7 @@ module.exports = {
   multiplier,
   prizeFor,
   placeBombs,
-  ensureBombEmoji,
+  loadBombEmoji,
   WIN_LINES,
   LOSE_LINES,
   TIMEOUT_LINES,
