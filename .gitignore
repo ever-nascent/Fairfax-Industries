@@ -3,3 +3,9 @@ __pycache__/
 node_modules/
 data/*.json
 data/*.tmp
+data/*.json.*.tmp
+# audit-log copies of members' images: private, never upload
+data/auditFiles/
+# mock-up scratch folder
+Claude outputs/
+.claude/
