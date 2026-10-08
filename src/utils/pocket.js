@@ -7,7 +7,7 @@ const { getStore } = require('../storage');
 const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
 const { pickRandom, shuffle } = require('./random');
 const { ASSETS } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'pocket'); // portraits from the deadlock-api.com assets API ("synth"), icon from deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xf46f0b, name: "Pocket's Suitcases", icon: path.join(ART, 'satchel.png'), art: ART, prefix: 'pocket' }; // orange; Enchanter's Satchel
@@ -21,6 +21,7 @@ const ROUNDS = [5, 4, 3, 3, 2, 1];
 // Pocket offers this share of what is left on average, so any deal pays a little less than playing on.
 const OFFER_SHARE = [0.55, 0.65, 0.75, 0.82, 0.88, 0.94];
 const BUTTON_ID = 'suitcase'; // custom id: suitcase:<game id>:<case index|deal|nodeal|keep|swap>
+const { pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'suitcase_again'; // custom id: suitcase_again:<bet>:<player id>
 
 // Pocket: Fairfax's son, on the run with a suitcase that is full of surprises. Polite, anxious, a little dry and
@@ -299,7 +300,14 @@ async function move(id, userId, action) {
   return view(id, { ...game, balance: user.souls });
 }
 
-// Called off with no click for too long (casino.js expireGames): the whole bet back.
+// Time ran out (casino.js expireGames): once a case is chosen and cases have been opened, the game ends on the
+// case they kept (no deal, no swap); before a case is picked the bet goes back.
+function finishOnTimeout(id, state) {
+  if (state.phase === 'pick') return null;
+  const game = finish(structuredClone(state), amount(state.bet, state.values[state.mine]), 'keep');
+  return { pays: [[game.userId, game.prize]], view: (balance) => view(id, { ...game, balance }) };
+}
+
 const staked = (game) => game.bet;
 async function timeoutView(id, game, balance) {
   return timeoutMessage(HOST, {
@@ -312,6 +320,7 @@ module.exports = {
   games,
   staked,
   timeoutView,
+  finishOnTimeout,
   startGame,
   move,
   moves,

@@ -30,8 +30,9 @@ async function onPanel(interaction) {
   // (which also clears the picks), then only the owner sees the answer.
   if (action === 'add_pick') {
     await interaction.deferUpdate();
-    const added = await hideout.addMembers(guild, ownerId, [...interaction.users.values()]);
-    const text = added.length ? `Let in: ${added.map((id) => `<@${id}>`).join(', ')}` : 'Nobody new to let in.';
+    const { added, skipped } = await hideout.addMembers(guild, ownerId, [...interaction.users.values()]);
+    const full = skipped ? `\nYour Hideout holds ${hideout.MAX_MEMBERS} members, so ${skipped} didn't fit. Remove someone first.` : '';
+    const text = (added.length ? `Let in: ${added.map((id) => `<@${id}>`).join(', ')}` : 'Nobody new to let in.') + full;
     return interaction.followUp({ embeds: [replyEmbed(text)], flags: MessageFlags.Ephemeral });
   }
   if (action === 'remove_pick') {

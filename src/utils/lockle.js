@@ -19,13 +19,32 @@ const API = 'https://api.deadlock-api.com';
 const MAX_GUESSES = 6;
 const PER_GUESS = 2; // items shown per guess
 const MIN_ITEMS = MAX_GUESSES * PER_GUESS;
-const DAILY_PAY = [200, 170, 140, 110, 80, 50]; // by the guess it was got on
+const { SCALE } = require('./economy');
+const DAILY_PAY = [200, 170, 140, 110, 80, 50].map((n) => n * SCALE); // by the guess it was got on
 const MIN_BADGE = 101; // Ascendant I (badge = rank * 10 + subrank)
 const COLOR = 0xe0b560;
 const GUESS_ID = 'lockle'; // custom id: lockle:<game id ('daily' for the daily)>:<menu index>
 const AGAIN_ID = 'lockle_again';
 
+const MAX_PRACTICE = 200; // practice games kept in memory; the oldest is dropped past this (abandoned ones never end)
 const store = () => getStore('lockle'); // 'daily' -> { day, build }; <user id> -> their daily game
+// The last good download, kept on disk in its own file so Lockle still works while deadlock-api.com is down:
+// 'assets' -> { items: [[id, item]], heroes: [[id, slug]] }, 'matches' -> the slimmed match pool.
+const saved = () => getStore('locklePool');
+// After a failed download the API is left alone for a few minutes, so every game doesn't wait on it again.
+const RETRY_MS = 5 * 60 * 1000;
+let downUntil = 0;
+const resting = () => { if (Date.now() < downUntil) throw new Error('still waiting to retry'); };
+function warn(what, error) {
+  if (Date.now() >= downUntil) console.warn(`[lockle] ${what} failed (${error.message}); using the last saved copy for ${RETRY_MS / 60000} min`);
+  downUntil = Math.max(downUntil, Date.now() + RETRY_MS);
+}
+// Drops everything held in memory, as a restart would (tests).
+function forget() {
+  assets = undefined;
+  pool = undefined;
+  downUntil = 0;
+}
 const today = (now = new Date()) => now.toISOString().slice(0, 10);
 
 // ---- builds ------------------------------------------------------------------------------------
@@ -39,28 +58,58 @@ async function getJson(url) {
 // Item + hero lists, refreshed once a day (patches add items). { items: Map id -> item, heroes: Map id -> slug }
 let assets;
 async function getAssets() {
-  if (assets?.day !== today()) {
+  if (assets?.day === today()) return assets;
+  try {
+    resting();
     const [items, heroes] = await Promise.all([getJson(`${API}/v1/assets/items`), getJson(`${API}/v1/assets/heroes`)]);
     assets = {
       day: today(),
-      items: new Map(items.filter((i) => i.type === 'upgrade' && i.shopable).map((i) => [i.id, i])),
+      // only what a build needs (toBuild), so the saved copy stays small
+      items: new Map(items.filter((i) => i.type === 'upgrade' && i.shopable).map((i) => [i.id, { name: i.name, shop_image: i.shop_image, cost: i.cost }])),
       heroes: new Map(heroes.map((h) => [h.id, HEROES.find((x) => x.name === h.name)?.slug]).filter(([, slug]) => slug)),
     };
+    await saved().set('assets', { items: [...assets.items], heroes: [...assets.heroes] });
+  } catch (error) {
+    const last = assets ?? (await saved().get('assets'));
+    if (!last) throw error;
+    warn('Item and hero lists', error);
+    assets = last.day ? last : { day: null, items: new Map(last.items), heroes: new Map(last.heroes) }; // day null: try the API again next time
   }
   return assets;
 }
+
+// A match with only what toBuild reads (the API sends far more).
+const slim = (m) => ({
+  match_id: m.match_id,
+  duration_s: m.duration_s,
+  players: (m.players ?? []).map((p) => ({
+    hero_id: p.hero_id,
+    net_worth: p.net_worth,
+    player_rank_initial_display_rank: p.player_rank_initial_display_rank,
+    items: (p.items ?? []).map((it) => ({ item_id: it.item_id, game_time_s: it.game_time_s, sold_time_s: it.sold_time_s })),
+  })),
+});
 
 // Recent Ascendant+ ranked matches with every player's items. Cached 30 min so Practice doesn't refetch each time.
 // ponytail: one pool of 50 matches (~600 builds); widen the time window if the API returns too few.
 let pool;
 async function recentMatches() {
-  if (!pool || Date.now() - pool.at > 30 * 60 * 1000) {
+  if (pool && Date.now() - pool.at <= 30 * 60 * 1000) return pool.matches;
+  try {
+    resting();
     const since = Math.floor(Date.now() / 1000) - 7 * 86400;
     const matches = await getJson(
       `${API}/v1/matches/metadata?match_mode=ranked&game_mode=normal&min_average_badge=${MIN_BADGE}&min_duration_s=1500` +
         `&min_unix_timestamp=${since}&include_player_items=true&include_player_info=true&order_by=match_id&order_direction=desc&limit=50`,
     );
-    pool = { at: Date.now(), matches };
+    if (!matches.length) throw new Error('no matches returned');
+    pool = { at: Date.now(), matches: matches.map(slim) };
+    await saved().set('matches', pool.matches);
+  } catch (error) {
+    const last = pool?.matches ?? (await saved().get('matches'));
+    if (!last) throw error;
+    warn('Recent matches', error);
+    pool = { at: 0, matches: last }; // at 0: try the API again next time
   }
   return pool.matches;
 }
@@ -115,6 +164,7 @@ const practice = new Map();
 async function startPractice(userId) {
   const game = { id: shortId(), userId, build: await randomBuild(), guesses: [], over: false, won: false };
   practice.set(game.id, game);
+  if (practice.size > MAX_PRACTICE) practice.delete(practice.keys().next().value); // the oldest one
   return game;
 }
 
@@ -160,7 +210,7 @@ async function guess(gameId, userId, slug, now = new Date()) {
     return changed ? toSave : current;
   });
   if (!game) return { reply: 'Run `/lockle daily` first.' };
-  if (changed && game.won) await changeSouls(userId, game.souls);
+  if (changed && game.won) await changeSouls(userId, game.souls, 'lockle');
   return { game: { ...game, id: 'daily' } };
 }
 
@@ -369,7 +419,8 @@ async function view(game, guild, now = new Date()) {
     .setDescription(lines.join('\n\n'))
     .addFields(fields)
     .setImage('attachment://build.png')
-    .setFooter({ text: `Match ${build.matchId} (deadlock-api.com)` });
+    // the match number only once it's over: looking the match up gives the hero away
+    .setFooter({ text: game.over ? `Match ${build.matchId} (deadlock-api.com)` : 'A real ranked match (deadlock-api.com)' });
   const files = [new AttachmentBuilder(await renderBuild({ items: build.items, shown, guesses: game.guesses, answer: build.hero, over: game.over, souls: late ? build.souls : null }), { name: 'build.png' })];
   if (game.over) {
     embed.setThumbnail('attachment://hero.png');
@@ -395,4 +446,4 @@ async function view(game, guild, now = new Date()) {
   return { embeds: [embed], files, components };
 }
 
-module.exports = { startPractice, startDaily, guess, view, renderBuild, toBuild, applyGuess, DAILY_PAY, MAX_GUESSES, MIN_ITEMS, GUESS_ID, AGAIN_ID };
+module.exports = { startPractice, startDaily, guess, view, randomBuild, practice, MAX_PRACTICE, forget, renderBuild, toBuild, applyGuess, DAILY_PAY, MAX_GUESSES, MIN_ITEMS, GUESS_ID, AGAIN_ID };

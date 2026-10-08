@@ -39,7 +39,7 @@ function fakeServer() {
       create: async (opts) => {
         const id = String(next++);
         const channel = {
-          id, ...opts,
+          id, parentId: opts.parent, ...opts,
           permissionOverwrites: { list: opts.permissionOverwrites, set: async (list) => (access[opts.name] = list.map((o) => o.id)) },
           send: async () => ({ id: `msg${id}`, pin: async () => {} }),
           delete: async () => cache.delete(id),
@@ -101,4 +101,40 @@ test('buying: level 20 needed, souls needed, one per member', async () => {
   await getStore('hideouts').set('buyer', { voiceId: 'v', textId: 't', members: [], renamedAt: 0 });
   await changeSouls('buyer', 10_000);
   assert.strictEqual(await hideout.buyHideout(member), 'owned');
+});
+
+const { ChannelType } = require('discord.js');
+
+test('a full Hideouts category opens an overflow one ("Hideouts 2") instead of failing', async () => {
+  const { g, made } = fakeServer();
+  g.id = 'g-full';
+  g.channels.cache.set('cat', { id: 'cat', name: 'Hideouts', type: ChannelType.GuildCategory });
+  for (let i = 0; i < 49; i++) g.channels.cache.set(`x${i}`, { id: `x${i}`, parentId: 'cat' }); // 49 of 50 taken
+  await getStore('hideoutSettings').set('g-full', { categoryId: 'cat' });
+  const h = await hideout.makeChannels(g, 'owner', { name: 'Den', members: [], renamedAt: 0 }); // needs 2 slots
+  const overflow = made.find((c) => c.type === ChannelType.GuildCategory);
+  assert.strictEqual(overflow.name, 'Hideouts 2');
+  assert.deepStrictEqual(made.filter((c) => c.type !== ChannelType.GuildCategory).map((c) => c.parent), [overflow.id, overflow.id]);
+  // a second one fits in the overflow category: no third category
+  await hideout.makeChannels(g, 'owner2', { name: 'Den 2', members: [], renamedAt: 0 });
+  assert.strictEqual(made.filter((c) => c.type === ChannelType.GuildCategory).length, 1);
+  assert.ok(h.voiceId && h.textId);
+});
+
+test('Hideout names go through the censor, a Hideout holds at most 25 added members', async () => {
+  const { g } = fakeServer();
+  g.id = 'g-names';
+  await getStore('censor').set('g-names', ['badword']);
+  assert.strictEqual(await hideout.rename(g, 'nobody', 'My Badword Den'), "That name isn't allowed here. Pick another.");
+  assert.strictEqual(await hideout.defaultName({ guild: g, displayName: 'Badword', user: { username: 'okname' } }), "okname's Hideout");
+  assert.strictEqual(await hideout.defaultName({ guild: g, displayName: 'Badword', user: { username: 'badword' } }), 'A Hideout');
+  assert.strictEqual(await hideout.defaultName({ guild: g, displayName: 'Zed', user: { username: 'z' } }), "Zed's Hideout");
+
+  await getStore('hideouts').set('cap-owner', { name: 'Den', voiceId: 'v', textId: 't', panelId: 'p', members: Array.from({ length: 22 }, (_, i) => `m${i}`), renamedAt: 0 });
+  const users = ['m0', 'n1', 'n2', 'n3', 'n4', 'n5'].map((id) => ({ id })).concat([{ id: 'cap-owner' }, { id: 'robot', bot: true }]);
+  const { added, skipped } = await hideout.addMembers(g, 'cap-owner', users);
+  assert.deepStrictEqual(added, ['n1', 'n2', 'n3']); // m0 was already in, owner and bot never
+  assert.strictEqual(skipped, 2);
+  assert.strictEqual((await getStore('hideouts').get('cap-owner')).members.length, hideout.MAX_MEMBERS);
+  await getStore('hideouts').delete('cap-owner');
 });

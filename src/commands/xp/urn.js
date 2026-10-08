@@ -22,6 +22,13 @@ const MISSED_LINES = [
 ];
 const REJUV_ID = 'urn_rejuv'; // custom id: urn_rejuv:<user id>:<use|fresh>
 
+// Days roll over at midnight UTC.
+const nextUrn = () => {
+  const next = new Date();
+  next.setUTCHours(24, 0, 0, 0);
+  return Math.floor(next.getTime() / 1000);
+};
+
 const urnEmbed = () =>
   new EmbedBuilder().setColor(URN_COLOR).setAuthor({ name: 'Soul Urn', iconURL: 'attachment://soul_urn.png' });
 
@@ -33,8 +40,9 @@ function claimedMessage(member, { souls, user, rejuvUsed }) {
     .setThumbnail('attachment://soul_urn_render.png')
     .setDescription(`${member} delivered the urn for ${boldSouls(souls)}.`)
     .addFields(
-      { name: 'Streak', value: `${bar} **${days}**${user.urnStreak >= URN_MAX_DAYS ? ' (max bonus)' : ''}` },
+      { name: 'Streak', value: `${bar}\n**${days}**${user.urnStreak >= URN_MAX_DAYS ? ' (max bonus)' : ''}` }, // the bar on its own line (his call, Oct 2)
       { name: 'Balance', value: soulsText(user.souls), inline: true },
+      { name: 'Next Urn', value: `<t:${nextUrn()}:R>`, inline: true },
     )
     .setFooter({ text: `"${URN_LINE}"` });
   if (rejuvUsed) {
@@ -73,11 +81,7 @@ module.exports = {
     const result = await claimUrn(interaction.user.id);
     if (result.ask) return interaction.reply(rejuvMessage(interaction.member, result.user));
     if (!result.claimed) {
-      const next = new Date();
-      next.setUTCHours(24, 0, 0, 0); // days roll over at midnight UTC
-      const embed = urnEmbed().setDescription(
-        `You already claimed today's urn. Next one <t:${Math.floor(next.getTime() / 1000)}:R>.`,
-      );
+      const embed = urnEmbed().setDescription(`You already claimed today's urn. Next one <t:${nextUrn()}:R>.`);
       return interaction.reply({ embeds: [embed], files: [icon()], flags: MessageFlags.Ephemeral });
     }
     return interaction.reply(claimedMessage(interaction.member, result));

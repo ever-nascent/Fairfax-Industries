@@ -1,7 +1,8 @@
 const { MessageFlags } = require('discord.js');
-const { heroCardsView, SECTION_VIEWS, STYLES, SECTION_ID, SELECT_ID, STYLE_ID, BUY_ID, EQUIP_ID, BOOST_ID, REJUV_ID, HIDEOUT_BUY_ID } = require('../utils/shop');
+const { heroCardsView, SECTION_VIEWS, STYLES, SECTION_ID, SELECT_ID, STYLE_ID, BUY_ID, EQUIP_ID, BOOST_ID, REJUV_ID, HIDEOUT_BUY_ID, receipts, FAILED } = require('../utils/shop');
 const { buyCard, equipCard, buyBoost, buyRejuv } = require('../utils/xp');
-const { buyHideout } = require('../utils/hideout');
+const { buyHideout, getHideout } = require('../utils/hideout');
+const { replyEmbed } = require('../utils/embeds');
 
 // /shop's dropdowns and buttons redraw the Shop message with `view(member)`.
 // Only the person who opened the Shop can use them.
@@ -16,6 +17,21 @@ async function redraw(interaction, view, before) {
   if (before) await before();
   // attachments: [] drops the previous card image so only the new one is attached.
   await interaction.editReply({ ...(await view(interaction.member)), attachments: [] });
+}
+
+// A purchase: `buy()` runs after the owner check, the Shop is redrawn, then the buyer privately gets the Shopkeeper's
+// receipt (`receipt(result)`), or `failed` if the purchase threw (it's logged).
+async function purchase(interaction, view, buy, receipt, failed = FAILED.card) {
+  let text;
+  await redraw(interaction, view, async () => {
+    try {
+      text = await receipt(await buy());
+    } catch (error) {
+      console.error(`[shop] ${interaction.customId.split(':')[0]} failed:`, error);
+      text = failed;
+    }
+  });
+  if (text) await interaction.followUp({ embeds: [replyEmbed(text)], flags: MessageFlags.Ephemeral });
 }
 
 module.exports = [
@@ -49,7 +65,7 @@ module.exports = [
     execute: (interaction) => {
       const [, , slug, style] = interaction.customId.split(':');
       if (!STYLES[style]) return;
-      return redraw(interaction, (m) => heroCardsView(m, slug, style), () => buyCard(interaction.user.id, `${slug}:${style}`, STYLES[style].price));
+      return purchase(interaction, (m) => heroCardsView(m, slug, style), () => buyCard(interaction.user.id, `${slug}:${style}`, STYLES[style].price), (r) => receipts.card(r, slug, style));
     },
   },
   {
@@ -67,20 +83,27 @@ module.exports = [
     label: 'Soul Boost buy',
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${BOOST_ID}:`),
     // The redraw shows the result (time left, or Buy greyed out if they couldn't afford it).
-    execute: (interaction) => redraw(interaction, SECTION_VIEWS['soul-boost'], () => buyBoost(interaction.user.id)),
+    execute: (interaction) => purchase(interaction, SECTION_VIEWS['soul-boost'], () => buyBoost(interaction.user.id), receipts.boost),
   },
   {
     name: 'shop-rejuv',
     label: 'Rejuv buy',
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${REJUV_ID}:`),
     // The redraw shows the result (carrying one more, or Buy greyed out).
-    execute: (interaction) => redraw(interaction, SECTION_VIEWS.rejuv, () => buyRejuv(interaction.user.id)),
+    execute: (interaction) => purchase(interaction, SECTION_VIEWS.rejuv, () => buyRejuv(interaction.user.id), receipts.rejuv),
   },
   {
     name: 'shop-hideout',
     label: 'Hideout buy',
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${HIDEOUT_BUY_ID}:`),
     // Makes the channels, then the redraw shows Owned + a link to them.
-    execute: (interaction) => redraw(interaction, SECTION_VIEWS.hideout, () => buyHideout(interaction.member)),
+    execute: (interaction) =>
+      purchase(
+        interaction,
+        SECTION_VIEWS.hideout,
+        () => buyHideout(interaction.member),
+        async (result) => receipts.hideout(result, result ? null : await getHideout(interaction.user.id)),
+        FAILED.hideout,
+      ),
   },
 ];

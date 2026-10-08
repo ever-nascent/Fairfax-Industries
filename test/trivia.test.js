@@ -1,5 +1,6 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
+const { SCALE } = require('../src/utils/economy');
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
@@ -68,7 +69,7 @@ test('a solo round: only the runner answers, one guess, right pays once, wrong p
   const win = await tv.guess(round.id, 'a', question.answer, null);
   assert.ok(win.payload);
   assert.ok((await tv.guess(round.id, 'a', question.answer, null)).reply); // round over, no double pay
-  assert.strictEqual((await getUser('a')).souls, 25);
+  assert.strictEqual((await getUser('a')).souls, 25 * SCALE);
   assert.strictEqual((await getUser('b')).souls, 0);
   assert.strictEqual(win.payload.components[0].components[question.answer].data.style, 3); // green
   assert.strictEqual(win.payload.components[1].components[0].data.label, 'Next Question');
@@ -81,7 +82,7 @@ test('a solo round: only the runner answers, one guess, right pays once, wrong p
   const lose = await tv.guess(r2.round.id, 'a', wrong, null);
   assert.strictEqual(lose.payload.components[0].components[wrong].data.style, 4); // red
   assert.match(lose.payload.embeds[0].toJSON().description, /Streak ▱{10} \*\*0\/10\*\*/);
-  assert.strictEqual((await getUser('a')).souls, 25);
+  assert.strictEqual((await getUser('a')).souls, 25 * SCALE);
 });
 
 test('the item data knows upgrades: every upgrade is a higher-tier item in the list', () => {
@@ -153,11 +154,11 @@ test('typed rounds: capitals, spaces and punctuation are forgiven, spelling is n
   const win = await tv.guess(r1.round.id, 'f', '  high velocity ROUNDS ', null);
   assert.match(win.payload.embeds[0].toJSON().description, /got it/);
   assert.ok(tv.RIGHT_LINES.map((l) => `"${l}"`).includes(win.payload.embeds[0].toJSON().footer.text)); // the tip is gone, Dynamo's line instead
-  assert.strictEqual((await getUser('f')).souls, 25);
+  assert.strictEqual((await getUser('f')).souls, 25 * SCALE);
   const r2 = await tv.startRound('f', null, async () => {}, { question: q });
   const lose = await tv.guess(r2.round.id, 'f', 'High Velocity Round', null);
   assert.match(lose.payload.embeds[0].toJSON().description, /you said \*\*High Velocity Round\*\*/);
-  assert.strictEqual((await getUser('f')).souls, 25);
+  assert.strictEqual((await getUser('f')).souls, 25 * SCALE);
 });
 
 test('no cooldown, and time running out ends the round', async () => {

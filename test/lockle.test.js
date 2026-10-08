@@ -1,5 +1,6 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
+const { SCALE } = require('../src/utils/economy');
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
@@ -30,7 +31,7 @@ test('daily: same build for everyone, pays by guess once, survives a restart, no
   assert.ok(won.won && won.over);
   assert.strictEqual(won.souls, L.DAILY_PAY[1]);
   await L.guess('daily', 'a', 'kelvin', now); // a double pick pays nothing more
-  assert.strictEqual((await getUser('a')).souls, 170);
+  assert.strictEqual((await getUser('a')).souls, 17 * SCALE * 10);
   const again = await L.startDaily('a', now); // "restart": comes back from the file, still over
   assert.ok(again.over && again.won);
   assert.strictEqual((await L.guess('daily', 'b', 'kelvin', now)).reply, 'Run `/lockle daily` first.');

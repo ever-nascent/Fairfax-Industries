@@ -1,0 +1,16 @@
+{
+  "1378474650010652762": {
+    "hero": "Haze",
+    "cooldowns": {
+      "small-camp": 1790927936480,
+      "roam": 1790926110866,
+      "medium-camp": 1790924359560
+    },
+    "rejuvs": 0,
+    "buffs": {
+      "fireRate": 1,
+      "abilityRange": 2
+    },
+    "bridge": []
+  }
+}

@@ -34,10 +34,10 @@ const names = (i) => i.calls.map(([name]) => name);
 const fakeGame = { BUTTON_ID: 'g', AGAIN_ID: 'g_again', startGame, games: () => getStore('fakeGames') };
 
 test('takeBet: minimum bet, balance check, takes the souls', async () => {
-  await changeSouls('casino-bettor', 50);
+  await changeSouls('casino-bettor', 5 * MIN_BET);
   assert.match(await takeBet('casino-bettor', MIN_BET - 1), /minimum bet/);
-  assert.match(await takeBet('casino-bettor', 60), /don't have/);
-  assert.strictEqual(await takeBet('casino-bettor', 50), null);
+  assert.match(await takeBet('casino-bettor', 6 * MIN_BET), /don't have/);
+  assert.strictEqual(await takeBet('casino-bettor', 5 * MIN_BET), null);
   assert.strictEqual((await getUser('casino-bettor')).souls, 0);
 });
 

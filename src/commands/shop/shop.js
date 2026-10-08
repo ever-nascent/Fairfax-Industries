@@ -1,12 +1,12 @@
-const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const { shopView } = require('../../utils/shop');
 
 module.exports = {
   data: new SlashCommandBuilder().setName('shop').setDescription('Browse the Shop'),
 
-  // Only you see your Shop, so nobody else can flip through your previews.
+  // Public (his call, Oct 4); only the runner can use its buttons.
   async execute(interaction) {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
     await interaction.editReply(await shopView(interaction.member));
   },
 };

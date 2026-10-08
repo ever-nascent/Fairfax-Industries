@@ -48,3 +48,25 @@ Trivia host (assets/dynamo): the Dynamo portraits ("Dynamo card", "Dynamo Gloat"
 ability icon from deadlock.wiki (https://deadlock.wiki), game art by Valve.
 
 Pocket's Suitcases (assets/pocket): Pocket portraits (synth_card, synth_card_gloat, synth_card_critical) from the deadlock-api.com assets API and the Enchanter's Satchel icon from deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
+Hero Farming (assets/farm): the data files (heroes, abilities, items, npcs .json) are the deadlock.wiki data pages (Data:HeroData.json, AbilityData, ItemCards,
+NpcData, GenericData), built by `npm run farm-data`. The icons in assets/farm/icons are deadlock.wiki files: the minimap camp icons (MapEasyCampIcon, MapMediumCampIcon,
+MapHardCampIcon), MapSacrificeMachineIcon, Fairfax_crates (a scene picture; the wiki has no Crate icon), Tough_Crate, Sinner's_Sacrifice_machine (the Crate and Sinner's Sacrifice ones are cropped square), Midboss, Guardian_Icon, Walker_Icon, Base_guardians, Shrine_Icon and
+Patron_Icon, from https://deadlock.wiki, game art by Valve.
+The Golden Statue picture (assets/farm/icons/golden-statue.png, the owl statue) was supplied by Zechariah, game art by Valve.
+The Character Unlock Token (assets/farm/icons/unlock-token.png) is deadlock.wiki's "Ultra priority token" file, game art by Valve.
+The buff pictures in assets/farm/buffs are the Powerup tome files from deadlock.wiki (Permanent Buff page, https://deadlock.wiki/Permanent_Buff), game art by Valve; which tome is which buff comes from the game's own data (Data:MiscData.json).
+
+assets/farm/icons/lane-york.png, lane-broadway.png, lane-park.png (the lane badges), base-guardian.png, shrine.png, patron.png and
+patron-weakened.png: pictures supplied by Zechariah (Oct 3, 2026; Deadlock art, (c) Valve), cropped / background removed here.
+assets/farm/icons/trooper.png, trooper-medic.png and trooper-melee.png (the lane troopers): pictures supplied by Zechariah (Oct 3, 2026; Deadlock art,
+(c) Valve), background removed here.
+assets/farm/ui/ (the weapon / vitality / spirit emblems, stat icons, tier numerals, lock, ability point and lane icons) and assets/farm/items/ (the
+HUD icon of every shop item): Deadlock game art, (c) Valve, downloaded Oct 3, 2026 from https://deadlock-api.com (unofficial) for the hero card.
+
+farm/shop/ (the Hero Farming item shop): Deadlock's own shop art (tab backgrounds "catalog_shop_bg_*", item card backs "card_backer_*", tab shape,
+tab icons, price glyph) from deadlock-api.com's asset bucket (assets-bucket.deadlock-api.com/assets-api-res/images/shop/catalog), the paths
+deadlock-ui (github.com/deadlock-api/deadlock-ui) uses. Downloaded Oct 3, 2026. Deadlock and its art are Valve's.
+
+assets/farm/rivals/ (encounters: each hero's "Gloat" and "Critical" portraits, shown when a rival wins or is beaten): deadlock.wiki files
+"<Hero> Gloat" / "<Hero> Critical" (Celeste: "Celeste Critical Health"), game art by Valve. Downloaded Oct 3, 2026 (npm run farm-data).

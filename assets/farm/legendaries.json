@@ -1,0 +1,1098 @@
+{
+ "upgrade_omnicharge_pendant": {
+  "Key": "upgrade_omnicharge_pendant",
+  "Name": "Omnicharge Signet",
+  "Description": "Imbue any active non-ultimate ability with <span class=\"highlight\">Bonus Ability Charges</span>. Already charged abilities receive more bonus charges.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Tech",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Innate",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "BonusSpiritForChargedAbilities",
+     "Value": 50,
+     "Label": "Bonus Spirit Power for Charged Abilities",
+     "Prefix": "+",
+     "Postfix": ""
+    },
+    {
+     "Key": "CooldownBetweenChargeReduction",
+     "Value": 70,
+     "Label": "Faster Time Between Charges",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "CooldownReductionOnChargedAbilities",
+     "Value": 30,
+     "Label": "Cooldown Reduction For Charged Abilities",
+     "Prefix": "+",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  },
+  "Info2": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "BonusAbilityCharges",
+     "Value": 4,
+     "Label": "Charged Ability",
+     "Prefix": "{s:sign}",
+     "Postfix": ""
+    },
+    {
+     "Key": "BonusAbilityChargesNonCharge",
+     "Value": 2,
+     "Label": "Non Charged Ability",
+     "Prefix": "{s:sign}",
+     "Postfix": ""
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_shrink_ray": {
+  "Key": "upgrade_shrink_ray",
+  "Name": "Shrink Ray",
+  "Description": "Reduces <span class=\"highlight\">Model Size</span> and grants <span class=\"highlight\">Move Speed</span> to the target. Allows <span class=\"highlight\">usage of tunnels</span> in this mode. Can be self-cast.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Tech",
+  "Activation": "Active",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Active",
+   "DescKey": null,
+   "Cooldown": 30,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "AbilityCooldown",
+     "Value": 30,
+     "Label": "Cooldown",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "ShrinkDuration",
+     "Value": 60,
+     "Label": "Shrink Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "AbilityCastRange",
+     "Value": 40,
+     "Label": "Cast Range",
+     "Prefix": "",
+     "Postfix": "m"
+    },
+    {
+     "Key": "ModelScaleGrowthTooltip",
+     "Value": -50,
+     "Label": "Model Scale",
+     "Prefix": "",
+     "Postfix": "%"
+    },
+    {
+     "Key": "BonusMoveSpeed",
+     "Value": 5,
+     "Label": "Move Speed",
+     "Prefix": "{s:sign}",
+     "Postfix": " m"
+    },
+    {
+     "Key": "BonusFireRate",
+     "Value": 20,
+     "Label": "Fire Rate",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_infinite_rounds": {
+  "Key": "upgrade_infinite_rounds",
+  "Name": "Infinite Rounds",
+  "Description": "You have <span class=\"highlight\">infinite</span> ammo.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Weapon",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Innate",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "BonusBulletSpeedPercent",
+     "Value": 200,
+     "Label": "Bullet Velocity",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "BonusFireRate",
+     "Value": 35,
+     "Label": "Fire Rate",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  },
+  "Info2": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "ProcChance",
+     "Value": 65,
+     "Label": "Proc Chance",
+     "Prefix": "",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  },
+  "Info3": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [],
+   "Alt": []
+  }
+ },
+ "upgrade_icarus_wings": {
+  "Key": "upgrade_icarus_wings",
+  "Name": "Seraphim Wings",
+  "Description": "When Airborne, You deal more damage and take reduced damage. Allows <span class=\"highlight\">unlimited</span> Air Dash and Jumping.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Armor",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Innate",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "StaminaCooldownReduction",
+     "Value": 120,
+     "Label": "Stamina Recovery",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "GravityScale",
+     "Value": -70,
+     "Label": "Gravity Scale",
+     "Prefix": "",
+     "Postfix": "%"
+    },
+    {
+     "Key": "AirControlPercent",
+     "Value": 100,
+     "Label": "Air Control",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "AirControlAccelPercent",
+     "Value": 50,
+     "Label": "Air Acceleration",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  },
+  "Info2": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "AirBonusDamageGiven",
+     "Value": 40,
+     "Label": "In Air Damage",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "AirBonusDamageTaken",
+     "Value": -40,
+     "Label": "In Air Damage Received",
+     "Prefix": "",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_mystical_piano": {
+  "Key": "upgrade_mystical_piano",
+  "Name": "Mystical Piano",
+  "Description": "After a short delay, enemies in the target area will be stunned and have their stamina depleted. After the stun they will be temporarily dazed.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Tech",
+  "Activation": "Active",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Active",
+   "DescKey": null,
+   "Cooldown": 23,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "StunDelay",
+     "Value": 1.7,
+     "Label": "Stun Delay",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "Radius",
+     "Value": 12,
+     "Label": "Radius",
+     "Prefix": "",
+     "Postfix": "m"
+    },
+    {
+     "Key": "DazeDuration",
+     "Value": 2,
+     "Label": "Daze Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_nullification_aura": {
+  "Key": "upgrade_nullification_aura",
+  "Name": "Nullification Burst",
+  "Description": "Removes any positive buffs and prevents stamina usage and healing effects on enemies.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Armor",
+  "Activation": "Active",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Innate",
+   "DescKey": null,
+   "Cooldown": 18,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "StatusResistancePercent",
+     "Value": 40,
+     "Label": "Debuff Resist",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "BonusHealth",
+     "Value": 300,
+     "Label": "Bonus Health",
+     "Prefix": "{s:sign}",
+     "Postfix": ""
+    }
+   ],
+   "Alt": []
+  },
+  "Info2": {
+   "Type": "Active",
+   "DescKey": null,
+   "Cooldown": 18,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "AbilityCooldown",
+     "Value": 18,
+     "Label": "Cooldown",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "EndRadius",
+     "Value": 20,
+     "Label": "End Radius",
+     "Prefix": "",
+     "Postfix": "m"
+    },
+    {
+     "Key": "AbilityDuration",
+     "Value": 7,
+     "Label": "Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "Damage",
+     "Value": 250,
+     "Label": "Damage",
+     "Prefix": "",
+     "Postfix": ""
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_celestial_guidance": {
+  "Key": "upgrade_celestial_guidance",
+  "Name": "Celestial Blessing",
+  "Description": "Applies an extremely powerful cleanse that replenishes your allies globally.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Armor",
+  "Activation": "Active",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Active",
+   "DescKey": null,
+   "Cooldown": 30,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "MinHeal",
+     "Value": 400,
+     "Label": "Min. Heal",
+     "Prefix": "",
+     "Postfix": ""
+    },
+    {
+     "Key": "BuffDuration",
+     "Value": 6,
+     "Label": "Buff Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "HealPercentAmount",
+     "Value": 60,
+     "Label": "Heal Amount",
+     "Prefix": "",
+     "Postfix": "%"
+    },
+    {
+     "Key": "StaminaCooldownReduction",
+     "Value": 100,
+     "Label": "Stamina Recovery",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "BuffMoveSpeedBonus",
+     "Value": 5,
+     "Label": "Move Speed",
+     "Prefix": "{s:sign}",
+     "Postfix": "m"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_eternal_gift": {
+  "Key": "upgrade_eternal_gift",
+  "Name": "Eternal Gift",
+  "Description": "Periodically gain a random permanent stat buff.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Armor",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 165,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "BuffFrequency",
+     "Value": 2,
+     "Label": "Buff Frequency",
+     "Prefix": "",
+     "Postfix": "s"
+    }
+   ],
+   "Alt": []
+  },
+  "Info2": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 165,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "AbilityCooldown",
+     "Value": 165,
+     "Label": "Cooldown",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "RespawnTime",
+     "Value": -70,
+     "Label": "Respawn Time",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_patrons_blessing": {
+  "Key": "upgrade_patrons_blessing",
+  "Name": "Mystic Conduit",
+  "Description": "Provides yourself and allies with a powerful spirit focused aura. Has reduced values on allies.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Tech",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 25,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "AllyPercentage",
+     "Value": 50,
+     "Label": "Ally Percentage",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "Radius",
+     "Value": 25,
+     "Label": "Radius",
+     "Prefix": "",
+     "Postfix": "m"
+    },
+    {
+     "Key": "TechRangeMultiplier",
+     "Value": 40,
+     "Label": "Ability Range",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "CooldownReduction",
+     "Value": 40,
+     "Label": "Ability Cooldown Reduction",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  },
+  "Info2": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 25,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "AbilityCooldown",
+     "Value": 25,
+     "Label": "Cooldown",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "DamageThreshold",
+     "Value": 300,
+     "Label": "Damage Threshold",
+     "Prefix": "",
+     "Postfix": ""
+    },
+    {
+     "Key": "DamageThresholdDuration",
+     "Value": 5,
+     "Label": "DamageThresholdDuration",
+     "Prefix": "",
+     "Postfix": ""
+    },
+    {
+     "Key": "HealAmount",
+     "Value": 700,
+     "Label": "Heal Amount",
+     "Prefix": "",
+     "Postfix": ""
+    },
+    {
+     "Key": "HealRadius",
+     "Value": 35,
+     "Label": "Heal Radius",
+     "Prefix": "",
+     "Postfix": "m"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_eldritch_shot": {
+  "Key": "upgrade_eldritch_shot",
+  "Name": "Haunting Shot",
+  "Description": "Your next bullet applies a powerful debuff reducing the enemy's damage output, healing and movement speed. It also deals <svg width=\"128\" height=\"128\" viewBox=\"0 0 128 128\" fill=\"white\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"M53.7875 20.0238C48.6533 13.3022 40.8042 9 32.0027 9C16.5345 9 4 22.2789 4 38.6558C4 38.7707 4.00052 38.8854 4.00155 39H91.8416L94.7229 33.1618C97.2906 27.9591 104.71 27.9591 107.277 33.1618L110.159 39H115.998C115.999 38.8854 116 38.7707 116 38.6558C116 22.2789 103.466 9 87.9973 9C79.1958 9 71.3467 13.3022 66.2125 20.0238C65.7565 20.6214 65.336 21.1783 64.9462 21.6946C62.4734 24.9699 61.2367 26.6078 59.9993 26.6084C58.7614 26.609 57.5227 24.9711 55.0449 21.6946C54.6545 21.1783 54.2333 20.6214 53.7766 20.0238H53.7875Z\" fill=\"white\"/>\n<path d=\"M79.7015 79L79.5588 79.8323C78.7516 84.5386 82.6742 88.3253 86.9508 88.0132C86.8571 88.1111 86.7634 88.209 86.6696 88.3069C78.1991 97.1552 69.4174 106.328 62.6218 116.742C61.1111 119.051 58.8889 119.051 57.3782 116.742C50.5788 106.325 41.7966 97.1509 33.3264 88.303C30.3317 85.1748 27.3761 82.0873 24.5608 79H79.7015Z\" fill=\"white\"/>\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M101.901 35.5496C101.512 34.8168 100.488 34.8168 100.099 35.5497L93.0406 48.845C92.8929 49.123 92.6315 49.3183 92.3283 49.3766L77.8385 52.1641C77.0398 52.3178 76.7233 53.3185 77.2815 53.9252L87.4091 64.9295C87.6209 65.1597 87.7208 65.4756 87.6812 65.7898L85.7842 80.8078C85.6796 81.6357 86.5083 82.2542 87.2424 81.8963L100.56 75.402C100.838 75.2662 101.162 75.2662 101.44 75.402L114.758 81.8963C115.492 82.2542 116.32 81.6357 116.216 80.8078L114.319 65.7898C114.279 65.4756 114.379 65.1597 114.591 64.9295L124.718 53.9252C125.277 53.3185 124.96 52.3178 124.161 52.1641L109.672 49.3766C109.369 49.3183 109.107 49.123 108.959 48.845L101.901 35.5496ZM100.036 43.0789C100.366 42.1579 101.634 42.1579 101.964 43.0789L105.019 51.6179C105.01 51.6983 105.017 51.7822 105.041 51.8662L107.687 61.1634C107.817 61.6217 108.371 61.7807 108.714 61.4584L111.336 58.9947C111.498 58.8428 111.571 58.6153 111.528 58.3944L110.687 53.9877H117.422C118.389 53.9877 118.82 55.2373 118.067 55.8622L110.702 61.9792C110.601 61.9949 110.502 62.0365 110.413 62.1066L102.948 68.0247C102.581 68.3164 102.638 68.9036 103.055 69.1143L106.244 70.7259C106.44 70.8252 106.673 70.8121 106.858 70.6913L110.254 68.4723L112.085 75.0776C112.35 76.0329 111.299 76.8003 110.508 76.2296L101.591 69.8003C101.471 69.7136 101.337 69.6563 101.199 69.6285L95.0376 65.3393C94.6474 65.0677 94.116 65.3179 94.0614 65.7987L93.6534 69.3978C93.6281 69.6213 93.718 69.8423 93.8907 69.9808L96.868 72.3692L91.5448 76.2279C90.7554 76.8001 89.7037 76.0372 89.9645 75.0816L92.6557 65.2197C92.6717 65.1902 92.6845 65.1581 92.6935 65.1237L95.058 56.0862C95.1347 55.7934 94.8946 55.5156 94.6024 55.5592L90.6768 56.1448C90.5236 56.1678 90.3959 56.2773 90.3466 56.428L89.0988 60.2424L83.9931 56.1163C83.2355 55.5041 83.6428 54.2537 84.6065 54.2331L94.8405 54.0152C94.8711 54.0191 94.9023 54.0206 94.934 54.0198L103.141 53.8011C103.588 53.7892 103.88 53.3157 103.7 52.8958L102.212 49.4285C102.111 49.1944 101.886 49.0435 101.637 49.0435H97.9024L100.036 43.0789Z\" fill=\"white\"/>\n<path d=\"M67 57C68.1046 57 69 57.8954 69 59C69 60.1046 68.1046 61 67 61H7C5.89543 61 5 60.1046 5 59C5 57.8954 5.89543 57 7 57H67Z\" fill=\"white\"/>\n</svg>\n<span class=\"inline-attribute-label BonusSpiritDamage\">bonus spirit damage</span> based on the target's current Health. <br><br>The bullet is larger and penetrates through targets.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Weapon",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 2.5,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "AbilityCooldown",
+     "Value": 2.5,
+     "Label": "Cooldown",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "BulletRadius",
+     "Value": 1.5,
+     "Label": "Bullet Radius",
+     "Prefix": "",
+     "Postfix": "m"
+    },
+    {
+     "Key": "DebuffDuration",
+     "Value": 4,
+     "Label": "Debuff Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "MovementSpeedSlow",
+     "Value": 32,
+     "Label": "Move Speed",
+     "Prefix": "-",
+     "Postfix": "%"
+    },
+    {
+     "Key": "GroundDashReductionPercent",
+     "Value": -36,
+     "Label": "Dash Distance",
+     "Prefix": "",
+     "Postfix": "%"
+    },
+    {
+     "Key": "HealthPctDamage",
+     "Value": 10,
+     "Label": "Current Health Damage",
+     "Prefix": "",
+     "Postfix": "%"
+    },
+    {
+     "Key": "OutgoingDamagePenaltyPercent",
+     "Value": -40,
+     "Label": "Damage Penalty",
+     "Prefix": "",
+     "Postfix": "%"
+    },
+    {
+     "Key": "HealAmpReceivePenaltyPercent",
+     "Value": -40,
+     "Label": "Incoming Healing",
+     "Prefix": "",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_cloak_of_opportunity": {
+  "Key": "upgrade_cloak_of_opportunity",
+  "Name": "Cloak of Opportunity",
+  "Description": "Block the next debuff that would apply <span class=\"highlight\">movement lock, Stun, Chained, Immobilize, or Sleep</span> and become <span class=\"highlight\">Unstoppable</span>. Also gain a <span class=\"highlight\">Barrier</span> and bonus <svg width=\"128\" height=\"128\" viewBox=\"0 0 128 128\" fill=\"#0F9\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"M81.5143 72.4711L117.08 34.3552L68.8057 2L57.0343 31.8506L11 87.2257L34.7257 103.141L43.3657 96.9254L58.4286 118.989L83.2514 124.977L108.646 125L114.269 116.666L95.96 103.665L81.5143 72.4711Z\" fill=\"#0F9\"/>\n</svg>\n<span class=\"inline-attribute-label MoveSpeed\" style=\"color: #0F9;\">move speed</span>",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Armor",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 12,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "StatusImmuneDuration",
+     "Value": 4,
+     "Label": "Unstoppable Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "BuffDuration",
+     "Value": 6,
+     "Label": "Buff Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "AbilityCooldown",
+     "Value": 12,
+     "Label": "Cooldown",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "CombatBarrier",
+     "Value": 500,
+     "Label": "Barrier",
+     "Prefix": "",
+     "Postfix": ""
+    },
+    {
+     "Key": "BonusMoveSpeed",
+     "Value": 3,
+     "Label": "Move Speed",
+     "Prefix": "{s:sign}",
+     "Postfix": " m"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_runed_gauntlets": {
+  "Key": "upgrade_runed_gauntlets",
+  "Name": "Runed Gauntlets",
+  "Description": "Every time you land a heavy melee, your existing cooldowns get reduced.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Weapon",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Innate",
+   "DescKey": null,
+   "Cooldown": 10,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "MeleeResistPercent",
+     "Value": 50,
+     "Label": "Melee Resist",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "BonusMeleeDamagePercent",
+     "Value": 30,
+     "Label": "Melee Damage",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "MeleeDistanceScale",
+     "Value": 150,
+     "Label": "Heavy Melee Distance",
+     "Prefix": "+",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  },
+  "Info2": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 10,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "AbilityCooldown",
+     "Value": 10,
+     "Label": "Cooldown",
+     "Prefix": "",
+     "Postfix": "s"
+    }
+   ],
+   "Alt": []
+  },
+  "Info3": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 10,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "CooldownReductionOnHitPct",
+     "Value": 16,
+     "Label": "Cooldown Reduction on Hit",
+     "Prefix": "",
+     "Postfix": "%"
+    },
+    {
+     "Key": "CooldownReductionOnHitMin",
+     "Value": 4,
+     "Label": "Min Reduction",
+     "Prefix": "",
+     "Postfix": "s"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_electric_slippers": {
+  "Key": "upgrade_electric_slippers",
+  "Name": "Electric Slippers",
+  "Description": "When sliding, evade bullets, gain fire rate and deal damage to enemies around you. <span class=\"diminish\"><br><br>Cooldown is per target.</span>",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Armor",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Innate",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "Stamina",
+     "Value": 2,
+     "Label": "Stamina",
+     "Prefix": "{s:sign}",
+     "Postfix": ""
+    },
+    {
+     "Key": "SlideScale",
+     "Value": 80,
+     "Label": "Slide Distance",
+     "Prefix": "+",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  },
+  "Info2": {
+   "Type": "Passive",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "Radius",
+     "Value": 12,
+     "Label": "Radius",
+     "Prefix": "",
+     "Postfix": "m"
+    },
+    {
+     "Key": "ProcCooldown",
+     "Value": 0.3,
+     "Label": "Max Frequency",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "Damage",
+     "Value": 100,
+     "Label": "Damage",
+     "Prefix": "",
+     "Postfix": ""
+    },
+    {
+     "Key": "EvasionWhileSliding",
+     "Value": 60,
+     "Label": "Evasion While Sliding",
+     "Prefix": "",
+     "Postfix": ""
+    },
+    {
+     "Key": "FireRateWhileSliding",
+     "Value": 60,
+     "Label": "Fire Rate While Sliding",
+     "Prefix": "",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_prism_blast": {
+  "Key": "upgrade_prism_blast",
+  "Name": "Prism Blast",
+  "Description": "You enter a void state and become <span class=\"highlight\">untargetable and invincible</span> for a short duration, during which lasers blast out and rotate around you.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Tech",
+  "Activation": "Active",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Active",
+   "DescKey": null,
+   "Cooldown": 40,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "AbilityCooldown",
+     "Value": 40,
+     "Label": "Cooldown",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "DPS",
+     "Value": 270,
+     "Label": "Damage Per Second",
+     "Prefix": "",
+     "Postfix": ""
+    },
+    {
+     "Key": "AbilityDuration",
+     "Value": 6,
+     "Label": "Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_unstable_concoction": {
+  "Key": "upgrade_unstable_concoction",
+  "Name": "Unstable Concoction",
+  "Description": "Consume a concoction that grants you <span class=\"highlight\">Unstoppable</span> and increased <span class=\"highlight\">speed, health, spirit and weapon damage</span>. After a short duration <span class=\"highlight\">you die and explode</span>, stunning nearby enemies and dealing damage based on your maximum health. Dying this way reduces your respawn time by <span class=\"highlight\">50%</span>.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Tech",
+  "Activation": "Active",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Active",
+   "DescKey": null,
+   "Cooldown": 25,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "AbilityDuration",
+     "Value": 4,
+     "Label": "Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "BaseAttackDamagePercent",
+     "Value": 150,
+     "Label": "Weapon Damage",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "Radius",
+     "Value": 22,
+     "Label": "Radius",
+     "Prefix": "",
+     "Postfix": "m"
+    },
+    {
+     "Key": "TechPower",
+     "Value": 150,
+     "Label": "Spirit Power",
+     "Prefix": "{s:sign}",
+     "Postfix": ""
+    },
+    {
+     "Key": "MaxHPDamage",
+     "Value": 30,
+     "Label": "Max Health Damage",
+     "Prefix": "",
+     "Postfix": "%"
+    },
+    {
+     "Key": "StunDuration",
+     "Value": 3,
+     "Label": "Stun Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "BonusMoveSpeed",
+     "Value": 10,
+     "Label": "Move Speed",
+     "Prefix": "{s:sign}",
+     "Postfix": " m"
+    },
+    {
+     "Key": "BonusHealth",
+     "Value": 3000,
+     "Label": "Bonus Health",
+     "Prefix": "{s:sign}",
+     "Postfix": ""
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_shivas_bracelet": {
+  "Key": "upgrade_shivas_bracelet",
+  "Name": "Frostbite Charm",
+  "Description": "Imbued ability has its <span class=\"highlight\">Cooldown reduced</span> and gains <span class=\"highlight\">Spirit Power</span>. When the ability deals damage, <span class=\"highlight\">freeze</span> the target and apply <span class=\"highlight\">bonus damage</span>. <span class=\"diminish\"><br><br>Cooldown is per target.</span>",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Tech",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Active",
+   "DescKey": null,
+   "Cooldown": 10,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "ImbuedCooldownReduction",
+     "Value": 50,
+     "Label": "Imbued Ability Cooldown Reduction",
+     "Prefix": "{s:sign}",
+     "Postfix": "%"
+    },
+    {
+     "Key": "ImbuedTechPower",
+     "Value": 70,
+     "Label": "Imbued Ability Spirit Power",
+     "Prefix": "{s:sign}",
+     "Postfix": ""
+    },
+    {
+     "Key": "Damage",
+     "Value": 200,
+     "Label": "Damage",
+     "Prefix": "",
+     "Postfix": ""
+    },
+    {
+     "Key": "FreezeDuration",
+     "Value": 1,
+     "Label": "Freeze Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    }
+   ],
+   "Alt": []
+  }
+ },
+ "upgrade_shadow_strike": {
+  "Key": "upgrade_shadow_strike",
+  "Name": "Shadow Strike",
+  "Description": "Go <span class=\"highlight\">Invisible</span> on <span class=\"highlight\">Stamina use</span> with no detection range. Doing a <span class=\"highlight\">melee attack</span> while invisible will cause you to <span class=\"highlight\">steal bullet and spirit resistance</span> from them and deal <span class=\"highlight\">damage over time</span>.",
+  "Cost": 9999,
+  "Tier": 5,
+  "Slot": "Armor",
+  "Activation": "Passive",
+  "Components": null,
+  "StreetBrawl": true,
+  "Info1": {
+   "Type": "Innate",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "Stamina",
+     "Value": 3,
+     "Label": "Stamina",
+     "Prefix": "{s:sign}",
+     "Postfix": ""
+    },
+    {
+     "Key": "BonusHealth",
+     "Value": 350,
+     "Label": "Bonus Health",
+     "Prefix": "{s:sign}",
+     "Postfix": ""
+    }
+   ],
+   "Alt": []
+  },
+  "Info2": {
+   "Type": "Active",
+   "DescKey": null,
+   "Cooldown": 0,
+   "ChargeUp": null,
+   "Main": [
+    {
+     "Key": "InvisFadeToDuration",
+     "Value": 0.2,
+     "Label": "Fade Time",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "DPS",
+     "Value": 125,
+     "Label": "Damage Per Second",
+     "Prefix": "",
+     "Postfix": ""
+    },
+    {
+     "Key": "AbilityDuration",
+     "Value": 3,
+     "Label": "Invisibility Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "StealDuration",
+     "Value": 6,
+     "Label": "Steal Duration",
+     "Prefix": "",
+     "Postfix": "s"
+    },
+    {
+     "Key": "ResistStealAmount",
+     "Value": 40,
+     "Label": "Resist Stolen",
+     "Prefix": "",
+     "Postfix": "%"
+    }
+   ],
+   "Alt": []
+  }
+ }
+}

@@ -1,0 +1,328 @@
+Every hero from level 0 with no items: +1 level, then +1 item, and so on. First step where at least half of 24 fights are won.
+
+small-camp
+  #   hero          level  items  wins   fight    souls needed
+  1   Seven         0      0      100%   5 s      0
+  2   Vyper         0      0      100%   5 s      0
+  3   Billy         0      0      100%   5 s      0
+  4   Graves        0      0      100%   6 s      0
+  5   Paradox       0      0      100%   6 s      0
+  6   Dynamo        0      0      100%   6 s      0
+  7   Drifter       0      0      100%   6 s      0
+  8   Paige         0      0      100%   6 s      0
+  9   Rem           0      0      100%   6 s      0
+  10  Yamato        0      0      100%   6 s      0
+  11  Bebop         0      0      100%   7 s      0
+  12  Celeste       0      0      100%   7 s      0
+  13  Calico        0      0      100%   7 s      0
+  14  Kelvin        0      0      100%   7 s      0
+  15  Haze          0      0      100%   8 s      0
+  16  Ivy           0      0      100%   8 s      0
+  17  Holliday      0      0      100%   8 s      0
+  18  Viscous       0      0      100%   8 s      0
+  19  Wraith        0      0      100%   8 s      0
+  20  Mina          0      0      100%   8 s      0
+  21  Infernus      0      0      100%   8 s      0
+  22  Venator       0      0      100%   8 s      0
+  23  Pocket        0      0      100%   8 s      0
+  24  McGinnis      0      0      100%   9 s      0
+  25  Apollo        0      0      100%   9 s      0
+  26  Warden        0      0      100%   9 s      0
+  27  Vindicta      0      0      100%   9 s      0
+  28  Sinclair      0      0      100%   9 s      0
+  29  Lady Geist    0      0      100%   10 s     0
+  30  Lash          0      0      100%   10 s     0
+  31  Mo & Krill    0      0      100%   10 s     0
+  32  Victor        0      0      100%   10 s     0
+  33  Silver        0      0      100%   11 s     0
+  34  Shiv          0      0      100%   12 s     0
+  35  The Doorman   0      0      100%   12 s     0
+  36  Grey Talon    0      0      100%   12 s     0
+  37  Mirage        0      0      100%   12 s     0
+  38  Abrams        0      0      100%   14 s     0
+
+medium-camp
+  #   hero          level  items  wins   fight    souls needed
+  1   Dynamo        1      0      100%   10 s     100
+  2   Seven         1      1      100%   12 s     900
+  3   Bebop         1      1      50%    15 s     900
+  4   Infernus      1      1      50%    15 s     900
+  5   Ivy           1      1      75%    15 s     900
+  6   Vyper         1      1      100%   16 s     900
+  7   Billy         1      1      75%    18 s     900
+  8   Kelvin        1      1      50%    18 s     900
+  9   Graves        2      1      100%   10 s     1,050
+  10  Grey Talon    2      1      100%   14 s     1,050
+  11  Paige         2      1      50%    14 s     1,050
+  12  Venator       2      1      75%    15 s     1,050
+  13  Apollo        2      1      50%    16 s     1,050
+  14  McGinnis      2      1      50%    17 s     1,050
+  15  Rem           2      1      75%    17 s     1,050
+  16  Mo & Krill    2      1      100%   18 s     1,050
+  17  Wraith        2      1      50%    18 s     1,050
+  18  Warden        2      1      50%    20 s     1,050
+  19  Viscous       2      1      50%    21 s     1,050
+  20  Calico        2      2      67%    14 s     1,850
+  21  Mina          2      2      58%    16 s     1,850
+  22  Pocket        3      2      75%    14 s     2,050
+  23  Paradox       3      2      54%    15 s     2,050
+  24  Vindicta      3      2      58%    15 s     2,050
+  25  Drifter       3      2      50%    15 s     2,050
+  26  Holliday      3      2      54%    16 s     2,050
+  27  Haze          3      2      67%    16 s     2,050
+  28  Silver        3      2      75%    19 s     2,050
+  29  Yamato        3      3      88%    13 s     2,850
+  30  Lash          3      3      83%    15 s     2,850
+  31  Victor        3      3      83%    16 s     2,850
+  32  Lady Geist    3      3      79%    16 s     2,850
+  33  Shiv          3      3      71%    16 s     2,850
+  34  Celeste       3      3      54%    17 s     2,850
+  35  Abrams        3      3      63%    18 s     2,850
+  36  Mirage        3      3      58%    18 s     2,850
+  37  The Doorman   3      3      63%    20 s     2,850
+  38  Sinclair      4      3      83%    18 s     3,100
+
+large-camp
+  #   hero          level  items  wins   fight    souls needed
+  1   Graves        3      2      88%    38 s     2,050
+  2   Vyper         3      3      50%    35 s     2,850
+  3   Bebop         3      3      63%    44 s     2,850
+  4   Rem           3      3      63%    46 s     2,850
+  5   Kelvin        3      3      54%    49 s     2,850
+  6   Warden        3      3      54%    55 s     2,850
+  7   Billy         4      3      100%   31 s     3,100
+  8   Infernus      4      3      67%    38 s     3,100
+  9   Seven         4      3      54%    38 s     3,100
+  10  Venator       4      3      63%    41 s     3,100
+  11  Ivy           4      3      58%    42 s     3,100
+  12  Yamato        4      3      63%    43 s     3,100
+  13  McGinnis      4      3      50%    45 s     3,100
+  14  Mo & Krill    4      3      58%    45 s     3,100
+  15  Calico        4      3      67%    46 s     3,100
+  16  Dynamo        4      3      58%    55 s     3,100
+  17  Abrams        4      4      50%    53 s     4,700
+  18  Mina          5      4      50%    41 s     5,000
+  19  Apollo        5      4      71%    42 s     5,000
+  20  Viscous       5      4      96%    46 s     5,000
+  21  Paige         5      5      50%    43 s     6,600
+  22  Celeste       6      5      58%    45 s     6,900
+  23  Lady Geist    6      6      54%    32 s     8,500
+  24  Paradox       6      6      50%    43 s     8,500
+  25  Drifter       6      6      54%    44 s     8,500
+  26  Holliday      6      6      58%    46 s     8,500
+  27  Lash          6      6      54%    46 s     8,500
+  28  Wraith        6      6      54%    50 s     8,500
+  29  Silver        6      6      50%    51 s     8,500
+  30  Pocket        6      6      50%    51 s     8,500
+  31  The Doorman   6      6      50%    57 s     8,500
+  32  Victor        7      6      100%   38 s     8,800
+  33  Shiv          7      6      79%    40 s     8,800
+  34  Sinclair      7      6      71%    46 s     8,800
+  35  Vindicta      7      6      50%    47 s     8,800
+  36  Grey Talon    7      6      63%    50 s     8,800
+  37  Haze          7      7      67%    42 s     12,000
+  38  Mirage        7      7      58%    53 s     12,000
+
+guardian
+  #   hero          level  items  wins   fight    souls needed
+  1   Billy         4      3      67%    37 s     3,100
+  2   Silver        7      6      100%   33 s     8,800
+  3   Graves        7      6      100%   33 s     8,800
+  4   Warden        7      6      83%    47 s     8,800
+  5   Kelvin        7      6      100%   56 s     8,800
+  6   Paige         7      7      50%    38 s     12,000
+  7   Apollo        7      7      54%    39 s     12,000
+  8   Ivy           7      7      50%    39 s     12,000
+  9   Victor        7      7      79%    40 s     12,000
+  10  Viscous       7      7      54%    42 s     12,000
+  11  Infernus      8      7      67%    32 s     12,350
+  12  Vyper         8      7      50%    32 s     12,350
+  13  Venator       8      7      50%    33 s     12,350
+  14  Bebop         8      7      50%    38 s     12,350
+  15  Yamato        8      7      50%    42 s     12,350
+  16  Lady Geist    8      8      83%    29 s     15,550
+  17  Seven         8      8      67%    34 s     15,550
+  18  Paradox       8      8      67%    37 s     15,550
+  19  McGinnis      8      8      67%    38 s     15,550
+  20  Wraith        8      8      50%    39 s     15,550
+  21  Drifter       8      8      67%    40 s     15,550
+  22  Mo & Krill    8      8      67%    42 s     15,550
+  23  Calico        8      8      83%    43 s     15,550
+  24  Rem           8      8      100%   44 s     15,550
+  25  Dynamo        8      8      67%    47 s     15,550
+  26  Abrams        8      8      50%    48 s     15,550
+  27  Shiv          9      8      67%    36 s     15,900
+  28  Celeste       9      8      50%    40 s     15,900
+  29  Sinclair      9      8      71%    41 s     15,900
+  30  Mirage        9      8      50%    51 s     15,900
+  31  Mina          9      9      50%    37 s     19,100
+  32  Vindicta      9      9      50%    38 s     19,100
+  33  Pocket        9      9      50%    39 s     19,100
+  34  Holliday      9      9      67%    40 s     19,100
+  35  Haze          9      9      50%    42 s     19,100
+  36  Lash          9      9      83%    43 s     19,100
+  37  The Doorman   9      9      50%    50 s     19,100
+  38  Grey Talon    10     9      50%    47 s     19,450
+
+walker
+  #   hero          level  items  wins   fight    souls needed
+  1   Billy         9      8      63%    36 s     15,900
+  2   Lady Geist    9      9      50%    33 s     19,100
+  3   Graves        9      9      71%    36 s     19,100
+  4   Silver        9      9      54%    37 s     19,100
+  5   Victor        9      9      54%    47 s     19,100
+  6   Viscous       9      9      54%    48 s     19,100
+  7   Kelvin        9      9      54%    59 s     19,100
+  8   Infernus      10     10     58%    33 s     25,850
+  9   Bebop         10     10     54%    35 s     25,850
+  10  Shiv          10     10     50%    40 s     25,850
+  11  Ivy           10     10     50%    41 s     25,850
+  12  Paige         10     10     58%    42 s     25,850
+  13  Drifter       10     10     63%    42 s     25,850
+  14  Mo & Krill    10     10     54%    46 s     25,850
+  15  Yamato        10     10     58%    47 s     25,850
+  16  Rem           10     10     67%    49 s     25,850
+  17  Vyper         11     10     50%    32 s     26,200
+  18  McGinnis      11     10     58%    37 s     26,200
+  19  Wraith        11     10     58%    38 s     26,200
+  20  Apollo        11     10     58%    43 s     26,200
+  21  Warden        11     10     63%    47 s     26,200
+  22  Dynamo        11     10     63%    53 s     26,200
+  23  Paradox       11     11     67%    28 s     32,600
+  24  Venator       11     11     67%    28 s     32,600
+  25  Vindicta      11     11     67%    31 s     32,600
+  26  Seven         11     11     75%    31 s     32,600
+  27  Mina          11     11     54%    33 s     32,600
+  28  Sinclair      11     11     75%    35 s     32,600
+  29  Lash          11     11     79%    37 s     32,600
+  30  Pocket        11     11     63%    37 s     32,600
+  31  Calico        11     11     58%    38 s     32,600
+  32  Holliday      11     11     63%    41 s     32,600
+  33  Mirage        11     11     71%    48 s     32,600
+  34  Haze          12     12     79%    35 s     39,400
+  35  Celeste       12     12     67%    38 s     39,400
+  36  Grey Talon    12     12     67%    40 s     39,400
+  37  Abrams        12     12     71%    48 s     39,400
+  38  The Doorman   12     12     75%    50 s     39,400
+
+mid-boss
+  #   hero          level  items  wins   fight    souls needed
+  1   Bebop         11     11     50%    44 s     32,600
+  2   Silver        11     11     83%    48 s     32,600
+  3   Graves        11     11     67%    51 s     32,600
+  4   Billy         11     11     83%    58 s     32,600
+  5   McGinnis      11     11     50%    62 s     32,600
+  6   Warden        11     11     67%    88 s     32,600
+  7   Kelvin        11     11     67%    100 s    32,600
+  8   Wraith        12     11     50%    51 s     33,000
+  9   Victor        12     11     50%    74 s     33,000
+  10  Lady Geist    12     12     67%    45 s     39,400
+  11  Vyper         12     12     50%    50 s     39,400
+  12  Infernus      12     12     67%    54 s     39,400
+  13  Paradox       12     12     50%    54 s     39,400
+  14  Venator       12     12     50%    56 s     39,400
+  15  Sinclair      12     12     50%    62 s     39,400
+  16  Lash          12     12     50%    63 s     39,400
+  17  Ivy           12     12     50%    67 s     39,400
+  18  Paige         12     12     67%    69 s     39,400
+  19  Mo & Krill    12     12     50%    72 s     39,400
+  20  Apollo        12     12     63%    72 s     39,400
+  21  Viscous       12     12     50%    74 s     39,400
+  22  Yamato        12     12     67%    82 s     39,400
+  23  Calico        12     12     67%    83 s     39,400
+  24  Rem           12     12     67%    84 s     39,400
+  25  Vindicta      13     12     50%    55 s     39,800
+  26  Seven         13     12     67%    59 s     39,800
+  27  Pocket        13     12     50%    65 s     39,800
+  28  Celeste       13     12     67%    69 s     39,800
+  29  Abrams        13     12     50%    100 s    39,800
+  30  Dynamo        13     12     67%    113 s    39,800
+  31  Drifter       14     12     50%    60 s     40,200
+  32  Shiv          15     12     50%    51 s     40,600
+  33  Mirage        15     12     50%    95 s     40,600
+  34  Haze          16     12     50%    65 s     41,050
+  35  The Doorman   16     12     50%    85 s     41,050
+  36  Grey Talon    17     12     50%    72 s     41,500
+  37  Mina          18     12     50%    57 s     41,950
+  38  Holliday      20     12     50%    60 s     42,900
+
+siege
+  #   hero          level  items  wins   fight    souls needed
+  1   Billy         12     12     63%    158 s    39,400
+  2   Lady Geist    13     12     50%    122 s    39,800
+  3   McGinnis      13     12     58%    171 s    39,800
+  4   Infernus      17     12     50%    193 s    41,500
+  5   Wraith        18     12     50%    183 s    41,950
+  6   Bebop         20     12     67%    150 s    42,900
+  7   Victor        20     12     50%    194 s    42,900
+  8   Warden        20     12     83%    231 s    42,900
+  9   Paradox       21     12     50%    158 s    43,450
+  10  Kelvin        21     12     50%    253 s    43,450
+  11  Silver        22     12     50%    166 s    44,050
+  12  Lash          24     12     50%    193 s    45,450
+  13  Yamato        24     12     54%    209 s    45,450
+  14  Vyper         25     12     50%    141 s    46,300
+  15  Graves        25     12     54%    152 s    46,300
+  16  Celeste       25     12     50%    171 s    46,300
+  17  Mo & Krill    25     12     50%    183 s    46,300
+  18  Apollo        25     12     100%   200 s    46,300
+  19  Calico        25     12     67%    206 s    46,300
+  20  Ivy           25     12     54%    214 s    46,300
+  21  Rem           25     12     50%    226 s    46,300
+  22  Viscous       25     12     63%    229 s    46,300
+  23  Dynamo        25     12     50%    239 s    46,300
+  24  Sinclair      28     12     54%    156 s    49,450
+  25  Venator       28     12     50%    168 s    49,450
+  26  Drifter       29     12     54%    185 s    50,700
+  27  Seven         30     12     58%    145 s    52,050
+  28  Shiv          30     12     50%    156 s    52,050
+  29  Pocket        30     12     50%    181 s    52,050
+  30  Abrams        30     12     63%    246 s    52,050
+  31  Haze          31     12     50%    183 s    53,500
+  32  Vindicta      32     12     50%    138 s    55,050
+  33  Mirage        35     12     71%    225 s    60,300
+  34  The Doorman   35     12     50%    244 s    60,300
+  35  Mina          never, even at level 35 with 12 items
+  36  Paige         never, even at level 35 with 12 items
+  37  Grey Talon    never, even at level 35 with 12 items
+  38  Holliday      never, even at level 35 with 12 items
+
+Overall (steps needed, added up over the 7 targets; fewer = stronger with less)
+  1   Billy         79
+  2   Kelvin        94
+  3   McGinnis      94
+  4   Bebop         97
+  5   Infernus      97
+  6   Warden        97
+  7   Graves        98
+  8   Lady Geist    101
+  9   Ivy           104
+  10  Silver        104
+  11  Viscous       105
+  12  Vyper         105
+  13  Wraith        105
+  14  Rem           106
+  15  Victor        106
+  16  Dynamo        107
+  17  Mo & Krill    107
+  18  Apollo        108
+  19  Yamato        108
+  20  Calico        110
+  21  Venator       111
+  22  Paradox       112
+  23  Seven         114
+  24  Lash          118
+  25  Paige         119
+  26  Celeste       120
+  27  Drifter       120
+  28  Abrams        121
+  29  Sinclair      123
+  30  Pocket        124
+  31  Shiv          125
+  32  Vindicta      127
+  33  Mina          131
+  34  Haze          132
+  35  Mirage        133
+  36  The Doorman   135
+  37  Grey Talon    136
+  38  Holliday      137

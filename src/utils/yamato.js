@@ -9,7 +9,7 @@ const { fmt, soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS } = require('./art');
 const { findEmoji } = require('./guild');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'yamato'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x7b5ea7, name: "Yamato's Dojo", icon: path.join(ART, 'power_slash.png'), art: ART, prefix: 'yamato' };
@@ -19,6 +19,7 @@ const RED = 0xda373c;
 const PAYOUT = 1.85; // against Yamato: (1.85 + 1) / 3 = 95% back, like the other games
 const PVP = true; // casino.js: /mini-game accepts an opponent for this game
 const BUTTON_ID = 'duel'; // custom id: duel:<game id>:<accept|decline|power|flying|crimson>
+const { takeBet, pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'duel_again'; // custom id: duel_again:<bet>:<player id>[:<other duelist's id>]
 const winnings = (bet) => Math.floor(bet * PAYOUT);
 
@@ -225,7 +226,7 @@ async function choose(id, userId, stance) {
     await pay(game.opponentId, game.bet);
     await pay(game.userId, game.bet);
   } else {
-    await pay(outcome > 0 ? game.userId : game.opponentId, pot(game));
+    await pay(outcome > 0 ? game.userId : game.opponentId, pot(game), outcome > 0 ? game.opponentId : game.userId);
   }
   await games().delete(id);
   return resultView(game, outcome, balance);
@@ -233,7 +234,26 @@ async function choose(id, userId, stance) {
 
 const play = (id, userId, [action]) => (action === 'accept' ? accept(id, userId) : action === 'decline' ? decline(id, userId) : choose(id, userId, action));
 
-// Called off with no click for too long (casino.js expireGames): everything staked goes back.
+// Time ran out (casino.js expireGames). Member against member with one stance chosen: the one who never drew
+// forfeits the pot. Otherwise nothing was decided and everything staked goes back (timeoutView).
+function finishOnTimeout(id, game) {
+  if (solo(game) || game.phase !== 'pick') return null;
+  const drew = Object.keys(game.picks ?? {});
+  if (drew.length !== 1) return null;
+  const [winner] = drew;
+  const loser = winner === game.userId ? game.opponentId : game.userId;
+  return {
+    pays: [[winner, pot(game), loser]],
+    view: () =>
+      view({
+        lines: [versusLine(game), '', `${mention(loser)} never drew.`, `${mention(winner)} wins ${boldSouls(pot(game))}.`],
+        buttons: [[`${AGAIN_ID}:${game.bet}:${game.userId}:${game.opponentId}`, `Rematch (${fmt(game.bet)})`, ButtonStyle.Primary]],
+        footer: `"${pickRandom(TIMEOUT_LINES)}"`,
+        mood: 'gloat',
+      }),
+  };
+}
+
 async function timeoutView(id, game, balance) {
   if (solo(game)) {
     return { ...timeoutMessage(HOST, { staked: game.bet, balance, againId: AGAIN_ID, bet: game.bet, userId: game.userId, line: `"${pickRandom(TIMEOUT_LINES)}"` }), content: '' };
@@ -255,6 +275,6 @@ async function timeoutView(id, game, balance) {
 }
 
 module.exports = {
-  games, staked, refunds, timeoutView, loadStanceEmojis, startGame, play,
+  games, staked, refunds, timeoutView, finishOnTimeout, loadStanceEmojis, startGame, play,
   STANCES, versus, winnings, WIN_LINES, LOSE_LINES, DRAW_LINES, DUEL_LINES, TIMEOUT_LINES, BUTTON_ID, AGAIN_ID, PVP,
 };

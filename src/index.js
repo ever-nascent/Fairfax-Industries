@@ -4,6 +4,8 @@ const { loadCommands } = require('./handlers/loadCommands');
 const { loadEvents } = require('./handlers/loadEvents');
 const { initStorage, getStore } = require('./storage');
 const { deployCommands } = require('./deploy-commands');
+const { backupToday } = require('./utils/backup');
+const { migrate } = require('./utils/economy');
 
 async function main() {
   if (!process.env.DISCORD_TOKEN) {
@@ -12,6 +14,21 @@ async function main() {
   }
 
   await initStorage();
+
+  // Data work that needs no Discord runs before the bot logs in, so nothing can touch souls half-way through:
+  // today's backup first (utils/backup.js, then hourly in case the bot runs past midnight UTC), then the souls
+  // scale migration (utils/economy.js; does nothing unless SCALE was raised).
+  const backup = () => {
+    try {
+      const dir = backupToday();
+      if (dir) console.log(`[backup] Saved ${dir}`);
+    } catch (e) {
+      console.error('[backup] Failed:', e.message);
+    }
+  };
+  backup();
+  setInterval(backup, 60 * 60 * 1000).unref();
+  await migrate().catch((e) => console.error('[economy] Migration failed:', e));
 
   const client = new Client({
     intents: [

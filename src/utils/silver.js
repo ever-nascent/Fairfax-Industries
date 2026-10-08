@@ -9,7 +9,7 @@ const { fmt, soulsText, boldSouls } = require('./format');
 const { pickRandom, shuffle, randomInt } = require('./random');
 const { ASSETS } = require('./art');
 const { findEmoji } = require('./guild');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'silver'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x9aa5b1, name: "Silver's Shotgun Roulette", icon: path.join(ART, 'slam_fire.png'), art: ART, prefix: 'silver' };
@@ -21,6 +21,7 @@ const PVP = true; // casino.js: /mini-game accepts an opponent for this game
 const CHARGES = 3;
 const SILVER = 'silver'; // her key in `charges` / `turn`
 const BUTTON_ID = 'roulette'; // custom id: roulette:<game id>:<accept|decline|other|self>
+const { takeBet, pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'roulette_again'; // custom id: roulette_again:<bet>:<player id>[:<other player's id>]
 const winnings = (bet) => Math.floor(bet * PAYOUT);
 
@@ -247,7 +248,7 @@ async function shoot(id, userId, atSelf) {
 
   let balance;
   if (solo(game)) balance = (await pay(game.userId, game.winner === game.userId ? winnings(game.bet) : 0)).souls;
-  else await pay(game.winner, pot(game));
+  else await pay(game.winner, pot(game), game.winner === game.userId ? game.opponentId : game.userId);
   await games().delete(id);
   return resultView(game, balance);
 }
@@ -255,7 +256,19 @@ async function shoot(id, userId, atSelf) {
 const move = (id, userId, [action]) =>
   action === 'accept' ? accept(id, userId) : action === 'decline' ? decline(id, userId) : shoot(id, userId, action === 'self');
 
-// Called off with no click for too long (casino.js expireGames): everything staked goes back.
+// Time ran out (casino.js expireGames). Once a shot has been fired, whoever's turn it was forfeits: against Silver
+// the bet is lost, against a member the other one takes the pot. Before any shot everything staked goes back (timeoutView).
+function finishOnTimeout(id, state) {
+  if (state.phase !== 'play' || !state.log?.length) return null;
+  const quitter = state.turn;
+  const winner = state.players.find((p) => p !== quitter);
+  const game = { ...state, winner, done: true, log: [`**${nameOf(state, quitter)}** ran out of time.`] };
+  return {
+    pays: solo(game) ? [[game.userId, 0]] : [[winner, pot(game), quitter]],
+    view: (balance) => resultView(game, balance),
+  };
+}
+
 async function timeoutView(id, game, balance) {
   if (solo(game)) {
     return { ...timeoutMessage(HOST, { staked: game.bet, balance, againId: AGAIN_ID, bet: game.bet, userId: game.userId, line: `"${pickRandom(TIMEOUT_LINES)}"` }), content: '' };
@@ -277,6 +290,6 @@ async function timeoutView(id, game, balance) {
 }
 
 module.exports = {
-  games, staked, refunds, timeoutView, loadShellEmojis, startGame, move,
+  games, staked, refunds, timeoutView, finishOnTimeout, loadShellEmojis, startGame, move,
   loadShells, fire, play, silverShoots, count, winnings, CHARGES, SILVER, BUTTON_ID, AGAIN_ID, PVP,
 };

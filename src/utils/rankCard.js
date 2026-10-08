@@ -117,10 +117,10 @@ function drawHeroArt(g, { image, isRender }) {
   g.drawImage(layer, 0, 0);
 }
 
-// { name, level, into, need, souls, maxLevel, hero? } -> PNG buffer.
+// { name, level, into, need, souls, maxLevel, hero?, position? (rank among members by XP) } -> PNG buffer.
 // hero = { image, isRender, color } (from heroes.heroArt) turns it into that hero's card:
 // the hero's art, and their colour on the XP bar, flask liquid, background tint and text accents.
-async function renderRankCard({ name, level, into, need, souls, maxLevel, hero }) {
+async function renderRankCard({ name, level, into, need, souls, maxLevel, hero, position }) {
   const soulsIcon = await loadSouls();
   const c = createCanvas(W, H);
   const g = c.getContext('2d');
@@ -156,7 +156,7 @@ async function renderRankCard({ name, level, into, need, souls, maxLevel, hero }
   g.fillText(fit(g, name, 480), 225, 100);
   g.fillStyle = hero ? mix(accent, '#ffffff', 0.25) : C.muted;
   g.font = `26px ${TEXT_FONT}`;
-  g.fillText(`LEVEL ${level}`, 227, 138);
+  g.fillText(`LEVEL ${level}${position ? `  ·  RANK #${fmt(position)}` : ''}`, 227, 138);
 
   // Souls, laid out like the in-game "$0 ITEM VALUE".
   g.drawImage(soulsIcon, 227, 160, 22, 38);
@@ -193,7 +193,7 @@ async function renderRankCard({ name, level, into, need, souls, maxLevel, hero }
 const MEDAL = ['#e8c267', '#c9d1d4', '#c98a5a']; // gold, silver, bronze
 
 // Leaderboard image in the same style. rows: [{ name, level, fill (0..1), xp, souls }], best first.
-async function renderLeaderboard(serverName, rows) {
+async function renderLeaderboard(serverName, rows, by = 'xp') {
   const soulsIcon = await loadSouls();
   const HEAD = 130;
   const RH = 84; // row height
@@ -216,7 +216,7 @@ async function renderLeaderboard(serverName, rows) {
   g.fillText('LEADERBOARD', 40, 72);
   g.fillStyle = C.muted;
   g.font = `22px ${TEXT_FONT}`;
-  g.fillText(fit(g, `${serverName.toUpperCase()}  ·  TOP ${rows.length}`, W - 300), 42, 106);
+  g.fillText(fit(g, `${serverName.toUpperCase()}  ·  TOP ${rows.length} BY ${by.toUpperCase()}`, W - 300), 42, 106);
 
   rows.forEach((r, i) => {
     const y = HEAD + i * RH;

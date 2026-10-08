@@ -51,6 +51,7 @@ const EVENTS = {
   stage: 'Stage started / updated / ended',
   webhook: 'Webhook created / edited / deleted',
   integration: 'Bot added, integrations, command permissions',
+  'staff-edit': "Staff changed a member's XP, level or souls (/xp, /souls)",
   automod: 'AutoMod action (blocked message, alert, timeout)',
   'automod-rule': 'AutoMod rule created / edited / deleted',
 };

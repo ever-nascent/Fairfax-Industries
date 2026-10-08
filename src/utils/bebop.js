@@ -8,7 +8,7 @@ const { findEmoji } = require('./guild');
 const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'bebop'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xd9822b, name: "Bebop's Bombs", icon: path.join(ART, 'sticky_bomb.png'), art: ART, prefix: 'bebop' }; // copper; Sticky Bomb
@@ -18,6 +18,7 @@ const COLS = 5;
 const BOMBS = 4;
 const RTP = 0.95; // the prize is 95% of the fair odds of getting this far: the house's small cut
 const BUTTON_ID = 'mines'; // custom id: mines:<game id>:<tile index|cash>
+const { pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'mines_again'; // custom id: mines_again:<bet>:<player id>
 const HIDDEN = '❔';
 const BOOM = '💥';
@@ -181,7 +182,13 @@ async function move(id, userId, action) {
   return view(id, { ...game, balance: user.souls });
 }
 
-// Called off with no click for too long (casino.js expireGames): the bet back (a prize built up is lost).
+// Time ran out (casino.js expireGames): with safe tiles cleared the prize so far is cashed out; with none the bet goes back.
+function finishOnTimeout(id, state) {
+  if (!state.picked.length) return null;
+  const game = play(state, 'cash');
+  return { pays: [[game.userId, prizeFor(game.bet, game.picked.length)]], view: (balance) => view(id, { ...game, balance }) };
+}
+
 const staked = (game) => game.bet;
 async function timeoutView(id, game, balance) {
   return timeoutMessage(HOST, {
@@ -199,6 +206,7 @@ module.exports = {
   games,
   staked,
   timeoutView,
+  finishOnTimeout,
   startGame,
   move,
   moves,

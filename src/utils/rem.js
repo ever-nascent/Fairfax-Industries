@@ -8,7 +8,7 @@ const { findEmoji } = require('./guild');
 const { soulsText, boldSouls } = require('./format');
 const { pickRandom, shuffle, randomInt } = require('./random');
 const { ASSETS } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'rem'); // deadlock.wiki (portraits, Lil Helpers icon), Remlings drawn from that icon, see assets/CREDITS.txt
 const HOST = { color: 0x7b6cf6, name: "Rem's Remling Race", icon: path.join(ART, 'lil_helpers.png'), art: ART, prefix: 'rem' }; // Lil Helpers
@@ -19,6 +19,7 @@ const TICK_MS = 2000; // the message is edited this often (Discord allows about 
 const RTP = 95; // percent: a pick pays 95% / its chance to win, the house's small cut
 const SHARES = [36, 26, 20, 11, 7]; // percent chance to win, handed to the 5 Remlings in a random order each race
 const BUTTON_ID = 'remling'; // custom id: remling:<game id>:<lane 0-4>
+const { pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'remling_again'; // custom id: remling_again:<bet>:<player id>
 
 const COLOURS = ['red', 'blue', 'green', 'yellow', 'pink'];

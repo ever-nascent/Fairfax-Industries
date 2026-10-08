@@ -10,13 +10,14 @@ const { encodeGif } = require('./gif');
 const { fmt, soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, halftone, grain, grainAndVignette } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'paradox'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xc24fa0, name: 'Borrowed Time', icon: path.join(ART, 'pulse_grenade.png'), art: ART, prefix: 'paradox' }; // magenta; Pulse Grenade
 
-const RTP = 0.95; // each call pays 95% of its fair odds: the house's small cut
+const RTP = 0.95; // the house's cut, taken once: the prize is 95% of the fair odds of every call made so far (like Bebop's Bombs)
 const BUTTON_ID = 'clock'; // custom id: clock:<game id>:<higher|lower|spin|cash>
+const { pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'clock_again'; // custom id: clock_again:<bet>:<player id>
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 
@@ -56,8 +57,14 @@ const games = () => getStore('clockGames');
 
 // How many of the 11 possible next hours make the call right.
 const outs = (hour, call) => (call === 'higher' ? 12 - hour : hour - 1);
-// What a right call multiplies the prize by: fair odds (11 / outs) minus the cut, rounded down to 2 decimals.
-const multiplier = (hour, call) => Math.floor((RTP * 11 * 100) / outs(hour, call)) / 100;
+// The fair odds of a call: 11 possible hours over the ones that make it right.
+const fairOdds = (hour, call) => 11 / outs(hour, call);
+// What a right call multiplies the prize by, rounded down to 2 decimals (shown on the buttons). The cut comes out
+// of the first call only (his call, Oct 5: taking it on every call returned 84% after three calls, 72% after six).
+const multiplier = (hour, call, first = true) => Math.floor((first ? RTP : 1) * fairOdds(hour, call) * 100 + 1e-6) / 100;
+// The fair odds of all the right calls so far (games saved before `odds` existed: worked back from their prize).
+const oddsOf = (game) => game.odds ?? (game.prize > game.bet ? game.prize / game.bet / RTP : 1);
+const prizeAt = (bet, odds) => Math.floor(bet * (Math.floor(RTP * odds * 100 + 1e-6) / 100));
 // The next hour: any hour but this one.
 function nextHour(hour, randomInt = crypto.randomInt) {
   const r = randomInt(11) + 1;
@@ -83,7 +90,10 @@ function play(state, move, next = nextHour) {
     if (move === 'spin') game.history.push([to, null]);
     else {
       const right = move === 'higher' ? to > game.hour : to < game.hour;
-      if (right) game.prize = Math.floor(game.prize * multiplier(game.hour, move));
+      if (right) {
+        game.odds = oddsOf(game) * fairOdds(game.hour, move);
+        game.prize = prizeAt(game.bet, game.odds);
+      }
       else Object.assign(game, { done: true, lost: true });
       game.history.push([to, right, move]);
     }
@@ -329,7 +339,7 @@ async function view(id, game) {
     buttons = moves(game).map((m) => {
       if (m === 'cash') return [m, `Cash Out (${fmt(game.prize)})`, ButtonStyle.Success];
       if (m === 'spin') return [m, 'Spin Again', ButtonStyle.Primary];
-      return [m, `${m === 'higher' ? 'Higher' : 'Lower'} (×${multiplier(game.hour, m)})`, ButtonStyle.Primary];
+      return [m, `${m === 'higher' ? 'Higher' : 'Lower'} (×${multiplier(game.hour, m, game.prize <= game.bet)})`, ButtonStyle.Primary];
     });
     buttons = buttons.map(([m, label, style]) => [`${BUTTON_ID}:${id}:${m}`, label, style]);
     footer = `"${pickRandom(PLAY_LINES)}"`;
@@ -375,8 +385,13 @@ async function move(id, userId, action, next = nextHour) {
   return view(id, { ...game, balance: user.souls });
 }
 
-// Called off with no click for too long (casino.js expireGames): the clock stops where it was, the bet back
-// (a prize built up by right calls is lost).
+// Time ran out (casino.js expireGames): a prize built up by right calls is cashed out; with no call made the bet goes back.
+function finishOnTimeout(id, state) {
+  if (state.prize <= state.bet) return null;
+  const game = play(state, 'cash');
+  return { pays: [[game.userId, game.prize]], view: (balance) => view(id, { ...game, balance }) };
+}
+
 const staked = (game) => game.bet;
 async function timeoutView(id, game, balance) {
   return timeoutMessage(HOST, {
@@ -390,6 +405,9 @@ module.exports = {
   games,
   staked,
   timeoutView,
+  finishOnTimeout,
+  prizeAt,
+  fairOdds,
   TIMEOUT_LINES,
   startGame,
   move,

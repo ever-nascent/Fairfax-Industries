@@ -1,5 +1,6 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
+const { SCALE } = require('../src/utils/economy');
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
@@ -63,11 +64,11 @@ test('a bomb loses the bet and shows the board', async () => {
 test('clearing every safe tile cashes out for them', async () => {
   const user = { id: 'bebop-sweeper' };
   await getStore('xp').delete(user.id);
-  await changeSouls(user.id, 10);
-  const start = await bb.startGame(user, 'Tester', 10, BOMBS);
+  await changeSouls(user.id, 10 * SCALE);
+  const start = await bb.startGame(user, 'Tester', 10 * SCALE, BOMBS);
   const id = tile(start, 0).custom_id.split(':')[1];
   let last;
   for (let i = 4; i < bb.TILES; i++) last = await bb.move(id, user.id, String(i));
   assert.match(last.embeds[0].toJSON().description, /cleared the whole board/);
-  assert.strictEqual((await getUser(user.id)).souls, bb.prizeFor(10, 16));
+  assert.strictEqual((await getUser(user.id)).souls, bb.prizeFor(10 * SCALE, 16));
 });

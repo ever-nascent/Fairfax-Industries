@@ -1,6 +1,7 @@
-// Hideout (Shop, level 20+, 6,400 souls): a private voice channel + a matching text channel, one per member,
+// Hideout (Shop, level 20+, 6,400 x SCALE souls): a private voice channel + a matching text channel, one per member,
 // kept for good. Only the owner, staff (Administrator) and members the owner adds get in. The owner runs it from
 // a control panel the bot pins in the text channel. Rules: server-plan.md ("Hideout").
+const { SCALE } = require('./economy');
 const {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, ModalBuilder, OverwriteType, PermissionFlagsBits: P,
   StringSelectMenuBuilder, TextInputBuilder, TextInputStyle, UserSelectMenuBuilder,
@@ -9,10 +10,13 @@ const { getStore } = require('../storage');
 const { getUser, changeSouls } = require('./xp');
 const { findOrCreateChannel } = require('./guild');
 const { withLock } = require('../storage/mutex');
+const { findPhrase, getPhrases } = require('./censor');
 
-const HIDEOUT_PRICE = 6400;
+const HIDEOUT_PRICE = 6400 * SCALE;
 const HIDEOUT_LEVEL = 20;
 const RENAME_EVERY_MS = 24 * 60 * 60_000; // one rename a day
+const MAX_MEMBERS = 25; // the panel's Remove dropdown lists 25, and a channel holds at most 100 permission entries
+const MAX_IN_CATEGORY = 50; // Discord's limit; each Hideout takes 2, so a full category opens "<name> 2", "<name> 3" ...
 const CATEGORY = 'Hideouts'; // made on startup; staff can switch it with /hideout-config category
 const COLOR = 0xa8702c; // bronze, like the Tier 4 panel
 const PANEL_ID = 'hideout'; // custom ids: hideout:<owner id>:<rename|limit> (buttons), add_pick / remove_pick
@@ -42,6 +46,31 @@ function overwrites(guild, ownerId, hideout, present = true) {
 // "Zechariah's Hideout" -> "zechariahs-hideout" (text channel names are lowercase, no spaces).
 const textName = (name) => name.toLowerCase().replace(/['’]/g, '').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 100) || 'hideout';
 
+// Is `text` a censored phrase (the censor's list, /auto-mod censor)? Hideout names go through it too.
+const censored = async (guild, text) => !!findPhrase(text, await getPhrases(guild.id));
+
+// The name a new Hideout starts with: "<display name>'s Hideout", or the username's, or a plain one if either is censored.
+async function defaultName(member) {
+  for (const base of [member.displayName, member.user?.username]) {
+    if (base && !(await censored(member.guild, `${base}'s Hideout`))) return `${base}'s Hideout`;
+  }
+  return 'A Hideout';
+}
+
+// The category to make `needed` channels in: the saved one, or its first overflow category ("<name> 2", "<name> 3" ...)
+// with room, made when they are all full.
+async function parentWithRoom(guild, categoryId, needed) {
+  const base = guild.channels.cache.get(categoryId);
+  if (!base || !needed) return categoryId;
+  const all = [...guild.channels.cache.values()];
+  for (let n = 1; ; n++) {
+    const name = n === 1 ? base.name : `${base.name} ${n}`;
+    const found = n === 1 ? base : all.find((c) => c.type === ChannelType.GuildCategory && c.name === name);
+    if (!found) return (await guild.channels.create({ name, type: ChannelType.GuildCategory, reason: 'Hideouts: the last category is full' })).id;
+    if (all.filter((c) => c.parentId === found.id).length + needed <= MAX_IN_CATEGORY) return found.id;
+  }
+}
+
 // On startup: the Hideouts category (made if missing, unless staff picked another).
 async function ensureCategory(guild) {
   const saved = (await settings().get(guild.id)) ?? {};
@@ -69,18 +98,18 @@ async function buyHideout(member) {
     return { pending: true }; // holds the spot so a double click can't buy twice
   });
   if (!fresh) return 'owned';
-  if (!(await changeSouls(member.id, -HIDEOUT_PRICE))) {
+  if (!(await changeSouls(member.id, -HIDEOUT_PRICE, 'hideout'))) {
     await hideouts().delete(member.id);
     return 'souls';
   }
   try {
-    const hideout = await makeChannels(member.guild, member.id, { name: `${member.displayName}'s Hideout`, members: [], renamedAt: 0 });
+    const hideout = await makeChannels(member.guild, member.id, { name: await defaultName(member), members: [], renamedAt: 0 });
     await hideouts().set(member.id, hideout);
     console.log(`[hideout] ${member.user.tag} bought a Hideout`);
     return null;
   } catch (error) {
     await hideouts().delete(member.id);
-    await changeSouls(member.id, HIDEOUT_PRICE); // refund
+    await changeSouls(member.id, HIDEOUT_PRICE, 'hideout'); // refund
     throw error;
   }
 }
@@ -90,8 +119,10 @@ async function buyHideout(member) {
 async function makeChannels(guild, ownerId, hideout, present = true) {
   const { categoryId } = (await settings().get(guild.id)) ?? {};
   const next = { ...hideout };
+  const missing = [next.voiceId, next.textId].filter((id) => !guild.channels.cache.has(id)).length;
+  const parent = await parentWithRoom(guild, categoryId, missing);
   const make = (name, type) =>
-    guild.channels.create({ name, type, parent: categoryId, permissionOverwrites: overwrites(guild, ownerId, next, present), reason: 'Hideout' });
+    guild.channels.create({ name, type, parent, permissionOverwrites: overwrites(guild, ownerId, next, present), reason: 'Hideout' });
   if (!guild.channels.cache.has(next.voiceId)) next.voiceId = (await make(next.name, ChannelType.GuildVoice)).id;
   if (!guild.channels.cache.has(next.textId)) {
     const text = await make(textName(next.name), ChannelType.GuildText);
@@ -233,6 +264,7 @@ function panelModal(action, ownerId, hideout, guild) {
 
 // Renames both channels, once a day. Returns an error message or null.
 async function rename(guild, ownerId, name, now = Date.now()) {
+  if (await censored(guild, name)) return "That name isn't allowed here. Pick another.";
   const h = await getHideout(ownerId);
   if (now - h.renamedAt < RENAME_EVERY_MS) return `You can rename again <t:${Math.floor((h.renamedAt + RENAME_EVERY_MS) / 1000)}:R>.`;
   await guild.channels.cache.get(h.voiceId)?.setName(name, 'Hideout renamed');
@@ -247,11 +279,17 @@ async function setLimit(guild, ownerId, limit) {
   await refreshPanel(guild, ownerId, h);
 }
 
-// Adds members (not bots, not the owner). Returns the ones added.
+// Adds members (not bots, not the owner), up to MAX_MEMBERS in all. Returns { added: [new ids], skipped: how many didn't fit }.
 async function addMembers(guild, ownerId, users) {
-  const ids = users.filter((u) => !u.bot && u.id !== ownerId).map((u) => u.id);
-  await updateHideout(guild, ownerId, (h) => (h.members = [...new Set([...h.members, ...ids])]));
-  return ids;
+  const ids = [...new Set(users.filter((u) => !u.bot && u.id !== ownerId).map((u) => u.id))];
+  let result = { added: [], skipped: 0 };
+  await updateHideout(guild, ownerId, (h) => {
+    const fresh = ids.filter((id) => !h.members.includes(id));
+    const added = fresh.slice(0, Math.max(0, MAX_MEMBERS - h.members.length));
+    result = { added, skipped: fresh.length - added.length };
+    h.members.push(...added);
+  });
+  return result;
 }
 
 const removeMembers = (guild, ownerId, ids) => updateHideout(guild, ownerId, (h) => (h.members = h.members.filter((m) => !ids.includes(m))));
@@ -265,6 +303,6 @@ async function ownerLeftOrReturned(member, present) {
 }
 
 module.exports = {
-  HIDEOUT_PRICE, HIDEOUT_LEVEL, PANEL_ID, getHideout, ensureCategory, setCategory, buyHideout, panelMessage, panelModal,
-  rename, setLimit, addMembers, removeMembers, ownerLeftOrReturned, channelDeleted, removeHideout, makeChannels, reconcile, textName, overwrites,
+  HIDEOUT_PRICE, HIDEOUT_LEVEL, MAX_MEMBERS, MAX_IN_CATEGORY, PANEL_ID, getHideout, ensureCategory, setCategory, buyHideout, panelMessage, panelModal,
+  defaultName, rename, setLimit, addMembers, removeMembers, ownerLeftOrReturned, channelDeleted, removeHideout, makeChannels, reconcile, textName, overwrites,
 };

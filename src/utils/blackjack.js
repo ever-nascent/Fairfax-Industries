@@ -8,12 +8,13 @@ const { getStore } = require('../storage');
 const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
 const { pickRandom, shortId } = require('./random');
 const { ASSETS, loadSouls, seeded, halftone, grain, grainAndVignette } = require('./art');
-const { takeBet, resultFields, playAgainButton, gameMessage, timeoutMessage, pay, stake } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'wraith'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xc2408f, name: "Wraith's Table", icon: path.join(ART, 'card_trick.png'), art: ART, prefix: 'wraith' }; // magenta; Card Trick
 
 const BUTTON_ID = 'bj'; // custom id: bj:<game id>:<hit|stand|double|split>
+const { takeBet, pay, stake } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'bj_again'; // custom id: bj_again:<bet>:<player id>
 
 // Wraith's lines when the hand ends: original lines written in her voice (deadlock.wiki "Wraith/Voice lines":
@@ -624,8 +625,15 @@ async function move(id, userId, action) {
   return view(id, next, next.name);
 }
 
-// Called off with no click for too long (casino.js expireGames): the table as it was, every bet back
-// (Double Down and Split included).
+// Time ran out (casino.js expireGames): the cards are on the table, so every hand still in play stands and
+// Wraith plays hers out.
+function finishOnTimeout(id, state) {
+  let game = state;
+  while (!game.done) game = play(game, 'stand');
+  const paid = game.hands.reduce((sum, h) => sum + payout(h), 0);
+  return { pays: [[game.userId, paid]], view: (balance) => view(id, { ...game, balance }, game.name) };
+}
+// Only for a game that can't be finished (kept for casino.js): the table as it was, every bet back.
 const staked = (game) => game.hands.reduce((sum, h) => sum + h.bet, 0);
 async function timeoutView(id, game, balance) {
   return timeoutMessage(HOST, {
@@ -639,6 +647,7 @@ module.exports = {
   games,
   staked,
   timeoutView,
+  finishOnTimeout,
   TIMEOUT_LINES,
   startGame,
   move,

@@ -4,6 +4,9 @@ node_modules/
 data/*.json
 data/*.tmp
 data/*.json.*.tmp
+data/*.jsonl
+# daily copies of the souls files
+data/backups/
 # audit-log copies of members' images: private, never upload
 data/auditFiles/
 # mock-up scratch folder
