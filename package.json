@@ -7,7 +7,10 @@
   "private": true,
   "scripts": {
     "start": "node src/index.js",
-    "deploy": "node src/deploy-commands.js"
+    "deploy": "node src/deploy-commands.js",
+    "farm-data": "node src/utils/farm/refresh.js",
+    "trivia-data": "node tools/trivia-data.js",
+    "farm-sim": "node tools/farm-sim.js"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.9",

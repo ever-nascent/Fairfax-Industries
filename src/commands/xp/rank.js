@@ -1,8 +1,9 @@
 const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
-const { getUser, progress, MAX_LEVEL } = require('../../utils/xp');
+const { getUser, progress, standing, MAX_LEVEL } = require('../../utils/xp');
 const { renderRankCard, CARD_COLOR, cardColor } = require('../../utils/rankCard');
 const { getHero, heroArt } = require('../../utils/heroes');
 const { pickRandom } = require('../../utils/random');
+const { fmt } = require('../../utils/format');
 
 // The Shopkeeper's replies when someone checks a bot's rank.
 const SELF_LINE = "Me? Kid, I don't level up. I *own* the place. Now you gonna buy somethin', or you just here for the air conditioning?";
@@ -27,14 +28,14 @@ module.exports = {
       return interaction.reply({ embeds: [new EmbedBuilder().setColor(CARD_COLOR).setDescription(line)], flags: MessageFlags.Ephemeral });
     }
     await interaction.deferReply();
-    const user = await getUser(target.id);
+    const [user, { position, total }] = await Promise.all([getUser(target.id), standing(target.id)]);
     const { level, into, need } = progress(user.xp);
     // Their equipped hero card from the Shop ('<slug>:<style>'), else the plain card.
     const [slug, style] = user.card?.split(':') ?? [];
     const hero = getHero(slug) ? await heroArt(slug, style) : null;
-    const png = await renderRankCard({ name: member?.displayName ?? target.username, level, into, need, souls: user.souls, maxLevel: MAX_LEVEL, hero });
+    const png = await renderRankCard({ name: member?.displayName ?? target.username, level, into, need, souls: user.souls, maxLevel: MAX_LEVEL, hero, position });
     await interaction.editReply({
-      embeds: [new EmbedBuilder().setColor(hero ? cardColor(hero.color) : CARD_COLOR).setImage('attachment://rank.png')],
+      embeds: [new EmbedBuilder().setColor(hero ? cardColor(hero.color) : CARD_COLOR).setImage('attachment://rank.png').setFooter({ text: `Total XP: ${fmt(user.xp)}${position ? `  ·  #${fmt(position)} of ${fmt(total)}` : ''}` })],
       files: [new AttachmentBuilder(png, { name: 'rank.png' })],
     });
   },

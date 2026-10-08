@@ -1,0 +1,286 @@
+// Run: node --test
+process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
+process.env.FARM_FRAME_MS = '0';
+const test = require('node:test');
+const assert = require('node:assert');
+const { getUser, changeSouls } = require('../src/utils/xp');
+const { getFarmUser, chooseHero, play, simulate, upgradeAbility, buyItem, sellItem } = require('../src/utils/farm/play');
+const { progress, pointsSpent, campMultiplier, THRESHOLDS, MAX_LEVEL } = require('../src/utils/farm/levels');
+const { PAYOUT_SCALE } = require('../src/utils/farm/targets');
+const { buildHero } = require('../src/utils/farm/hero');
+const views = require('../src/utils/farm/views');
+
+const seeded = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
+const member = (id) => ({ id, guild: { emojis: { cache: { find: () => undefined } } }, toString: () => `<@${id}>` });
+
+test('levels follow the game table, scaled by the payout scale', () => {
+  assert.strictEqual(THRESHOLDS.length, 36);
+  assert.strictEqual(MAX_LEVEL, 35);
+  assert.deepStrictEqual([progress(0).level, progress(0).unlocks, progress(0).points], [0, 1, 0]);
+  const one = 200 * PAYOUT_SCALE; // level 1 is 800 souls at the game's scale, 600 start + 200
+  assert.strictEqual(progress(one - 0.1).level, 0);
+  assert.strictEqual(progress(one).level, 1);
+  assert.strictEqual(progress(one).points, 1);
+  const lvl4 = progress((2000 - 600) * PAYOUT_SCALE);
+  assert.deepStrictEqual([lvl4.level, lvl4.unlocks, lvl4.points], [4, 3, 2]);
+  const lvl7 = progress((3800 - 600) * PAYOUT_SCALE);
+  assert.deepStrictEqual([lvl7.level, lvl7.unlocks, lvl7.points], [7, 4, 4]);
+  const max = progress(1e9);
+  assert.deepStrictEqual([max.level, max.unlocks, max.points, max.max], [35, 4, 32, true]);
+  assert.ok(Array.from({ length: 36 }, (_, l) => progress(((THRESHOLDS[l] - 600) * PAYOUT_SCALE) + 0.001).level).every((l, i) => l === i));
+  assert.strictEqual(pointsSpent({ 1: 3, 2: 1 }), 8 + 1);
+});
+
+test('a hero only has the abilities it unlocked, and uses the tiers bought', () => {
+  const lvl0 = buildHero('Haze', { unlocked: 1 });
+  assert.deepStrictEqual(lvl0.abilities.map((a) => a.status()), ['Ready', 'Locked', 'Locked', 'Locked']);
+  const tiered = buildHero('Haze', { tiers: { 1: 2 } });
+  assert.strictEqual(tiered.abilities[0].tier, 2);
+  const stronger = buildHero('Haze', { boons: 10 });
+  assert.ok(stronger.stats.maxHealth > buildHero('Haze').stats.maxHealth, 'boons add health');
+});
+
+test('ability points: only unlocked abilities, one tier at a time, 1 / 2 / 5 points', async () => {
+  const id = 'lv1';
+  await chooseHero(id, 'Haze');
+  assert.strictEqual((await upgradeAbility(id, 1)).error, 'points', 'level 0 has no points');
+  const { updateFarmUser } = require('../src/utils/farm/play');
+  await updateFarmUser(id, (r) => { r.earned = (3800 - 600) * PAYOUT_SCALE; }); // level 7: 4 points, 4 abilities
+  assert.deepStrictEqual(await upgradeAbility(id, 1), { ok: true, tier: 1 }); // 1 point
+  assert.deepStrictEqual(await upgradeAbility(id, 1), { ok: true, tier: 2 }); // 2 more
+  assert.strictEqual((await upgradeAbility(id, 1)).error, 'points', 'tier 3 costs 5, only 1 left');
+  assert.deepStrictEqual(await upgradeAbility(id, 2), { ok: true, tier: 1 });
+  assert.strictEqual((await getFarmUser(id)).tiers[1], 2);
+  const other = 'lv2';
+  await chooseHero(other, 'Haze');
+  await updateFarmUser(other, (r) => { r.earned = 200 * PAYOUT_SCALE; }); // level 1: still only ability 1
+  assert.strictEqual((await upgradeAbility(other, 3)).error, 'locked');
+});
+
+test('items: 12 of any kind, wiki prices from the server balance, sell for half the price', async () => {
+  const { POOL: all, MAX_ITEMS } = require('../src/utils/farm/levels');
+  const { itemByName } = require('../src/utils/farm/stats');
+  const POOL = { weapon: all.weapon.filter((n) => !itemByName(n).Components?.length) }; // nothing here upgrades from another
+  assert.ok(POOL.weapon.length > MAX_ITEMS);
+  const id = 'it1';
+  await chooseHero(id, 'Haze');
+  assert.strictEqual((await buyItem(id, 'Extra Health')).error, 'souls');
+  await changeSouls(id, 100000);
+  const price = (n) => itemByName(n).Cost;
+  assert.deepStrictEqual(await buyItem(id, 'Extra Health'), { ok: true, paid: price('Extra Health'), used: [] });
+  assert.strictEqual((await getUser(id)).souls, 100000 - price('Extra Health'));
+  assert.strictEqual((await buyItem(id, 'Extra Health')).error, 'owned');
+  assert.strictEqual((await buyItem(id, 'Not An Item')).error, 'unknown');
+  for (const name of POOL.weapon.slice(0, 11)) assert.ok((await buyItem(id, name)).ok); // one kind may fill the build
+  assert.strictEqual((await buyItem(id, POOL.weapon[11])).error, 'full', 'only 12 items');
+  assert.strictEqual((await getFarmUser(id)).items.weapon.length, 11);
+  const before = (await getUser(id)).souls;
+  assert.deepStrictEqual(await sellItem(id, POOL.weapon[0]), { ok: true, refund: price(POOL.weapon[0]) / 2 });
+  assert.strictEqual((await getUser(id)).souls, before + price(POOL.weapon[0]) / 2);
+  assert.ok((await buyItem(id, POOL.weapon[11])).ok, 'a free slot again');
+  assert.strictEqual((await sellItem(id, POOL.weapon.at(-1))).error, 'missing');
+  const fight = require('../src/utils/farm/play').fightKit(await getFarmUser(id));
+  assert.strictEqual(fight.items.length, 12, 'every owned item goes into the fight');
+});
+
+test('items: upgrade paths: owning a component makes the upgrade cost the difference and uses the component up', async () => {
+  const { itemByName } = require('../src/utils/farm/stats');
+  const price = (n) => itemByName(n).Cost;
+  const id = 'it-up';
+  await chooseHero(id, 'Haze');
+  await changeSouls(id, 100000);
+  await buyItem(id, 'Long Range');
+  await buyItem(id, 'High-Velocity Rounds');
+  await buyItem(id, 'Extra Health');
+  const before = (await getUser(id)).souls;
+  const paid = price('Sharpshooter') - price('Long Range') - price('High-Velocity Rounds');
+  assert.deepStrictEqual(await buyItem(id, 'Sharpshooter'), { ok: true, paid, used: ['Long Range', 'High-Velocity Rounds'] });
+  assert.strictEqual((await getUser(id)).souls, before - paid);
+  const items = (await getFarmUser(id)).items;
+  assert.deepStrictEqual([items.weapon, items.vitality], [['Sharpshooter'], ['Extra Health']]);
+  // a component of an owned item can't be bought again, at any depth (Transcendent Cooldown <- Superior Cooldown <- Compress Cooldown)
+  assert.deepStrictEqual(await buyItem(id, 'Long Range'), { error: 'inside', holder: 'Sharpshooter' });
+  await buyItem(id, 'Transcendent Cooldown');
+  assert.deepStrictEqual(await buyItem(id, 'Compress Cooldown'), { error: 'inside', holder: 'Transcendent Cooldown' });
+  // without a component it costs its full price
+  await chooseHero('it-up2', 'Haze');
+  await changeSouls('it-up2', 100000);
+  assert.strictEqual((await buyItem('it-up2', 'Sharpshooter')).paid, price('Sharpshooter'));
+});
+
+test('items: buys at the same moment cannot overfill the build or buy an item twice, and the losers get their souls back', async () => {
+  const { POOL, MAX_ITEMS } = require('../src/utils/farm/levels');
+  const { itemByName } = require('../src/utils/farm/stats');
+  const id = 'it2';
+  const w = POOL.weapon.filter((n) => !itemByName(n).Components?.length);
+  await chooseHero(id, 'Haze');
+  await changeSouls(id, 100000);
+  for (const name of w.slice(0, 11)) await buyItem(id, name);
+  const before = (await getUser(id)).souls;
+  const results = await Promise.all([w[11], w[12], w[13], w[13]].map((name) => buyItem(id, name)));
+  const bought = (await getFarmUser(id)).items.weapon;
+  assert.strictEqual(bought.length, MAX_ITEMS);
+  assert.strictEqual(results.filter((r) => r.ok).length, 1);
+  assert.ok(results.filter((r) => !r.ok).every((r) => r.error === 'full'));
+  assert.strictEqual((await getUser(id)).souls, before - itemByName(bought[11]).Cost, 'only the item that went in was paid for');
+});
+
+test('items and levels change the fight, and camps pay more as the hero levels', () => {
+  const plain = simulate('Haze', 'small-camp', { rng: seeded(3) });
+  const strong = simulate('Haze', 'small-camp', { rng: seeded(3), boons: 20 });
+  assert.ok(plain.won && strong.won);
+  assert.ok(strong.souls > plain.souls, 'a level 20 hero gets more from the same camp');
+  assert.strictEqual(strong.souls, Math.round(plain.souls * campMultiplier(20)));
+  assert.strictEqual(campMultiplier(0), 1);
+  const kit = ['Titanic Magazine', 'Rapid Rounds', 'Extra Health', 'Bullet Lifesteal', 'Battle Vest', 'Extra Spirit'];
+  const guardian = simulate('Haze', 'guardian', { rng: seeded(3), boons: 20, items: kit });
+  assert.ok(guardian.won);
+  assert.strictEqual(guardian.souls, simulate('Haze', 'guardian', { rng: seeded(3), boons: 30, items: kit }).souls, 'only camps scale');
+});
+
+test('a trip adds its souls to the hero (levels), and the hero screen fits Discord', async () => {
+  const id = 'earn1';
+  await chooseHero(id, 'Haze');
+  const run = (await play(id, 'small-camp', { rng: seeded(4) })).run;
+  assert.strictEqual((await getFarmUser(id)).earned, run.souls);
+  const record = await getFarmUser(id);
+  const view = await views.heroView(member(id), { ...record, earned: 400, tiers: { 1: 1 }, items: { weapon: ['Rapid Rounds', 'Extended Magazine'], vitality: ['Extra Health'] } }, 1234);
+  assert.strictEqual(view.components.length, 2, 'upgrade menu, buttons');
+  const sell = await views.shopView(member(id), { ...record, items: { weapon: ['Rapid Rounds'] } }, 5, 'sell');
+  assert.strictEqual(sell.components.length, 3, 'tabs, sell menu, Back / Hero');
+  // the item shop (his calls, Oct 3): tabs, price buttons, one buy menu, Back / Hero; a picture drawn like the in-game shop
+  for (const kind of ['weapon', 'vitality', 'spirit']) {
+    const menus = [];
+    for (const tier of [1, 2, 3, 4]) {
+      const shop = await views.shopView(member(id), record, 5, kind, Date.now(), tier);
+      assert.strictEqual(shop.components.length, 4, `${kind}: tabs, price buttons, the buy menu, Back / Hero`);
+      assert.deepStrictEqual(shop.components[1].toJSON().components.map((b) => b.label), ['800', '1,600', '3,200', '6,400']);
+      assert.ok(shop.files.some((f) => f.name === 'shop.png'));
+      menus.push(shop.components[2].toJSON().components[0].options);
+    }
+    assert.strictEqual(menus.flat().length, require('../src/utils/farm/levels').POOL[kind].length, 'every item of the kind is for sale');
+    for (const options of menus) {
+      assert.ok(options.length >= 1 && options.length <= 25, `${kind}: ${options.length} items`);
+      for (const o of options) assert.ok(o.description.length <= 100 && o.label.length <= 100);
+    }
+  }
+  assert.ok(view.files.some((f) => f.name === 'hero.png'));
+  const j = view.embeds[0].toJSON();
+  assert.match(j.title, /Level/);
+});
+
+test('every target grows with each clear, up to a cap, and pays a little more', async () => {
+  const { CLEAR_CAP, clearPower, clearSouls } = require('../src/utils/farm/targets');
+  assert.strictEqual(clearPower(0, 'guardian'), 1);
+  assert.ok(clearPower(3, 'guardian') > clearPower(2, 'guardian'));
+  assert.strictEqual(clearPower(CLEAR_CAP + 5, 'guardian'), clearPower(CLEAR_CAP, 'guardian'), 'capped');
+  for (const key of ['small-camp', 'guardian', 'mid-boss', 'siege']) {
+    const first = simulate('Haze', key, { rng: seeded(1), clears: 0 }).frames[0].enemies[0];
+    const grown = simulate('Haze', key, { rng: seeded(1), clears: 5 }).frames[0].enemies[0];
+    assert.ok(grown.max > first.max && grown.hp > first.hp, `${key}: health grows (current health too)`);
+  }
+  const id = 'mb1';
+  await chooseHero(id, 'Haze');
+  const farm = require('../src/storage').getStore('farm');
+  await require('../src/utils/farm/play').updateFarmUser(id, (r) => Object.assign(r, { earned: 1e6, tiers: { 1: 3, 2: 3, 3: 3, 4: 3 }, clears: { 'small-camp': CLEAR_CAP - 1 } }));
+  const r1 = await play(id, 'small-camp', { now: Date.parse('2026-10-01T00:00:00Z'), rng: seeded(2) });
+  assert.ok(r1.run.won);
+  assert.strictEqual((await getFarmUser(id)).clears['small-camp'], CLEAR_CAP);
+  assert.ok(clearSouls(CLEAR_CAP) > 1);
+  // a failed attempt takes one clear back off, never below none
+  await require('../src/utils/farm/play').updateFarmUser(id, (r) => Object.assign(r, { earned: 0, tiers: {}, clears: { 'mid-boss': 3 } }));
+  for (const [day, left] of [[2, 2], [3, 1], [4, 0], [5, 0]]) {
+    const lost = await play(id, 'mid-boss', { now: Date.parse(`2026-10-0${day}T00:00:00Z`), rng: seeded(2) });
+    assert.ok(!lost.run.won, 'a level 0 hero loses to the Mid-Boss');
+    assert.strictEqual((await getFarmUser(id)).clears['mid-boss'], left);
+  }
+  await farm.update('old1', () => ({ hero: 'Haze', midbossKills: 4 })); // the first version counted only the Mid-Boss
+  assert.strictEqual((await getFarmUser('old1')).clears['mid-boss'], 4);
+});
+
+test('progress is per hero: level, ability tiers and items are saved under the hero; cooldowns, buffs, clears and Rejuvs stay the member\'s', async () => {
+  const { updateFarmUser } = require('../src/utils/farm/play');
+  const farm = require('../src/storage').getStore('farm');
+  // a record from before progress was per hero: its level, tiers and items become its hero's
+  await farm.set('ph1', { hero: 'Haze', earned: 500, tiers: { 1: 1 }, items: { weapon: ['Rapid Rounds'] }, buffs: { fireRate: 2 }, rejuvs: 1, clears: { guardian: 3 }, cooldowns: { roam: 5 } });
+  const before = await getFarmUser('ph1');
+  assert.deepStrictEqual([before.earned, before.tiers, before.items.weapon], [500, { 1: 1 }, ['Rapid Rounds']]);
+  await updateFarmUser('ph1', (r) => { r.earned += 100; });
+  const saved = await farm.get('ph1');
+  assert.deepStrictEqual(saved.heroes, { Haze: { earned: 600, tiers: { 1: 1 }, items: { weapon: ['Rapid Rounds'], vitality: [], spirit: [] } } });
+  assert.ok(!('earned' in saved) && !('tiers' in saved) && !('items' in saved), 'nothing of the hero is left on the member');
+  assert.deepStrictEqual([saved.buffs, saved.rejuvs, saved.clears, saved.cooldowns], [{ fireRate: 2 }, 1, { guardian: 3 }, { roam: 5 }]);
+  // another hero starts from nothing and keeps its own; the first hero's progress waits untouched
+  await farm.update('ph1', (r) => ({ ...r, hero: 'Abrams' }));
+  const fresh = await getFarmUser('ph1');
+  assert.deepStrictEqual([fresh.earned, fresh.tiers, fresh.items.weapon, fresh.buffs], [0, {}, [], { fireRate: 2 }]);
+  await updateFarmUser('ph1', (r) => { r.earned = 40; });
+  assert.deepStrictEqual((await farm.get('ph1')).heroes.Haze.earned, 600);
+  await farm.update('ph1', (r) => ({ ...r, hero: 'Haze' }));
+  assert.strictEqual((await getFarmUser('ph1')).earned, 600);
+  assert.strictEqual((await farm.get('ph1')).heroes.Abrams.earned, 40);
+});
+
+test('camp Haunts roll a random trait that moves their resists, and bosses resist stuns and every kind of damage', () => {
+  const traits = new Set();
+  const bullets = new Set();
+  for (let s = 1; s <= 60; s++) {
+    const run = simulate('Haze', 'medium-camp', { rng: seeded(s * 7919) });
+    for (const e of run.frames[0].enemies) { const m = e.name.match(/^(Armored|Warded|Ironclad|Brittle) /); traits.add(m ? m[1] : 'plain'); }
+    bullets.add(run.frames[0].enemies.length);
+  }
+  assert.deepStrictEqual([...traits].sort(), ['Armored', 'Brittle', 'Ironclad', 'Warded', 'plain']);
+  const { TARGETS, SIEGE } = require('../src/utils/farm/targets');
+  const { Fight } = require('../src/utils/farm/engine');
+  for (const [key, t] of Object.entries({ guardian: TARGETS.guardian, walker: TARGETS.walker, 'mid-boss': TARGETS['mid-boss'] })) {
+    const e = t.enemies()[0];
+    assert.ok(e.stats.spiritResist >= 0.25 && e.stats.bulletResist > 0 && e.stats.ccResist >= 0.5, `${key} resists everything`);
+  }
+  for (const stage of SIEGE.stages) assert.ok(stage.enemies()[0].stats.spiritResist >= 0.3, stage.name);
+  const boss = TARGETS['mid-boss'].enemies()[0];
+  const hero = require('../src/utils/farm/hero').buildHero('Haze');
+  const f = new Fight({ heroes: [hero], enemies: [boss] });
+  f.addStatus(boss, { id: 'sleep', duration: 4, tags: ['sleep'] });
+  assert.ok(Math.abs(boss.statuses.find((x) => x.id === 'sleep').until - 1) < 1e-9, 'a 4 s sleep lasts 1 s on a boss that shrugs off 75%');
+});
+
+test('legendaries: 0.01% a kill in a won fight, one per hero ever, it takes a slot or waits for one, and it can never be sold', async () => {
+  const { rollLegendary, LEGENDARY_NAMES, POOL, MAX_ITEMS } = require('../src/utils/farm/levels');
+  const { dropLegendary, updateFarmUser, switchHero, unlockHero } = require('../src/utils/farm/play');
+  const { itemByName } = require('../src/utils/farm/stats');
+  assert.strictEqual(LEGENDARY_NAMES.length, 17);
+  assert.ok(LEGENDARY_NAMES.every((n) => itemByName(n)?.Tier === 5));
+  assert.strictEqual(rollLegendary(0, () => 0), null, 'no kills, no roll');
+  assert.strictEqual(rollLegendary(1000, () => 0.0001), null, 'just above the chance');
+  assert.strictEqual(rollLegendary(1, () => 0), LEGENDARY_NAMES[0]);
+  // a won camp counts every enemy in it; a lost fight counts none
+  const won = simulate('Haze', 'small-camp', { rng: () => 0.5, boons: 30, items: POOL.weapon.slice(0, 6) });
+  assert.ok(won.won);
+  assert.strictEqual(won.kills, won.frames.at(-1).enemies.length);
+  assert.strictEqual(simulate('Haze', 'siege', { rng: () => 0.5 }).kills, 0);
+
+  const id = 'legend';
+  await chooseHero(id, 'Haze');
+  await changeSouls(id, 1e6);
+  const plain = POOL.weapon.filter((n) => !itemByName(n).Components?.length);
+  for (const name of plain.slice(0, MAX_ITEMS)) await buyItem(id, name);
+  // the build is full: it waits, and holds the next free slot
+  const drop = await updateFarmUser(id, (r) => dropLegendary(r, 5, () => 0));
+  assert.deepStrictEqual(drop, { name: LEGENDARY_NAMES[0], waiting: true });
+  assert.strictEqual(await updateFarmUser(id, (r) => dropLegendary(r, 5, () => 0)), null, 'only one per hero');
+  const sold = await sellItem(id, plain[0]);
+  assert.strictEqual(sold.placed, LEGENDARY_NAMES[0]);
+  let r = await getFarmUser(id);
+  assert.ok(Object.values(r.items).flat().includes(LEGENDARY_NAMES[0]));
+  assert.deepStrictEqual(await sellItem(id, LEGENDARY_NAMES[0]), { error: 'legendary' });
+  // while it waits, buying can't take its slot
+  await updateFarmUser(id, (x) => { x.legendary = LEGENDARY_NAMES[1]; for (const s of Object.keys(x.items)) x.items[s] = x.items[s].filter((n) => n !== LEGENDARY_NAMES[0]); });
+  assert.deepStrictEqual(await buyItem(id, plain[0]), { error: 'full' });
+  // it belongs to the hero: another hero starts without one and can get its own
+  await updateFarmUser(id, (x) => { x.heroes.Abrams = {}; });
+  assert.ok((await switchHero(id, 'Abrams')).ok);
+  r = await getFarmUser(id);
+  assert.strictEqual(r.legendary, null);
+  assert.ok(await updateFarmUser(id, (x) => dropLegendary(x, 1, () => 0)));
+  assert.strictEqual((await getFarmUser(id)).heroes.Haze.legendary, LEGENDARY_NAMES[1]);
+});

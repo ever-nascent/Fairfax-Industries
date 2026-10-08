@@ -16,7 +16,7 @@ test('the shuffle is a GIF that plays once, the reveal a PNG', async () => {
   assert.ok(png.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])));
 });
 
-test('a full game: bet taken, a win pays 2.5x once, only the owner picks', async () => {
+test('a full game: bet taken, a win pays 2.85x once, only the owner picks', async () => {
   const user = { id: 'test-hat' };
   await getStore('xp').delete(user.id);
   assert.ok((await sc.startGame(user, 'Tester', 5)).error);
@@ -39,7 +39,7 @@ test('a full game: bet taken, a win pays 2.5x once, only the owner picks', async
     const embed = result.embeds[0].toJSON();
     assert.strictEqual(embed.thumbnail.url, `attachment://sinclair_${findIt ? 'injured' : 'gloat'}.png`);
     assert.ok((findIt ? sc.WIN_LINES : sc.LOSE_LINES).includes(embed.footer.text));
-    assert.strictEqual((await getUser(user.id)).souls, before - 100 + (findIt ? 250 : 0));
+    assert.strictEqual((await getUser(user.id)).souls, before - 100 + (findIt ? 285 : 0));
     assert.strictEqual(await sc.games().get(id), null);
   }
 });

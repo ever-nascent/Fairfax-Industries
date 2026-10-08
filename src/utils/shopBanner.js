@@ -1,6 +1,7 @@
 // The /shop first-screen banner: the in-game Curiosity Shop with the member's name, level flask and souls
 // on top, and below it a copy of the in-game shop page (FAIRFAX header, one panel per tier, item cards).
 // Every Shop price is a real in-game tier price. Design rules: server-plan.md ("/shop first screen").
+const { SCALE } = require('./economy');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
@@ -460,12 +461,12 @@ async function renderShopBanner({ name, level, fill, souls: balance, heroSlug })
   // Tiers 1-3 in a row under the header.
   const items = itemCards(g, { rejuv, souls });
   const tiers = [
-    { tier: 1, price: '800', cards: [{ name: 'Icon Card', art: (cx, cy) => {
+    { tier: 1, price: String(800 * SCALE), cards: [{ name: 'Icon Card', art: (cx, cy) => {
       const img = icon.image, s = 92 / img.height;
       g.drawImage(img, cx - (img.width * s) / 2, cy - 48, img.width * s, 92);
     } }] },
-    { tier: 2, price: '1600', cards: [items.soulBoost] },
-    { tier: 3, price: '3200', cards: [
+    { tier: 2, price: String(1600 * SCALE), cards: [items.soulBoost] },
+    { tier: 3, price: String(3200 * SCALE), cards: [
       { name: ['Full Portrait', 'Card'], art: (cx, cy) => {
         const img = render.image, s = 175 / img.height;
         g.drawImage(img, cx - (img.width * s) / 2, cy - 58, img.width * s, 175);
@@ -495,7 +496,7 @@ async function renderShopBanner({ name, level, fill, souls: balance, heroSlug })
   // Tier 4: tall dark panel on the right, like the in-game shop's bottom-right panel.
   const t4x = x + 8, t4y = py + 44, t4w = px + pw - 22 - t4x, t4h = rowY + rowH - t4y;
   frame(g, rnd, 4, t4x, t4y, t4w, t4h);
-  plate(g, rnd, 4, t4x - 10, t4y - 22, '6400', souls);
+  plate(g, rnd, 4, t4x - 10, t4y - 22, String(6400 * SCALE), souls);
   g.textAlign = 'center';
   g.font = `20px ${SERIF}`;
   g.fillStyle = '#c4b08a';

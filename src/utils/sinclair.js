@@ -1,5 +1,5 @@
 // /rabbit-in-the-hat, Sinclair's game: three top hats, the rabbit is under one. Sinclair shuffles (an animated
-// GIF), you pick a hat; a win pays 2.5x the bet. Rules: server-plan.md ("Games").
+// GIF), you pick a hat; a win pays 2.85x the bet (95% back on a 1-in-3 pick, like the other games; 2.5x returned 83%). Rules: server-plan.md ("Games").
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
@@ -9,14 +9,15 @@ const { getStore } = require('../storage');
 const { soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, halftone, grain, grainAndVignette } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'sinclair'); // deadlock.wiki, see assets/CREDITS.txt
 // the pale sage of his select art; his Rabbit Hex icon
 const HOST = { color: 0x8fa39a, name: 'The Amazing Sinclair', icon: path.join(ART, 'rabbit_hex.png'), art: ART, prefix: 'sinclair' };
 
-const PAYOUT = 2.5;
+const PAYOUT = 2.85;
 const BUTTON_ID = 'hat'; // custom id: hat:<game id>:<hat index>
+const { pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'hat_again'; // custom id: hat_again:<bet>:<player id>
 const winnings = (bet) => Math.floor(bet * PAYOUT);
 

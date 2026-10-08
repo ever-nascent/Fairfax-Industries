@@ -1,0 +1,2069 @@
+{
+ "npcs": {
+  "neutral_trooper_weak": {
+   "AttackRangeTarget": 2.54,
+   "GoldReward": 41,
+   "GoldRewardBonusPercentPerMinute": 1.08,
+   "InitialSpawnDelay": 120,
+   "IntrinsicModifiers": [
+    {
+     "BULLET_DAMAGE_REDUCTION_PERCENT": 50,
+     "ABILITY_DAMAGE_REDUCTION_PERCENT": 45
+    }
+   ],
+   "LocUnitName": "#neutral_trash_1",
+   "MaxHealth": 129,
+   "MaxSquadAttackers": 3,
+   "MeleeAttemptRange": 3.81,
+   "Name": "neutral_trooper_weak",
+   "NeutralDamageGrowth": {
+    "DamageGrowthPctPerMin": 0.5,
+    "EnabledStateMask": "MODIFIER_STATE_LOCK_ENTITY_FACING"
+   },
+   "NeutralMelee": "citadel_neutral_light_melee_weak",
+   "NeutralType": "NEUTRAL_NPC_WEAK",
+   "NoMelee": false,
+   "NonMoveAttackDuration": 1,
+   "NpcInCombatModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IN_COMBAT"
+   },
+   "OnlyMelee": false,
+   "OutlineRange": 20.32,
+   "OutlineThroughWalls": true,
+   "RunSpeed": 3.81,
+   "ShieldReactivateDelay": 2,
+   "SightRangeNPCs": 38.1,
+   "SightRangePlayers": 38.1,
+   "SleepModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IGNORED_BY_NPC_TARGETING"
+   },
+   "SpawnInterval": 85,
+   "SpawnOnGround": true,
+   "SpawnTetherRadius": 7.62,
+   "SquadDistance": 2.54,
+   "SquadPriority": 1,
+   "StrafeAngleAmount": 15,
+   "StrafeSideDuration": 3,
+   "StrafeSpeed": 1.524,
+   "SuppressOtherOutlinesWhenVisible": true,
+   "TrackOutOfCombatStatus": false,
+   "WalkSpeed": 3.81,
+   "Weapon": {
+    "BulletSpeed": 152.4,
+    "BulletDamage": 2.415,
+    "RoundsPerSecond": 2,
+    "ClipSize": -1,
+    "ReloadTime": 0.25,
+    "ReloadMovespeed": 0.023622,
+    "ReloadDelay": 0,
+    "ReloadSingle": false,
+    "FalloffStartRange": 38.1,
+    "FalloffEndRange": 38.1,
+    "FalloffStartScale": 1,
+    "FalloffEndScale": 0.3,
+    "FalloffBias": 0.5,
+    "BulletGravityScale": 0,
+    "BulletRadius": 0.0762,
+    "BulletsPerShot": 1,
+    "BulletsPerBurst": 1,
+    "BurstInterShotInterval": 0,
+    "ShootMoveSpeed": 0.75,
+    "HitOnceAcrossAllBullets": false,
+    "CanCrit": true,
+    "AmmoConsumedPerShot": 1,
+    "DPS": 4.83,
+    "SustainedDPS": 4.83
+   }
+  },
+  "neutral_trooper_normal": {
+   "AbilityChance01": 0.1,
+   "AbilityChance02": 0.05,
+   "AttackRangeTarget": 10.16,
+   "GoldReward": 68,
+   "GoldRewardBonusPercentPerMinute": 1.08,
+   "InitialSpawnDelay": 300,
+   "IntrinsicModifiers": [
+    {
+     "BULLET_DAMAGE_REDUCTION_PERCENT": 50,
+     "ABILITY_DAMAGE_REDUCTION_PERCENT": 45
+    }
+   ],
+   "LocUnitName": "#neutral_trash_2",
+   "MaxHealth": 322,
+   "MeleeAttemptRange": 3.81,
+   "Name": "neutral_trooper_normal",
+   "NeutralDamageGrowth": {
+    "DamageGrowthPctPerMin": 0.5,
+    "EnabledStateMask": "MODIFIER_STATE_LOCK_ENTITY_FACING"
+   },
+   "NeutralMelee": "citadel_neutral_light_melee_normal",
+   "NeutralType": "NEUTRAL_NPC_NORMAL",
+   "NoMelee": false,
+   "NonMoveAttackDuration": 3,
+   "NpcInCombatModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IN_COMBAT"
+   },
+   "OnlyMelee": false,
+   "OutlineRange": 20.32,
+   "OutlineThroughWalls": true,
+   "RunSpeed": 3.048,
+   "ShieldReactivateDelay": 2,
+   "SightRangeNPCs": 38.1,
+   "SightRangePlayers": 38.1,
+   "SleepModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IGNORED_BY_NPC_TARGETING"
+   },
+   "SpawnInterval": 290,
+   "SpawnOnGround": true,
+   "SpawnTetherRadius": 7.62,
+   "SquadDistance": 3.81,
+   "SquadPriority": 2,
+   "StrafeAngleAmount": 15,
+   "StrafeSideDuration": 3,
+   "StrafeSpeed": 2.032,
+   "SuppressOtherOutlinesWhenVisible": true,
+   "TrackOutOfCombatStatus": false,
+   "WalkSpeed": 3.048,
+   "Weapon": {
+    "BulletSpeed": 152.4,
+    "BulletDamage": 6.125,
+    "RoundsPerSecond": 2,
+    "ClipSize": -1,
+    "ReloadTime": 0.25,
+    "ReloadMovespeed": 0.023622,
+    "ReloadDelay": 0,
+    "ReloadSingle": false,
+    "FalloffStartRange": 38.1,
+    "FalloffEndRange": 38.1,
+    "FalloffStartScale": 1,
+    "FalloffEndScale": 0.3,
+    "FalloffBias": 0.5,
+    "BulletGravityScale": 0,
+    "BulletRadius": 0.0762,
+    "BulletsPerShot": 1,
+    "BulletsPerBurst": 1,
+    "BurstInterShotInterval": 0,
+    "ShootMoveSpeed": 0.75,
+    "HitOnceAcrossAllBullets": false,
+    "CanCrit": true,
+    "AmmoConsumedPerShot": 1,
+    "DPS": 12.25,
+    "SustainedDPS": 12.25
+   },
+   "vNeutralAbilities": [
+    "citadel_neutral_attack_lobfire"
+   ]
+  },
+  "neutral_trooper_strong": {
+   "AbilityChance01": 0.3,
+   "AbilityChance02": 0.2,
+   "AbilityChance03": 0.1,
+   "AttackRangeTarget": 15.24,
+   "GoldReward": 181,
+   "GoldRewardBonusPercentPerMinute": 1.08,
+   "InitialSpawnDelay": 480,
+   "IntrinsicModifiers": [
+    {
+     "BULLET_DAMAGE_REDUCTION_PERCENT": 60,
+     "ABILITY_DAMAGE_REDUCTION_PERCENT": 55
+    }
+   ],
+   "LocUnitName": "#neutral_trash_3",
+   "MaxHealth": 1133,
+   "MeleeAttemptRange": 3.81,
+   "Name": "neutral_trooper_strong",
+   "NeutralDamageGrowth": {
+    "DamageGrowthPctPerMin": 0.5,
+    "EnabledStateMask": "MODIFIER_STATE_LOCK_ENTITY_FACING"
+   },
+   "NeutralMelee": "citadel_neutral_light_melee_strong",
+   "NeutralType": "NEUTRAL_NPC_STRONG",
+   "NoMelee": false,
+   "NonMoveAttackDuration": 3.5,
+   "NpcInCombatModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IN_COMBAT"
+   },
+   "OnlyMelee": false,
+   "OutlineRange": 20.32,
+   "OutlineThroughWalls": true,
+   "RunSpeed": 2.032,
+   "ShieldReactivateDelay": 2,
+   "SightRangeNPCs": 38.1,
+   "SightRangePlayers": 38.1,
+   "SleepModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IGNORED_BY_NPC_TARGETING"
+   },
+   "SpawnInterval": 335,
+   "SpawnOnGround": true,
+   "SpawnTetherRadius": 7.62,
+   "SquadDistance": 5.08,
+   "SquadPriority": 3,
+   "StrafeAngleAmount": 15,
+   "StrafeSideDuration": 3,
+   "StrafeSpeed": 2.032,
+   "SuppressOtherOutlinesWhenVisible": true,
+   "TrackOutOfCombatStatus": false,
+   "WalkSpeed": 2.032,
+   "Weapon": {
+    "BulletSpeed": 152.4,
+    "BulletDamage": 9.1,
+    "RoundsPerSecond": 2,
+    "ClipSize": -1,
+    "ReloadTime": 0.25,
+    "ReloadMovespeed": 0.023622,
+    "ReloadDelay": 0,
+    "ReloadSingle": false,
+    "FalloffStartRange": 38.1,
+    "FalloffEndRange": 38.1,
+    "FalloffStartScale": 1,
+    "FalloffEndScale": 0.3,
+    "FalloffBias": 0.5,
+    "BulletGravityScale": 0,
+    "BulletRadius": 0.0762,
+    "BulletsPerShot": 1,
+    "BulletsPerBurst": 1,
+    "BurstInterShotInterval": 0,
+    "ShootMoveSpeed": 0.75,
+    "HitOnceAcrossAllBullets": false,
+    "CanCrit": true,
+    "AmmoConsumedPerShot": 1,
+    "DPS": 18.2,
+    "SustainedDPS": 18.2
+   },
+   "vNeutralAbilities": [
+    "citadel_neutral_attack_lobfire"
+   ]
+  },
+  "neutral_sinners_sacrifice": {
+   "BreakableForceScale": 3,
+   "DamagedByAbilities": false,
+   "DamagedByBullets": false,
+   "DyingDuration": 0,
+   "FixedMeleeDamage": true,
+   "GoldReward": 155,
+   "GoldRewardBonusPercentPerMinute": 1.08,
+   "InitialSpawnDelay": 480,
+   "IntrinsicModifiers": [
+    {
+     "EnabledStateMask": "MODIFIER_STATE_TECH_UNTARGETABLE | MODIFIER_STATE_TECH_INVULNERABLE | MODIFIER_STATE_HEALING_DISABLED"
+    },
+    {
+     "ParryCheckRadius": 1.524
+    }
+   ],
+   "LocUnitName": "#neutral_sinners",
+   "MaxHealth": 500,
+   "MeleeAttemptRange": 3.81,
+   "MiniGameFastChance": 0.4,
+   "MiniGameFastSpeed": 0.04191,
+   "Name": "neutral_sinners_sacrifice",
+   "NeutralDamageGrowth": {
+    "DamageGrowthPctPerMin": 0.5,
+    "EnabledStateMask": "MODIFIER_STATE_LOCK_ENTITY_FACING"
+   },
+   "NeutralType": "NEUTRAL_SINNERS_SACRIFICE",
+   "NoMelee": false,
+   "NpcInCombatModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IN_COMBAT"
+   },
+   "OnlyMelee": false,
+   "OutlineRange": 20.32,
+   "OutlineThroughWalls": true,
+   "PhysicsImpulseMultiplier": 0,
+   "RetaliateDamage": 80,
+   "ShieldReactivateDelay": 2,
+   "SightRangeNPCs": 0,
+   "SightRangePlayers": 5.08,
+   "SleepModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IGNORED_BY_NPC_TARGETING"
+   },
+   "SpawnBreakablesOnDeath": true,
+   "SpawnInterval": 300,
+   "SpawnOnGround": true,
+   "SpawnTetherRadius": 7.62,
+   "SquadDistance": 2.54,
+   "SuppressOtherOutlinesWhenVisible": true,
+   "TrackOutOfCombatStatus": false,
+   "VaultMiniGameHitWindow": 0.5,
+   "VaultMiniGameTime": 3,
+   "VaultSuccessDestroyTime": 1.3,
+   "VaultSuccessLightsScroll": 3,
+   "Weapon": {
+    "BulletSpeed": 152.4,
+    "BulletDamage": 0,
+    "RoundsPerSecond": 2,
+    "ClipSize": -1,
+    "ReloadTime": 0.25,
+    "ReloadMovespeed": 0.023622,
+    "ReloadDelay": 0,
+    "ReloadSingle": false,
+    "FalloffStartRange": 38.1,
+    "FalloffEndRange": 38.1,
+    "FalloffStartScale": 1,
+    "FalloffEndScale": 0.3,
+    "FalloffBias": 0.5,
+    "BulletGravityScale": 0,
+    "BulletRadius": 0.0762,
+    "BulletsPerShot": 1,
+    "BulletsPerBurst": 1,
+    "BurstInterShotInterval": 0,
+    "ShootMoveSpeed": 0.75,
+    "HitOnceAcrossAllBullets": false,
+    "CanCrit": true,
+    "AmmoConsumedPerShot": 1,
+    "DPS": 0,
+    "SustainedDPS": 0
+   }
+  },
+  "npc_boss_tier1": {
+   "BackDoorProtectionRange": 30,
+   "BackdoorProtectionModifier": {
+    "HealthPerSecondRegen": 65,
+    "BackdoorProtectionDamageMitigationFromPlayers": 65,
+    "BackdoorProtectionDamageMitigationFromPlayers_Streetbrawl": 85,
+    "ActivationTime": 10
+   },
+   "BeamTurnRate": 360,
+   "BeamWeaponWidth": 0.3048,
+   "Hull": 1,
+   "IntrinsicModifiers": [
+    {
+     "ABILITY_DAMAGE_REDUCTION_PERCENT": 0,
+     "BULLET_ARMOR_DAMAGE_RESIST": 10
+    }
+   ],
+   "InvulRange": 24,
+   "LocUnitName": "guardian_unit",
+   "MaxHealth": 5500,
+   "MeleeAttemptRange": 5,
+   "MeleeHitRange": 7,
+   "MinMeleeAttackTime": 1.5,
+   "MitigateDamageFromPlayers": true,
+   "Name": "npc_boss_tier1",
+   "NpcInCombatModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IN_COMBAT"
+   },
+   "OutlineRange": 31.75,
+   "OutlineThroughWalls": true,
+   "OutlineWhenVisible": true,
+   "PhysicsImpulseMultiplier": 0,
+   "PlayerDPS": 116,
+   "PlayerDamageResistPct": -25,
+   "RunSpeed": 7.62,
+   "SightRangeNPCs": 17.78,
+   "SightRangePlayers": 34,
+   "SpawnOnGround": true,
+   "Tier1PlayerClipCapsuleHeight": 5.69,
+   "Tier1PlayerClipCapsuleRadius": 0.8128,
+   "TrackOutOfCombatStatus": false,
+   "TrooperDPS": 35,
+   "TrooperDamageResistPct": 42.5,
+   "TurnRate": 360,
+   "Weapon": {
+    "BulletSpeed": 457.2,
+    "BulletDamage": 16,
+    "RoundsPerSecond": 5,
+    "ClipSize": -1,
+    "ReloadTime": 1,
+    "ReloadMovespeed": 0.023622,
+    "ReloadDelay": 0,
+    "ReloadSingle": false,
+    "FalloffStartRange": 50.8,
+    "FalloffEndRange": 50.8,
+    "FalloffStartScale": 1,
+    "FalloffEndScale": 0.3,
+    "FalloffBias": 0.5,
+    "BulletGravityScale": 0,
+    "BulletRadius": 0.3048,
+    "BulletsPerShot": 1,
+    "BulletsPerBurst": 1,
+    "BurstInterShotInterval": 0,
+    "ShootMoveSpeed": 0.75,
+    "HitOnceAcrossAllBullets": false,
+    "CanCrit": true,
+    "AmmoConsumedPerShot": 1,
+    "DPS": 80,
+    "SustainedDPS": 80
+   }
+  },
+  "npc_boss_tier2": {
+   "AoeWaveHealthThreshold": 0.25,
+   "BackDoorProtectionRange": 55,
+   "BackdoorProtectionModifier": {
+    "HealthPerSecondRegen": 65,
+    "BackdoorProtectionDamageMitigationFromPlayers": 65,
+    "BackdoorProtectionDamageMitigationFromPlayers_Streetbrawl": 85,
+    "flShieldImpactDirectionOffset": 50
+   },
+   "BeamTurnToFire": true,
+   "BoundAbilities": {
+    "ESlot_Signature_1": {
+     "AbilityProperties": {
+      "AbilityCooldown": 10,
+      "AbilityDuration": 0,
+      "AbilityCastRange": 35.56,
+      "AbilityUnitTargetLimit": 100,
+      "AbilityCastDelay": 0,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0,
+      "VolleyInterval": 0.5,
+      "GrenadesInVolley": 6,
+      "MaxSimultaneousVolley": 1,
+      "InitialVolleyInaccuracy": 100,
+      "PerVolleyInaccuracy": 25,
+      "Damage": 200,
+      "DetonateTimer": 10,
+      "ExplosionFalloffDisabled": 1,
+      "Radius": "5m",
+      "FireDuration": 5,
+      "FireDPS": 25,
+      "FireDPSTrooperFactor": 0.3,
+      "FireTickInterval": 0.5,
+      "FireRadius": "6m",
+      "FireEscalationPerSecond": 0,
+      "BulletArmorReduction": -10,
+      "TechArmorReduction": -10
+     },
+     "Weapon": {
+      "BulletSpeed": 254,
+      "BulletDamage": 0,
+      "RoundsPerSecond": 0,
+      "ClipSize": null,
+      "ReloadTime": null,
+      "ReloadMovespeed": 0,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 0,
+      "FalloffEndRange": 0,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0,
+      "BulletRadius": 0,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 1,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityType": "EAbilityType_Signature",
+     "itsInterruptingStates": "MODIFIER_STATE_STUNNED | MODIFIER_STATE_IS_ASLEEP",
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_UNIT",
+     "AbilityTargetingShape": "CITADEL_ABILITY_TARGETING_SHAPE_CIRCLE",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_INSTANT_CAST",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_CHANNELLED | CITADEL_ABILITY_BEHAVIOR_TARGET_THROUGH_WALLS",
+     "AbilityTargetTypes": "CITADEL_UNIT_TARGET_HERO_ENEMY | CITADEL_UNIT_TARGET_TROOPER_ENEMY | CITADEL_UNIT_TARGET_MINION_ENEMY",
+     "projectileInfo": {
+      "TrackingDuration": 1,
+      "TrackingStartTime": 1,
+      "TrackingEndTime": 2,
+      "GravityScale": 0.5,
+      "Behaviors": "PBF_DetonateOnHitWorld"
+     },
+     "LaunchAngle": 45,
+     "AuraModifier": {
+      "ModifierProvidedByAuraDuration": 4,
+      "RemoveProvidedModifierOnAuraRemoval": true,
+      "modifierProvidedByAura": {
+       "AutoRegisterModifierValueFromAbilityPropertyName": [
+        "BulletArmorReduction",
+        "TechArmorReduction"
+       ]
+      },
+      "LosCheck": "Head_IgnoreObscureBlockers"
+     },
+     "Key": "citadel_ability_tier2boss_rocket_barrage",
+     "Name": "Rocket Barrage"
+    },
+    "ESlot_Signature_2": {
+     "AbilityProperties": {
+      "AbilityCooldown": 0,
+      "AbilityDuration": 6,
+      "AbilityCastRange": 34.92,
+      "AbilityUnitTargetLimit": 1,
+      "AbilityCastDelay": 1,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0,
+      "PathLength": 1250,
+      "PathWidth": 0.762,
+      "MaxHPDPS": 2,
+      "DPS": 125,
+      "CreepDPS": 190,
+      "TrackingSpeed": 0.762,
+      "SweepSpeed": 0.0254
+     },
+     "Weapon": {
+      "BulletSpeed": 254,
+      "BulletDamage": 0,
+      "RoundsPerSecond": 0,
+      "ClipSize": null,
+      "ReloadTime": null,
+      "ReloadMovespeed": 0,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 0,
+      "FalloffEndRange": 0,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0,
+      "BulletRadius": 0,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 1,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityType": "EAbilityType_Signature",
+     "itsInterruptingStates": "MODIFIER_STATE_STUNNED",
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_SELF",
+     "AbilityTargetingShape": "CITADEL_ABILITY_TARGETING_SHAPE_LINE",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_INSTANT_CAST_TOGGLE",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_NO_TARGET",
+     "AbilityTargetTypes": "CITADEL_UNIT_TARGET_ALL_ENEMY",
+     "LaserCharge": {
+      "Duration": 1.5
+     },
+     "LaserLeft": {
+      "BeamStartSearchPos": "head_left",
+      "IsSideHead": true,
+      "SideSearchAngle": 90
+     },
+     "LaserMid": {
+      "BeamStartSearchPos": "head_mid"
+     },
+     "LaserRight": {
+      "BeamStartSearchPos": "head_right",
+      "IsSideHead": true,
+      "SideSearchAngle": 90
+     },
+     "Key": "citadel_ability_tier2boss_laser_beam",
+     "Name": "Laser"
+    },
+    "ESlot_Signature_3": {
+     "AbilityProperties": {
+      "AbilityCooldown": 6,
+      "AbilityDuration": 0,
+      "AbilityCastRange": 12,
+      "AbilityUnitTargetLimit": 100,
+      "AbilityCastDelay": 1.43,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0,
+      "ActivationDistance": 12
+     },
+     "Weapon": {
+      "BulletSpeed": 254,
+      "BulletDamage": 0,
+      "RoundsPerSecond": 0,
+      "ClipSize": null,
+      "ReloadTime": null,
+      "ReloadMovespeed": 0,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 0,
+      "FalloffEndRange": 0,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0,
+      "BulletRadius": 0,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 1,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityType": "EAbilityType_Signature",
+     "itsInterruptingStates": "MODIFIER_STATE_STUNNED | MODIFIER_STATE_IS_ASLEEP",
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_UNIT",
+     "AbilityTargetingShape": "CITADEL_ABILITY_TARGETING_SHAPE_CIRCLE",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_INSTANT_CAST",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_NO_TARGET",
+     "AbilityTargetTypes": "CITADEL_UNIT_TARGET_ALL_ENEMY",
+     "AbilityTargetFlags": "CITADEL_UNIT_TARGET_FLAG_PENETRATE_INVULNERABLE",
+     "Key": "citadel_ability_tier2boss_stomp",
+     "Name": "Stomp"
+    },
+    "ESlot_Signature_4": {
+     "AbilityProperties": {
+      "AbilityCooldown": 3,
+      "AbilityDuration": 0,
+      "AbilityCastRange": 25.4,
+      "AbilityUnitTargetLimit": 1,
+      "AbilityCastDelay": 2.5,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0,
+      "Damage": 300,
+      "DamageHealthPercent": 20,
+      "SlowPercent": 24,
+      "WaveSpeed": "16m",
+      "WaveStartRadius": "4m",
+      "WaveFinalRadius": "40m"
+     },
+     "Weapon": {
+      "BulletSpeed": 254,
+      "BulletDamage": 0,
+      "RoundsPerSecond": 0,
+      "ClipSize": null,
+      "ReloadTime": null,
+      "ReloadMovespeed": 0,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 0,
+      "FalloffEndRange": 0,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0,
+      "BulletRadius": 0,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 1,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityType": "EAbilityType_Ultimate",
+     "itsInterruptingStates": "MODIFIER_STATE_STUNNED | MODIFIER_STATE_IS_ASLEEP",
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_UNIT",
+     "AbilityTargetingShape": "CITADEL_ABILITY_TARGETING_SHAPE_CIRCLE",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_INSTANT_CAST",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_NO_TARGET",
+     "AbilityTargetTypes": "CITADEL_UNIT_TARGET_ALL_ENEMY",
+     "AbilityTargetFlags": "CITADEL_UNIT_TARGET_FLAG_PENETRATE_INVULNERABLE",
+     "AG2SourceName": "citadel_ability_tier2boss_rocket_barrage",
+     "AoEModifier": {
+      "AuraSearchType": "CITADEL_UNIT_TARGET_ALL_ENEMY",
+      "modifierProvidedByAura": {
+       "IsHidden": true,
+       "TossUpStrength": 400,
+       "TossHorizontalMin": 300,
+       "TossHorizontalMax": 1200,
+       "DebuffDuration": 3,
+       "SilenceModifier": {
+        "DrawOverheadStatus": "OVERHEAD_DRAW_NEVER",
+        "IsHidden": false
+       },
+       "DisarmModifier": {
+        "DrawOverheadStatus": "OVERHEAD_DRAW_NEVER",
+        "IsHidden": false
+       },
+       "SlowModifier": {
+        "IsHidden": true,
+        "AutoRegisterModifierValueFromAbilityPropertyName": [
+         "SlowPercent"
+        ]
+       }
+      }
+     },
+     "Key": "citadel_ability_tier2boss_aoe_wave",
+     "Name": "citadel_ability_tier2boss_aoe_wave"
+    }
+   },
+   "BurstCooldown": 0.2,
+   "BurstDuration": 1,
+   "EmpoweredModifierLevel1": {
+    "MaxHealth": 9000,
+    "TransitionDuration": 1,
+    "EnabledStateMask": "MODIFIER_STATE_DO_NOT_ADJUST_HEALTH_ON_MAXHEALTH_CHANGE"
+   },
+   "EmpoweredModifierLevel2": {
+    "MaxHealth": 12000,
+    "TransitionDuration": 1,
+    "EnabledStateMask": "MODIFIER_STATE_DO_NOT_ADJUST_HEALTH_ON_MAXHEALTH_CHANGE"
+   },
+   "FriendlyAuraModifier": {
+    "IsHidden": true,
+    "AuraRadius": 28,
+    "LOSCheck": "Bounds",
+    "modifierProvidedByAura": {
+     "TECH_RESIST": 15,
+     "BULLET_ARMOR_DAMAGE_RESIST": 15
+    },
+    "AuraSearchType": "CITADEL_UNIT_TARGET_HERO_FRIENDLY"
+   },
+   "Hull": 2,
+   "HullCapsuleHeight": 5.334,
+   "HullCapsuleRadius": 1.626,
+   "IntrinsicModifiers": [
+    {
+     "ABILITY_DAMAGE_REDUCTION_PERCENT": 0,
+     "BULLET_ARMOR_DAMAGE_RESIST": 35
+    }
+   ],
+   "InvulModifier": {
+    "ShieldRadius": 7.62
+   },
+   "InvulModifierRange": 22,
+   "LocUnitName": "walker_unit",
+   "MaxHealth": 6000,
+   "MeleeAttackRadius": 5.08,
+   "MeleeAttemptRange": 15.24,
+   "MeleeDamage": 300,
+   "MeleeDamageHealthPct": 10,
+   "MeleeDuration": 0.9,
+   "MeleeHitTime": 0.6,
+   "MeleeTargetRadius": 5.08,
+   "Name": "npc_boss_tier2",
+   "NearbyEnemyResist": {
+    "NearbyEnemyResistRange": 50.8,
+    "ResistValues": [
+     0,
+     0,
+     0,
+     20,
+     30,
+     40,
+     50
+    ]
+   },
+   "OutlineRange": 55.88,
+   "OutlineThroughWalls": true,
+   "OutlineWhenVisible": true,
+   "PhysicsImpulseMultiplier": 0,
+   "PlayerInitialSightRange": 30.48,
+   "RangeRingAlpha": 0.01524,
+   "RangeRingFadeDistance": 5,
+   "RangeRingShowDistance": 7,
+   "RangedArmorModifier": {
+    "BulletResistancePctMax": 100,
+    "TechResistancePctMax": 0,
+    "RangeMin": 30.48,
+    "RangeMax": 50.8
+   },
+   "SightRangeNPCs": 36,
+   "SightRangePlayers": 23.98,
+   "SpawnOnGround": true,
+   "StaggerWatcherModifier": {
+    "IsHidden": true,
+    "BuildUpMax": 5,
+    "AdditionlPlayerMinContribution": 0.2,
+    "StaggeredModifier": {
+     "DrawOverheadStatus": "OVERHEAD_DRAW_FOR_EVERYONE",
+     "IsHidden": true
+    },
+    "BuildUpModifier": {
+     "UseBaseWeaponCycleTimeForDelay": false,
+     "BuildUpDecayDelay": 2,
+     "BuildupMode": "BUILDUP_MODE_ONE_AND_DONE",
+     "BuildupAffectedByEffectiveness": true,
+     "DrawOverheadStatus": "OVERHEAD_DRAW_FOR_EVERYONE",
+     "IsHidden": true
+    },
+    "ProcDamageTypes": [
+     "CITADEL_DAMAGETYPE_BULLET"
+    ]
+   },
+   "StatTrackerAuraModifier": {
+    "IsHidden": true,
+    "AuraRadius": 32,
+    "modifierProvidedByAura": {
+     "IsHidden": true,
+     "DebuffType": "MODIFIER_DEBUFF_NO"
+    },
+    "AuraSearchType": "CITADEL_UNIT_TARGET_HERO"
+   },
+   "StompAttemptRadius": 12.57,
+   "StompDamage": 350,
+   "StompDamageMaxHealthPercent": 15,
+   "StompDamageTrooperRate": 0.3,
+   "StompImpactHeight": 9,
+   "StompImpactRadius": 14.5,
+   "StompTossUpMagnitude": 1.25,
+   "StunDuration": 2,
+   "TossSpeed": 8.89
+  },
+  "npc_boss_tier3": {
+   "ArmAttackCooldownMax": 10,
+   "ArmAttackCooldownMin": 4,
+   "ArmAttackRadius": 3.81,
+   "BackdoorProtection": {
+    "HealthPerSecondRegen": 75,
+    "BackdoorProtectionDamageMitigationFromPlayers": 65,
+    "BackdoorProtectionDamageMitigationFromPlayers_Streetbrawl": 85
+   },
+   "BoundAbilities": {
+    "ESlot_Weapon_Primary": {
+     "AbilityProperties": {
+      "AbilityCooldown": 0,
+      "AbilityDuration": 0,
+      "AbilityCastRange": 0,
+      "AbilityUnitTargetLimit": 1,
+      "AbilityCastDelay": 0,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0
+     },
+     "Weapon": {
+      "BulletSpeed": 635,
+      "BulletDamage": 106,
+      "RoundsPerSecond": 1.8868,
+      "ClipSize": 16,
+      "ReloadTime": 1,
+      "ReloadMovespeed": 1,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 25.4,
+      "FalloffEndRange": 76.2,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 0.1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0.8,
+      "BulletRadius": 0.0762,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 0.75,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1,
+      "DPS": 200,
+      "SustainedDPS": 178.9
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_SELF",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_ON_BUTTON_IS_DOWN",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_DONT_INTERRUPT_SPRINT | CITADEL_ABILITY_BEHAVIOR_IS_PRIMARY_WEAPON | CITADEL_ABILITY_BEHAVIOR_NO_TARGET | CITADEL_ABILITY_BEHAVIOR_SILENT_CAST_FAILURE_FEEDBACK | CITADEL_ABILITY_BEHAVIOR_DISARMABLE | CITADEL_ABILITY_BEHAVIOR_NOT_SILENCABLE | CITADEL_ABILITY_BEHAVIOR_WEAPON_TOGGLE",
+     "itsInterruptingStates": "MODIFIER_STATE_STUNNED | MODIFIER_STATE_IS_ASLEEP",
+     "AbilityType": "EAbilityType_Weapon",
+     "AbilityPointsCost": 1,
+     "HUDPanel": {
+      "HUDElements": [
+       {
+        "Context": "gun",
+        "Type": "CITADEL_ABILITY_HUD_ELEMENT_TYPE_GUN"
+       }
+      ]
+     },
+     "DOFWhileZoomed": {
+      "DofNearCrisp": 200,
+      "DofFarCrisp": 100,
+      "DofFarBlurry": 7000
+     },
+     "AG2SourceName": "weapon",
+     "Key": "citadel_weapon_bosstier3_set",
+     "Name": "citadel_weapon_bosstier3_set"
+    },
+    "ESlot_Signature_1": {
+     "AbilityProperties": {
+      "AbilityCooldown": 0,
+      "AbilityDuration": 0,
+      "AbilityCastRange": 30.48,
+      "AbilityUnitTargetLimit": 1,
+      "AbilityCastDelay": 0,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0,
+      "PathLength": 2000,
+      "PathWidth": 1.016,
+      "BulletArmorReduction": -10,
+      "TechArmorReduction": -10
+     },
+     "Weapon": {
+      "BulletSpeed": 254,
+      "BulletDamage": 0,
+      "RoundsPerSecond": 0,
+      "ClipSize": null,
+      "ReloadTime": null,
+      "ReloadMovespeed": 0,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 0,
+      "FalloffEndRange": 0,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0,
+      "BulletRadius": 0,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 1,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityType": "EAbilityType_Signature",
+     "itsInterruptingStates": "MODIFIER_STATE_STUNNED | MODIFIER_STATE_IS_ASLEEP",
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_SELF",
+     "AbilityTargetingShape": "CITADEL_ABILITY_TARGETING_SHAPE_LINE",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_INSTANT_CAST_TOGGLE",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_NO_TARGET",
+     "AbilityTargetTypes": "CITADEL_UNIT_TARGET_ALL_ENEMY",
+     "BeamModifier": {
+      "LaserDPSToPlayers": 440,
+      "LaserDPSMaxHealth": 5,
+      "LaserDPSToNPCs": 80,
+      "AuraDropTickRate": 0.5,
+      "GroundAuraModifier": {
+       "ModifierProvidedByAuraDuration": 4,
+       "AuraRadius": 4.064,
+       "RemoveProvidedModifierOnAuraRemoval": true,
+       "modifierProvidedByAura": {
+        "IsHidden": true,
+        "AutoRegisterModifierValueFromAbilityPropertyName": [
+         "BulletArmorReduction",
+         "TechArmorReduction"
+        ],
+        "Duration": 4,
+        "TickRate": 0.5,
+        "NPCDPS": 80,
+        "PlayerDPS": 100,
+        "MaxHealthDPS": 4
+       }
+      }
+     },
+     "Key": "citadel_ability_tier3boss_laser_beam",
+     "Name": "Patron Laser"
+    },
+    "ESlot_Signature_2": {
+     "AbilityProperties": {
+      "AbilityCooldown": 1,
+      "AbilityDuration": 0,
+      "AbilityCastRange": 25.4,
+      "AbilityUnitTargetLimit": 1,
+      "AbilityCastDelay": 3.5,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0,
+      "Damage": 300,
+      "DamageNonHero": 500,
+      "DamageHealthPercent": 20,
+      "SlowPercent": 24,
+      "SkipFrames": 6,
+      "WaveSpeed": "16m",
+      "WaveStartRadius": "2m",
+      "WaveFinalRadius": "12m"
+     },
+     "Weapon": {
+      "BulletSpeed": 254,
+      "BulletDamage": 0,
+      "RoundsPerSecond": 0,
+      "ClipSize": null,
+      "ReloadTime": null,
+      "ReloadMovespeed": 0,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 0,
+      "FalloffEndRange": 0,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0,
+      "BulletRadius": 0,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 1,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityType": "EAbilityType_Signature",
+     "itsInterruptingStates": "MODIFIER_STATE_STUNNED | MODIFIER_STATE_IS_ASLEEP",
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_UNIT",
+     "AbilityTargetingShape": "CITADEL_ABILITY_TARGETING_SHAPE_CIRCLE",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_INSTANT_CAST",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_NO_TARGET",
+     "AbilityTargetTypes": "CITADEL_UNIT_TARGET_ALL_ENEMY",
+     "AbilityTargetFlags": "CITADEL_UNIT_TARGET_FLAG_PENETRATE_INVULNERABLE",
+     "PreviewModifier": {
+      "ShrineChargeOffset": 300
+     },
+     "AoEModifier": {
+      "AuraSearchType": "CITADEL_UNIT_TARGET_ALL_ENEMY",
+      "WaveHeight": 10.16,
+      "modifierProvidedByAura": {
+       "IsHidden": true,
+       "TossUpStrength": 400,
+       "TossHorizontalMin": 600,
+       "TossHorizontalMax": 1200,
+       "DebuffDuration": 3,
+       "CurseModifier": {
+        "DrawOverheadStatus": "OVERHEAD_DRAW_FOR_CASTER_TEAM_ONLY",
+        "EnabledStateMask": "MODIFIER_STATE_DISARMED | MODIFIER_STATE_SILENCED | MODIFIER_STATE_MUTED | MODIFIER_STATE_GLITCHED",
+        "AutoRegisterModifierValueFromAbilityPropertyName": [
+         "SlowPercent",
+         "SkipFrames"
+        ]
+       }
+      }
+     },
+     "Key": "citadel_ability_tier3boss_aoe_wave",
+     "Name": "Patron"
+    },
+    "ESlot_Signature_3": {
+     "AbilityProperties": {
+      "AbilityCooldown": 4,
+      "AbilityDuration": 0,
+      "AbilityCastRange": 0,
+      "AbilityUnitTargetLimit": 1,
+      "AbilityCastDelay": 0,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0,
+      "SkipFrames": 6,
+      "SlowPercent": 24
+     },
+     "Weapon": {
+      "BulletSpeed": 254,
+      "BulletDamage": 0,
+      "RoundsPerSecond": 0,
+      "ClipSize": null,
+      "ReloadTime": null,
+      "ReloadMovespeed": 0,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 0,
+      "FalloffEndRange": 0,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0,
+      "BulletRadius": 0,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 1,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityType": "EAbilityType_Signature",
+     "itsInterruptingStates": "MODIFIER_STATE_STUNNED | MODIFIER_STATE_IS_ASLEEP",
+     "AbilityTargetingShape": "CITADEL_ABILITY_TARGETING_SHAPE_CIRCLE",
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_NONE",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_PRESS",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_PROJECTILE",
+     "AbilityTargetTypes": "CITADEL_UNIT_TARGET_ALL_ENEMY",
+     "projectileInfo": {
+      "Speed": 40.64,
+      "UpSpeed": 0,
+      "Behaviors": "PBF_StickToWorld | PBF_StartDetonateTimeOnHitTarget | PBF_StartDetonateTimeOnHitWorld | PBF_DisableTouchOnHit | PBF_OnlyTouchWorld"
+     },
+     "CooldownMax": 12,
+     "CooldownMin": 6,
+     "DetonationTimeMax": 4,
+     "DetonationTimeMin": 4,
+     "BossHealthMax": 1,
+     "BossHealthMin": 0.2,
+     "BombDropDist": 400,
+     "ExplodeRadius": 16.51,
+     "BombOffsets": 300,
+     "BaseDamage": 300,
+     "DamageNonPlayer": 500,
+     "MaxHealthPctDamage": 0.2,
+     "DebuffDuration": 3,
+     "WarningOffset": 32,
+     "CurseModifier": {
+      "DrawOverheadStatus": "OVERHEAD_DRAW_FOR_CASTER_TEAM_ONLY",
+      "EnabledStateMask": "MODIFIER_STATE_DISARMED | MODIFIER_STATE_SILENCED | MODIFIER_STATE_MUTED | MODIFIER_STATE_GLITCHED",
+      "AutoRegisterModifierValueFromAbilityPropertyName": [
+       "SlowPercent",
+       "SkipFrames"
+      ]
+     },
+     "Key": "citadel_ability_tier3boss_drop_bombs",
+     "Name": "Patron"
+    },
+    "ESlot_Signature_4": {
+     "AbilityProperties": {
+      "AbilityCooldown": 12,
+      "AbilityDuration": 0,
+      "AbilityCastRange": 35.56,
+      "AbilityUnitTargetLimit": 100,
+      "AbilityCastDelay": 0,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0,
+      "VolleyInterval": 0.5,
+      "GrenadesInVolley": 6,
+      "MaxSimultaneousVolley": 1,
+      "InitialVolleyInaccuracy": 100,
+      "PerVolleyInaccuracy": 25,
+      "Damage": 200,
+      "DetonateTimer": 10,
+      "ExplosionFalloffDisabled": 1,
+      "Radius": "6m",
+      "FireDuration": 5,
+      "FireDPS": 25,
+      "FireTickInterval": 0.5,
+      "FireRadius": "6m",
+      "FireEscalationPerSecond": 0,
+      "BulletArmorReduction": -10,
+      "TechArmorReduction": -10
+     },
+     "Weapon": {
+      "BulletSpeed": 254,
+      "BulletDamage": 0,
+      "RoundsPerSecond": 0,
+      "ClipSize": null,
+      "ReloadTime": null,
+      "ReloadMovespeed": 0,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 0,
+      "FalloffEndRange": 0,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0,
+      "BulletRadius": 0,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 1,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityType": "EAbilityType_Ultimate",
+     "itsInterruptingStates": "MODIFIER_STATE_STUNNED | MODIFIER_STATE_IS_ASLEEP",
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_UNIT",
+     "AbilityTargetingShape": "CITADEL_ABILITY_TARGETING_SHAPE_CIRCLE",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_INSTANT_CAST",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_CHANNELLED | CITADEL_ABILITY_BEHAVIOR_TARGET_THROUGH_WALLS",
+     "AbilityTargetTypes": "CITADEL_UNIT_TARGET_HERO_ENEMY | CITADEL_UNIT_TARGET_TROOPER_ENEMY | CITADEL_UNIT_TARGET_MINION_ENEMY",
+     "projectileInfo": {
+      "TrackingDuration": 1,
+      "TrackingStartTime": 1,
+      "TrackingEndTime": 2,
+      "GravityScale": 0.5,
+      "Behaviors": "PBF_DetonateOnHitWorld"
+     },
+     "LaunchAngle": 45,
+     "AuraModifier": {
+      "ModifierProvidedByAuraDuration": 4,
+      "RemoveProvidedModifierOnAuraRemoval": true,
+      "modifierProvidedByAura": {
+       "AutoRegisterModifierValueFromAbilityPropertyName": [
+        "BulletArmorReduction",
+        "TechArmorReduction"
+       ]
+      }
+     },
+     "Key": "citadel_ability_tier3boss_rocket_barrage",
+     "Name": "Patron"
+    }
+   },
+   "CoreRadius": 3.302,
+   "CoreVerticalOffset": 350,
+   "DefaultMoveSpeed": 5.08,
+   "DefenderInPitInvulnerable": {
+    "EnabledStateMask": "MODIFIER_STATE_TIER3_DEFENDER_IN_PIT"
+   },
+   "DyingModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_INVULNERABLE | MODIFIER_STATE_TECH_INVULNERABLE | MODIFIER_STATE_TECH_DAMAGE_INVULNERABLE | MODIFIER_STATE_TECH_UNTARGETABLE_BY_ENEMIES | MODIFIER_STATE_STATUS_IMMUNE | MODIFIER_STATE_UNKILLABLE"
+   },
+   "EnemyTrooperProtectionRange": 40,
+   "IntrinsicModifiers": [
+    {
+     "ABILITY_DAMAGE_REDUCTION_PERCENT": 0
+    }
+   ],
+   "LaserCooldownPhase1": 10,
+   "LaserCooldownPhase2": 12,
+   "LaserDurationPhase1": 4.5,
+   "LaserDurationPhase2": 3,
+   "LaserMoveSpeed": 5.08,
+   "MaxHealth": 12000,
+   "Name": "npc_boss_tier3",
+   "ObjectiveHealthGrowthPhase1": {
+    "GrowthPerMinute": 250,
+    "TickRate": 60,
+    "GrowthStartTimeInMinutes": 20
+   },
+   "ObjectiveHealthGrowthPhase2": {
+    "GrowthPerMinute": 450,
+    "TickRate": 60,
+    "GrowthStartTimeInMinutes": 1
+   },
+   "ObjectiveRegen": {
+    "OutOfCombatHealthRegen": 120,
+    "OutOfCombatRegenDelay": 20
+   },
+   "Phase1BossScale": 1,
+   "Phase1DyingBegin": 5,
+   "Phase1DyingDrop": 1,
+   "Phase1DyingTransformUp": 4.1,
+   "Phase1DyingWait": 3.4,
+   "Phase1Modifier": {
+    "EnabledStateMask": "MODIFIER_STATE_UNKILLABLE",
+    "Attributes": "MODIFIER_ATTRIBUTE_CANNOT_BE_PURGED",
+    "ForwardOffset": 0,
+    "PitRadius": 13.97,
+    "VisualHeight": 7.62
+   },
+   "Phase1ObserverPitch": 55,
+   "Phase2BossScale": 1,
+   "Phase2DamagePulseModifier": {
+    "IsHidden": true,
+    "Attributes": "MODIFIER_ATTRIBUTE_CANNOT_BE_PURGED",
+    "MaxTargets": 3,
+    "Radius": 19.05,
+    "DamagePerPulse": 75
+   },
+   "Phase2Health": 12000,
+   "Phase2ObserverPitch": 50,
+   "Phase2SightRange": 15.24,
+   "PhysicsImpulseMultiplier": 0,
+   "PostShrineTransition": 2,
+   "RangedArmorModifier": {
+    "BulletResistancePctMax": 100,
+    "TechResistancePctMax": 0,
+    "RangeMin": 25.4,
+    "RangeMax": 50.8
+   },
+   "RotateSpeed": 0.00762,
+   "ShrineAttackHealthLossPerAttack": 0.15,
+   "ShrineAttackMinTimeBetweenAttacks": 10,
+   "SightRangeNPCs": 76.2,
+   "SightRangePlayers": 76.2,
+   "SpawnOnGround": false,
+   "TransitionLightTime01": 2.5,
+   "TransitionLightTime02": 3.2,
+   "TransitionLightTime03": 4,
+   "TransitionLightTime04": 4.3,
+   "vPhase1ObserverOrigin": [
+    -600,
+    0,
+    2000
+   ],
+   "vPhase2ObserverOrigin": [
+    -1000,
+    0,
+    1500
+   ]
+  },
+  "npc_barrack_boss": {
+   "BackDoorProtectionRange": 50.8,
+   "BackdoorBulletResistModifier": {
+    "BulletResist": 40,
+    "BulletResistReductionPerHero": 20
+   },
+   "BackdoorProtectionModifier": {
+    "HealthPerSecondRegen": 65,
+    "BackdoorProtectionDamageMitigationFromPlayers": 65,
+    "BackdoorProtectionDamageMitigationFromPlayers_Streetbrawl": 85
+   },
+   "BeamTurnRate": 360,
+   "BeamWeaponWidth": 0.1524,
+   "DeathFadeTimeEnd": 4,
+   "DeathFadeTimeStart": 2,
+   "EnemyTrooperProtectionRange": 40,
+   "Hull": 1,
+   "IntrinsicModifiers": [
+    {
+     "ABILITY_DAMAGE_REDUCTION_PERCENT": 0,
+     "BULLET_ARMOR_DAMAGE_RESIST": 20
+    }
+   ],
+   "InvulRange": 24,
+   "LocUnitName": "boss_barracks_unit",
+   "MaxHealth": 4000,
+   "MeleeAttemptRange": 6.35,
+   "MeleeDuration": 0.6,
+   "MeleeHitRange": 6.985,
+   "MinMeleeAttackTime": 1.5,
+   "Name": "npc_barrack_boss",
+   "NpcInCombatModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IN_COMBAT"
+   },
+   "OutlineRange": 31.75,
+   "OutlineThroughWalls": false,
+   "OutlineWhenVisible": false,
+   "PhysicsImpulseMultiplier": 0,
+   "PlayerAutoAttackRange": 24.13,
+   "PlayerDPS": 116,
+   "PlayerDamageResistPct": -25,
+   "RunSpeed": 7.62,
+   "SightRangeNPCs": 38.1,
+   "SightRangePlayers": 27.94,
+   "SpawnOnGround": true,
+   "Tier1PlayerClipCapsuleHeight": 5.69,
+   "Tier1PlayerClipCapsuleRadius": 0.8128,
+   "TrackOutOfCombatStatus": false,
+   "TrooperDPS": 35,
+   "TrooperDamageResistPct": 42.5,
+   "TurnRate": 360,
+   "Weapon": {
+    "BulletSpeed": 457.2,
+    "BulletDamage": 8,
+    "RoundsPerSecond": 5,
+    "ClipSize": -1,
+    "ReloadTime": 1,
+    "ReloadMovespeed": 0.023622,
+    "ReloadDelay": 0,
+    "ReloadSingle": false,
+    "FalloffStartRange": 50.8,
+    "FalloffEndRange": 50.8,
+    "FalloffStartScale": 1,
+    "FalloffEndScale": 0.3,
+    "FalloffBias": 0.5,
+    "BulletGravityScale": 0,
+    "BulletRadius": 0.3048,
+    "BulletsPerShot": 1,
+    "BulletsPerBurst": 1,
+    "BurstInterShotInterval": 0,
+    "ShootMoveSpeed": 0.75,
+    "HitOnceAcrossAllBullets": false,
+    "CanCrit": true,
+    "AmmoConsumedPerShot": 1,
+    "DPS": 40,
+    "SustainedDPS": 40
+   }
+  },
+  "npc_super_neutral": {
+   "BeamTurnRate": 360,
+   "BeamWeaponWidth": 0.6096,
+   "BoundAbilities": {
+    "ESlot_Signature_1": {
+     "AbilityProperties": {
+      "AbilityCooldown": 1,
+      "AbilityDuration": -1,
+      "AbilityCastRange": 0,
+      "AbilityUnitTargetLimit": 1,
+      "AbilityCastDelay": 0,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0,
+      "ShieldHealth": 10000,
+      "ShieldScale": 2.5
+     },
+     "Weapon": {
+      "BulletSpeed": 254,
+      "BulletDamage": 0,
+      "RoundsPerSecond": 0,
+      "ClipSize": null,
+      "ReloadTime": null,
+      "ReloadMovespeed": 0,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 0,
+      "FalloffEndRange": 0,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0,
+      "BulletRadius": 0,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 1,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityType": "EAbilityType_Signature",
+     "itsInterruptingStates": "MODIFIER_STATE_STUNNED | MODIFIER_STATE_IS_ASLEEP",
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_SELF",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_INSTANT_CAST_TOGGLE",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_NO_TARGET",
+     "Key": "super_neutral_shield",
+     "Name": "super_neutral_shield"
+    },
+    "ESlot_Signature_2": {
+     "AbilityProperties": {
+      "AbilityCooldown": 10,
+      "AbilityDuration": 0,
+      "AbilityCastRange": 0,
+      "AbilityUnitTargetLimit": 1,
+      "AbilityCastDelay": 0,
+      "AbilityChannelTime": 0,
+      "AbilityPostCastDuration": 0,
+      "AbilityCharges": 0,
+      "AbilityCooldownBetweenCharge": -1,
+      "ChannelMoveSpeed": -0.0254,
+      "AbilityResourceCost": 0,
+      "TechPower": 0,
+      "WeaponPower": 0,
+      "PrepareTime": 0.8,
+      "TackleDurationMin": 0.5,
+      "TackleDurationMax": 1,
+      "TackleSpeed": 25.4,
+      "TackleRadius": "2.5m",
+      "Damage": 120,
+      "StunDuration": 0.5,
+      "CameraDistance": 3.048
+     },
+     "Weapon": {
+      "BulletSpeed": 254,
+      "BulletDamage": 0,
+      "RoundsPerSecond": 0,
+      "ClipSize": null,
+      "ReloadTime": null,
+      "ReloadMovespeed": 0,
+      "ReloadDelay": 0,
+      "ReloadSingle": false,
+      "FalloffStartRange": 0,
+      "FalloffEndRange": 0,
+      "FalloffStartScale": 1,
+      "FalloffEndScale": 1,
+      "FalloffBias": 0.5,
+      "BulletGravityScale": 0,
+      "BulletRadius": 0,
+      "BulletsPerShot": 1,
+      "BulletsPerBurst": 1,
+      "BurstInterShotInterval": 0,
+      "ShootMoveSpeed": 1,
+      "HitOnceAcrossAllBullets": false,
+      "CanCrit": true,
+      "AmmoConsumedPerShot": 1
+     },
+     "CustomStackLabel": "#CurrentBonus_label",
+     "StartTrained": true,
+     "AbilityType": "EAbilityType_Signature",
+     "itsInterruptingStates": "MODIFIER_STATE_IMMOBILIZED | MODIFIER_STATE_STUNNED | MODIFIER_STATE_IS_ASLEEP",
+     "AbilityTargetingLocation": "CITADEL_ABILITY_TARGETING_LOCATION_SELF",
+     "AbilityActivation": "CITADEL_ABILITY_ACTIVATION_INSTANT_CAST",
+     "AbilityBehaviorsBits": "CITADEL_ABILITY_BEHAVIOR_NO_TARGET | CITADEL_ABILITY_BEHAVIOR_DISPLAYS_DAMAGE_IMPACT",
+     "AbilityTargetTypes": "CITADEL_UNIT_TARGET_HERO_ENEMY",
+     "Key": "super_neutral_charge",
+     "Name": "Mid Boss Charge"
+    }
+   },
+   "DyingDuration": 1.4,
+   "HealthGainPerMinute": 195,
+   "InitialSpawnDelay": 0,
+   "IntrinsicModifiers": [
+    {
+     "HEALTH_REGEN_PER_SECOND": 15,
+     "ABILITY_DAMAGE_REDUCTION_PERCENT": 0,
+     "BULLET_ARMOR_DAMAGE_RESIST": 15,
+     "STATUS_RESISTANCE": 35
+    },
+    {
+     "DamageResistancePerSecond": 35,
+     "TickInterval": 0.05,
+     "DamageResistanceBonusPerGameMinute": 5,
+     "IsForMidBoss": true
+    }
+   ],
+   "Name": "npc_super_neutral",
+   "NpcInCombatModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IN_COMBAT"
+   },
+   "PhysicsImpulseMultiplier": 0,
+   "ShieldLogic": {
+    "BaseAbsorptionPerSecond": 35,
+    "ScalingAbsorptionPerMinute": 5
+   },
+   "SightRangeNPCs": 38.1,
+   "SightRangePlayers": 38.1,
+   "SpawnInterval": 420,
+   "SpawnOnGround": true,
+   "StartingHealth": 13000,
+   "TrackOutOfCombatStatus": false,
+   "Weapon": {
+    "BulletSpeed": 330.2,
+    "BulletDamage": 20,
+    "RoundsPerSecond": 5,
+    "ClipSize": -1,
+    "ReloadTime": 0,
+    "ReloadMovespeed": 0.023622,
+    "ReloadDelay": 0,
+    "ReloadSingle": false,
+    "FalloffStartRange": 38.1,
+    "FalloffEndRange": 38.1,
+    "FalloffStartScale": 1,
+    "FalloffEndScale": 0.3,
+    "FalloffBias": 0.5,
+    "BulletGravityScale": 0,
+    "BulletRadius": 0.0762,
+    "BulletsPerShot": 1,
+    "BulletsPerBurst": 1,
+    "BurstInterShotInterval": 0,
+    "ShootMoveSpeed": 0.75,
+    "HitOnceAcrossAllBullets": false,
+    "CanCrit": true,
+    "AmmoConsumedPerShot": 1,
+    "DPS": 100,
+    "SustainedDPS": 100
+   }
+  },
+  "destroyable_building": {
+   "BackdoorBulletResistModifier": {
+    "BulletResist": 60,
+    "BulletResistReductionPerHero": 20
+   },
+   "EnemyTrooperProtectionRange": 40,
+   "IntrinsicModifiers": [
+    {
+     "ABILITY_DAMAGE_REDUCTION_PERCENT": 0,
+     "BULLET_ARMOR_DAMAGE_RESIST": 20
+    }
+   ],
+   "MaxHealthFinal": 8775,
+   "MaxHealthGenerator": 5000,
+   "MaxHealthGeneratorSecond": 10000,
+   "Name": "destroyable_building",
+   "PowerGenerator": {
+    "EnabledStateMask": "MODIFIER_STATE_DO_NOT_ADJUST_HEALTH_ON_MAXHEALTH_CHANGE"
+   },
+   "RangedArmorModifier": {
+    "RangeMin": 33.02,
+    "RangeMax": 33.02,
+    "InvulnRange": 11.43,
+    "PlayersOnly": true
+   },
+   "TrooperJumpRange": 17.78
+  },
+  "trooper_normal": {
+   "Acceleration": 200,
+   "BossWeaponName": "boss",
+   "BreakableForceScale": 5,
+   "DPSPctGrowthPerMinute": 0,
+   "EnemyBaseDamageReduction": 35,
+   "HitReactClips": [
+    {
+     "ClipID": "Big_01",
+     "RandomWeight": 123,
+     "Duration": 1.16
+    },
+    {
+     "ClipID": "Big_02",
+     "RandomWeight": 0.1,
+     "Duration": 1.16
+    },
+    {
+     "ClipID": "Big_03",
+     "RandomWeight": 0.1,
+     "Duration": 1.16
+    },
+    {
+     "ClipID": "Small_01",
+     "RandomWeight": 0.2,
+     "Duration": 1
+    },
+    {
+     "ClipID": "Small_02",
+     "RandomWeight": 0.2,
+     "Duration": 1
+    },
+    {
+     "ClipID": "Small_03",
+     "RandomWeight": 0.3,
+     "Duration": 1
+    }
+   ],
+   "JumpUpBaseCostSeconds": 1,
+   "MaxHealth": 300,
+   "MeleeAttemptRange": 2.54,
+   "MeleeChargeRange": 0,
+   "MeleeDamage": 50,
+   "MeleeDuration": 1.5,
+   "MeleeHitRange": 2.54,
+   "MeleeHitTime": 0.5,
+   "MovementBlockedClips": [
+    {
+     "ClipID": "01",
+     "MinimumHoldDuration": 2
+    }
+   ],
+   "Name": "trooper_normal",
+   "NearDeathDuration": 1,
+   "NpcInCombatModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IN_COMBAT"
+   },
+   "NpcOutOfCombatModifier": {
+    "OOCRegen": 7
+   },
+   "OutlineRange": 35.56,
+   "OutlineThroughWalls": true,
+   "OutlineWhenVisible": true,
+   "OutlineWidth": 0.1016,
+   "RunSpeed": 13,
+   "ShrinesDownBuffModifier": {
+    "HealthScale": 1.4,
+    "DamageScale": 60,
+    "EnabledStateMask": "MODIFIER_STATE_SUPER_TROOPER"
+   },
+   "SightRangeNPCs": 40.64,
+   "SightRangePlayers": 25.4,
+   "SpawnBreakablesOnDeath": true,
+   "SquadDistance": 1.27,
+   "StrafeSpeed": 0,
+   "TrackOutOfCombatStatus": true,
+   "TurnRate": 540,
+   "VSGuardian": {
+    "BaseDPS": 14.4,
+    "EndDPS": 54,
+    "EndDPSTimeInSeconds": 600,
+    "MaxRange": 12
+   },
+   "VSPatron": {
+    "BaseDPS": 50,
+    "MaxRange": 25.4,
+    "DamageResist": 50
+   },
+   "VSPatronPhase2": {
+    "BaseDPS": 50,
+    "MaxRange": 17.78,
+    "DamageResist": 50
+   },
+   "VSPlayer": {
+    "BaseDPS": 28,
+    "MaxRange": 17.78,
+    "DamageResist": -25
+   },
+   "VSShrine": {
+    "BaseDPS": 50,
+    "MaxRange": 8.89
+   },
+   "VSTrooper": {
+    "BaseDPS": 35,
+    "MaxRange": 17.78,
+    "DamageResist": 42.5
+   },
+   "VSWalker": {
+    "BaseDPS": 24,
+    "EndDPS": 84,
+    "EndDPSTimeInSeconds": 1200,
+    "MaxRange": 17.78,
+    "DamageResist": 80
+   },
+   "VSWatcher": {
+    "BaseDPS": 80,
+    "DamageResist": 67.5,
+    "MaxRange": 17.78
+   },
+   "WalkSpeed": 6.299,
+   "Weapon": {
+    "BulletSpeed": 304.8,
+    "BulletDamage": 36,
+    "RoundsPerSecond": 0.97087,
+    "ClipSize": -1,
+    "ReloadTime": 1.8,
+    "ReloadMovespeed": 0.023622,
+    "ReloadDelay": 0,
+    "ReloadSingle": false,
+    "FalloffStartRange": 15.24,
+    "FalloffEndRange": 25.4,
+    "FalloffStartScale": 1,
+    "FalloffEndScale": 0.3,
+    "FalloffBias": 0.5,
+    "BulletGravityScale": 0,
+    "BulletRadius": 0.0762,
+    "BulletsPerShot": 1,
+    "BulletsPerBurst": 1,
+    "BurstInterShotInterval": 0,
+    "ShootMoveSpeed": 0.75,
+    "HitOnceAcrossAllBullets": false,
+    "CanCrit": true,
+    "AmmoConsumedPerShot": 1,
+    "DPS": 34.951,
+    "SustainedDPS": 34.951
+   }
+  },
+  "trooper_melee": {
+   "Acceleration": 200,
+   "BreakableForceScale": 5,
+   "DPSPctGrowthPerMinute": 0,
+   "EnemyBaseDamageReduction": 35,
+   "HitReactClips": [
+    {
+     "ClipID": "Big_01",
+     "RandomWeight": 123,
+     "Duration": 1.16
+    },
+    {
+     "ClipID": "Big_02",
+     "RandomWeight": 0.1,
+     "Duration": 1.16
+    },
+    {
+     "ClipID": "Big_03",
+     "RandomWeight": 0.1,
+     "Duration": 1.16
+    },
+    {
+     "ClipID": "Small_01",
+     "RandomWeight": 0.2,
+     "Duration": 1
+    },
+    {
+     "ClipID": "Small_02",
+     "RandomWeight": 0.2,
+     "Duration": 1
+    },
+    {
+     "ClipID": "Small_03",
+     "RandomWeight": 0.3,
+     "Duration": 1
+    }
+   ],
+   "JumpUpBaseCostSeconds": 1,
+   "MaxHealth": 400,
+   "MeleeAttemptRange": 3.048,
+   "MeleeChargeRange": 25.4,
+   "MeleeDamage": 80,
+   "MeleeDuration": 1.333,
+   "MeleeHitRange": 3.048,
+   "MeleeHitTime": 0.4,
+   "MovementBlockedClips": [
+    {
+     "ClipID": "01",
+     "MinimumHoldDuration": 0.5
+    }
+   ],
+   "Name": "trooper_melee",
+   "NearDeathDuration": 1,
+   "NpcInCombatModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IN_COMBAT"
+   },
+   "NpcOutOfCombatModifier": {
+    "OOCRegen": 7
+   },
+   "OutlineRange": 35.56,
+   "OutlineThroughWalls": true,
+   "OutlineWhenVisible": true,
+   "OutlineWidth": 0.1016,
+   "RunSpeed": 13,
+   "ShrinesDownBuffModifier": {
+    "HealthScale": 1.4,
+    "DamageScale": 60,
+    "EnabledStateMask": "MODIFIER_STATE_SUPER_TROOPER"
+   },
+   "SightRangeNPCs": 40.64,
+   "SightRangePlayers": 25.4,
+   "SpawnBreakablesOnDeath": true,
+   "SquadDistance": 1.27,
+   "StrafeSpeed": 0,
+   "TrackOutOfCombatStatus": true,
+   "TrooperType": "TROOPER_MELEE",
+   "TurnRate": 540,
+   "VSGuardian": {
+    "BaseDPS": 14.4,
+    "EndDPS": 54,
+    "EndDPSTimeInSeconds": 600,
+    "MaxRange": 12
+   },
+   "VSPatron": {
+    "BaseDPS": 50,
+    "MaxRange": 25.4,
+    "DamageResist": 50
+   },
+   "VSPatronPhase2": {
+    "BaseDPS": 50,
+    "MaxRange": 17.78,
+    "DamageResist": 50
+   },
+   "VSPlayer": {
+    "BaseDPS": 28,
+    "MaxRange": 17.78,
+    "DamageResist": -25
+   },
+   "VSShrine": {
+    "BaseDPS": 50,
+    "MaxRange": 8.89
+   },
+   "VSTrooper": {
+    "BaseDPS": 35,
+    "MaxRange": 17.78,
+    "DamageResist": 42.5
+   },
+   "VSWalker": {
+    "BaseDPS": 24,
+    "EndDPS": 84,
+    "EndDPSTimeInSeconds": 1200,
+    "MaxRange": 17.78,
+    "DamageResist": 80
+   },
+   "VSWatcher": {
+    "BaseDPS": 80,
+    "DamageResist": 67.5,
+    "MaxRange": 17.78
+   },
+   "WalkSpeed": 8.128,
+   "Weapon": {
+    "BulletSpeed": 304.8,
+    "BulletDamage": 61.8,
+    "RoundsPerSecond": 0.97087,
+    "ClipSize": -1,
+    "ReloadTime": 1.8,
+    "ReloadMovespeed": 0.023622,
+    "ReloadDelay": 0,
+    "ReloadSingle": false,
+    "FalloffStartRange": 15.24,
+    "FalloffEndRange": 35.56,
+    "FalloffStartScale": 1,
+    "FalloffEndScale": 0.3,
+    "FalloffBias": 0.5,
+    "BulletGravityScale": 0,
+    "BulletRadius": 0.0762,
+    "BulletsPerShot": 1,
+    "BulletsPerBurst": 1,
+    "BurstInterShotInterval": 0,
+    "ShootMoveSpeed": 0.75,
+    "HitOnceAcrossAllBullets": false,
+    "CanCrit": true,
+    "AmmoConsumedPerShot": 1,
+    "DPS": 60,
+    "SustainedDPS": 60
+   }
+  },
+  "trooper_medic": {
+   "AOEHealthPickup": {
+    "AOERadius": 35,
+    "PickupRadiusBase": 18.01,
+    "PickupRadiusScaling": 1.499,
+    "PickupRadiusMax": 30,
+    "PickupRadiusStartMinute": 10,
+    "MissingPctRegen": 13,
+    "RegenFixed": 150,
+    "RegenFixedScaling": 2,
+    "RegenDuration": 4,
+    "RegenDurationTroopers": 8,
+    "RegenTrooperMultiplier": 1.3,
+    "RegenHPS": 0,
+    "HealFixed": 0,
+    "HealFixedScaling": 0,
+    "PickupExpirationDurationBase": 18,
+    "PickupExpirationDurationScaling": 2,
+    "PickupExpirationDurationMax": 40,
+    "PickupExpirationStartMinute": 10,
+    "SameTeamOnly": true
+   },
+   "Acceleration": 200,
+   "BossWeaponName": "boss",
+   "BreakableForceScale": 5,
+   "DPSPctGrowthPerMinute": 3,
+   "EnemyBaseDamageReduction": 35,
+   "HitReactClips": [
+    {
+     "ClipID": "Big_01",
+     "RandomWeight": 123,
+     "Duration": 1.16
+    },
+    {
+     "ClipID": "Big_02",
+     "RandomWeight": 0.1,
+     "Duration": 1.16
+    },
+    {
+     "ClipID": "Big_03",
+     "RandomWeight": 0.1,
+     "Duration": 1.16
+    },
+    {
+     "ClipID": "Small_01",
+     "RandomWeight": 0.2,
+     "Duration": 1
+    },
+    {
+     "ClipID": "Small_02",
+     "RandomWeight": 0.2,
+     "Duration": 1
+    },
+    {
+     "ClipID": "Small_03",
+     "RandomWeight": 0.3,
+     "Duration": 1
+    }
+   ],
+   "JumpUpBaseCostSeconds": 1,
+   "MaxHealth": 350,
+   "MeleeAttemptRange": 2.54,
+   "MeleeChargeRange": 0,
+   "MeleeDamage": 25,
+   "MeleeDuration": 1,
+   "MeleeHitRange": 2.54,
+   "MeleeHitTime": 0.3,
+   "MovementBlockedClips": [
+    {
+     "ClipID": "01",
+     "MinimumHoldDuration": 0.5
+    }
+   ],
+   "Name": "trooper_medic",
+   "NearDeathDuration": 1,
+   "NpcInCombatModifier": {
+    "EnabledStateMask": "MODIFIER_STATE_IN_COMBAT"
+   },
+   "NpcOutOfCombatModifier": {
+    "OOCRegen": 7
+   },
+   "OutlineRange": 35.56,
+   "OutlineThroughWalls": true,
+   "OutlineWhenVisible": true,
+   "OutlineWidth": 0.1016,
+   "RunSpeed": 13,
+   "ShrinesDownBuffModifier": {
+    "HealthScale": 1.4,
+    "DamageScale": 60,
+    "EnabledStateMask": "MODIFIER_STATE_SUPER_TROOPER"
+   },
+   "SightRangeNPCs": 40.64,
+   "SightRangePlayers": 22.86,
+   "SpawnBreakablesOnDeath": true,
+   "SquadDistance": 1.27,
+   "StrafeSpeed": 0,
+   "TrackOutOfCombatStatus": true,
+   "TrooperType": "TROOPER_MEDIC",
+   "TurnRate": 540,
+   "VSGuardian": {
+    "BaseDPS": 14.4,
+    "EndDPS": 54,
+    "EndDPSTimeInSeconds": 600,
+    "MaxRange": 12
+   },
+   "VSPatron": {
+    "BaseDPS": 50,
+    "MaxRange": 25.4,
+    "DamageResist": 50
+   },
+   "VSPatronPhase2": {
+    "BaseDPS": 50,
+    "MaxRange": 17.78,
+    "DamageResist": 50
+   },
+   "VSPlayer": {
+    "BaseDPS": 28,
+    "MaxRange": 17.78,
+    "DamageResist": -25
+   },
+   "VSShrine": {
+    "BaseDPS": 50,
+    "MaxRange": 8.89
+   },
+   "VSTrooper": {
+    "BaseDPS": 45,
+    "MaxRange": 22.86,
+    "DamageResist": 42.5
+   },
+   "VSWalker": {
+    "BaseDPS": 24,
+    "EndDPS": 84,
+    "EndDPSTimeInSeconds": 1200,
+    "MaxRange": 17.78,
+    "DamageResist": 80
+   },
+   "VSWatcher": {
+    "BaseDPS": 80,
+    "DamageResist": 67.5,
+    "MaxRange": 17.78
+   },
+   "WalkSpeed": 6.299,
+   "Weapon": {
+    "BulletSpeed": 304.8,
+    "BulletDamage": 36,
+    "RoundsPerSecond": 0.97087,
+    "ClipSize": -1,
+    "ReloadTime": 1.8,
+    "ReloadMovespeed": 0.023622,
+    "ReloadDelay": 0,
+    "ReloadSingle": false,
+    "FalloffStartRange": 15.24,
+    "FalloffEndRange": 35.56,
+    "FalloffStartScale": 1,
+    "FalloffEndScale": 0.3,
+    "FalloffBias": 0.5,
+    "BulletGravityScale": 0,
+    "BulletRadius": 0.0762,
+    "BulletsPerShot": 1,
+    "BulletsPerBurst": 1,
+    "BurstInterShotInterval": 0,
+    "ShootMoveSpeed": 0.75,
+    "HitOnceAcrossAllBullets": false,
+    "CanCrit": true,
+    "AmmoConsumedPerShot": 1,
+    "DPS": 34.951,
+    "SustainedDPS": 34.951
+   }
+  }
+ },
+ "objectives": {
+  "GoldPerOrb": 0,
+  "NearPlayerSplitPct": 25,
+  "Tier1GoldKill": 1375,
+  "Tier1GoldOrbs": 0,
+  "Tier2GoldKill": 3675,
+  "Tier2GoldOrbs": 0,
+  "BaseGuardiansGoldKill": 1000,
+  "BaseGuardiansGoldOrbs": 0,
+  "ShrinesGoldKill": 2000,
+  "ShrinesGoldOrbs": 0,
+  "PatronPhase1GoldKill": 0,
+  "PatronPhase1GoldOrbs": 0
+ }
+}

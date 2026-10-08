@@ -4,18 +4,19 @@
 const path = require('node:path');
 const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
 const { getUser, progress, MAX_LEVEL, BOOST_PRICE, REJUV_PRICE, REJUV_MAX } = require('./xp');
+const { SCALE } = require('./economy');
 const { getHideout, HIDEOUT_PRICE, HIDEOUT_LEVEL } = require('./hideout');
 const { renderRankCard, CARD_COLOR, cardColor } = require('./rankCard');
 const { renderShopBanner, renderItemPage } = require('./shopBanner');
 const { HEROES, getHero, heroArt, heroEmoji } = require('./heroes');
-const { fmt, soulsIcon, soulsText } = require('./format');
+const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS } = require('./art');
 
 // The two card styles, sold separately (priced like in-game item tiers).
 const STYLES = {
-  icon: { label: 'Icon', price: 800 },
-  portrait: { label: 'Full Portrait', price: 3200 },
+  icon: { label: 'Icon', price: 800 * SCALE },
+  portrait: { label: 'Full Portrait', price: 3200 * SCALE },
 };
 const SECTION_ID = 'shop_section'; // custom id: shop_section:<userId>
 const BOOST_ID = 'shop_boost'; // custom id: shop_boost:<userId>
@@ -40,10 +41,10 @@ const GREETINGS = [
 
 // The Shop's sections, in shelf order. `emoji` is the name of a server emoji (null = none yet).
 const SECTIONS = [
-  { value: 'hero-cards', label: 'Hero Cards', description: 'Put a hero on your /rank card. 800 or 3,200 Souls', emoji: null },
-  { value: 'soul-boost', label: 'Soul Boost', description: '2× XP and Souls for 1 hour. 1,600 Souls', emoji: 'souls' },
-  { value: 'rejuv', label: 'Rejuv', description: 'Saves a broken /urn streak. 3,200 Souls, carry up to 3', emoji: 'rejuv' },
-  { value: 'hideout', label: 'Hideout', description: 'Your own private VC + text channel. 6,400 Souls, level 20+', emoji: 'hideout' },
+  { value: 'hero-cards', label: 'Hero Cards', description: `Put a hero on your /rank card. ${fmt(800 * SCALE)} or ${fmt(3200 * SCALE)} Souls`, emoji: null },
+  { value: 'soul-boost', label: 'Soul Boost', description: `2× XP and Souls for 1 hour. ${fmt(BOOST_PRICE)} Souls`, emoji: 'souls' },
+  { value: 'rejuv', label: 'Rejuv', description: `Saves a broken /urn streak. ${fmt(REJUV_PRICE)} Souls, carry up to 3`, emoji: 'rejuv' },
+  { value: 'hideout', label: 'Hideout', description: `Your own private VC + text channel. ${fmt(HIDEOUT_PRICE)} Souls, level 20+`, emoji: 'hideout' },
 ];
 
 // The section dropdown, on top of every Shop page. `current` = the section on screen (null on the first screen).
@@ -186,7 +187,7 @@ async function soulBoostView(member, now = Date.now()) {
   const png = await renderItemPage({
     item: 'soulBoost',
     tier: 2,
-    price: '1600',
+    price: String(BOOST_PRICE),
     title: 'SOUL BOOST',
     subtitle: 'DOUBLE EVERYTHING FOR AN HOUR',
     lines: [
@@ -304,6 +305,40 @@ const SECTION_VIEWS = {
   hideout: (member) => hideoutView(member),
 };
 
+// What the Shopkeeper tells the buyer (privately) once a purchase has been tried. `result` is what buyCard / buyBoost /
+// buyRejuv gave ({ ok, user } or { ok: false, reason }) or what buyHideout gave (null, or 'level' | 'souls' | 'owned').
+const receipts = {
+  card(result, slug, style) {
+    const card = `**${getHero(slug)?.name ?? slug}** card (${STYLES[style].label})`;
+    if (result.ok) return `You bought the ${card} for ${boldSouls(STYLES[style].price)}. It's on your \`/rank\` now.`;
+    return result.reason === 'owned' ? `You already own the ${card}.` : `The ${card} costs ${boldSouls(STYLES[style].price)}, and you don't have that much.`;
+  },
+  boost(result) {
+    if (result.ok) return `Soul Boost bought for ${boldSouls(BOOST_PRICE)}. It runs out <t:${Math.floor(result.user.boostUntil / 1000)}:R>.`;
+    return `A Soul Boost costs ${boldSouls(BOOST_PRICE)}, and you don't have that much.`;
+  },
+  rejuv(result) {
+    if (result.ok) return `Rejuv bought for ${boldSouls(REJUV_PRICE)}. You're carrying ${result.user.rejuvs} / ${REJUV_MAX}.`;
+    return result.reason === 'full'
+      ? `You're already carrying the max (${REJUV_MAX} Rejuvs). Use one first.`
+      : `A Rejuv costs ${boldSouls(REJUV_PRICE)}, and you don't have that much.`;
+  },
+  hideout(result, record) {
+    if (!result) return `Your Hideout is ready${record?.textId ? `: <#${record.textId}>. The control panel is pinned there` : ''}.`;
+    return {
+      level: `A Hideout needs level ${HIDEOUT_LEVEL}.`,
+      souls: `A Hideout costs ${boldSouls(HIDEOUT_PRICE)}, and you don't have that much.`,
+      owned: 'You already have a Hideout.',
+    }[result];
+  },
+};
+// When a purchase throws. A Hideout that failed part-way has already been refunded.
+const FAILED = {
+  card: 'Something went wrong with that purchase. Check your balance with `/wallet`.',
+  hideout: "Something went wrong making your Hideout, and any Souls taken were returned. Tell staff if it keeps happening.",
+};
+
 module.exports = {
+  receipts, FAILED,
   shopView, heroCardsView, SECTION_VIEWS, SECTIONS, STYLES, SECTION_ID, SELECT_ID, STYLE_ID, BUY_ID, EQUIP_ID, BOOST_ID, REJUV_ID, HIDEOUT_BUY_ID, MENUS,
 };

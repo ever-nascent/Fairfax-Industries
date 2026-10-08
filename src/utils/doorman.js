@@ -1,5 +1,5 @@
 // /guess-the-door, the Doorman's game at The Baroness Hotel: three rooms, one holds the souls. Pick a room, the Doorman
-// opens an empty one, then stay or switch. A win pays 1.5x the bet. Rules: server-plan.md ("Games").
+// opens an empty one, then stay or switch. A win pays 1.425x the bet (always switching returns 95%, like the other games). Rules: server-plan.md ("Games").
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
@@ -8,13 +8,14 @@ const { getStore } = require('../storage');
 const { soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, loadSouls, seeded, halftone, grain, grainAndVignette } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'doorman'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x8c1d24, name: 'The Baroness Hotel', icon: path.join(ART, 'hotel_guest.png'), art: ART, prefix: 'doorman' }; // burgundy; his ult icon
 
-const PAYOUT = 1.5;
+const PAYOUT = 1.425; // always switching wins 2 in 3, so this returns 95% like the other games (1.5 returned 100%)
 const BUTTON_ID = 'doorman'; // custom id: doorman:<game id>:<pick|stay|switch>[:<room index>]
+const { pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'doorman_again'; // custom id: doorman_again:<bet>:<player id>
 const ROOMS = [101, 102, 103];
 // The Doorman's lines when the game ends: original lines written in his voice (a flawless hotel servant
@@ -416,7 +417,14 @@ async function finishGame(id, userId, choice) {
   return resultView(id, game, final, won, user.souls);
 }
 
-// Called off with no click for too long (casino.js expireGames): the rooms as they were, the bet back.
+// Time ran out (casino.js expireGames). Once the Doorman has opened a room the game is finished as a Stay;
+// before any pick nothing was shown, so the bet goes back (timeoutView).
+function finishOnTimeout(id, game) {
+  if (game.pick === null) return null;
+  const won = game.pick === game.prize;
+  return { pays: [[game.userId, won ? winnings(game.bet) : 0]], view: (balance) => resultView(id, game, game.pick, won, balance) };
+}
+
 const staked = (game) => game.bet;
 async function timeoutView(id, game, balance) {
   const rooms = ROOMS.map((_, i) => ({ open: i === game.opened, mine: i === game.pick }));
@@ -431,6 +439,7 @@ module.exports = {
   games,
   staked,
   timeoutView,
+  finishOnTimeout,
   TIMEOUT_LINES,
   startGame,
   pickRoom,

@@ -8,7 +8,8 @@ const { fmt, soulsText } = require('./format');
 const { replyEmbed, privateReply } = require('./embeds');
 const { shortId } = require('./random');
 
-const MIN_BET = 10;
+const { SCALE } = require('./economy');
+const MIN_BET = 10 * SCALE;
 const TIME_LIMIT_MINUTES = 5; // a game with no click for this long is called off and the bet goes back
 
 // Every game moves souls through these four, nothing else:
@@ -16,18 +17,31 @@ const TIME_LIMIT_MINUTES = 5; // a game with no click for this long is called of
 //   stake(userId, amount)  any other money in (double down, split). Returns the user, or null if they can't afford it.
 //   pay(userId, amount) winnings, a refund or a pot. Returns the user (amount 0 just reads the balance).
 //   openGame(...)          takeBet + saving the new game, refunding the bet if the save fails.
-const stake = (userId, amount) => changeSouls(userId, -amount);
-const pay = (userId, amount) => changeSouls(userId, amount);
+// `reason` goes in the souls ledger ('game:<id>', see forGame); pay's `meta` is a reason or { reason, with } (a duel's pot).
+const stake = (userId, amount, reason = 'game') => changeSouls(userId, -amount, reason);
+const pay = (userId, amount, meta = 'game') => changeSouls(userId, amount, meta);
 
-async function takeBet(userId, bet) {
+// A game module's own takeBet / stake / pay / openGame, tagged with its name for the ledger: `forGame(BUTTON_ID)`.
+// pay's third argument is the other member when a duel's pot goes to the winner.
+function forGame(name) {
+  const reason = `game:${name}`;
+  return {
+    takeBet: (userId, bet) => takeBet(userId, bet, reason),
+    stake: (userId, amount) => stake(userId, amount, reason),
+    pay: (userId, amount, other) => pay(userId, amount, other ? { reason, with: other } : reason),
+    openGame: (store, userId, bet, build) => openGame(store, userId, bet, build, reason),
+  };
+}
+
+async function takeBet(userId, bet, reason) {
   if (!Number.isInteger(bet) || bet < MIN_BET) return `The minimum bet is ${fmt(MIN_BET)} Souls.`;
-  if (!(await stake(userId, bet))) return `You don't have ${soulsText(bet)} to bet.`;
+  if (!(await stake(userId, bet, reason))) return `You don't have ${soulsText(bet)} to bet.`;
   return null;
 }
 
 // Takes the bet and saves the new game (`build()` returns it; `at` is added). Returns { error } or { id, game }.
-async function openGame(store, userId, bet, build) {
-  const error = await takeBet(userId, bet);
+async function openGame(store, userId, bet, build, reason) {
+  const error = await takeBet(userId, bet, reason);
   if (error) return { error };
   const id = shortId();
   try {
@@ -35,7 +49,7 @@ async function openGame(store, userId, bet, build) {
     await store.set(id, game);
     return { id, game };
   } catch (e) {
-    await pay(userId, bet); // nothing was saved, so the timeout refund can't cover it
+    await pay(userId, bet, reason); // nothing was saved, so the timeout refund can't cover it
     throw e;
   }
 }
@@ -201,28 +215,53 @@ function timeoutMessage(host, { image, staked, balance, againId, bet, userId, li
   });
 }
 
-// Calls off every game with no click for TIME_LIMIT_MINUTES (also ones that ran out while the bot was off):
-// gives back everything staked and shows the host's time's-up message in the game's message.
+// The top of a game's last message when time ran out and it was finished for the player.
+function markTimedOut(payload) {
+  const embed = payload.embeds?.[0];
+  if (embed) embed.setDescription(`**Time ran out, so the game was finished.**\n\n${embed.data.description ?? ''}`);
+  return payload;
+}
+
+// Every game with no click for TIME_LIMIT_MINUTES (also ones that ran out while the bot was off) ends.
+// **A timeout finishes the game, it doesn't undo it** (his call, Oct 5: waiting out a losing hand was a free refund):
+// a module's `finishOnTimeout(id, game)` returns { pays: [[user id, souls, other member (a duel's loser)?]], view: (balance) => message }
+// (no side effects; this function pays), or null when nothing has been revealed yet. Only then is everything staked
+// given back, with the host's time's-up message.
 async function expireGames(client, gameModules, now = Date.now()) {
   const stale = (g) => !g.done && now - (g.at ?? 0) >= TIME_LIMIT_MINUTES * 60_000;
   for (const game of gameModules) {
     for (const id of Object.keys(await game.games().all())) {
       const g = await game.games().take(id, stale); // taken inside the lock, so a click at the same moment can't also play it
       if (!g) continue;
+      const reason = `game:${game.BUTTON_ID}`;
+      const edit = async (payload) => {
+        if (!g.messageId) return;
+        const channel = await client.channels.fetch(g.channelId).catch(() => null);
+        await channel?.messages
+          .edit(g.messageId, { ...payload, attachments: [] })
+          .catch((error) => console.error('[games] Could not edit a timed-out game:', error.message));
+      };
+      const settled = game.finishOnTimeout?.(id, g);
+      if (settled) {
+        let balance = 0;
+        for (const [userId, amount, other] of settled.pays) {
+          const paid = await pay(userId, amount, other ? { reason, with: other } : reason);
+          if (userId === g.userId) balance = paid?.souls ?? 0;
+        }
+        console.log(`[games] ${game.BUTTON_ID} ${id} timed out and was finished: paid ${settled.pays.map(([, amount]) => amount).join(' + ')} Souls`);
+        await edit(markTimedOut(await settled.view(balance)));
+        continue;
+      }
       // refunds(g): [[user id, souls]] when more than the first player staked (a duel)
       let user;
       for (const [userId, amount] of game.refunds?.(g) ?? [[g.userId, game.staked(g)]]) {
-        const refunded = await pay(userId, amount);
+        const refunded = await pay(userId, amount, reason);
         if (userId === g.userId) user = refunded;
       }
       console.log(`[games] ${game.BUTTON_ID} ${id} timed out, returned ${game.staked(g)} Souls`);
-      if (!g.messageId) continue;
-      const channel = await client.channels.fetch(g.channelId).catch(() => null);
-      await channel?.messages
-        .edit(g.messageId, { ...(await game.timeoutView(id, g, user?.souls ?? 0)), attachments: [] })
-        .catch((error) => console.error('[games] Could not edit a timed-out game:', error.message));
+      if (g.messageId) await edit(await game.timeoutView(id, g, user?.souls ?? 0));
     }
   }
 }
 
-module.exports = { MIN_BET, TIME_LIMIT_MINUTES, takeBet, stake, pay, openGame, resultFields, playAgainButton, gameMessage, betCommand, gameButtons, timeoutMessage, expireGames };
+module.exports = { MIN_BET, TIME_LIMIT_MINUTES, forGame, takeBet, stake, pay, openGame, resultFields, playAgainButton, gameMessage, betCommand, gameButtons, timeoutMessage, expireGames };

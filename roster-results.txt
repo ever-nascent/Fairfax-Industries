@@ -1,0 +1,124 @@
+Hero Farming roster balance, Oct 5 2026 (tools/farm-sim.js roster / carry). Nothing here has been applied.
+
+Typical kits at each target's own stage, enemy damage x1, 36 fights per number, weakest hero first.
+              medium    large     guardian  walker    mid-boss  siege     average
+Haze          58%       64%       61%       50%       61%       47%       57%
+Vindicta      50%       50%       81%       61%       53%       50%       57%
+Grey Talon    100%      86%       67%       44%       69%       33%       67%
+Mina          94%       86%       81%       69%       42%       53%       71%
+Drifter       28%       97%       100%      83%       75%       81%       77%
+Pocket        94%       89%       78%       69%       67%       69%       78%
+Mirage        25%       75%       100%      94%       92%       81%       78%
+Holliday      100%      92%       100%      94%       50%       36%       79%
+Sinclair      39%       92%       92%       92%       89%       81%       81%
+Shiv          44%       92%       100%      100%      86%       67%       81%
+The Doorman   100%      86%       100%      81%       75%       67%       85%
+Lash          72%       100%      100%      92%       75%       78%       86%
+Paige         100%      100%      100%      97%       92%       44%       89%
+Seven         100%      100%      100%      83%       83%       75%       90%
+Venator       100%      100%      100%      94%       75%       72%       90%
+Paradox       78%       100%      100%      97%       100%      86%       94%
+Abrams        100%      100%      100%      78%       92%       92%       94%
+Victor        69%       100%      100%      100%      100%      94%       94%
+Calico        100%      100%      100%      78%       100%      92%       95%
+Silver        83%       100%      100%      100%      100%      92%       96%
+Celeste       100%      100%      100%      86%       100%      92%       96%
+Wraith        100%      92%       100%      94%       100%      92%       96%
+Dynamo        100%      100%      100%      94%       92%       92%       96%
+Mo & Krill    100%      100%      100%      92%       100%      89%       97%
+Infernus      100%      100%      100%      100%      92%       92%       97%
+McGinnis      100%      100%      100%      83%       100%      100%      97%
+Rem           100%      100%      100%      100%      92%       92%       97%
+Vyper         100%      100%      100%      100%      92%       92%       97%
+Bebop         100%      100%      100%      94%       100%      97%       99%
+Graves        100%      100%      100%      100%      100%      92%       99%
+Ivy           100%      100%      100%      100%      100%      92%       99%
+Viscous       100%      100%      100%      100%      100%      92%       99%
+Apollo        100%      100%      100%      97%       100%      100%      100%
+Billy         100%      100%      100%      100%      100%      100%      100%
+Kelvin        100%      100%      100%      100%      100%      100%      100%
+Lady Geist    100%      100%      100%      100%      100%      100%      100%
+Warden        100%      100%      100%      100%      100%      100%      100%
+Yamato        100%      100%      100%      100%      100%      100%      100%
+
+Typical kits at each target's own stage, enemy damage x1.5, 36 fights per number, weakest hero first.
+              medium    large     guardian  walker    mid-boss  siege     average
+Haze          0%        19%       17%       14%       33%       8%        15%
+Vindicta      17%       14%       17%       14%       33%       8%        17%
+Mina          19%       33%       17%       22%       33%       8%        22%
+Pocket        25%       47%       25%       17%       42%       22%       30%
+Holliday      25%       44%       33%       42%       33%       6%        31%
+Grey Talon    94%       33%       25%       11%       42%       3%        35%
+Drifter       0%        56%       56%       53%       42%       31%       39%
+Shiv          0%        28%       56%       94%       50%       19%       41%
+The Doorman   78%       36%       53%       28%       42%       19%       43%
+Sinclair      0%        44%       75%       64%       64%       31%       46%
+Abrams        28%       92%       58%       33%       44%       25%       47%
+Mirage        0%        36%       97%       61%       56%       33%       47%
+Calico        50%       53%       56%       31%       53%       44%       48%
+Celeste       25%       58%       58%       44%       81%       25%       49%
+Lash          0%        83%       61%       75%       42%       33%       49%
+Rem           25%       92%       25%       72%       42%       53%       51%
+Vyper         25%       56%       58%       72%       58%       44%       52%
+Dynamo        17%       92%       69%       67%       44%       42%       55%
+Paradox       17%       56%       100%      61%       67%       33%       56%
+Wraith        56%       53%       72%       56%       64%       36%       56%
+Paige         50%       92%       100%      72%       42%       6%        60%
+McGinnis      25%       72%       50%       47%       75%       92%       60%
+Venator       86%       94%       89%       42%       39%       31%       63%
+Yamato        28%       67%       78%       69%       64%       94%       67%
+Mo & Krill    94%       81%       75%       67%       67%       33%       69%
+Seven         94%       92%       100%      58%       50%       33%       71%
+Bebop         75%       100%      100%      56%       75%       36%       74%
+Victor        8%        92%       100%      100%      92%       58%       75%
+Ivy           100%      92%       100%      72%       67%       28%       76%
+Silver        8%        100%      100%      100%      100%      69%       80%
+Viscous       94%       100%      100%      94%       58%       42%       81%
+Infernus      100%      94%       100%      92%       58%       56%       83%
+Lady Geist    25%       100%      100%      97%       100%      100%      87%
+Apollo        94%       67%       100%      67%       100%      100%      88%
+Graves        94%       100%      100%      97%       100%      56%       91%
+Kelvin        100%      94%       100%      94%       100%      83%       95%
+Billy         100%      100%      100%      89%       100%      89%       96%
+Warden        94%       100%      100%      94%       100%      92%       97%
+
+Billy, typical kits at each target's own stage, enemy damage x2, 36 fights per number.
+                                  medium    large     guardian  walker    mid-boss  siege     
+whole kit                         100%      100%      100%      64%       67%       42%       
+without Bashdown                  100%      92%       92%       53%       67%       22%       
+without Rising Ram                100%      100%      92%       67%       33%       33%       
+without Blasted                   25%       36%       17%       11%       33%       0%        
+without Chain Gang                100%      100%      92%       61%       67%       33%       
+
+Kelvin, typical kits at each target's own stage, enemy damage x2, 36 fights per number.
+                                  medium    large     guardian  walker    mid-boss  siege     
+whole kit                         67%       81%       100%      67%       58%       42%       
+without Frost Grenade             17%       50%       75%       33%       42%       22%       
+without Ice Path                  8%        50%       92%       58%       47%       25%       
+without Arctic Beam               33%       86%       92%       50%       42%       19%       
+without Frozen Shelter            67%       44%       42%       64%       42%       25%       
+
+Lady Geist, typical kits at each target's own stage, enemy damage x2, 36 fights per number.
+                                  medium    large     guardian  walker    mid-boss  siege     
+whole kit                         0%        92%       100%      92%       92%       100%      
+without Essence Bomb              0%        83%       100%      94%       83%       92%       
+without Life Drain                0%        69%       100%      97%       56%       83%       
+without Malice                    0%        64%       17%       14%       42%       3%        
+without Soul Exchange             0%        14%       100%      92%       92%       89%       
+
+Warden, typical kits at each target's own stage, enemy damage x2, 36 fights per number.
+                                  medium    large     guardian  walker    mid-boss  siege     
+whole kit                         25%       97%       100%      89%       100%      50%       
+without Alchemical Flask          0%        64%       25%       14%       25%       0%        
+without Willpower                 25%       83%       92%       58%       100%      31%       
+without Binding Word              0%        86%       100%      67%       100%      50%       
+without Last Stand                25%       72%       92%       81%       100%      50%       
+
+Yamato, typical kits at each target's own stage, enemy damage x2, 36 fights per number.
+                                  medium    large     guardian  walker    mid-boss  siege     
+whole kit                         8%        33%       28%       44%       42%       50%       
+without Power Slash               0%        19%       25%       28%       33%       39%       
+without Flying Slash              0%        22%       25%       39%       42%       47%       
+without Crimson Slash             0%        19%       17%       14%       17%       0%        
+without Shadow Transformation     8%        25%       25%       28%       42%       42%       
+

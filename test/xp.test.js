@@ -1,6 +1,7 @@
 // Run: node --test
 // Uses a throwaway data folder so the bot's real XP is never touched.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
+const { SCALE } = require('../src/utils/economy');
 const test = require('node:test');
 const assert = require('node:assert');
 const { progress, xpToNext, soulsFor, addXp, claimUrn, getUser, applyEdit, editUser, MAX_LEVEL } = require('../src/utils/xp');
@@ -12,7 +13,7 @@ test('level curve', () => {
   assert.strictEqual(progress(4675).level, 10);
   assert.strictEqual(progress(1e12).level, MAX_LEVEL);
   assert.strictEqual(xpToNext(0), 100);
-  assert.deepStrictEqual([soulsFor(1), soulsFor(10), soulsFor(99)], [25, 791, 24626]);
+  assert.deepStrictEqual([soulsFor(1), soulsFor(10), soulsFor(99)], [1, 10, 99].map((l) => Math.round(25 * SCALE * l ** 1.5)));
 });
 
 test('addXp pays souls per level and respects cooldown', async () => {
@@ -32,9 +33,9 @@ test('urn streak grows, caps at 7 days, resets after a missed day', async () => 
   const day = (n) => new Date(Date.UTC(2026, 0, n, 12));
   const got = [];
   for (let d = 1; d <= 9; d++) got.push((await claimUrn(id, day(d))).souls);
-  assert.deepStrictEqual(got, [100, 120, 140, 160, 180, 200, 220, 220, 220]);
+  assert.deepStrictEqual(got, [100, 120, 140, 160, 180, 200, 220, 220, 220].map((n) => n * SCALE));
   assert.strictEqual((await claimUrn(id, day(9))).claimed, false); // twice in one day
-  assert.strictEqual((await claimUrn(id, day(11))).souls, 100); // skipped day 10
+  assert.strictEqual((await claimUrn(id, day(11))).souls, 100 * SCALE); // skipped day 10
   await getStore('xp').delete(id);
 });
 
@@ -45,6 +46,12 @@ test('applyEdit: pure, level follows XP, no souls paid, floors at 0', () => {
   assert.deepStrictEqual(applyEdit(start, { stat: 'souls', action: 'set', amount: 7 }), { xp: 100, level: 1, souls: 7 });
   assert.deepStrictEqual(applyEdit(start, { stat: 'souls', action: 'reset' }), { xp: 100, level: 1, souls: 0 });
   assert.deepStrictEqual(start, { xp: 100, level: 1, souls: 50 }); // input untouched
+});
+
+test('set-level: XP becomes the start of that level, souls untouched', () => {
+  const start = { xp: 100, level: 1, souls: 50 };
+  assert.deepStrictEqual(applyEdit(start, { stat: 'xp', action: 'set-level', amount: 10 }), { xp: 4675, level: 10, souls: 50 });
+  assert.deepStrictEqual(applyEdit(start, { stat: 'xp', action: 'set-level', amount: 0 }), { xp: 0, level: 0, souls: 50 });
 });
 
 test('editUser saves the edit', async () => {
@@ -89,12 +96,12 @@ test('Soul Boost: 1 hour per buy, stacks by adding time; doubles XP, level-up so
 
   const r = await addXp(id, 50); // 100 XP with the boost: level 0 -> 1
   assert.deepStrictEqual([r.user.xp, r.gained, r.souls], [100, [1], soulsFor(1) * 2]);
-  assert.strictEqual((await triviaAnswer(id, true, new Date(now))).souls, 50); // 25, doubled
+  assert.strictEqual((await triviaAnswer(id, true, new Date(now))).souls, 50 * SCALE); // 25, doubled
   const urn = await claimUrn(id, new Date(now));
-  assert.strictEqual(urn.souls, 200); // day 1 = 100, doubled
+  assert.strictEqual(urn.souls, 200 * SCALE); // day 1 = 100, doubled
 
   await getStore('xp').update(id, (u) => ({ ...u, boostUntil: now - 1 })); // ran out
-  assert.strictEqual((await triviaAnswer(id, true, new Date(now))).souls, 30); // 2 in a row
+  assert.strictEqual((await triviaAnswer(id, true, new Date(now))).souls, 30 * SCALE); // 2 in a row
   await getStore('xp').delete(id);
 });
 
@@ -131,17 +138,57 @@ test('trivia: a streak pays 25, 30 ... 70 (max 10), wrong resets it, 10 paid ans
   const day1 = new Date('2026-09-28T12:00:00Z');
   const paid = [];
   for (let i = 0; i < 12; i++) paid.push((await triviaAnswer(id, true, day1)).souls);
-  assert.deepStrictEqual(paid, [25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 0, 0]); // 11th and 12th: today's 10 are used
+  assert.deepStrictEqual(paid, [25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 0, 0].map((n) => n * SCALE)); // 11th and 12th: today's 10 are used
   let user = await getUser(id);
   assert.strictEqual(user.triviaStreak, 10); // capped
   assert.deepStrictEqual(triviaOdds(user, day1), { left: 0, souls: 0 });
 
   const day2 = new Date('2026-09-29T00:00:01Z'); // new UTC day: pays again, streak carries over
-  assert.deepStrictEqual(triviaOdds(user, day2), { left: 10, souls: 70 });
-  assert.strictEqual((await triviaAnswer(id, true, day2)).souls, 70);
+  assert.deepStrictEqual(triviaOdds(user, day2), { left: 10, souls: 70 * SCALE });
+  assert.strictEqual((await triviaAnswer(id, true, day2)).souls, 70 * SCALE);
   const wrong = await triviaAnswer(id, false, day2);
   assert.deepStrictEqual([wrong.streak, wrong.souls], [0, 0]);
-  assert.strictEqual((await triviaAnswer(id, true, day2)).souls, 25);
-  assert.strictEqual((await getUser(id)).souls, 25 + 30 + 35 + 40 + 45 + 50 + 55 + 60 + 65 + 70 + 70 + 25);
+  assert.strictEqual((await triviaAnswer(id, true, day2)).souls, 25 * SCALE);
+  assert.strictEqual((await getUser(id)).souls, (25 + 30 + 35 + 40 + 45 + 50 + 55 + 60 + 65 + 70 + 70 + 25) * SCALE);
   await getStore('xp').delete(id);
+});
+
+const { chatCounts, voiceEarners, standing, getSettings } = require('../src/utils/xp');
+
+test('chatCounts: system, webhook, ignored channel (and its category/thread parent), too short, repeats and censored do not count', async () => {
+  const s = { ...(await getSettings('g')), ignoredChannelIds: ['bots'], minLength: 4 };
+  const msg = (content, extra = {}) => ({ content, author: { id: 'u1' }, channel: { id: 'chat' }, ...extra });
+  assert.strictEqual(chatCounts(msg('hello there'), s), true);
+  assert.strictEqual(chatCounts(msg('hello there'), s), false); // same text twice
+  assert.strictEqual(chatCounts(msg('Hello There '), s), false); // case/space don't dodge it
+  assert.strictEqual(chatCounts(msg('something else'), s), true);
+  assert.strictEqual(chatCounts(msg('hey'), s), false); // under 4 characters
+  assert.strictEqual(chatCounts(msg('a new one', { system: true }), s), false);
+  assert.strictEqual(chatCounts(msg('a new two', { webhookId: '1' }), s), false);
+  assert.strictEqual(chatCounts(msg('a new three', { channel: { id: 'bots' } }), s), false);
+  assert.strictEqual(chatCounts(msg('a new four', { channel: { id: 'thread', parentId: 'bots' } }), s), false);
+  assert.strictEqual(chatCounts(msg('a new five', { channel: { id: 'x', parentId: 'y', parent: { parentId: 'bots' } } }), s), false);
+  assert.strictEqual(chatCounts(msg('a new six'), s, true), false); // censored
+  assert.strictEqual(chatCounts(msg('a new seven'), s), true);
+});
+
+test('voiceEarners: needs 2 listeners; bots, deafened, AFK and ignored channels do not count', async () => {
+  const s = { ...(await getSettings('g')), ignoredChannelIds: ['quiet'] };
+  const st = (id, channelId, extra = {}) => ({ channel: { id: channelId }, member: { id, user: { bot: !!extra.bot } }, deaf: !!extra.deaf });
+  const guild = (states) => ({ afkChannelId: 'afk', voiceStates: { cache: new Map(states.map((x, i) => [i, x])) } });
+  assert.deepStrictEqual(voiceEarners(guild([st('a', 'v'), st('b', 'v'), st('c', 'w')]), s), ['a', 'b']);
+  assert.deepStrictEqual(voiceEarners(guild([st('a', 'v'), st('b', 'v', { deaf: true })]), s), []); // one listener
+  assert.deepStrictEqual(voiceEarners(guild([st('a', 'v'), st('b', 'v', { bot: true })]), s), []);
+  assert.deepStrictEqual(voiceEarners(guild([st('a', 'afk'), st('b', 'afk')]), s), []);
+  assert.deepStrictEqual(voiceEarners(guild([st('a', 'quiet'), st('b', 'quiet')]), s), []);
+});
+
+test('standing: position among members with XP, ties share a place', async () => {
+  const store = getStore('xp');
+  for (const [id, xp] of [['s1', 500], ['s2', 300], ['s3', 300], ['s4', 0]]) await store.set(id, { xp, level: 0, souls: xp });
+  assert.deepStrictEqual(await standing('s1'), { position: 1, total: 3 });
+  assert.deepStrictEqual(await standing('s3'), { position: 2, total: 3 });
+  assert.strictEqual((await standing('s4')).position, null);
+  assert.strictEqual((await standing('s1', 'souls')).position, 1);
+  for (const id of ['s1', 's2', 's3', 's4']) await store.delete(id);
 });

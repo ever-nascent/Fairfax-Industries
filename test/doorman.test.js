@@ -18,8 +18,8 @@ test('the Doorman only opens an empty room that is not yours', () => {
       }
     }
   }
-  assert.strictEqual(winnings(100), 150);
-  assert.strictEqual(winnings(15), 22); // rounds down
+  assert.strictEqual(winnings(100), 142);
+  assert.strictEqual(winnings(15), 21); // rounds down
 });
 
 test('changeSouls never goes below zero', async () => {
@@ -31,7 +31,7 @@ test('changeSouls never goes below zero', async () => {
   assert.strictEqual((await changeSouls(id, -50)).souls, 0);
 });
 
-test('a full game: bet taken, win pays 1.5x once, only the owner can play', async () => {
+test('a full game: bet taken, win pays 1.425x once, only the owner can play', async () => {
   const user = { id: 'test-doorman' };
   await getStore('xp').delete(user.id);
   assert.ok((await startGame(user, 'Tester', 5)).error); // under the minimum
@@ -59,7 +59,7 @@ test('a full game: bet taken, win pays 1.5x once, only the owner can play', asyn
     assert.ok([...WIN_LINES, ...LOSE_LINES].includes(embed.footer.text.slice(1, -1)));
     assert.strictEqual(await finishGame(id, user.id, choice), null); // double click pays nothing
     const final = choice === 'switch' ? otherRoom(game.pick, game.opened) : game.pick;
-    const expected = before - 100 + (final === game.prize ? 150 : 0);
+    const expected = before - 100 + (final === game.prize ? 142 : 0);
     assert.strictEqual((await getUser(user.id)).souls, expected);
     assert.strictEqual(await games().get(id), null);
   }

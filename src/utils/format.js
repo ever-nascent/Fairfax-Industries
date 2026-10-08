@@ -2,7 +2,7 @@
 
 const fmt = (n) => n.toLocaleString('en-US');
 
-// The server's :souls: emoji (xp.js uploads it on startup), put in front of every soul count.
+// The server's :souls: emoji (xp.js looks it up by name on startup), put in front of every soul count.
 let soulsEmoji = '';
 const setSoulsEmoji = (emoji) => (soulsEmoji = emoji);
 const soulsIcon = () => (soulsEmoji ? `${soulsEmoji} ` : ''); // with a trailing space

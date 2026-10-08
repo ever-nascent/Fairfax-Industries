@@ -11,7 +11,7 @@ const { getStore } = require('../storage');
 const { fmt, soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, seeded, halftone, grain, grainAndVignette, loadSouls, drawSouls } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, pay, openGame } = require('./casino');
+const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'holliday'); // deadlock-api.com + deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xd9782d, name: "Holliday's Powder Keg", icon: path.join(ART, 'powder_keg.png'), art: ART, prefix: 'holliday' }; // orange; Powder Keg
@@ -25,6 +25,7 @@ const FRAME_MS = 125; // GIF frame length (8 a second: the flame still moves smo
 // ponytail: a fixed guess, measure it if the keg still seems to blow early
 const GIF_DELAY_MS = 1000;
 const BUTTON_ID = 'keg'; // custom id: keg:<game id>:cash
+const { pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'keg_again'; // custom id: keg_again:<bet>:<player id>
 
 // Holliday: a blunt Midwestern sheriff from Macomb, in New York hunting a killer, hates the city, dry and short

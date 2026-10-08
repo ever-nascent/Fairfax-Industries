@@ -27,6 +27,13 @@ module.exports = {
             .setMinValue(0)
             .setMaxValue(3600)
             .setRequired(true),
+        )
+        .addIntegerOption((o) =>
+          o
+            .setName('min-length')
+            .setDescription('Shortest message (characters) that counts; 0 = any (default 0, leave empty to keep it)')
+            .setMinValue(0)
+            .setMaxValue(200),
         ),
     )
     .addSubcommand((s) =>
@@ -44,6 +51,25 @@ module.exports = {
         .setDescription('Where level-ups are announced (leave empty to turn announcements off)')
         .addChannelOption((o) => o.setName('channel').setDescription('Channel').addChannelTypes(ChannelType.GuildText)),
     )
+    .addSubcommand((s) =>
+      s
+        .setName('ignore-channel')
+        .setDescription('No XP in this channel or category (run again to turn it back on)')
+        .addChannelOption((o) =>
+          o
+            .setName('channel')
+            .setDescription('Text, voice or stage channel, forum or category')
+            .addChannelTypes(
+              ChannelType.GuildText,
+              ChannelType.GuildAnnouncement,
+              ChannelType.GuildForum,
+              ChannelType.GuildVoice,
+              ChannelType.GuildStageVoice,
+              ChannelType.GuildCategory,
+            )
+            .setRequired(true),
+        ),
+    )
     .addSubcommand((s) => s.setName('show').setDescription('Show the current XP settings')),
 
   async execute(interaction) {
@@ -57,8 +83,13 @@ module.exports = {
       const max = interaction.options.getInteger('max');
       const cooldown = interaction.options.getInteger('cooldown');
       if (min > max) return reply("`min` can't be bigger than `max`.");
-      await updateSettings(guildId, (s) => Object.assign(s, { minXp: min, maxXp: max, cooldownSeconds: cooldown }));
-      return reply(`Chat XP is now **${min}–${max}** per message, once every **${cooldown}s**.`);
+      const minLength = interaction.options.getInteger('min-length');
+      const s = await updateSettings(guildId, (s) => {
+        Object.assign(s, { minXp: min, maxXp: max, cooldownSeconds: cooldown });
+        if (minLength !== null) s.minLength = minLength;
+      });
+      const length = s.minLength ? ` Messages under **${s.minLength}** characters don't count.` : '';
+      return reply(`Chat XP is now **${min}–${max}** per message, once every **${cooldown}s**.${length}`);
     }
 
     if (sub === 'voice') {
@@ -77,15 +108,32 @@ module.exports = {
       return reply(channel ? `Level-ups will be announced in ${channel}.` : 'Level-up announcements are **off**.');
     }
 
+    if (sub === 'ignore-channel') {
+      const channel = interaction.options.getChannel('channel');
+      const s = await updateSettings(guildId, (s) => {
+        const on = s.ignoredChannelIds.includes(channel.id);
+        s.ignoredChannelIds = on ? s.ignoredChannelIds.filter((id) => id !== channel.id) : [...s.ignoredChannelIds, channel.id];
+      });
+      return reply(s.ignoredChannelIds.includes(channel.id) ? `${channel} no longer gives XP.` : `${channel} gives XP again.`);
+    }
+
     // show
     const s = await getSettings(guildId);
     const embed = new EmbedBuilder()
       .setColor(REPLY_COLOR)
       .setTitle('XP settings')
       .addFields(
-        { name: 'Chat XP', value: `${s.minXp}–${s.maxXp} per message, every ${s.cooldownSeconds}s`, inline: true },
+        {
+          name: 'Chat XP',
+          value: `${s.minXp}–${s.maxXp} per message, every ${s.cooldownSeconds}s${s.minLength ? `, ${s.minLength}+ characters` : ''}`,
+          inline: true,
+        },
         { name: 'Voice XP', value: s.voiceEnabled ? `On, ${s.voiceXpPerMinute}/min` : 'Off', inline: true },
-        { name: 'Level-up channel', value: s.levelUpChannelId ? `<#${s.levelUpChannelId}>` : 'Off' },
+        {
+          name: 'Level-up channel',
+          value: s.levelUpChannelId ? `<#${s.levelUpChannelId}>` : 'Off: nobody sees level-ups. Set one with `/xp-config level-up-channel`.',
+        },
+        { name: 'No XP in', value: s.ignoredChannelIds.map((id) => `<#${id}>`).join(' ') || 'No channel is ignored' },
       );
     return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   },
