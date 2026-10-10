@@ -274,10 +274,10 @@ def shop_emojis(session: requests.Session):
 # Heroes (Category:Heroes on deadlock.wiki, Sept 2026). Each hero page shows a 128x128
 # "chat icon" in its gallery, which is the wiki file "File:<Hero>.png".
 HEROES = [
-    "Abrams", "Apollo", "Bebop", "Billy", "Calico", "Celeste", "The Doorman", "Drifter",
+    "Abrams", "Apollo", "Baba", "Bebop", "Billy", "Calico", "Celeste", "The Doorman", "Drifter",
     "Dynamo", "Graves", "Grey Talon", "Haze", "Holliday", "Infernus", "Ivy", "Kelvin",
     "Lady Geist", "Lash", "McGinnis", "Mina", "Mirage", "Mo & Krill", "Paige", "Paradox",
-    "Pocket", "Rem", "Seven", "Shiv", "Silver", "Sinclair", "Venator", "Victor",
+    "Pocket", "Rat King", "Rem", "Seven", "Shiv", "Silver", "Sinclair", "Solomon", "Venator", "Victor",
     "Vindicta", "Viscous", "Vyper", "Warden", "Wraith", "Yamato",
 ]
 HERO_DIR = ASSETS / "heroes"
