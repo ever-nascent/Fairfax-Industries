@@ -276,6 +276,7 @@ The City Never Sleeps update (Sept 29) adds six heroes, one released each Tuesda
 | Which heroes (his call, Oct 10) | **The 3 out now**; the other 3 are added one at a time as each releases |
 | #roles hero menus (his call, Oct 10) | **Repost all hero menus A-Z** with the new heroes in place (members keep their roles; the old reactions go with the old posts) |
 | Step 1 (Oct 10) | Added to `setup.py HEROES`, `src/utils/heroes.js` and `Get-DeadlockFullBody.ps1` (A-Z, The Doorman under D like the rest of the list); chat icons in `assets/heroes/` (deadlock-api.com's `<hero>_sm.png`, the same picture as the wiki's chat icon: Haze's comes out pixel-identical through `setup.py`'s conversion). The Shop and Lockle dropdowns split in half (21 + 20). Still to run on his PC (the wiki blocks the cloud session): full-body renders (`Get-DeadlockFullBody.ps1`), emojis (`setup.py hero-emojis`), trivia data (`Refresh Trivia Data.bat`) |
+| Trivia refresh (Oct 10) | His first run found all 41 heroes' lines and abilities (Baba 246 lines, Rat King 400, Solomon 52) but saved nothing: the wiki had no icon for Baba's **Feed the Birds** (deadlock-api.com spells it "Feed The Birds"). `tools/trivia-data.js` now takes an ability icon the wiki lacks from deadlock-api.com (the same pictures: Sleep Dagger is identical) |
 | Next steps | Hero roles + the A-Z repost of the hero menus; Hero Farming for each new hero (his calls per hero, like the first 38) |
 
 ## Deadlock ranks (current, lowest → highest)

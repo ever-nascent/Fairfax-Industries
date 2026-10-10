@@ -2,7 +2,7 @@
 // what a refresh would change. No network.
 const test = require('node:test');
 const assert = require('node:assert');
-const { voiceLines, cleanWikiText, changes, fileOf } = require('../tools/trivia-data');
+const { voiceLines, cleanWikiText, changes, fileOf, abilityIcons } = require('../tools/trivia-data');
 
 const audio = (text) => `| {{Audio link|file.mp3|${text}}}`;
 
@@ -53,4 +53,20 @@ test('changes: new and gone heroes and items, changed costs, stats, upgrades and
     'item gone: Gone',
   ]);
   assert.deepStrictEqual(changes([hero('Haze', ['a'])], [hero('Haze', ['a'])], [item('Kept')], [item('Kept')]), []);
+});
+
+test("deadlock-api.com ability icons: any capitalisation, the hero's own entry over an unowned copy, png only", () => {
+  const urlOf = abilityIcons([
+    { name: 'Setup Bishop', heroes: [], image: 'https://x/undobishop.png' },
+    { name: 'Setup Bishop', heroes: [85], image: 'https://x/bishop.png' },
+    { name: 'Feed The Birds', heroes: [88], image: 'https://x/pigeon_launcher.png' },
+    { name: '', heroes: [88], image: 'https://x/sprint.png' },
+    { name: 'Sprint', heroes: [88], image: 'https://x/icon_speed.svg' },
+    { name: 'Melee', heroes: [88] },
+  ]);
+  assert.strictEqual(urlOf('Feed the Birds'), 'https://x/pigeon_launcher.png');
+  assert.strictEqual(urlOf('Setup Bishop'), 'https://x/bishop.png');
+  assert.strictEqual(urlOf('Sprint'), undefined);
+  assert.strictEqual(urlOf('Melee'), undefined);
+  assert.strictEqual(urlOf('Nothing Like It'), undefined);
 });
