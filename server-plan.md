@@ -86,7 +86,7 @@ Not enforceable by roles: Eternus' "within 3 subranks" rule (subranks aren't tra
 | Hero cards | Bought in the Shop. Two styles per hero, **sold separately** (priced like in-game item tiers): **Icon** card (hero chat icon) **800 souls**, **Full Portrait** card (hero's full-body render from deadlock.wiki, `File:<Hero>_Render.png`) **3,200 souls**. The hero's own colours on the XP bar, flask liquid, background tint and text accents |
 | Style preview | In `/shop`, after picking a hero: two buttons under the card, **Icon** and **Full Portrait**, switch the card between the two looks; the Price field shows the price of the one on screen |
 | Shop preview | Dropdown to pick a hero; the embed image updates to preview that hero's card before buying |
-| Preview details (built, awaiting check) | `/shop` reply is only visible to the person who ran it. Two dropdowns (38 heroes, 25 max per dropdown): Abrams – McGinnis, Mina – Yamato, each option with the hero's `:<hero>:` emoji. Picking a hero redraws the card with **your own** name, level and souls. Embed colour = hero colour. Wording (approved Sept 28, Shopkeeper voice): no hero "Pick a face, any face. Every hero in the city, framed and ready for your `/rank`." / preview "The **Haze** card (Full Portrait). Looks good on ya. Want it?" / owned "You already own the ... Hit Equip and show it off." / equipped "Your ... is on your `/rank`. Wearin' it well, pal." Fields Price / Your Balance |
+| Preview details (built, awaiting check) | `/shop` reply is only visible to the person who ran it. Two dropdowns (41 heroes since Oct 10, split in half, 25 max per dropdown): Abrams – Mina, Mirage – Yamato, each option with the hero's `:<hero>:` emoji. Picking a hero redraws the card with **your own** name, level and souls. Embed colour = hero colour. Wording (approved Sept 28, Shopkeeper voice): no hero "Pick a face, any face. Every hero in the city, framed and ready for your `/rank`." / preview "The **Haze** card (Full Portrait). Looks good on ya. Want it?" / owned "You already own the ... Hit Equip and show it off." / equipped "Your ... is on your `/rank`. Wearin' it well, pal." Fields Price / Your Balance |
 | Hero art files | Full-body renders in `assets/heroes/full body` (from `Get-DeadlockFullBody.ps1`, original size; the bot shrinks them in memory). If a hero's render is missing, the card uses their chat icon |
 | Hero colours | **Sampled from the art** (the most common strong hue), not hand-picked. Any hero can be overridden in `COLOR_OVERRIDES` in `src/utils/heroes.js`. Colours change once the renders replace the chat icons |
 
@@ -267,6 +267,17 @@ Message memory: last 7 days saved to disk (text + image/GIF copies; videos/other
 
 `/audit-log-config` (Administrator only): toggle each event on/off by slash option (`event:` search, `on:` true/false; all start on), ignored channels, ignored members, change log channel, new-account age, `history member:` lookup.
 
+## New heroes (Oct 10, 2026)
+
+The City Never Sleeps update (Sept 29) adds six heroes, one released each Tuesday and Friday in the order players vote. Out by Oct 10 (deadlock-api.com: `player_selectable`): **Rat King** (Oct 2), **Baba** (Oct 6), **Solomon** (Oct 9). Still to come: Nurse Harrow, Deadman Danny, Violet (Oct 13 / 16 / 20 per fan trackers, not confirmed).
+
+| Decision | Choice |
+|----------|--------|
+| Which heroes (his call, Oct 10) | **The 3 out now**; the other 3 are added one at a time as each releases |
+| #roles hero menus (his call, Oct 10) | **Repost all hero menus A-Z** with the new heroes in place (members keep their roles; the old reactions go with the old posts) |
+| Step 1 (Oct 10) | Added to `setup.py HEROES`, `src/utils/heroes.js` and `Get-DeadlockFullBody.ps1` (A-Z, The Doorman under D like the rest of the list); chat icons in `assets/heroes/` (deadlock-api.com's `<hero>_sm.png`, the same picture as the wiki's chat icon: Haze's comes out pixel-identical through `setup.py`'s conversion). The Shop and Lockle dropdowns split in half (21 + 20). Still to run on his PC (the wiki blocks the cloud session): full-body renders (`Get-DeadlockFullBody.ps1`), emojis (`setup.py hero-emojis`), trivia data (`Refresh Trivia Data.bat`) |
+| Next steps | Hero roles + the A-Z repost of the hero menus; Hero Farming for each new hero (his calls per hero, like the first 38) |
+
 ## Deadlock ranks (current, lowest → highest)
 
 Initiate, Seeker, Acolyte, Sentinel, Mystic, Ritualist, Emissary, Oracle, Phantom, Ascendant, Eternus.
@@ -308,7 +319,7 @@ Pick one. Standard flag emojis (custom continent flags were made, then dropped a
 
 ### #roles Heroes menus (posted Sept 28, 2026)
 
-Pick any. All 38 heroes A-Z (The Doorman under T), max 6 per post (7 posts), hero emojis as reactions, one role per hero (named after the hero, no colour). First post: title "Heroes", text "Select Your Preferred Hero's".
+Pick any. All 38 heroes A-Z (The Doorman under T), max 6 per post (7 posts; to be reposted A-Z with the new heroes, see "New heroes"), hero emojis as reactions, one role per hero (named after the hero, no colour). First post: title "Heroes", text "Select Your Preferred Hero's".
 
 ### #roles Patron menu (posted Sept 28, 2026)
 

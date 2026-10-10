@@ -1,4 +1,4 @@
-// The 38 heroes for Shop hero cards: names, art, colours and their server emojis.
+// The 41 heroes for Shop hero cards: names, art, colours and their server emojis.
 // Art comes in two styles (sold separately in the Shop): 'icon' = the hero's chat icon (assets/heroes),
 // 'portrait' = their full-body render (assets/heroes/full body, `Get-DeadlockFullBody.ps1`; the icon
 // stands in if a render is missing). Colours are sampled from the art.
@@ -7,12 +7,12 @@ const path = require('node:path');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { ASSETS } = require('./art');
 
-// Same list and order as setup.py HEROES (deadlock.wiki Category:Heroes, Sept 2026).
+// Same list and order as setup.py HEROES (deadlock.wiki Category:Heroes, Sept 2026; Baba, Rat King and Solomon added Oct 10).
 const NAMES = [
-  'Abrams', 'Apollo', 'Bebop', 'Billy', 'Calico', 'Celeste', 'The Doorman', 'Drifter',
+  'Abrams', 'Apollo', 'Baba', 'Bebop', 'Billy', 'Calico', 'Celeste', 'The Doorman', 'Drifter',
   'Dynamo', 'Graves', 'Grey Talon', 'Haze', 'Holliday', 'Infernus', 'Ivy', 'Kelvin',
   'Lady Geist', 'Lash', 'McGinnis', 'Mina', 'Mirage', 'Mo & Krill', 'Paige', 'Paradox',
-  'Pocket', 'Rem', 'Seven', 'Shiv', 'Silver', 'Sinclair', 'Venator', 'Victor',
+  'Pocket', 'Rat King', 'Rem', 'Seven', 'Shiv', 'Silver', 'Sinclair', 'Solomon', 'Venator', 'Victor',
   'Vindicta', 'Viscous', 'Vyper', 'Warden', 'Wraith', 'Yamato',
 ];
 // slug = file name and emoji name, like setup.py: "Mo & Krill" -> mo_krill
