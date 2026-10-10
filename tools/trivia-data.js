@@ -3,7 +3,8 @@
 //   assets/trivia/trivia.json   each hero's own voice lines and 4 abilities   ("<Hero>/Voice lines" pages)
 //   assets/trivia/items.json    every shop item, tiers 1-4: cost, tier, the % stats on its card, what it upgrades into
 //                               (Data:ItemCards.json + Data:Lang en.json)
-//   assets/trivia/abilities/, items/   their pictures (only the missing ones are downloaded; --all fetches every one again)
+//   assets/trivia/abilities/, items/   their pictures (only the missing ones are downloaded; --all fetches every one again;
+//                               an ability icon the wiki doesn't have yet comes from deadlock-api.com)
 // Nothing is written unless the whole download checks out, so a wiki hiccup can't leave /trivia with half its questions.
 // `--check` only reports what would change. (Ported from `setup.py trivia`, which he no longer uses.)
 const fs = require('node:fs');
@@ -12,6 +13,7 @@ const { HEROES } = require('../src/utils/heroes');
 const { ASSETS } = require('../src/utils/art');
 
 const WIKI = 'https://deadlock.wiki';
+const DEADLOCK_API = 'https://api.deadlock-api.com'; // ability icons the wiki doesn't have yet (unofficial)
 const OUT = path.join(ASSETS, 'trivia');
 // Words that give the answer away if a line contains them (besides the hero's own name).
 const ALIASES = {
@@ -88,6 +90,20 @@ async function fileUrls(names) {
   return (name) => urls.get(`File:${name}.png`);
 }
 
+// deadlock-api.com's ability icons by name (lower case: it writes "Feed The Birds", the wiki "Feed the Birds").
+// The same pictures as the wiki's (Haze's Sleep Dagger is identical); used only for an ability the wiki has no
+// file for yet, e.g. a new hero's ultimate. A name on two entries (Solomon's pieces have an "undo" copy with no
+// hero) keeps the one a hero owns.
+function abilityIcons(list) {
+  const urls = new Map();
+  const owned = (a) => (a.heroes?.length ? 0 : 1);
+  for (const a of [...list].sort((x, y) => owned(x) - owned(y))) {
+    const key = a.name?.toLowerCase();
+    if (key && a.image?.endsWith('.png') && !urls.has(key)) urls.set(key, a.image);
+  }
+  return (name) => urls.get(name.toLowerCase());
+}
+
 async function buildHeroes(problems) {
   const heroes = [];
   for (const { name, slug } of HEROES) {
@@ -104,10 +120,22 @@ async function buildHeroes(problems) {
     console.log(`  ${name}: ${lines.length} lines, abilities: ${abilities.join(', ') || 'none found'}`);
   }
   const urlOf = await fileUrls(heroes.flatMap((h) => h.abilities));
+  let apiUrlOf = null; // fetched only when the wiki is missing an icon
+  if (heroes.some((h) => h.abilities.some((ability) => !urlOf(ability)))) {
+    try {
+      apiUrlOf = abilityIcons(await get(`${DEADLOCK_API}/v1/assets/items/by-type/ability`));
+    } catch (error) {
+      console.log(`  deadlock-api.com didn't answer (${error.message})`);
+    }
+  }
   const pictures = [];
   for (const hero of heroes) {
     hero.abilities = hero.abilities.flatMap((ability) => {
-      const url = urlOf(ability);
+      let url = urlOf(ability);
+      if (!url && apiUrlOf?.(ability)) {
+        url = apiUrlOf(ability);
+        console.log(`  icon for ${ability} (${hero.name}) from deadlock-api.com: the wiki has none yet`);
+      }
       if (!url) {
         problems.push(`no icon for ${ability} (${hero.name})`);
         return [];
@@ -237,4 +265,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { voiceLines, cleanWikiText, changes, fileOf };
+module.exports = { voiceLines, cleanWikiText, changes, fileOf, abilityIcons };
