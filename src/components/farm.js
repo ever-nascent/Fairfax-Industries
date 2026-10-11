@@ -3,7 +3,6 @@ const { MessageFlags } = require('discord.js');
 const { getFarmUser, chooseHero, play, upgradeAbility, buyItem, sellItem, unlockHero, switchHero, corruptItem, setImbue, hatchEgg, fightRival, walkAway, holdOffer } = require('../utils/farm/play');
 const { drawbackText } = require('../utils/farm/stats');
 const { buffText } = require('../utils/farm/buffs');
-const { getUser } = require('../utils/xp');
 const { fmt } = require('../utils/format');
 const { DUEL_ID, WALK_ID, withRival, duelView, duelResultView, HERO_ID, PICK_ID, TARGET_ID, SEND_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, titleCase, timeLeft, pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, notReady } = require('../utils/farm/views');
 
@@ -28,7 +27,8 @@ async function replay(interaction, run) {
     await sleep(FRAME_MS);
   }
   if (run.rival) run.rival = holdOffer(interaction.user.id, run.rival); // its 5 minutes start now; it is dropped if it was unlocked meanwhile
-  await interaction.editReply(resultView(run, interaction.user.id)); // with Fight / Walk Away if a rival showed up
+  const result = resultView(run);
+  await interaction.editReply(run.rival ? await withRival(result, run.rival, interaction.user.id) : result); // its own embed with Fight / Walk Away (his call, Oct 10)
   if (run.legendary) await interaction.followUp({ ...legendaryView(run.legendary.name), flags: MessageFlags.Ephemeral }); // its own message (his call, Oct 2)
   if (run.token) await interaction.followUp({ ...tokenView(run.hero), flags: MessageFlags.Ephemeral });
 }
@@ -56,8 +56,9 @@ async function redraw(interaction, view) {
 // The hero pick: the first pick for a member with no hero, the switch / unlock screen for one who has a hero.
 const pickScreen = async (interaction, selected) => pickView(interaction.member, selected, await getFarmUser(interaction.user.id));
 
-const heroScreen = async (interaction, mode = 'main') => heroView(interaction.member, await getFarmUser(interaction.user.id), (await getUser(interaction.user.id)).souls, mode);
-const shopScreen = async (interaction, tab = 'weapon', tier = 1, picked = null) => shopView(interaction.member, await getFarmUser(interaction.user.id), (await getUser(interaction.user.id)).souls, tab, Date.now(), tier, picked);
+// both show the current hero's own souls (his call, Oct 11)
+const heroScreen = async (interaction, mode = 'main') => heroView(interaction.member, await getFarmUser(interaction.user.id), mode);
+const shopScreen = async (interaction, tab = 'weapon', tier = 1, picked = null) => shopView(interaction.member, await getFarmUser(interaction.user.id), tab, Date.now(), tier, picked);
 // 'hero:<mode>' or 'shop:<tab>[:<tier>]' -> that screen
 const screen = (interaction, where) => { const [kind, ...rest] = where.split(':'); return kind === 'shop' ? shopScreen(interaction, rest[0], rest[1]) : heroScreen(interaction, rest.join(':') || 'main'); };
 
@@ -106,7 +107,7 @@ module.exports = [
       if (said) return said;
       if (result.error === 'inside') return titleCase(`You already have that in ${result.holder}.`);
       if (result.error === 'corrupted') return titleCase(`That would use up your corrupted ${result.item}. Sell it first.`);
-      return { souls: "You can't afford that item.", owned: 'You already have that item.', full: 'Your build is full (12 items). Sell one first.', changed: 'Your items just changed. Try again.', unknown: 'That item is not for sale.' }[result.error];
+      return { souls: "Your hero can't afford that item.", owned: 'You already have that item.', full: 'Your build is full (12 items). Sell one first.', unknown: 'That item is not for sale.' }[result.error];
     }, `shop:${interaction.customId.split(':').slice(2, 4).join(':')}`), // back on the tab and price it was bought from
   },
   {
@@ -155,7 +156,7 @@ module.exports = [
       const result = await corruptItem(interaction.user.id, name);
       if (result.ok) return titleCase(`Corrupted ${name} for ${fmt(result.paid)} souls. Its drawback: ${drawbackText(result)}.`);
       if (result.error === 'closed') return titleCase(`The Broker is closed. He opens in ${timeLeft(result.opens - Date.now())}.`);
-      return { souls: "You can't afford that.", one: titleCase('Your hero already has a corrupted item.'), missing: 'You do not have that item.', unknown: "That item can't be corrupted." }[result.error];
+      return { souls: "Your hero can't afford that.", one: titleCase('Your hero already has a corrupted item.'), missing: 'You do not have that item.', unknown: "That item can't be corrupted." }[result.error];
     }, 'shop:broker'),
   },
   {
@@ -195,7 +196,7 @@ module.exports = [
       const result = await switchHero(interaction.user.id, hero);
       if (result.ok) return interaction.editReply({ ...(await homeView(interaction.member, await getFarmUser(interaction.user.id))), attachments: [] });
       await interaction.editReply({ ...(await pickScreen(interaction, hero)), attachments: [] });
-      const problem = { wait: notReady('Switching', result.left ?? 0), locked: 'Unlock that hero first.', same: 'That is already your hero.' }[result.error];
+      const problem = { locked: 'Unlock that hero first.', same: 'That is already your hero.' }[result.error];
       if (problem) await interaction.followUp({ content: problem, flags: MessageFlags.Ephemeral });
     },
   },

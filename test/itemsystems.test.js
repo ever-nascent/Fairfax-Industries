@@ -8,9 +8,11 @@ const { Fight, enemy, MELEE, dodgeChance } = require('../src/utils/farm/engine')
 const { buildHero } = require('../src/utils/farm/hero');
 const { heroStats, HEROES, itemByName, corruptCard, effectValue, DRAWBACKS } = require('../src/utils/farm/stats');
 const { brokerOpen, brokerNext, rollDrawback, sellPrice, ITEM_POOL } = require('../src/utils/farm/levels');
-const { getUser, changeSouls } = require('../src/utils/xp');
 const { getFarmUser, chooseHero, buyItem, sellItem, corruptItem, setImbue, hatchEgg, afterFight, updateFarmUser, setCooldowns, simulate } = require('../src/utils/farm/play');
 const views = require('../src/utils/farm/views');
+// the current hero's own souls (his call, Oct 11: farm souls are per hero, apart from the server balance)
+const giveSouls = (id, n) => updateFarmUser(id, (r) => { r.souls += n; });
+const heroSouls = async (id) => (await getFarmUser(id)).souls;
 
 const seeded = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
 const member = (id) => ({ id, guild: { emojis: { cache: { find: () => undefined } } }, toString: () => `<@${id}>` });
@@ -321,26 +323,26 @@ test('corruption: the card gains its corrupted bonuses, the hero carries one dra
   assert.ok(ITEM_POOL.length === 155);
 });
 
-test('corrupting: only while the Broker is open, one per hero, costs the price again, refunded when it fails; its components can\'t be upgraded away', async () => {
+test('corrupting: only while the Broker is open, one per hero, costs the price again, nothing taken when refused; its components can\'t be upgraded away', async () => {
   const id = 'corrupt1';
   await chooseHero(id, 'Haze');
-  await changeSouls(id, 100000);
+  await giveSouls(id, 100000);
   await buyItem(id, 'Hollow Point');
   const open = Date.UTC(2026, 9, 3, 6, 5);
   assert.strictEqual((await corruptItem(id, 'Hollow Point', { now: Date.UTC(2026, 9, 3, 7, 0) })).error, 'closed');
   assert.strictEqual((await corruptItem(id, 'Extra Health', { now: open })).error, 'unknown', 'tier 1: nothing to corrupt');
-  const before = (await getUser(id)).souls;
+  const before = (await heroSouls(id));
   const done = await corruptItem(id, 'Hollow Point', { now: open, rng: seeded(3) });
   assert.ok(done.ok && done.paid === 3200);
-  assert.strictEqual((await getUser(id)).souls, before - 3200);
+  assert.strictEqual((await heroSouls(id)), before - 3200);
   const r = await getFarmUser(id);
   assert.strictEqual(r.corrupted.name, 'Hollow Point');
   await buyItem(id, 'Battle Vest');
   await buyItem(id, 'Spirit Resilience');
   const broke = await corruptItem(id, 'Spirit Resilience', { now: open });
   assert.strictEqual(broke.error, 'one');
-  assert.strictEqual((await getUser(id)).souls, before - 3200 - itemByName('Battle Vest').Cost - itemByName('Spirit Resilience').Cost, 'nothing taken for a refused one');
-  const view = await views.shopView(member(id), await getFarmUser(id), 5, 'broker', open);
+  assert.strictEqual((await heroSouls(id)), before - 3200 - itemByName('Battle Vest').Cost - itemByName('Spirit Resilience').Cost, 'nothing taken for a refused one');
+  const view = await views.shopView(member(id), await getFarmUser(id), 'broker', open);
   assert.match(view.embeds[0].toJSON().description, /already has a corrupted item/i);
   const sold = await sellItem(id, 'Hollow Point');
   assert.strictEqual(sold.refund, 3200);
@@ -355,15 +357,15 @@ test('corrupting: only while the Broker is open, one per hero, costs the price a
 test('imbue items ask for an ability when bought, can be moved for free, and fight with it', async () => {
   const id = 'imbue1';
   await chooseHero(id, 'Haze');
-  await changeSouls(id, 100000);
+  await giveSouls(id, 100000);
   const bought = await buyItem(id, 'Compress Cooldown');
   assert.ok(bought.ok && bought.imbue);
-  const ask = await views.heroView(member(id), await getFarmUser(id), 5, 'imbue:Compress Cooldown');
+  const ask = await views.heroView(member(id), await getFarmUser(id), 'imbue:Compress Cooldown');
   assert.strictEqual(ask.components[0].toJSON().components[0].options.length, 4);
   assert.ok((await setImbue(id, 'Compress Cooldown', 2)).ok);
   assert.strictEqual((await getFarmUser(id)).imbues['Compress Cooldown'], 2);
   assert.strictEqual((await setImbue(id, 'Extra Health', 2)).error, 'missing');
-  const main = await views.heroView(member(id), await getFarmUser(id), 5);
+  const main = await views.heroView(member(id), await getFarmUser(id));
   assert.deepStrictEqual(main.embeds[0].toJSON().fields.find((f) => f.name === 'Imbued').value, 'Compress Cooldown\ninto Smoke Bomb');
   assert.ok(main.components.length <= 5);
 });
@@ -371,7 +373,7 @@ test('imbue items ask for an ability when bought, can be moved for free, and fig
 test('Golden Goose Egg grows with fight time and hatches for souls and a buff per 80 souls grown; Eternal Gift keeps a buff every 165 s of fights', async () => {
   const id = 'egg1';
   await chooseHero(id, 'Haze');
-  await changeSouls(id, 100000);
+  await giveSouls(id, 100000);
   await buyItem(id, 'Golden Goose Egg');
   await buyItem(id, 'Eternal Gift'); // not for sale: refused
   await updateFarmUser(id, (r) => { r.items.vitality.push('Eternal Gift'); afterFight(r, { seconds: 300 }, seeded(4)); });
@@ -379,10 +381,10 @@ test('Golden Goose Egg grows with fight time and hatches for souls and a buff pe
   assert.ok(Math.abs(r.egg - 400) < 1e-9, '80 a minute for 5 minutes');
   assert.strictEqual(Object.values(r.gifts).reduce((a, b) => a + b, 0), 1, 'one Eternal Gift buff in 300 s');
   assert.ok(Math.abs(r.giftTime - 135) < 1e-9);
-  const before = (await getUser(id)).souls;
+  const before = (await heroSouls(id));
   const hatch = await hatchEgg(id, seeded(2));
   assert.ok(hatch.ok && hatch.buffs.length === 5);
-  assert.strictEqual((await getUser(id)).souls, before + hatch.souls);
+  assert.strictEqual((await heroSouls(id)), before + hatch.souls);
   const after = await getFarmUser(id);
   assert.ok(!after.items.spirit.includes('Golden Goose Egg') && after.egg === 0);
   assert.strictEqual(Object.values(after.buffs).reduce((a, b) => a + b, 0), 5);

@@ -36,7 +36,7 @@ module.exports = {
 
   async execute(interaction) {
     const user = await getUser(interaction.user.id);
-    const embed = walletEmbed(interaction.member, user, history(interaction.user.id, 6));
+    const embed = walletEmbed(interaction.member, user, history(interaction.user.id, 6, { heroes: false })); // the server balance only (his call, Oct 11)
     return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   },
 };

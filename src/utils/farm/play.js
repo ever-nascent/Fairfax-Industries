@@ -1,20 +1,22 @@
 // Hero Farming, the member side: their farm record (hero, cooldowns, Rejuvs), and one trip. `play` claims the cooldown, runs the whole
 // fight at once, pays the souls, and hands back snapshots the command replays as a live message. Rules: server-plan.md ("Hero Farming").
-//   record (data/farm.json, per member). The member's own (his call, Oct 2: shared by all their heroes): { hero (the current one),
-//   cooldowns: { <target | 'siege' | 'roam'>: ms timestamp it is ready again }, rejuvs, clears: { <target>: times cleared }, switchedAt: ms of their last hero switch,
-//   down: { '<guardian | walker>:<lane>': ms timestamp until which it stays beaten } (the lanes, below), bestWave: the most waves cleared in one run,
-//   buffs: { <buff key>: how many they hold } (permanent, from roaming; buffs.js), bridge: [bridge buff keys held for the next fight],
+//   record (data/farm.json, per member). The member's own: { hero (the current one), bestWave: the most waves cleared in one run,
 //   tokens: Character Unlock Tokens held, siegeTokens: [heroes whose siege win already paid a token] }
-//   Each hero's own: heroes: { <hero name>: { earned: souls its trips have paid (hero level, levels.js), tiers: { <ability slot>: tier 0-3 },
+//   Each hero's own (his calls, Oct 2 and Oct 11: "for longevity", so a member can switch heroes and keep playing): heroes: { <hero name>: {
+//   souls: its own souls (trips, roams, egg hatches and sell-backs pay into them, its items and corruption are bought with them; never the server balance),
+//   earned: souls its trips have paid (hero level, levels.js), tiers: { <ability slot>: tier 0-3 },
 //   items: { weapon | vitality | spirit: [item names] }, legendary, corrupted: { name, drawback, amount } (its one corrupted item, stats.js),
 //   imbues: { <item name>: ability slot }, egg: souls its Golden Goose Egg has grown (wiki souls), giftTime: fight seconds towards the next
-//   Eternal Gift buff, gifts: { <buff key>: count } (Eternal Gift's permanent buffs) } }. In the code the current hero's part sits on the record
-//   itself (`load` below).
+//   Eternal Gift buff, gifts: { <buff key>: count } (Eternal Gift's permanent buffs),
+//   cooldowns: { <target | '<guardian | walker | waves>:<lane>' | 'siege' | 'roam'>: ms timestamp it is ready again },
+//   down: { '<guardian | walker>:<lane>': ms timestamp until which it stays beaten } (the lanes, below), clears: { <target>: times cleared },
+//   rejuvs, buffs: { <buff key>: how many it holds } (permanent, from roaming; buffs.js), bridge: [bridge buff keys held for its next fight] } }.
+//   In the code the current hero's part sits on the record itself (`load` below).
 // The cooldown is claimed (and the result is known) when they press Send, so a restart mid-replay never loses or repeats a payout.
 const path = require('node:path');
 const { getStore } = require('../../storage');
 const { ASSETS } = require('../art');
-const { changeSouls } = require('../xp');
+const ledger = require('../soulsLedger');
 const { pickRandom } = require('../random');
 const { buildHero, roster } = require('./hero');
 const { TARGETS, SIEGE, WAVES, WAVE, wavesPay, LANES, LANED, WALKER_STEP, payout, runStages, clearSouls, strengthen, CLEAR_CAP } = require('./targets');
@@ -29,28 +31,37 @@ const { rollRival, rivalKit, duel, ENCOUNTER_CHANCE } = require('./encounter');
 const { specialFor } = require('./haunts');
 const { HAUNTS } = require('./refresh'); // the Haunt families live with the download list that fetches their pictures
 
-const SWITCH_WAIT = 24 * 3600 * 1000; // switching between unlocked heroes: once a day (his call, Oct 2)
 const MAX_REJUVS = 3; // like the game's 3 credits per Mid-Boss kill; placeholder until he decides
 const FRAME_STEPS = 30; // a snapshot every 3 seconds of fight
 const MAX_FRAMES = 14; // the live message plays back at most this many snapshots (3 s apart on screen)
 
 const farm = () => getStore('farm');
-const blankRecord = () => ({ hero: null, heroes: {}, cooldowns: {}, down: {}, rejuvs: 0, buffs: {}, bridge: [], clears: {}, tokens: 0, siegeTokens: [] });
-// Saved record -> the one the code works with: the current hero's own progress (`heroes[hero]`) is laid out at `earned`, `tiers`,
-// `items` and `legendary` (the one it got, levels.js), so everything else reads and edits it there. Records from before progress was per hero kept those three on the
-// member; they belong to the hero that member had. (The storage hands out copies, so this may be edited freely.)
+const blankRecord = () => ({ hero: null, heroes: {}, tokens: 0, siegeTokens: [] });
 // One hero's saved part -> the working copy, and back (empty parts are left out of the file).
 const heroPart = (mine = {}) => ({
-  earned: mine.earned ?? 0, tiers: { ...mine.tiers }, items: itemsOf(mine.items), legendary: mine.legendary ?? null, corrupted: mine.corrupted ?? null,
+  souls: mine.souls ?? 0, earned: mine.earned ?? 0, tiers: { ...mine.tiers }, items: itemsOf(mine.items), legendary: mine.legendary ?? null, corrupted: mine.corrupted ?? null,
   imbues: { ...mine.imbues }, egg: mine.egg ?? 0, giftTime: mine.giftTime ?? 0, gifts: { ...mine.gifts },
+  cooldowns: { ...mine.cooldowns }, down: { ...mine.down }, clears: { ...mine.clears }, rejuvs: mine.rejuvs ?? 0, buffs: { ...mine.buffs }, bridge: [...(mine.bridge ?? [])],
 });
 const HERO_KEYS = Object.keys(heroPart());
 const savedPart = (r) => Object.fromEntries(HERO_KEYS.map((k) => [k, r[k]]).filter(([k, v]) => ['earned', 'tiers', 'items'].includes(k) || (v && (typeof v !== 'object' || Object.keys(v).length))));
+// Shared by all of a member's heroes until Oct 11, each hero's own since (his call). What a member had then goes to Haze (his call: the only hero
+// anyone had played), or to their current hero if they have no Haze.
+const SHARED_UNTIL_OCT_11 = ['cooldowns', 'down', 'clears', 'rejuvs', 'buffs', 'bridge'];
+const OLD_OWNER = 'Haze';
+// Saved record -> the one the code works with: the current hero's own part (`heroes[hero]`) is laid out on the record itself, so everything
+// else reads and edits it there (`r.souls`, `r.items`, `r.cooldowns` ...). (The storage hands out copies, so this may be edited freely.)
 function load(saved) {
-  const { earned, tiers, items, midbossKills, ...rest } = saved ?? {};
-  const record = { ...blankRecord(), ...rest };
-  if (midbossKills) record.clears = { ...record.clears, 'mid-boss': midbossKills }; // the first version counted only the Mid-Boss
-  return { ...record, ...heroPart(record.heroes[record.hero] ?? { earned, tiers, items }) };
+  const { earned, tiers, items, midbossKills, switchedAt, ...rest } = saved ?? {}; // switchedAt: the once-a-day switch wait, gone since Oct 11
+  const record = { ...blankRecord(), ...rest, heroes: { ...rest.heroes } };
+  // records from before progress was per hero (Oct 2) kept the current hero's level, tiers and items on the member
+  if (record.hero && !record.heroes[record.hero]) record.heroes[record.hero] = { earned, tiers, items };
+  const old = Object.fromEntries(SHARED_UNTIL_OCT_11.filter((k) => k in record).map((k) => [k, record[k]]));
+  for (const k of SHARED_UNTIL_OCT_11) delete record[k];
+  if (midbossKills) old.clears = { ...old.clears, 'mid-boss': midbossKills }; // the first version counted only the Mid-Boss
+  const owner = record.heroes[OLD_OWNER] ? OLD_OWNER : record.hero;
+  if (owner && Object.keys(old).length) record.heroes[owner] = savedPart(heroPart({ ...old, ...record.heroes[owner] }));
+  return { ...record, ...heroPart(record.heroes[record.hero]) };
 }
 // ... and back: the hero's part goes into `heroes[hero]`, the other heroes' progress is left as it was.
 function unload(working) {
@@ -71,6 +82,19 @@ async function updateFarmUser(id, change) {
   return result;
 }
 
+// Changes one hero's own part (`change(hero, record)`), whether or not it is the current hero: a fight is settled on the hero that
+// fought it, even if the member switched heroes while it was being played (switching takes no time since Oct 11).
+const updateHero = (id, name, change) => updateFarmUser(id, (r) => {
+  if (r.hero === name) return change(r, r);
+  const part = heroPart(r.heroes[name]);
+  const result = change(part, r);
+  r.heroes[name] = savedPart(part);
+  return result;
+});
+
+// A hero's own souls: every change is a line in the souls ledger (soulsLedger.js), tagged with the hero and that hero's souls after it.
+const logSouls = (userId, hero, delta, reason, after) => ledger.record(userId, delta, { reason, hero }, after);
+
 // Picks their first hero (free). Returns false if they already have one or it isn't pickable; more heroes: unlockHero / switchHero.
 const chooseHero = (id, name) => updateFarmUser(id, (r) => {
   if (r.hero || !roster().includes(name)) return false;
@@ -83,13 +107,11 @@ let cooldownsOn = true;
 const setCooldowns = (on) => { cooldownsOn = on; };
 const cooldownsActive = () => cooldownsOn;
 
-// ---- more heroes (his calls, Oct 2): unlock each extra one once, then switch between the unlocked ones, once a day ----
+// ---- more heroes (his calls, Oct 2): unlock each extra one once, then switch between the unlocked ones (any time, his call Oct 11) ----
 const hasHero = (record, name) => record.hero === name || !!record.heroes[name];
-// How long until this member may switch again (0 = now). The testing switch (/farm-config cooldowns) turns this wait off too.
-const switchLeft = (record, now = Date.now()) => (cooldownsOn ? Math.max(0, (record.switchedAt ?? 0) + SWITCH_WAIT - now) : 0);
 
 // Unlocks another hero with a Character Unlock Token (his call, Oct 2: no souls price; a token comes from each hero's first siege win).
-// It starts at level 0 with nothing and doesn't switch, so it can be unlocked during the wait.
+// It starts at level 0 with nothing (no souls, buffs or Rejuvs either) and doesn't switch.
 // Returns { ok: true } or { error: 'unknown' | 'no-hero' | 'owned' | 'token' }.
 const unlockHero = (userId, name) => updateFarmUser(userId, (r) => {
   if (!roster().includes(name)) return { error: 'unknown' };
@@ -102,16 +124,15 @@ const unlockHero = (userId, name) => updateFarmUser(userId, (r) => {
   return { ok: true };
 });
 
-// Makes an unlocked hero the current one. The hero left behind keeps its level, ability tiers and items for when the member comes back.
-// Returns { ok: true } or { error: 'no-hero' | 'same' | 'locked' | 'wait', left? }.
-const switchHero = (userId, name, now = Date.now()) => updateFarmUser(userId, (r) => {
+// Makes an unlocked hero the current one, any time (his call, Oct 11: no wait). The hero left behind keeps everything that is its own
+// (souls, level, abilities, items, cooldowns, buffs, Rejuvs ...) for when the member comes back.
+// Returns { ok: true } or { error: 'no-hero' | 'same' | 'locked' }.
+const switchHero = (userId, name) => updateFarmUser(userId, (r) => {
   if (!r.hero) return { error: 'no-hero' };
   if (r.hero === name) return { error: 'same' };
   if (!r.heroes[name]) return { error: 'locked' };
-  const left = switchLeft(r, now);
-  if (left > 0) return { error: 'wait', left };
   r.heroes[r.hero] = savedPart(r);
-  Object.assign(r, { hero: name, ...heroPart(r.heroes[name]), switchedAt: now });
+  Object.assign(r, { hero: name, ...heroPart(r.heroes[name]) });
   return { ok: true };
 });
 
@@ -251,27 +272,32 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
     return { hero: r.hero, rejuvs: r.rejuvs, kit: { ...fightKit(r), clears: r.clears[key] ?? 0, walkersDown: key === 'walker' ? walkersDown(r, now) : 0 }, bridge: key === 'roam' ? [] : r.bridge.splice(0) }; // a fight uses up held bridge buffs
   });
   if (claim.error) return claim;
+  // everything is settled on the hero that went (claim.hero), its own souls included (his call, Oct 11)
+  const settle = (change) => updateHero(userId, claim.hero, (h, r) => { change(h, r); return h.souls; });
+  const paid = (souls, after) => { if (souls) logSouls(userId, claim.hero, souls, 'farm', after); };
   try {
     if (key === 'roam') {
       const haul = { ...roam(new Date(now).toISOString().slice(0, 10), rng, now), hero: claim.hero };
-      await updateFarmUser(userId, (r) => { r.earned += haul.souls; for (const b of haul.buffs) r.buffs[b] = (r.buffs[b] ?? 0) + 1; if (haul.bridge && !r.bridge.includes(haul.bridge)) r.bridge.push(haul.bridge); });
-      if (haul.souls) await changeSouls(userId, haul.souls, 'farm');
+      paid(haul.souls, await settle((h) => { h.earned += haul.souls; h.souls += haul.souls; for (const b of haul.buffs) h.buffs[b] = (h.buffs[b] ?? 0) + 1; if (haul.bridge && !h.bridge.includes(haul.bridge)) h.bridge.push(haul.bridge); }));
       return { haul };
     }
     const run = simulate(claim.hero, key, { rng, family, rejuvs: claim.rejuvs, bridge: claim.bridge, ...claim.kit });
     if (PER_LANE.has(key)) run.lane = lane;
-    if (run.waves) { // a wave run: no clears, nothing goes down; the furthest they ever got is kept
-      run.best = await updateFarmUser(userId, (r) => { r.earned += run.souls; r.bestWave = Math.max(r.bestWave ?? 0, run.cleared); run.legendary = dropLegendary(r, run.kills, rng); afterFight(r, run, rng); run.rival = meet(userId, r, run, rng, now); return r.bestWave; });
-      if (run.souls) await changeSouls(userId, run.souls, 'farm');
+    if (run.waves) { // a wave run: no clears, nothing goes down; the member's furthest run is kept (his call, Oct 11: the member's, not the hero's)
+      paid(run.souls, await settle((h, r) => { h.earned += run.souls; h.souls += run.souls; run.best = r.bestWave = Math.max(r.bestWave ?? 0, run.cleared); run.legendary = dropLegendary(h, run.kills, rng); afterFight(h, run, rng); run.rival = meet(userId, r, run, rng, now); }));
       return { run };
     }
-    await updateFarmUser(userId, (r) => { r.earned += run.souls; run.legendary = dropLegendary(r, run.kills, rng); afterFight(r, run, rng); if (run.won && LANED.has(key)) r.down[slot] = now + cooldownSeconds(slot) * 1000; r.clears[key] = Math.max(0, Math.min(CLEAR_CAP, (r.clears[key] ?? 0) + (run.won ? 1 : -1))); r.rejuvs = Math.max(0, Math.min(MAX_REJUVS, r.rejuvs - run.rejuvsUsed + run.rejuvsEarned));
-      if (run.siege && run.won && !r.siegeTokens.includes(claim.hero)) { r.siegeTokens.push(claim.hero); r.tokens += 1; run.token = true; }
-      run.rival = meet(userId, r, run, rng, now); }); // each hero's first siege win (his call, Oct 2)
-    if (run.souls) await changeSouls(userId, run.souls, 'farm');
+    paid(run.souls, await settle((h, r) => {
+      h.earned += run.souls; h.souls += run.souls; run.legendary = dropLegendary(h, run.kills, rng); afterFight(h, run, rng);
+      if (run.won && LANED.has(key)) h.down[slot] = now + cooldownSeconds(slot) * 1000;
+      h.clears[key] = Math.max(0, Math.min(CLEAR_CAP, (h.clears[key] ?? 0) + (run.won ? 1 : -1)));
+      h.rejuvs = Math.max(0, Math.min(MAX_REJUVS, h.rejuvs - run.rejuvsUsed + run.rejuvsEarned));
+      if (run.siege && run.won && !r.siegeTokens.includes(claim.hero)) { r.siegeTokens.push(claim.hero); r.tokens += 1; run.token = true; } // each hero's first siege win (his call, Oct 2)
+      run.rival = meet(userId, r, run, rng, now);
+    }));
     return { run };
   } catch (error) {
-    await updateFarmUser(userId, (r) => { delete r.cooldowns[slot]; r.bridge.push(...claim.bridge.filter((b) => !r.bridge.includes(b))); }); // it didn't finish, so nothing is used up
+    await updateHero(userId, claim.hero, (h) => { delete h.cooldowns[slot]; h.bridge.push(...claim.bridge.filter((b) => !h.bridge.includes(b))); }); // it didn't finish, so nothing is used up
     throw error;
   }
 }
@@ -322,7 +348,7 @@ async function fightRival(userId, rival, { rng = Math.random, now = Date.now() }
   if (hasHero(r, rival)) return { error: 'owned' }; // unlocked meanwhile (a token)
   const kit = fightKit(r);
   const run = duel(r.hero, kit, rival, rivalKit(kit, rng), { rng, rejuvs: r.rejuvs });
-  if (run.won || run.rejuvsUsed) await updateFarmUser(userId, (rec) => { rec.rejuvs = Math.max(0, rec.rejuvs - run.rejuvsUsed); if (run.won && !hasHero(rec, rival)) rec.heroes[rival] = { earned: 0, tiers: {}, items: {} }; });
+  if (run.won || run.rejuvsUsed) await updateHero(userId, r.hero, (h, rec) => { h.rejuvs = Math.max(0, h.rejuvs - run.rejuvsUsed); if (run.won && !hasHero(rec, rival)) rec.heroes[rival] = { earned: 0, tiers: {}, items: {} }; }); // the Rejuvs of the hero that duelled
   return { run };
 }
 
@@ -369,46 +395,41 @@ const upgradeAbility = (userId, slot) => updateFarmUser(userId, (r) => {
   return { ok: true, tier: tier + 1 };
 });
 
-// Buys one of ITEM_POOL with souls from the server balance (it sells back for half, sellItem). A hero carries 12 items of any kind (MAX_ITEMS).
+// Buys one of ITEM_POOL with the hero's own souls (his call, Oct 11; it sells back for half, sellItem). A hero carries 12 items of any kind (MAX_ITEMS).
 // An item the member owns a component of costs the difference, and the component is used up (priceFor in levels.js).
 // A component of an owned item can't be bought again (heldIn). Returns { ok: true, paid, used: [components] }, { error: 'inside', holder },
-// or { error: 'unknown' | 'no-hero' | 'owned' | 'full' | 'souls' | 'changed' }.
+// { error: 'corrupted', item }, or { error: 'unknown' | 'no-hero' | 'owned' | 'full' | 'souls' }.
 async function buyItem(userId, name) {
   const card = ITEM_POOL.includes(name) && itemByName(name);
   if (!card) return { error: 'unknown' };
   const slot = SLOT_OF[card.Slot];
-  const record = await getFarmUser(userId);
-  if (!record.hero) return { error: 'no-hero' };
-  if (record.items[slot].includes(name)) return { error: 'owned' };
-  const holder = heldIn(name, record.items);
-  if (holder) return { error: 'inside', holder };
-  const { price, used } = priceFor(card, record.items);
-  if (record.corrupted && used.includes(record.corrupted.name)) return { error: 'corrupted', item: record.corrupted.name }; // sell it first: an upgrade would lose the corruption
-  const held = (r) => (waitingLegendary(r) ? 1 : 0); // a legendary waiting for a slot gets the next free one
-  if (countItems(record.items) - used.length + held(record) >= MAX_ITEMS) return { error: 'full' };
-  if (!(await changeSouls(userId, -price, 'farm-shop'))) return { error: 'souls' };
-  // the checks above only pick the message; this one, inside the lock, decides (two buys at once can't both take the last slot)
-  const error = await updateFarmUser(userId, (r) => {
-    if (r.items[slot].includes(name)) return 'owned';
-    if (heldIn(name, r.items)) return 'changed';
-    if (priceFor(card, r.items).price !== price) return 'changed'; // a component was sold or bought meanwhile
-    if (countItems(r.items) - used.length + held(r) >= MAX_ITEMS) return 'full';
-    if (r.corrupted && used.includes(r.corrupted.name)) return 'corrupted';
+  let paid = null; // [hero, price, souls after]
+  const result = await updateFarmUser(userId, (r) => {
+    if (!r.hero) return { error: 'no-hero' };
+    if (r.items[slot].includes(name)) return { error: 'owned' };
+    const holder = heldIn(name, r.items);
+    if (holder) return { error: 'inside', holder };
+    const { price, used } = priceFor(card, r.items);
+    if (r.corrupted && used.includes(r.corrupted.name)) return { error: 'corrupted', item: r.corrupted.name }; // sell it first: an upgrade would lose the corruption
+    if (countItems(r.items) - used.length + (waitingLegendary(r) ? 1 : 0) >= MAX_ITEMS) return { error: 'full' }; // a legendary waiting for a slot gets the next free one
+    if (r.souls < price) return { error: 'souls' };
+    r.souls -= price;
     for (const s of SLOTS) r.items[s] = r.items[s].filter((n) => !used.includes(n));
     for (const u of used) delete r.imbues[u];
     r.items[slot].push(name);
     if (IMBUES.includes(name)) r.imbues[name] = 1; // until the member picks (the shop asks right away)
-    return null;
+    paid = [r.hero, price, r.souls];
+    return { ok: true, paid: price, used, ...(IMBUES.includes(name) ? { imbue: true } : {}) };
   });
-  if (!error) return { ok: true, paid: price, used, ...(IMBUES.includes(name) ? { imbue: true } : {}) };
-  await changeSouls(userId, price, 'farm-shop'); // paid for nothing: give it back
-  return { error };
+  if (paid) logSouls(userId, paid[0], -paid[1], 'farm-shop', paid[2]);
+  return result;
 }
 
-// Sells an item back for half its price (sellPrice); a waiting legendary takes the slot it frees. A legendary can't be sold.
+// Sells an item back for half its price (sellPrice), into the hero's own souls; a waiting legendary takes the slot it frees. A legendary can't be sold.
 // Returns { ok: true, refund, placed? } or { error: 'no-hero' | 'missing' | 'legendary' }.
 async function sellItem(userId, name) {
   const card = itemByName(name);
+  let paid = null;
   const sold = await updateFarmUser(userId, (r) => {
     if (!r.hero) return { error: 'no-hero' };
     const slot = card && SLOT_OF[card.Slot];
@@ -419,11 +440,13 @@ async function sellItem(userId, name) {
     if (name === EGG.Name) r.egg = 0; // an unhatched egg's growth goes with it
     delete r.imbues[name];
     r.items[slot] = r.items[slot].filter((n) => n !== name);
+    r.souls += refund;
+    paid = [r.hero, refund, r.souls];
     const placed = waitingLegendary(r);
     if (placed) r.items[SLOT_OF[itemByName(placed).Slot]].push(placed);
     return { ok: true, refund, ...(placed ? { placed } : {}) };
   });
-  if (sold.ok) await changeSouls(userId, sold.refund, 'farm-shop');
+  if (paid) logSouls(userId, ...paid.slice(0, 2), 'farm-shop', paid[2]);
   return sold;
 }
 
@@ -435,22 +458,21 @@ async function corruptItem(userId, name, { now = Date.now(), rng = Math.random }
   if (!corruptible(card)) return { error: 'unknown' };
   if (cooldownsOn && !brokerOpen(now)) return { error: 'closed', opens: brokerNext(now) };
   const slot = SLOT_OF[card.Slot];
-  const record = await getFarmUser(userId);
-  if (!record.hero) return { error: 'no-hero' };
-  if (!record.items[slot].includes(name)) return { error: 'missing' };
-  if (record.corrupted) return { error: 'one', name: record.corrupted.name };
   const price = corruptPrice(card);
-  if (!(await changeSouls(userId, -price, 'farm-shop'))) return { error: 'souls' };
   const roll = rollDrawback(card, rng);
-  const error = await updateFarmUser(userId, (r) => {
-    if (r.corrupted) return 'one';
-    if (!r.items[slot].includes(name)) return 'missing';
+  let paid = null;
+  const result = await updateFarmUser(userId, (r) => {
+    if (!r.hero) return { error: 'no-hero' };
+    if (!r.items[slot].includes(name)) return { error: 'missing' };
+    if (r.corrupted) return { error: 'one', name: r.corrupted.name };
+    if (r.souls < price) return { error: 'souls' };
+    r.souls -= price;
     r.corrupted = { name, ...roll };
-    return null;
+    paid = [r.hero, price, r.souls];
+    return { ok: true, paid: price, ...roll };
   });
-  if (!error) return { ok: true, paid: price, ...roll };
-  await changeSouls(userId, price, 'farm-shop'); // paid for nothing: give it back
-  return { error };
+  if (paid) logSouls(userId, paid[0], -paid[1], 'farm-shop', paid[2]);
+  return result;
 }
 
 // Points an owned imbue item at ability `slot` (1-4). Free, any time. Returns { ok: true } or { error: 'no-hero' | 'missing' | 'slot' }.
@@ -462,9 +484,10 @@ const setImbue = (userId, name, slot) => updateFarmUser(userId, (r) => {
   return { ok: true };
 });
 
-// Hatches the hero's Golden Goose Egg: it pays its 400 + what it grew, at the trip payout scale, plus one random permanent buff per 80 souls it grew in
+// Hatches the hero's Golden Goose Egg: it pays its 400 + what it grew, at the trip payout scale, into the hero's own souls, plus one random permanent buff per 80 souls it grew in
 // fights (the card: "a permanent buff per 80 souls accrued"), and is used up. Returns { ok: true, souls, buffs: [keys], placed? } or { error: 'no-hero' | 'missing' }.
 async function hatchEgg(userId, rng = Math.random) {
+  let paid = null;
   const done = await updateFarmUser(userId, (r) => {
     if (!r.hero) return { error: 'no-hero' };
     if (!r.items.spirit.includes(EGG.Name)) return { error: 'missing' };
@@ -475,12 +498,14 @@ async function hatchEgg(userId, rng = Math.random) {
     r.items.spirit = r.items.spirit.filter((n) => n !== EGG.Name);
     delete r.imbues[EGG.Name];
     r.egg = 0;
+    r.souls += souls;
+    paid = [r.hero, souls, r.souls];
     const placed = waitingLegendary(r);
     if (placed) r.items[SLOT_OF[itemByName(placed).Slot]].push(placed);
     return { ok: true, souls, buffs, ...(placed ? { placed } : {}) };
   });
-  if (done.ok && done.souls) await changeSouls(userId, done.souls, 'farm');
+  if (paid?.[1]) logSouls(userId, ...paid.slice(0, 2), 'farm', paid[2]);
   return done;
 }
 
-module.exports = { offerFor, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, SWITCH_WAIT, hasHero, switchLeft, unlockHero, switchHero, updateFarmUser, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, familyName, hauntFile, campFamilies, CAMP_SIZE, simulate, play };
+module.exports = { offerFor, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, hasHero, unlockHero, switchHero, updateFarmUser, updateHero, OLD_OWNER, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, familyName, hauntFile, campFamilies, CAMP_SIZE, simulate, play };

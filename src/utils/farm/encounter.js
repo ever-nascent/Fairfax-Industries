@@ -1,6 +1,6 @@
 // Hero Farming: encounters (his calls, Oct 2-3; server-plan.md "Hero unlocks"). After a won fight a hero the member hasn't unlocked may show
 // up; beating it unlocks it. The rival is a full hero (engine.js runs it through a mirrored view of the fight): the member's hero level, as many
-// ability points spent at random, an item of the same tier for each of the member's, and the member's permanent buffs (a fair fight).
+// ability points spent at random, an item of the same tier for each of the member's, and the hero's permanent buffs (a fair fight).
 // This file is the rules only: who shows up, what it carries, and the duel itself. The member's side (the offer, the unlock) is in play.js.
 const { Fight } = require('./engine');
 const { buildHero, roster } = require('./hero');
@@ -44,7 +44,7 @@ function rivalKit(kit, rng = Math.random) {
 
 // The duel, played at once like a trip (play.js simulate): the member's hero against the rival. Returns a run the fight screens can replay:
 //   { encounter: true, hero, rival, won, timedOut, seconds, rejuvsUsed, frames, log: [[seconds, text]] }
-// `rejuvs`: the member's Rejuvs work here like in the siege and are used up (his call, Oct 10); a rival never has any.
+// `rejuvs`: the hero's Rejuvs work here like in the siege and are used up (his call, Oct 10); a rival never has any.
 function duel(heroName, kit, rivalName, theirs, { rng = Math.random, rejuvs = 0 } = {}) {
   const hero = buildHero(heroName, kit);
   hero.rejuvs = rejuvs;

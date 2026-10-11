@@ -211,7 +211,7 @@ async function screens() {
     const check = async (what, make) => { try { limits(await make(), `${name}: ${what}`); shown++; } catch (e) { note(`${name}: ${what}: ${e.stack.split('\n').slice(0, 3).join(' | ')}`); } };
     await check('the pick screen', () => views.pickView(member, name));
     await check('the switch screen', () => views.pickView(member, name, { ...record, hero: roster().find((n) => n !== name) ?? name, heroes: {} }));
-    await check('the hero screen', () => views.heroView(member, record, 50000));
+    await check('the hero screen', () => views.heroView(member, { ...record, souls: 50000 }));
     await check('the home screen', () => views.homeView(member, record));
     const out = try_(`${name}: a trip for the fight screens`, () => simulate(name, 'medium-camp', { rng: seeded(5), boons: 20, unlocked: 4, tiers: { 1: 3, 2: 3, 3: 3, 4: 3 }, items: ['Toxic Bullets'] }));
     if (!out) continue;

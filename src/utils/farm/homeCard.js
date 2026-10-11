@@ -27,7 +27,7 @@ const NAME = {
 let texture;
 
 // tiles: [{ key, left: ms of cooldown left, timeLeft, pay: souls | null, rejuv: true when it also drops a Rejuv, extra: text instead of pay,
-//   ready / text: (optional) override "is it lit" and the bottom-left words, pips: [{ lane, on }] one dot per lane (Guardian, Walker) }]; heldBridge: the member's held bridge buff keys;
+//   ready / text: (optional) override "is it lit" and the bottom-left words, pips: [{ lane, on }] one dot per lane (Guardian, Walker) }]; heldBridge: the hero's held bridge buff keys;
 // now: ms. Returns a PNG.
 async function homeCard({ tiles, heldBridge = [], now = Date.now(), day }) {
   const c = createCanvas(W, H);
