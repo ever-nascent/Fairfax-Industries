@@ -97,6 +97,7 @@ const unlockHero = (userId, name) => updateFarmUser(userId, (r) => {
   if (!(r.tokens > 0)) return { error: 'token' };
   r.tokens -= 1;
   r.heroes[name] = { earned: 0, tiers: {}, items: {} };
+  walkAway(userId, name); // a rival waiting as that hero has nothing left to offer
   return { ok: true };
 });
 
@@ -276,29 +277,46 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
 // ---- encounters (his calls, Oct 2-3; the rules are in encounter.js) ----
 // After a won fight (not the siege; a roam isn't a fight) a hero the member hasn't unlocked may show up: the offer is kept here, in memory, for
 // OFFER_MS (his call: the rival leaves after 5 minutes; a restart just ends it). With the testing switch (cooldowns off) every won fight brings one.
+// A member can have several rivals waiting at once, one per result message (Oct 11: one offer per member meant each new rival sent the last one
+// away early); each message's buttons name their own rival. A rival already waiting, or already unlocked, never shows up again.
 const OFFER_MS = 5 * 60 * 1000;
-const offers = new Map(); // user id -> { rival, until }
+const offers = new Map(); // user id -> Map(rival -> ms timestamp it leaves)
+// The member's waiting rivals (the ones whose 5 minutes ran out are dropped).
+function waiting(userId, now = Date.now()) {
+  const mine = offers.get(userId) ?? new Map();
+  for (const [rival, until] of mine) if (until <= now) mine.delete(rival);
+  if (mine.size) offers.set(userId, mine); else offers.delete(userId);
+  return mine;
+}
 function meet(userId, r, run, rng = Math.random, now = Date.now()) {
   if (!run.won || run.siege) return null;
-  const rival = rollRival((name) => hasHero(r, name), rng, cooldownsOn ? ENCOUNTER_CHANCE : 1);
-  if (rival) offers.set(userId, { rival, until: now + OFFER_MS });
+  const mine = waiting(userId, now);
+  const rival = rollRival((name) => hasHero(r, name) || mine.has(name), rng, cooldownsOn ? ENCOUNTER_CHANCE : 1);
+  if (rival) offers.set(userId, mine.set(rival, now + OFFER_MS));
   return rival;
 }
-// The rival waiting for this member right now, or null.
-const offerFor = (userId, now = Date.now()) => { const o = offers.get(userId); return o && o.until > now ? o.rival : null; };
-// Walk Away (or the 5 minutes ran out): the offer is gone. Returns the rival that was waiting, or null.
-function walkAway(userId, now = Date.now()) {
-  const rival = offerFor(userId, now);
-  offers.delete(userId);
+// Is `rival` still waiting for this member? Returns the rival, or null.
+const offerFor = (userId, rival, now = Date.now()) => (waiting(userId, now).has(rival) ? rival : null);
+// The 5 minutes start again when the fight's result is shown (the offer is made at Send, before the replay). Returns the rival, or null if it is gone.
+function holdOffer(userId, rival, now = Date.now()) {
+  if (!offerFor(userId, rival, now)) return null;
+  waiting(userId, now).set(rival, now + OFFER_MS);
   return rival;
+}
+// Walk Away (or the 5 minutes ran out): that rival's offer is gone. Returns the rival if it was waiting, or null.
+function walkAway(userId, rival, now = Date.now()) {
+  const mine = waiting(userId, now);
+  const was = mine.delete(rival) ? rival : null;
+  if (!mine.size) offers.delete(userId);
+  return was;
 }
 // Fight: the duel is played at once (like a trip) and a win unlocks the rival, at level 0 with nothing; a loss costs nothing. Uses up the offer.
-// Nothing else changes: no cooldown, souls, bridge buffs, Rejuvs or item time. Returns { run } or { error: 'gone' | 'no-hero' }.
-async function fightRival(userId, { rng = Math.random, now = Date.now() } = {}) {
-  const rival = walkAway(userId, now);
-  if (!rival) return { error: 'gone' };
+// Nothing else changes: no cooldown, souls, bridge buffs, Rejuvs or item time. Returns { run } or { error: 'gone' | 'owned' | 'no-hero' }.
+async function fightRival(userId, rival, { rng = Math.random, now = Date.now() } = {}) {
+  if (!walkAway(userId, rival, now)) return { error: 'gone' };
   const r = await getFarmUser(userId);
-  if (!r.hero || hasHero(r, rival)) return { error: r.hero ? 'gone' : 'no-hero' };
+  if (!r.hero) return { error: 'no-hero' };
+  if (hasHero(r, rival)) return { error: 'owned' }; // unlocked meanwhile (a token)
   const kit = fightKit(r);
   const run = duel(r.hero, kit, rival, rivalKit(kit, rng), { rng });
   if (run.won) await updateFarmUser(userId, (rec) => { if (!hasHero(rec, rival)) rec.heroes[rival] = { earned: 0, tiers: {}, items: {} }; });
@@ -462,4 +480,4 @@ async function hatchEgg(userId, rng = Math.random) {
   return done;
 }
 
-module.exports = { offerFor, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, SWITCH_WAIT, hasHero, switchLeft, unlockHero, switchHero, updateFarmUser, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, familyName, hauntFile, campFamilies, CAMP_SIZE, simulate, play };
+module.exports = { offerFor, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, SWITCH_WAIT, hasHero, switchLeft, unlockHero, switchHero, updateFarmUser, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, familyName, hauntFile, campFamilies, CAMP_SIZE, simulate, play };

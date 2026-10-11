@@ -599,22 +599,31 @@ test('encounters: a rival shows on the result with Fight / Walk Away, the duel i
     assert.ok(offer && offer.value.includes(rival) && buttons(result)[1] === 'Walk Away' && rival !== 'Lady Geist');
 
     // someone else can't press it
-    const stranger = await press('Rival Fight button', `farm_duel:${id}`, 'someone-else');
+    const stranger = await press('Rival Fight button', `farm_duel:${id}:${rival}`, 'someone-else');
     assert.ok(stranger.log.some(([kind, p]) => kind === 'reply' && /not your farm/.test(p.content)));
 
     // Walk Away: the buttons go, and the rival with them
-    const walked = await press('Rival Walk Away button', `farm_walk:${id}`);
+    const walked = await press('Rival Walk Away button', `farm_walk:${id}:${rival}`);
     assert.deepStrictEqual(walked.log.find(([kind]) => kind === 'editReply')[1].components, []);
     assert.ok(walked.log.some(([kind, p]) => kind === 'followUp' && p.content === `You let ${rival} go.`));
-    const late = await press('Rival Fight button', `farm_duel:${id}`);
+    const late = await press('Rival Fight button', `farm_duel:${id}:${rival}`);
     assert.ok(late.log.some(([kind, p]) => kind === 'followUp' && p.content === 'That rival has already left.'));
+
+    // two results with a rival each: the older message's buttons still work, for its own rival
+    const names = [];
+    for (let n = 0; n < 2; n++) names.push(buttons((await press('Send button', `farm_send:${id}:small-camp`)).log.at(-1)[1])[0].replace('Fight ', ''));
+    assert.notStrictEqual(names[0], names[1], 'a rival already waiting is not offered again');
+    const older = await press('Rival Fight button', `farm_duel:${id}:${names[0]}`);
+    assert.strictEqual(older.log.find(([kind]) => kind === 'editReply')[1].embeds[0].toJSON().title, `Lady Geist vs ${names[0]}`);
+    const newer = await press('Rival Walk Away button', `farm_walk:${id}:${names[1]}`);
+    assert.ok(newer.log.some(([kind, p]) => kind === 'followUp' && p.content === `You let ${names[1]} go.`));
 
     // Fight: every screen of the duel fits, and it ends on a result; keep going until one is won
     let won = null;
     for (let n = 0; n < 40 && !won; n++) {
       const again = await press('Send button', `farm_send:${id}:small-camp`);
       const name = buttons(again.log.at(-1)[1])[0].replace('Fight ', '');
-      const duel = await press('Rival Fight button', `farm_duel:${id}`);
+      const duel = await press('Rival Fight button', `farm_duel:${id}:${name}`);
       const screens = duel.log.filter(([kind]) => kind === 'editReply').map(([, p]) => p);
       assert.ok(screens.length >= 2);
       screens.forEach((p, k) => checkLimits(p, `duel screen ${k}`));

@@ -1,6 +1,6 @@
 const { setTimeout: sleep } = require('node:timers/promises');
 const { MessageFlags } = require('discord.js');
-const { getFarmUser, chooseHero, play, upgradeAbility, buyItem, sellItem, unlockHero, switchHero, corruptItem, setImbue, hatchEgg, fightRival, walkAway } = require('../utils/farm/play');
+const { getFarmUser, chooseHero, play, upgradeAbility, buyItem, sellItem, unlockHero, switchHero, corruptItem, setImbue, hatchEgg, fightRival, walkAway, holdOffer } = require('../utils/farm/play');
 const { drawbackText } = require('../utils/farm/stats');
 const { buffText } = require('../utils/farm/buffs');
 const { getUser } = require('../utils/xp');
@@ -18,12 +18,16 @@ async function mine(interaction) {
   return false;
 }
 
+// The rival a Fight / Walk Away button belongs to (farm_duel:<user id>:<rival>); buttons from before Oct 11 have none.
+const rivalOf = (interaction) => interaction.customId.split(':')[2];
+
 // Replays the fight the member just paid for (already settled when they pressed Send), then shows the result.
 async function replay(interaction, run) {
   for (const frame of run.frames) {
     await interaction.editReply(fightView(run, frame));
     await sleep(FRAME_MS);
   }
+  if (run.rival) run.rival = holdOffer(interaction.user.id, run.rival); // its 5 minutes start now; gone if it was unlocked meanwhile
   await interaction.editReply(resultView(run, interaction.user.id)); // with Fight / Walk Away if a rival showed up
   if (run.legendary) await interaction.followUp({ ...legendaryView(run.legendary.name), flags: MessageFlags.Ephemeral }); // its own message (his call, Oct 2)
   if (run.token) await interaction.followUp({ ...tokenView(run.hero), flags: MessageFlags.Ephemeral });
@@ -247,10 +251,11 @@ module.exports = [
     async execute(interaction) {
       if (!(await mine(interaction))) return;
       await interaction.deferUpdate();
-      const result = await fightRival(interaction.user.id);
+      const rival = rivalOf(interaction);
+      const result = await fightRival(interaction.user.id, rival);
       if (result.error) {
         await interaction.editReply({ components: [] });
-        return interaction.followUp({ content: 'That rival has already left.', flags: MessageFlags.Ephemeral });
+        return interaction.followUp({ content: result.error === 'owned' ? `You already have ${rival} unlocked.` : 'That rival has already left.', flags: MessageFlags.Ephemeral });
       }
       for (const frame of result.run.frames) {
         await interaction.editReply(await duelView(result.run, frame));
@@ -266,7 +271,7 @@ module.exports = [
     async execute(interaction) {
       if (!(await mine(interaction))) return;
       await interaction.deferUpdate();
-      const rival = walkAway(interaction.user.id);
+      const rival = walkAway(interaction.user.id, rivalOf(interaction));
       await interaction.editReply({ components: [] });
       return interaction.followUp({ content: rival ? `You let ${rival} go.` : 'That rival has already left.', flags: MessageFlags.Ephemeral });
     },

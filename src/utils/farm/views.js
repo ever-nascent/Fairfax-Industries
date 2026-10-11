@@ -27,8 +27,8 @@ const { fmt, soulsIcon } = require('../format');
 const { pickRandom } = require('../random');
 const { streakBar } = require('../trivia'); // the same bar as /trivia and /urn
 
-const DUEL_ID = 'farm_duel'; // button: farm_duel:<user id> (fight the rival that showed up)
-const WALK_ID = 'farm_walk'; // button: farm_walk:<user id> (let it go)
+const DUEL_ID = 'farm_duel'; // button: farm_duel:<user id>:<rival> (fight the rival that showed up)
+const WALK_ID = 'farm_walk'; // button: farm_walk:<user id>:<rival> (let it go)
 const HERO_ID = 'farm_hero'; // select: farm_hero:<user id> (the second dropdown of a split list: farm_hero:<user id>:1)
 const PICK_ID = 'farm_pick'; // button "Select": farm_pick:<user id>:<hero>
 const TARGET_ID = 'farm_target'; // select: farm_target:<user id>
@@ -603,8 +603,8 @@ function resultView(run, ownerId = null) {
   if (run.rival && ownerId) { // an encounter: a hero the member hasn't unlocked showed up (play.js meet); the offer waits OFFER_MS
     e.addFields({ name: 'A Rival Appears', value: `**${run.rival}** steps out and wants a duel. Win it and ${run.rival} is yours to play. Losing costs nothing.\n${run.rival} waits for 5 minutes.` });
     components.push(row(
-      new ButtonBuilder().setCustomId(`${DUEL_ID}:${ownerId}`).setLabel(`Fight ${run.rival}`).setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId(`${WALK_ID}:${ownerId}`).setLabel('Walk Away').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`${DUEL_ID}:${ownerId}:${run.rival}`).setLabel(`Fight ${run.rival}`).setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId(`${WALK_ID}:${ownerId}:${run.rival}`).setLabel('Walk Away').setStyle(ButtonStyle.Secondary),
     ));
   }
   return { embeds: [e], components, files: [soulsFile(), picture(enemyPicture(run, last))], attachments: [] };
