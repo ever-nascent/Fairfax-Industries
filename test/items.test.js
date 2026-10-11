@@ -210,6 +210,7 @@ test('items work together: a full kit beats the same hero with none', () => {
   const kit = ['Titanic Magazine', 'Rapid Rounds', 'Extra Health', 'Bullet Lifesteal', 'Cold Front', 'Extra Spirit'];
   const fightWith = (items) => {
     const hero = buildHero('Haze', { items, boons: 15 });
+    hero.abilities[2].on = () => {}; // without Fixation: it alone clears these dummies, and the items are what's tested
     const f = new Fight({ heroes: [hero], enemies: [enemy('A', { maxHealth: 3000, dps: 18 }), enemy('B', { maxHealth: 3000, dps: 18 })], rng: seeded(3) });
     const out = f.run(120);
     return { ...out, time: f.time, health: hero.health };

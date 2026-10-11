@@ -56,8 +56,10 @@ class SmokeBomb extends Ability {
 }
 
 // 3. Fixation (passive): every bullet that hits adds a stack on that target (6 s, refreshed); each stack adds
-// 0.2% weapon damage, reduced by falloff like the hit itself. T1: every 20 stacks, spirit damage. T2: +40 max
-// stacks, +5 s. T3: +0.11% per stack. ponytail: headshots (3 stacks) aren't modelled; "0.2 /stack" is taken as a percent.
+// 0.2 to the bullet's own damage (the wiki's "+0.2 Weapon Damage /stack", DamageBonusFixedPerStack: a flat amount like a boon's
+// +0.143 bullet damage; Oct 11: it was read as 0.2%, about a twentieth of the game's), raised by weapon damage and cut by falloff
+// like the rest of the bullet. T1: every 20 stacks, spirit damage. T2: +40 max stacks, +5 s. T3: +0.11 per stack.
+// ponytail: headshots (3 stacks) aren't modelled, nor the wiki's BossDamageScale.
 class Fixation extends Ability {
   get passive() { return true; }
 
@@ -88,8 +90,9 @@ class Fixation extends Ability {
     if (event !== 'bulletHit' || source !== this.unit || opts.fixation) return;
     const cur = this.stacks.get(target);
     if (cur && cur.until > fight.time && cur.n > 0) {
-      // extra weapon damage = the stacks' percent of the hit (already falloff'd), resisted like any bullet
-      const bonus = (amount * cur.n * this.value('DamageBonusFixedPerStack')) / 100;
+      // the stacks' flat damage, multiplied like the hit was (weapon damage, falloff, a duel's half): the hit's share of its own bullet damage. Resisted like any bullet.
+      const bullet = this.unit.stats.bulletDamage + this.unit.mod('bulletDamage');
+      const bonus = (amount * cur.n * this.value('DamageBonusFixedPerStack')) / bullet;
       fight.damage(this.unit, target, bonus, 'bullet', { events: false, fixation: true });
     }
     this.addStacks(fight, target, 1);
