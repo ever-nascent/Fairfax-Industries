@@ -5,6 +5,9 @@ const { EDITS, editUser, getUser, MAX_LEVEL } = require('./xp');
 const audit = require('./auditLog');
 const { fmt, boldSouls, soulsText } = require('./format');
 const souls = require('./soulsLedger');
+const { walletEmbed, heroWalletView } = require('./wallet');
+const { getFarmUser, hasHero } = require('./farm/play');
+const { roster } = require('./farm/hero');
 const { REPLY_COLOR } = require('../config');
 
 const MAX_AMOUNT = 100_000_000;
@@ -22,9 +25,9 @@ const amountOption = (label, action) => (o) =>
 
 const memberOption = (o) => o.setName('member').setDescription('Member').setRequired(true);
 
-// Amount first, then member: /souls add 500 @member. Reset only takes the member.
-const subcommand = (label, action) => (s) => {
-  const base = s.setName(action).setDescription(action === 'set-level' ? `${VERBS[action]} a member (XP follows)` : `${VERBS[action]} a member's ${label}`);
+// Amount first, then member: /souls add 500 @member. Reset only takes the member. `prefix`: 'Staff: ' on /souls, which members see too.
+const subcommand = (label, action, prefix = '') => (s) => {
+  const base = s.setName(action).setDescription(prefix + (action === 'set-level' ? `${VERBS[action]} a member (XP follows)` : `${VERBS[action]} a member's ${label}`));
   return (action === 'reset' ? base : base.addIntegerOption(amountOption(label, action))).addUserOption(memberOption);
 };
 
@@ -74,37 +77,69 @@ async function showReport(interaction, days) {
   return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
 }
 
-// The slash command: one subcommand per edit; /souls also gets history and report (the souls ledger).
+// /souls is everyone's (his calls, Oct 11: it replaces /wallet): `balance` (the server balance) and `hero` (one of their Hero Farming heroes'
+// own souls), both private. Its other subcommands stay the staff tools (his call: members see them in the list and are refused).
+const memberSubs = (built) => built
+  .addSubcommand((s) => s.setName('balance').setDescription('Your souls, Soul Boost, Rejuvs and recent activity (only you see it)'))
+  .addSubcommand((s) => s.setName('hero').setDescription("One of your Hero Farming heroes: its own souls, level, Rejuvs and buffs (only you see it)")
+    .addStringOption((o) => o.setName('hero').setDescription('Which hero (default: your current one)').setAutocomplete(true)));
+
+// The slash command: one subcommand per edit; /souls also gets history and report (the souls ledger), and the members' own two first.
 function buildData(stat) {
+  const start = new SlashCommandBuilder().setName(stat);
+  if (stat === 'souls') memberSubs(start.setDescription('Your souls, and your heroes\' (staff: change a member\'s souls)'));
+  // /xp is hidden from members without Manage Server (checked again below)
+  else start.setDescription(`Staff: change a member's ${LABELS[stat]}`).setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
   const built = Object.keys(EDITS)
     .filter((action) => action !== 'set-level' || stat === 'xp')
-    .reduce(
-      (built, action) => built.addSubcommand(subcommand(LABELS[stat], action)),
-      new SlashCommandBuilder()
-        .setName(stat)
-        .setDescription(`Staff: change a member's ${LABELS[stat]}`)
-        // Hidden from members without Manage Server (checked again below).
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
-    );
+    .reduce((built, action) => built.addSubcommand(subcommand(LABELS[stat], action, stat === 'souls' ? 'Staff: ' : '')), start);
   if (stat === 'souls') {
     built
-      .addSubcommand((s) => s.setName('history').setDescription("A member's last 15 souls changes").addUserOption(memberOption))
+      .addSubcommand((s) => s.setName('history').setDescription("Staff: a member's last 15 souls changes").addUserOption(memberOption))
       .addSubcommand((s) =>
         s
           .setName('report')
-          .setDescription('What paid souls in and took them out (urn, games, shop, farm ...)')
+          .setDescription('Staff: what paid souls in and took them out (urn, games, shop, farm ...)')
           .addIntegerOption((o) => o.setName('days').setDescription('How many days back (default 7)').setMinValue(1).setMaxValue(365)),
       );
   }
   return built;
 }
 
+// /souls balance: what /wallet showed (the server balance's own changes only).
+async function showBalance(interaction) {
+  const user = await getUser(interaction.user.id);
+  const embed = walletEmbed(interaction.member, user, souls.history(interaction.user.id, 6, { heroes: false }));
+  return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+}
+
+// /souls hero [hero]: one of the member's unlocked heroes (default: the current one), with its last 6 souls changes.
+async function showHero(interaction) {
+  const record = await getFarmUser(interaction.user.id);
+  if (!record.hero) return privateReply(interaction, 'You have no hero yet. Pick one with `/base`.');
+  const typed = interaction.options.getString('hero');
+  const hero = typed ? roster().find((n) => n.toLowerCase() === typed.trim().toLowerCase()) : record.hero;
+  if (!hero || !hasHero(record, hero)) return privateReply(interaction, `You haven't unlocked ${hero ?? typed}.`);
+  const view = await heroWalletView(interaction.member, record, hero, souls.history(interaction.user.id, 6, { hero }));
+  return interaction.reply({ ...view, flags: MessageFlags.Ephemeral });
+}
+
 const ledgerCommand = (stat) => ({
   data: buildData(stat),
 
+  // /souls hero: the member's unlocked heroes, current one first, filtered by what they typed
+  async autocomplete(interaction) {
+    const record = await getFarmUser(interaction.user.id);
+    const typed = interaction.options.getFocused().toLowerCase();
+    const mine = roster().filter((n) => hasHero(record, n)).sort((a, b) => (b === record.hero) - (a === record.hero));
+    await interaction.respond(mine.filter((n) => n.toLowerCase().includes(typed)).slice(0, 25).map((n) => ({ name: n === record.hero ? `${n} (current)` : n, value: n })));
+  },
+
   async execute(interaction) {
-    if (!(await requirePermission(interaction, PermissionFlagsBits.ManageGuild))) return;
     const sub = interaction.options.getSubcommand();
+    if (stat === 'souls' && sub === 'balance') return showBalance(interaction);
+    if (stat === 'souls' && sub === 'hero') return showHero(interaction);
+    if (!(await requirePermission(interaction, PermissionFlagsBits.ManageGuild))) return;
     if (sub === 'report') return showReport(interaction, interaction.options.getInteger('days') ?? 7);
     const member = interaction.options.getUser('member');
     if (sub === 'history') return showHistory(interaction, member);
