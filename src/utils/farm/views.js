@@ -28,8 +28,8 @@ const { fmt, soulsIcon } = require('../format');
 const { pickRandom } = require('../random');
 const { streakBar } = require('../trivia'); // the same bar as /trivia and /urn
 
-const DUEL_ID = 'farm_duel'; // button: farm_duel:<user id> (fight the rival that showed up)
-const WALK_ID = 'farm_walk'; // button: farm_walk:<user id> (let it go)
+const DUEL_ID = 'farm_duel'; // button: farm_duel:<user id>:<rival> (fight the rival that showed up)
+const WALK_ID = 'farm_walk'; // button: farm_walk:<user id>:<rival> (let it go)
 const HERO_ID = 'farm_hero'; // select: farm_hero:<user id> (the second dropdown of a split list: farm_hero:<user id>:1)
 const PICK_ID = 'farm_pick'; // button "Select": farm_pick:<user id>:<hero>
 const TARGET_ID = 'farm_target'; // select: farm_target:<user id>
@@ -602,7 +602,15 @@ function resultView(run) {
   const lines = run.log.slice(-(run.won ? 8 : 5));
   e.addFields({ name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' });
   e.setFooter({ text: run.waves ? `Every wave cleared paid. ${hero} can hold this lane again in ${span(cooldown)}.` : run.won ? `${hero} can clear this ${run.family ? 'Camp' : label} again in ${span(cooldown).replace(/hour|minute/, (u) => u[0].toUpperCase() + u.slice(1))}.` : `Nothing is paid, and the cooldown has started. ${hero} can try again in ${span(cooldown)}.` });
-  return { embeds: [e], components: [], files: [soulsFile(), picture(enemyPicture(run, last))], attachments: [] };
+  const components = [];
+  if (run.rival && ownerId) { // an encounter: a hero the member hasn't unlocked showed up (play.js meet); the offer waits OFFER_MS
+    e.addFields({ name: 'A Rival Appears', value: `**${run.rival}** steps out and wants a duel. Win it and ${run.rival} is yours to play. Losing costs nothing.\n${run.rival} waits for 5 minutes.` });
+    components.push(row(
+      new ButtonBuilder().setCustomId(`${DUEL_ID}:${ownerId}:${run.rival}`).setLabel(`Fight ${run.rival}`).setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId(`${WALK_ID}:${ownerId}:${run.rival}`).setLabel('Walk Away').setStyle(ButtonStyle.Secondary),
+    ));
+  }
+  return { embeds: [e], components, files: [soulsFile(), picture(enemyPicture(run, last))], attachments: [] };
 }
 
 // ---- encounters: the duel with a rival hero (rules: encounter.js; the offer and the unlock: play.js) ----
