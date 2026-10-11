@@ -1,0 +1,211 @@
+{
+  "1378474650010652762": {
+    "hero": "Haze",
+    "heroes": {
+      "Haze": {
+        "earned": 15909,
+        "tiers": {
+          "1": 2,
+          "2": 2,
+          "3": 3,
+          "4": 3
+        },
+        "items": {
+          "weapon": [
+            "Active Reload",
+            "Ricochet",
+            "Swift Striker",
+            "Glass Cannon"
+          ],
+          "vitality": [
+            "Bullet Lifesteal"
+          ],
+          "spirit": [
+            "Compress Cooldown",
+            "Surge of Power",
+            "Improved Spirit",
+            "Quicksilver Reload",
+            "Bullet Resist Shredder",
+            "Superior Duration"
+          ]
+        },
+        "imbues": {
+          "Compress Cooldown": 1,
+          "Surge of Power": 1,
+          "Quicksilver Reload": 1
+        }
+      }
+    },
+    "cooldowns": {
+      "small-camp": 1791651902091,
+      "roam": 1791650090805,
+      "medium-camp": 1791659691318,
+      "waves:york": 1791735625628,
+      "large-camp": 1791670530619,
+      "waves:broadway": 1791735686580,
+      "guardian:york": 1791692703280,
+      "waves:park": 1791735788081,
+      "guardian:broadway": 1791692764441,
+      "guardian:park": 1791692829938,
+      "mid-boss": 1791693024547
+    },
+    "down": {
+      "guardian:york": 1791692703280,
+      "guardian:broadway": 1791692764441,
+      "guardian:park": 1791692829938
+    },
+    "rejuvs": 1,
+    "buffs": {
+      "fireRate": 1,
+      "abilityRange": 3,
+      "weaponDamage": 3,
+      "maxAmmo": 3,
+      "cooldownReduction": 4,
+      "maxHealth": 4,
+      "spiritPower": 2,
+      "spiritResist": 1,
+      "moveSpeed": 2
+    },
+    "bridge": [],
+    "clears": {
+      "small-camp": 7,
+      "medium-camp": 2,
+      "large-camp": 1,
+      "guardian": 3,
+      "mid-boss": 1
+    },
+    "tokens": 0,
+    "siegeTokens": [],
+    "bestWave": 11
+  },
+  "530185042652168193": {
+    "hero": "Silver",
+    "heroes": {
+      "Haze": {
+        "earned": 63590,
+        "tiers": {
+          "1": 3,
+          "2": 3,
+          "3": 3,
+          "4": 3
+        },
+        "items": {
+          "weapon": [
+            "Swift Striker",
+            "Active Reload",
+            "Titanic Magazine",
+            "Ricochet",
+            "Lucky Shot",
+            "Spiritual Overflow",
+            "Frenzy"
+          ],
+          "vitality": [
+            "Fortitude",
+            "Vampiric Burst",
+            "Plated Armor"
+          ],
+          "spirit": [
+            "Extra Spirit",
+            "Mercurial Magnum"
+          ]
+        },
+        "imbues": {
+          "Mercurial Magnum": 1
+        }
+      },
+      "Holliday": {
+        "earned": 0,
+        "tiers": {},
+        "items": {}
+      },
+      "Silver": {
+        "earned": 0,
+        "tiers": {},
+        "items": {
+          "weapon": [],
+          "vitality": [],
+          "spirit": []
+        }
+      }
+    },
+    "cooldowns": {
+      "small-camp": 1791692909968,
+      "roam": 1791693890235,
+      "waves:york": 1791623854711,
+      "medium-camp": 1791700138177,
+      "waves:broadway": 1791623858005,
+      "waves:park": 1791623865147,
+      "large-camp": 1791710938573,
+      "guardian:york": 1791732690976,
+      "guardian:broadway": 1791732691658,
+      "guardian:park": 1791732692352,
+      "walker:york": 1791776884699,
+      "mid-boss": 1791733605727,
+      "walker:broadway": 1791776912305,
+      "walker:park": 1791776923498,
+      "siege": 1791778745831
+    },
+    "down": {
+      "guardian:york": 1791732875393,
+      "guardian:broadway": 1791732876162,
+      "guardian:park": 1791732876888,
+      "walker:york": 1791776884699,
+      "walker:park": 1791776923498,
+      "walker:broadway": 1791776912305
+    },
+    "rejuvs": 1,
+    "buffs": {
+      "maxHealth": 7,
+      "fireRate": 5,
+      "maxAmmo": 2,
+      "spiritResist": 9,
+      "bulletResist": 4,
+      "spiritPower": 3,
+      "abilityRange": 1,
+      "weaponDamage": 2,
+      "moveSpeed": 1,
+      "cooldownReduction": 1
+    },
+    "bridge": [],
+    "clears": {
+      "small-camp": 6,
+      "medium-camp": 4,
+      "large-camp": 5,
+      "guardian": 10,
+      "walker": 4,
+      "mid-boss": 4,
+      "siege": 1
+    },
+    "tokens": 0,
+    "siegeTokens": [
+      "Haze"
+    ],
+    "bestWave": 19,
+    "switchedAt": 1791692444186
+  },
+  "285030934959620097": {
+    "hero": "Mo & Krill",
+    "heroes": {
+      "Mo & Krill": {
+        "earned": 452,
+        "tiers": {},
+        "items": {
+          "weapon": [],
+          "vitality": [],
+          "spirit": []
+        }
+      }
+    },
+    "cooldowns": {
+      "waves:park": 1791410490202
+    },
+    "down": {},
+    "rejuvs": 0,
+    "buffs": {},
+    "bridge": [],
+    "clears": {},
+    "tokens": 0,
+    "siegeTokens": [],
+    "bestWave": 4
+  }
+}
