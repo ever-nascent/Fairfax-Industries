@@ -2542,3 +2542,293 @@ test('ability range and movement speed: area abilities reach further back, and a
   const stomp = TARGETS.walker.enemies()[0].stats.blast;
   assert.deepStrictEqual([stomp.every, stomp.curse, stomp.type, stomp.what], [6, 2, 'spirit', 'stomp']);
 });
+
+test('Baba: each ability does its job', () => {
+  const quiet = (hero, ...slots) => { hero.weapon.reloadLeft = 1e9; hero.meleeAt = Infinity; hero.stamina = 0; hero.nextDash = Infinity; hero.stats.healthRegen = 0; hero.stats.oocRegen = 0; slots.forEach((s) => { hero.abilities[s - 1].cdLeft = 1e9; hero.abilities[s - 1].gapLeft = 1e9; }); return hero; };
+  const dummy = (o = {}) => enemy('Dummy', { maxHealth: 2000, dps: 0, distance: 10, ...o });
+  const row = () => [dummy(), dummy(), dummy()]; // 4 m apart
+
+  // Threadsap: 0.9 s after the cast 50 to every enemy and 10 spirit power stolen from each; Baba gains 175% of it, and her bullets add 8 + 0.26 x spirit
+  const t = quiet(buildHero('Baba', { unlocked: 1 }));
+  const sapped = row();
+  const ft = new Fight({ heroes: [t], enemies: sapped, rng: () => 0.5 });
+  ft.run(0.8);
+  assert.ok(sapped.every((e) => e.health === 2000));
+  ft.run(0.4);
+  assert.deepStrictEqual(sapped.map((e) => [2000 - e.health, e.mod('spirit')]), [[50, -10], [50, -10], [50, -10]]);
+  close(t.mod('spirit'), 52.5);
+  ft.damage(t, sapped[0], 10, 'bullet');
+  close(1950 - sapped[0].health, 10 + 8 + 0.26 * 52.5, 0.001);
+
+  // Granny Long Legs: +5 m/s and 30% debuff resist, and her heavy melee (116) pounds every enemy within 8 m: +75 spirit damage, a knock-up, a 50% slow
+  const g = quiet(buildHero('Baba', { unlocked: 2 }), 1);
+  g.meleeAt = 0.15; // the legs are out from the second step
+  const pounded = row();
+  const fg = new Fight({ heroes: [g], enemies: pounded, rng: () => 0.5 });
+  fg.run(0.3);
+  assert.deepStrictEqual(pounded.map((e) => 2000 - e.health), [191, 191, 191]);
+  assert.ok(pounded.every((e) => e.has('stun') && e.mod('slow') === 0.5) && g.mod('moveSpeed') === 5);
+  close(g.mod('statusResist'), 0.3);
+  close(g.meleeAt, 0.2 + 4.5, 0.001); // about three times as long between pounds
+  fg.run(10);
+  assert.ok(g.mod('moveSpeed') === 0, 'the legs fold after 10 s');
+
+  // Baba's Brew: a 1 s channel, then one of three at random. Silencing: the enemies within 6 m; Scalding: a burn and -15% spirit resist; Soothing: a barrier
+  const brew = (roll, tiers = {}) => {
+    const b = quiet(buildHero('Baba', { unlocked: 3, tiers }), 1, 2);
+    const splashed = row();
+    new Fight({ heroes: [b], enemies: splashed, rng: () => roll }).run(2.3);
+    return [b, splashed];
+  };
+  const [, hushed] = brew(0.5);
+  assert.deepStrictEqual(hushed.map((e) => e.has('silence')), [true, true, false]);
+  const [, scalded] = brew(0.9);
+  assert.ok(scalded[0].health < 2000 && scalded[1].health < 2000 && scalded[2].health === 2000);
+  close(scalded[0].mod('spiritResist'), -0.15);
+  const [soothed] = brew(0.1);
+  close(soothed.statuses.find((s) => s.id === 'soothing_brew').barrier, 100);
+  const [stronger] = brew(0.1, { 3: 3 }); // tier 3: every brew a third stronger
+  close(stronger.statuses.find((s) => s.id === 'soothing_brew').barrier, 133.33, 0.01);
+
+  // Feed The Birds: a 6.5 s channel without casting while the bread slows them, then 450 to each and 2.75 s as pigeons (no attacks)
+  const f = quiet(buildHero('Baba', { unlocked: 4 }), 1, 2, 3);
+  const fed = row();
+  const ff = new Fight({ heroes: [f], enemies: fed, rng: () => 0.5 });
+  ff.run(4);
+  assert.ok(f.has('silence') && fed.every((e) => e.health === 2000));
+  close(fed[0].mod('slow'), 0.32);
+  ff.run(3);
+  assert.deepStrictEqual(fed.map((e) => 2000 - e.health), [450, 450, 450]);
+  assert.ok(fed.every((e) => e.has('disarm')) && !f.has('silence'));
+  ff.run(3);
+  assert.ok(fed.every((e) => !e.has('disarm')));
+});
+
+test('Rat King: each ability does its job', () => {
+  const quiet = (hero, ...slots) => { hero.weapon.reloadLeft = 1e9; hero.meleeAt = Infinity; hero.stamina = 0; hero.nextDash = Infinity; hero.stats.healthRegen = 0; hero.stats.oocRegen = 0; slots.forEach((s) => { hero.abilities[s - 1].cdLeft = 1e9; hero.abilities[s - 1].gapLeft = 1e9; }); return hero; };
+  const dummy = (o = {}) => enemy('Dummy', { maxHealth: 2000, dps: 0, distance: 10, ...o });
+  const row = () => [dummy(), dummy(), dummy()]; // 4 m apart
+  const lost = (list) => list.map((e) => +(2000 - e.health).toFixed(3));
+
+  // the gun: two pellets, one of which always lands
+  const gun = buildHero('Rat King').stats;
+  assert.ok(gun.pellets === 2 && gun.surePellets === 1);
+  const shooter = buildHero('Rat King', { unlocked: 0 });
+  shooter.stamina = 0; shooter.nextDash = Infinity; shooter.meleeAt = Infinity;
+  const far = dummy({ maxHealth: 1e6, distance: 15 });
+  new Fight({ heroes: [shooter], enemies: [far], rng: () => 0 }).run(1); // every roll a miss: half of 5 shots of 12 still lands
+  close(1e6 - far.health, 30, 0.001);
+
+  // Scrap Grenade: 70 bullet damage and a 20% slow within 8 m, three times: 0.8 s, 1.5 s and 3 s after the cast
+  const s = quiet(buildHero('Rat King', { unlocked: 1 }));
+  const scrapped = row();
+  const fs1 = new Fight({ heroes: [s], enemies: scrapped, rng: () => 0.5 });
+  fs1.run(1);
+  assert.deepStrictEqual(lost(scrapped), [70, 70, 70]);
+  close(scrapped[0].mod('slow'), 0.2);
+  fs1.run(0.8);
+  assert.deepStrictEqual(lost(scrapped), [140, 140, 140]);
+  fs1.run(1);
+  assert.deepStrictEqual(lost(scrapped), [140, 140, 140]);
+  fs1.run(0.5);
+  assert.deepStrictEqual(lost(scrapped), [210, 210, 210]);
+  const big = quiet(buildHero('Rat King', { unlocked: 1, tiers: { 1: 3 } })); // tier 3: a fourth, bigger one (300)
+  const flattened = row();
+  new Fight({ heroes: [big], enemies: flattened, rng: () => 0.5 }).run(4);
+  assert.deepStrictEqual(lost(flattened), [140 * 3 + 300, 140 * 3 + 300, 140 * 3 + 300]);
+
+  // Rat Swarm: 9 rats dealt round the enemies within 10 m, each biting once a second for 6 s: 8 spirit damage and -1% bullet resist a bite
+  const r = quiet(buildHero('Rat King', { unlocked: 2 }), 1);
+  const bitten = row();
+  const fr = new Fight({ heroes: [r], enemies: bitten, rng: () => 0.5 });
+  fr.run(1.3);
+  assert.deepStrictEqual(lost(bitten), [24, 24, 24]);
+  close(bitten[0].mod('bulletResist'), -0.03);
+  fr.run(6);
+  assert.deepStrictEqual(lost(bitten), [144, 144, 144]);
+  const lone = [dummy()]; // at most 5 on one enemy
+  const r1 = quiet(buildHero('Rat King', { unlocked: 2 }), 1);
+  new Fight({ heroes: [r1], enemies: lone, rng: () => 0.5 }).run(1.3);
+  assert.deepStrictEqual(lost(lone), [40]);
+
+  // Royal Pestments: a barrier of 15% of max health (120) that his resists do nothing for; a weapon hit has a 15% chance to go back at the attacker
+  const armored = (roll) => {
+    const p = quiet(buildHero('Rat King', { unlocked: 3 }), 1, 2);
+    p.stats.bulletResist = 0.5;
+    const brute = dummy({ dps: 100 });
+    new Fight({ heroes: [p], enemies: [brute], rng: () => roll }).run(1.1);
+    return [p, brute];
+  };
+  const [p, brute] = armored(0.5);
+  assert.ok(p.health === 800 && brute.health === 2000);
+  close(p.statuses.find((x) => x.id === 'pestments').barrier, 20);
+  const [, struck] = armored(0.1);
+  assert.strictEqual(struck.health, 1900);
+
+  // Rule, Ratannia!: a 2 s charge-up, then the slam: 200 bullet damage and a knock-up within 20 m; while the banner stands (12 s) he is faster and
+  // takes 15% less, the enemies are slowed 40% and a rat jumps onto one of them every 0.5 s
+  const k = quiet(buildHero('Rat King', { unlocked: 4 }), 1, 2, 3);
+  const ruled = row();
+  const fk = new Fight({ heroes: [k], enemies: ruled, rng: () => 0.5 });
+  fk.run(2);
+  assert.deepStrictEqual(lost(ruled), [0, 0, 0]);
+  fk.run(0.3);
+  assert.deepStrictEqual(lost(ruled), [200, 200, 200]);
+  assert.ok(ruled.every((e) => e.has('stun') && e.mod('slow') === 0.4) && k.mod('moveSpeed') === 3);
+  close(k.mod('damageTaken'), -0.15);
+  fk.run(1.6);
+  assert.strictEqual(k.abilities[1].rats.length, 3);
+  assert.deepStrictEqual(ruled.map((e) => k.abilities[1].rats.filter((x) => x.e === e).length), [1, 1, 1]);
+  fk.run(11);
+  assert.ok(k.mod('moveSpeed') === 0 && ruled[0].mod('slow') === 0);
+});
+
+test('Solomon: each ability does its job', () => {
+  const { BISHOP } = require('../src/utils/farm/heroes/solomon');
+  const quiet = (hero, ...slots) => { hero.weapon.reloadLeft = 1e9; hero.meleeAt = Infinity; hero.stamina = 0; hero.nextDash = Infinity; hero.stats.healthRegen = 0; hero.stats.oocRegen = 0; slots.forEach((s) => { hero.abilities[s - 1].cdLeft = 1e9; hero.abilities[s - 1].gapLeft = 1e9; }); return hero; };
+  const dummy = (o = {}) => enemy('Dummy', { maxHealth: 2000, dps: 0, distance: 10, ...o });
+  const row = () => [dummy(), dummy(), dummy()]; // 4 m apart
+  const lost = (list) => list.map((e) => +(2000 - e.health).toFixed(3));
+
+  // Setup Bishop: placed, then moved every 3 s through the enemies within 12 m (70 and a 30% slow); 0.5 s later its squares (2 out, 6 m) deal 25.
+  // It stays out and its cooldown waits
+  const b = quiet(buildHero('Solomon', { unlocked: 1 }));
+  const board = row();
+  const fb = new Fight({ heroes: [b], enemies: board, rng: () => 0.5 });
+  fb.run(3.2);
+  assert.deepStrictEqual(lost(board), [0, 0, 0]);
+  fb.run(0.3);
+  assert.deepStrictEqual(lost(board), [70, 70, 70]);
+  close(board[2].mod('slow'), 0.3);
+  fb.run(0.5);
+  assert.deepStrictEqual(lost(board), [95, 95, 70]);
+  fb.run(3);
+  assert.deepStrictEqual(lost(board), [190, 190, 140]);
+  assert.ok(b.abilities[0].out && b.abilities[0].cdLeft === 12 && b.abilities[0].status(fb) === 'On The Board');
+  const boss = [dummy({ maxHealth: 50000 })]; // half to bosses
+  new Fight({ heroes: [quiet(buildHero('Solomon', { unlocked: 1 }))], enemies: boss, rng: () => 0.5 }).run(4.2);
+  close(50000 - boss[0].health, 47.5);
+  BISHOP.moves = 1; // the knob: recalled after so many moves, and only then the cooldown runs
+  try {
+    const once = quiet(buildHero('Solomon', { unlocked: 1 }));
+    const passed = row();
+    const fo = new Fight({ heroes: [once], enemies: passed, rng: () => 0.5 });
+    fo.run(6);
+    assert.deepStrictEqual(lost(passed), [95, 95, 70]);
+    assert.ok(!once.abilities[0].out && once.abilities[0].cdLeft < 12 && once.abilities[0].cdLeft > 9);
+  } finally { BISHOP.moves = Infinity; }
+
+  // Kingside Knight: on himself, King: a barrier of 160 for 7 s, and one move that slips a blast
+  const kg = quiet(buildHero('Solomon', { unlocked: 2 }), 1);
+  const caster = dummy({ blast: { every: 1, damage: 100, maxHealthPct: 0, curse: 1 } });
+  const fkg = new Fight({ heroes: [kg], enemies: [caster], rng: () => 0.5 });
+  fkg.run(1.5);
+  assert.ok(fkg.log.some((l) => l.what === 'King\'s Move') && kg.health === 780);
+  close(kg.statuses.find((x) => x.id === 'king').barrier, 160);
+  fkg.run(1);
+  close(kg.statuses.find((x) => x.id === 'king').barrier, 60); // the second blast lands: he has moved
+  fkg.run(6);
+  assert.ok(!kg.statuses.some((x) => x.id === 'king'));
+
+  // Rook Battery: 50 and a 1 s immobilize to the enemies within 12 m, and again when the rooks bounce back
+  const rk = quiet(buildHero('Solomon', { unlocked: 3 }), 1, 2);
+  const lined = row();
+  const frk = new Fight({ heroes: [rk], enemies: lined, rng: () => 0.5 });
+  frk.run(0.6);
+  assert.deepStrictEqual(lost(lined), [50, 50, 50]);
+  assert.ok(lined.every((e) => e.has('immobilize')));
+  frk.run(1);
+  assert.deepStrictEqual(lost(lined), [100, 100, 100]);
+  frk.run(3);
+  assert.deepStrictEqual(lost(lined), [100, 100, 100]);
+
+  // Develop Queen: 120 around her as she lands, 0.5 s later 120 again and a 1.25 s stun along her squares (3 out, 9 m); two more leaps 5 s apart,
+  // then she leaves and the cooldown starts
+  const q = quiet(buildHero('Solomon', { unlocked: 4 }), 1, 2, 3);
+  const mated = row();
+  const fq = new Fight({ heroes: [q], enemies: mated, rng: () => 0.5 });
+  fq.run(1.1);
+  assert.deepStrictEqual(lost(mated), [120, 0, 0]);
+  fq.run(0.5);
+  assert.deepStrictEqual(lost(mated), [240, 120, 120]);
+  assert.ok(mated.every((e) => e.has('stun')));
+  fq.run(5);
+  assert.deepStrictEqual(lost(mated), [480, 240, 240]);
+  fq.run(5);
+  assert.deepStrictEqual(lost(mated), [720, 360, 360]);
+  assert.ok(q.abilities[3].out && q.abilities[3].cdLeft === 210);
+  fq.run(5);
+  assert.ok(!q.abilities[3].out && q.abilities[3].cdLeft < 210);
+  assert.deepStrictEqual(lost(mated), [720, 360, 360]);
+  const mate = quiet(buildHero('Solomon', { unlocked: 4, tiers: { 4: 2 } }), 1, 2, 3); // tier 2: Checkmate below 200 health
+  const low = dummy();
+  low.health = 300;
+  new Fight({ heroes: [mate], enemies: [low, dummy()], rng: () => 0.5 }).run(1.1);
+  assert.ok(!low.alive);
+});
+
+test('Haunt specials: what each family does to the hero, and what stops it', () => {
+  const { SPECIALS, specialFor } = require('../src/utils/farm/haunts');
+  const { simulate } = require('../src/utils/farm/play');
+  // a hero that only stands there, and one Haunt that deals 10 a second and always uses its special
+  const stand = (o = {}) => { const h = buildHero('Haze', { unlocked: 0, ...o }); h.weapon.reloadLeft = 1e9; h.meleeAt = Infinity; h.stamina = 0; h.nextDash = Infinity; h.stats.healthRegen = 0; h.stats.oocRegen = 0; h.stats.spiritResist = 0; h.stats.bulletResist = 0; return h; };
+  const haunt = (family) => { const e = enemy('Haunt', { maxHealth: 1e6, dps: 10 }); e.stats.special = { ...specialFor(family, false), chance: 1 }; return e; };
+  const after = (family, seconds, hero = stand()) => { const f = new Fight({ heroes: [hero], enemies: [haunt(family)], rng: () => 0 }); f.run(seconds); return [hero.stats.maxHealth - hero.health, hero, f]; };
+
+  assert.strictEqual(specialFor('slum_shroom', true), null, 'small Haunts have none');
+  assert.deepStrictEqual(Object.keys(SPECIALS).sort(), ['barrel_mimic', 'crabbage_pot', 'festival_spirit', 'gutter_ghoul', 'past_due', 'slum_shroom', 'specimen', 'stage_hand', 'underhand']);
+
+  // at 1 s: the normal hit (10) and the special on top
+  close(after('barrel_mimic', 1)[0], 10 + 30); // 3 s worth at once
+  const [books, sleeper] = after('past_due', 1);
+  close(books, 10 + 20);
+  assert.ok(sleeper.has('sleep') && sleeper.cantAct);
+  close(after('festival_spirit', 1.7)[0], 10 + 4 * 7.5); // four fireworks 0.2 s apart
+  close(after('crabbage_pot', 1)[0], 10 + 30);
+  const guarded = stand(); // melee resist cuts the slam, and nothing else
+  guarded.statuses.push({ id: 'guard', until: 99, mods: { meleeTaken: -0.5 }, tags: [] });
+  close(after('crabbage_pot', 1, guarded)[0], 10 + 15);
+
+  // burns: a debuff that ticks every 0.5 s while it lasts
+  const [, burning, ff] = after('stage_hand', 1);
+  assert.ok(burning.statuses.some((s) => s.id === 'laser_fire:0' && s.debuff));
+  const lit = burning.health;
+  ff.enemies[0].stats.special = null; // no second laser, and no more hits: only the fire
+  ff.enemies[0].stats.dps = 0;
+  ff.run(5.5);
+  close(lit - burning.health, 5 * 12.5); // 5 s at one and a quarter times its damage
+  const [, spored] = after('slum_shroom', 1);
+  close(spored.stat('healAmp'), -0.5);
+  close(spored.mod('slow'), 0.4);
+
+  // debuff resist shortens them, a cleanse removes them, a silenced Haunt has no special
+  const tough = stand();
+  tough.stats.statusResist = 0.5;
+  const [, t2, ft] = after('gutter_ghoul', 1, tough);
+  close(t2.statuses.find((s) => s.id === 'toxic_puddle:0').until - ft.time, 4, 0.11); // 8 s halved
+  ft.cleanse(t2);
+  ft.enemies[0].stats.special = null;
+  ft.enemies[0].stats.dps = 0;
+  const cleansed = t2.health;
+  ft.run(3);
+  assert.strictEqual(t2.health, cleansed);
+  const hushed = stand();
+  const quietOne = haunt('barrel_mimic');
+  quietOne.statuses.push({ id: 'hush', until: 99, mods: {}, tags: ['silence'] });
+  new Fight({ heroes: [hushed], enemies: [quietOne], rng: () => 0 }).run(1);
+  close(hushed.stats.maxHealth - hushed.health, 10);
+
+  // the Specimen goes off as it dies
+  const killer = stand();
+  const spec = haunt('specimen');
+  const fsx = new Fight({ heroes: [killer], enemies: [spec], rng: () => 0.5 });
+  fsx.damage(killer, spec, 2e6, 'true');
+  close(killer.stats.maxHealth - killer.health, 20);
+  assert.ok(fsx.log.some((l) => l.what === 'Death Burst'));
+
+  // in a real camp: the two medium Haunts of a Tier 2 camp carry it, a Tier 1 camp's never do
+  const seeded = (n) => () => (n = (n * 16807) % 2147483647) / 2147483647;
+  const logs = (key, family) => Array.from({ length: 30 }, (_, i) => simulate('Haze', key, { family, boons: 6, rng: seeded(i + 1) }).log.map(([, text]) => text)).flat();
+  assert.ok(logs('medium-camp', 'slum_shroom').some((text) => /^Slum Shroom used Spore Mines|^w+ Slum Shroom used Spore Mines/.test(text)), 'the Battle Log names the special');
+  assert.ok(!logs('small-camp', 'gutter_ghoul').some((text) => /Toxic Waste/.test(text)));
+});

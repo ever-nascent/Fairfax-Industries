@@ -42,7 +42,9 @@ const SPREAD = 4;
 // `from`, up to `max`. A slowed enemy's blast is easier still: its slow is added (his call, Oct 3). A dodged blast does nothing.
 // ponytail: all three numbers are placeholders.
 const DODGE = { from: 6, per: 0.1, max: 0.6 };
-const dodgeChance = (unit, foe) => clamp(clamp((unit.stat('moveSpeed') - DODGE.from) * DODGE.per, 0, DODGE.max) + (foe ? foe.mod('slow') : 0), 0, 0.9);
+// A slow on the hero itself (a Haunt's spores, a rival hero's slow; his call, Oct 10): that much less move speed here, and stamina comes back that much slower (move()).
+const slowed = (unit) => clamp(unit.mod('slow'), 0, 0.9);
+const dodgeChance = (unit, foe) => clamp(clamp((unit.stat('moveSpeed') * (1 - slowed(unit)) - DODGE.from) * DODGE.per, 0, DODGE.max) + (foe ? foe.mod('slow') : 0), 0, 0.9);
 
 class Unit {
   /** @param stats a heroStats() sheet, or for enemies { maxHealth, dps, bulletResist, spiritResist, distance } */
@@ -140,6 +142,11 @@ class Fight {
     return true;
   }
 
+  // A debuff that isn't crowd control (a burn, a slow, a heal cut from a Haunt's special): debuff resist shortens it, a cleanse removes it.
+  debuff(unit, status) {
+    this.addStatus(unit, { ...status, duration: status.duration * (1 - clamp(unit.stat('statusResist'), 0, 0.9)), debuff: true });
+  }
+
   // Every hero in the fight hears an event, each through its own view. A hero's own actions (OWN_EVENTS) are heard by that hero only.
   emit(event, payload) {
     const only = !OWN_EVENTS.has(event) ? null : this.views.has(payload.source) ? payload.source : payload.target; // a blast's source is an NPC: its target hears it
@@ -150,6 +157,7 @@ class Fight {
     }
   }
 
+  // A status may carry a `barrier` (damage it soaks before health; `raw: true` = it ignores its owner's resists).
   // The one place damage happens. type: 'bullet' | 'spirit' | 'melee' (nothing here resists it) | 'true' (no resist takes anything off it: the Patron's
   // blast). opts.events = false skips the hooks (extra damage that must not trigger itself), opts.keepsStealth marks hits that don't break invisibility,
   // opts.attack / opts.blast mark an enemy's hit and blast (items may parry or soften them first: the 'attacked' hook), opts.ability is the ability
@@ -158,7 +166,7 @@ class Fight {
     if (!target.alive) return 0;
     if (source.team === 'hero' && target.team === 'hero' && source !== target) amount *= DUEL.damage; // a duel
     if (source.team === 'hero' && this.casting) opts.ability ??= this.casting;
-    if (opts.attack || opts.blast) { // Rebuttal, Plated Armor, Spellbreaker: change or stop the hit before it lands
+    if (opts.attack || opts.blast || opts.special) { // Rebuttal, Plated Armor, Spellbreaker: change or stop the hit before it lands (only an `attack` can be parried)
       const hit = { source, target, amount, type, opts };
       this.emit('attacked', hit);
       amount = hit.amount;
@@ -174,10 +182,12 @@ class Fight {
       incoming *= (1 + target.mod('spiritAmp')) * Math.max(0, 1 + target.mod('spiritTaken')) * Math.max(0, 1 + source.mod('spiritDealt')); // e.g. Escalating Exposure; spiritDealt: the source's own spirit damage boost (Celeste's Radiant Daggers)
       if (source.team === 'enemy') incoming *= Math.max(0, 1 + source.mod('spirit') / 100); // spirit power taken from an enemy: 1% less of its spirit damage a point (his call, Oct 3)
     }
+    const eased = amount > 0 ? Math.min(1, incoming / amount) : 1; // what the target's resists left of the hit
     for (const s of target.statuses) { // barriers soak damage first
       if (!(s.barrier > 0) || incoming <= 0) continue;
-      const soaked = Math.min(s.barrier, incoming);
-      s.barrier -= soaked;
+      const worth = s.raw ? eased : 1; // a raw barrier gets nothing from its owner's resists: it pays for the hit as it was sent (Rat King's Royal Pestments, the wiki)
+      const soaked = Math.min(s.barrier * worth, incoming);
+      s.barrier -= soaked / worth;
       incoming -= soaked;
     }
     let dealt = Math.min(target.health, incoming);
@@ -202,6 +212,11 @@ class Fight {
       this.emit('damage', payload);
       if (type === 'bullet') this.emit('bulletHit', payload);
       if (!target.alive) this.emit('kill', payload);
+    }
+    if (!target.alive && target.stats.special?.onDeath && !target.burst) { // a Haunt that goes off as it dies (the Specimen)
+      target.burst = true;
+      const victim = this.heroes.find((h) => h.alive);
+      if (victim) { this.log.push({ t: +this.time.toFixed(1), who: target.name, what: target.stats.special.name, enemy: true, special: true }); target.stats.special.onDeath(this, target, victim); }
     }
     return dealt;
   }
@@ -263,8 +278,8 @@ class Fight {
       const pellets = hero.stats.pellets;
       if (pellets > 1) { // a shotgun: how many of its pellets land
         const miss = 1 - pelletChance(this.distance(hero, target));
-        let landed = 0;
-        for (let i = 0; i < pellets; i++) if (!(this.rng() < miss)) landed++;
+        let landed = Math.min(pellets, hero.stats.surePellets ?? 0); // pellets that can't miss (Rat King: one of his two, the wiki)
+        for (let i = landed; i < pellets; i++) if (!(this.rng() < miss)) landed++;
         if (!landed) continue;
         opts.landed = landed / pellets; // build-up items scale with it (items.js)
       }
@@ -300,7 +315,7 @@ class Fight {
 
   // Stamina and moving (his call, Oct 3): a dash-jump whenever a stamina charge is in hand (airborne a moment after), a slide now and then.
   move(hero) {
-    const recharge = (hero.stats.staminaCooldown ?? 5) * Math.max(0.1, 1 - hero.stat('staminaCdr')) / Math.max(0.1, 1 + hero.stat('staminaRegen'));
+    const recharge = (hero.stats.staminaCooldown ?? 5) * Math.max(0.1, 1 - hero.stat('staminaCdr')) / Math.max(0.1, 1 + hero.stat('staminaRegen')) / (1 - slowed(hero));
     const max = Math.max(0, Math.floor(hero.stat('stamina')));
     if (hero.stamina < max) { hero.staminaCharge += DT / recharge; if (hero.staminaCharge >= 1) { hero.stamina++; hero.staminaCharge -= 1; } } else { hero.stamina = Math.min(hero.stamina, max); hero.staminaCharge = 0; }
     if (!this.foes.length) return;
@@ -345,6 +360,11 @@ class Fight {
       this.heal(u, (u.stats.healthRegen || 0) * DT, 'regen');
       if (u.stats.oocRegen && this.time - u.lastHit > OUT_OF_COMBAT) this.heal(u, u.stats.oocRegen * DT, 'regen');
       for (const st of u.statuses) if (st.regen) this.heal(u, st.regen * DT, 'regen'); // heals over time (Healing Nova, Mystic Regeneration ...)
+      for (const st of u.statuses) { // damage over time carried by a status (a Haunt's fire, spores or puddle on the hero): gone with the status
+        if (!st.dot || this.time + 1e-9 < st.dot.next || !u.alive) continue;
+        st.dot.next += st.dot.every;
+        this.damage(st.dot.source, u, st.dot.perSecond * st.dot.every, st.dot.type);
+      }
     }
     for (const [hero, view] of this.views) {
       if (!hero.alive) continue;
@@ -377,6 +397,12 @@ class Fight {
             this.damage(enemy, target, hit / 2, 'bullet', { attack: true });
             this.damage(enemy, target, hit / 2, 'spirit', { attack: true });
           } else this.damage(enemy, target, hit, enemy.stats.damageType, { attack: true });
+          // a Haunt's special attack (haunts.js): a chance each second, on top of the hit; a silenced one can't
+          const special = enemy.stats.special;
+          if (special?.use && target.alive && !enemy.has('silence') && this.rng() < special.chance) {
+            this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: special.name, enemy: true, special: true });
+            special.use(this, enemy, target);
+          }
         }
       }
       // a blast every so often: it hurts and leaves the hero unable to shoot, cast or use items for a moment, unless the hero gets out of its way or
@@ -417,7 +443,7 @@ class Fight {
 // dpsMaxHealthPct = extra damage per second as a share of the target's max health (the Patron's "440 + 5% HP"),
 // damageType = what its attack is ('bullet' | 'spirit' | 'mixed' = half each): which of the hero's resists takes the edge off it,
 // blast = { every (s), damage, maxHealthPct, curse (s the hero can't act), type = 'true', what = 'curse' }: the Patron's cursing blast, the Walker's stomp,
-// souls = what it is worth on its own (Cultist Sacrifice).
+// souls = what it is worth on its own (Cultist Sacrifice). A Haunt's `special` (haunts.js) is put on its stats by play.js.
 const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', blast = null, souls = 0 } = {}) =>
   new Unit({ name, team: 'enemy', stats: { maxHealth, dps, dpsMaxHealthPct, damageType, blast: blast && { ...blast }, bulletResist, spiritResist, distance, healthRegen, lifesteal: 0, souls } });
 

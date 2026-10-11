@@ -22,6 +22,7 @@ const { siegeCard } = require('./siegeCard');
 const { BUFFS, BRIDGE, buffText, dailyBuffs } = require('./buffs');
 const { MAX_REJUVS, cooldownSeconds, cooldownLeft, hauntFile, campFamilies, CAMP_SIZE, fightKit, hasHero, switchLeft, PER_LANE, slotOf, isDown, walkersDown, lockedBy, EGG, cooldownsActive: cooldownsOnNow } = require('./play');
 const { PAYOUT_SCALE } = require('./targets');
+const { SPECIALS } = require('./haunts');
 const { HEROES, heroEmoji, heroArt } = require('../heroes');
 const { fmt, soulsIcon } = require('../format');
 const { pickRandom } = require('../random');
@@ -493,6 +494,8 @@ async function targetView(member, key, record, now = Date.now(), variant = null)
     }
     fields.push({ name: 'Bullet Resist', value: `${Math.round(s.bulletResist * 100)}%` });
     if (camp) fields.push({ name: 'Spirit Resist', value: `${Math.round(s.spiritResist * 100)}%` });
+    // the family's special attack (haunts.js): small Haunts have none, so a Tier 1 camp never shows one
+    if (SPECIALS[family] && CAMP_SIZE[key] !== 'small') fields.push({ name: key === 'medium-camp' ? 'Special Attack (Medium Haunts)' : 'Special Attack', value: SPECIALS[family].text });
     fields.push({ name: 'Pays', value: payText(key, record) }, { name: 'Cooldown', value: every(t.cooldown) });
     if (t.rejuv) fields.push({ name: 'Rejuvs Held', value: `${record.rejuvs}` });
     fields.push(grownField(key, record));
@@ -561,7 +564,7 @@ function fightView(run, frame) {
   return { embeds: [e], components: [], files: [soulsFile(), picture(enemyPicture(run, frame))], attachments: [] };
 }
 
-function resultView(run, ownerId = null) {
+function resultView(run) {
   const hero = run.hero;
   const last = run.frames[run.frames.length - 1];
   const group = enemyGroup(run, last);
@@ -599,18 +602,28 @@ function resultView(run, ownerId = null) {
   const lines = run.log.slice(-(run.won ? 8 : 5));
   e.addFields({ name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' });
   e.setFooter({ text: run.waves ? `Every wave cleared paid. ${hero} can hold this lane again in ${span(cooldown)}.` : run.won ? `${hero} can clear this ${run.family ? 'Camp' : label} again in ${span(cooldown).replace(/hour|minute/, (u) => u[0].toUpperCase() + u.slice(1))}.` : `Nothing is paid, and the cooldown has started. ${hero} can try again in ${span(cooldown)}.` });
-  const components = [];
-  if (run.rival && ownerId) { // an encounter: a hero the member hasn't unlocked showed up (play.js meet); the offer waits OFFER_MS
-    e.addFields({ name: 'A Rival Appears', value: `**${run.rival}** steps out and wants a duel. Win it and ${run.rival} is yours to play. Losing costs nothing.\n${run.rival} waits for 5 minutes.` });
-    components.push(row(
-      new ButtonBuilder().setCustomId(`${DUEL_ID}:${ownerId}`).setLabel(`Fight ${run.rival}`).setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId(`${WALK_ID}:${ownerId}`).setLabel('Walk Away').setStyle(ButtonStyle.Secondary),
-    ));
-  }
-  return { embeds: [e], components, files: [soulsFile(), picture(enemyPicture(run, last))], attachments: [] };
+  return { embeds: [e], components: [], files: [soulsFile(), picture(enemyPicture(run, last))], attachments: [] };
 }
 
 // ---- encounters: the duel with a rival hero (rules: encounter.js; the offer and the unlock: play.js) ----
+// The offer: a hero the member hasn't unlocked showed up (play.js meet) and waits OFFER_MS. Its own embed under the fight's result
+// (his call, Oct 10), in the rival's colour with its picture, and the Fight / Walk Away buttons.
+async function withRival(view, rival, ownerId) {
+  const { color } = await heroArt(slugOf(rival), 'icon');
+  view.embeds.push(new EmbedBuilder().setColor(color).setTitle('A Rival Appears').setThumbnail('attachment://rival.png')
+    .setDescription(`**${rival}** steps out and wants a duel.`)
+    .addFields(
+      { name: 'Win', value: `${rival} is yours to play`, inline: true },
+      { name: 'Lose', value: 'Costs nothing but Rejuvs used', inline: true },
+    ).setFooter({ text: `${rival} waits for 5 minutes.` }));
+  view.files.push((await heroPicture(rival)).setName('rival.png'));
+  view.components.push(row(
+    new ButtonBuilder().setCustomId(`${DUEL_ID}:${ownerId}`).setLabel(`Fight ${rival}`).setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`${WALK_ID}:${ownerId}`).setLabel('Walk Away').setStyle(ButtonStyle.Secondary),
+  ));
+  return view;
+}
+
 // The rival's face: its portrait from the wiki where one was downloaded (assets/farm/rivals: gloating when it won, hurt when it was beaten),
 // else the hero's icon.
 async function rivalFace(name, mood = null) {
@@ -622,7 +635,8 @@ async function rivalFace(name, mood = null) {
 async function duelView(run, frame) {
   const e = embed().setTitle(`${run.hero} vs ${run.rival}`).setThumbnail('attachment://thumb.png').setDescription(`${run.hero} is duelling ${run.rival}.`)
     .addFields(
-      { name: run.hero, value: barLine(frame.hero.hp, frame.hero.max) },
+      { name: run.hero, value: `${barLine(frame.hero.hp, frame.hero.max)}${frame.hero.respawning ? '  -  Respawning' : ''}
+Rejuvs Left: ${frame.rejuvs}` },
       ...enemyFields(frame),
       { name: 'Abilities', value: frame.abilities.map((a) => `${a.name}  -  ${a.status}`).join('\n') },
       { name: 'Battle Log', value: frame.log.length ? frame.log.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing yet' },
@@ -633,13 +647,15 @@ async function duelView(run, frame) {
 async function duelResultView(run) {
   const { hero, rival } = run;
   const last = run.frames[run.frames.length - 1];
+  const cost = `It cost you ${run.rejuvsUsed ? plural(run.rejuvsUsed, 'Rejuv') : 'nothing'}.`;
   const e = embed(run.won ? WIN : LOSS).setThumbnail('attachment://thumb.png');
   if (run.won) e.setTitle(`${rival} Unlocked`).setDescription(`${hero} won the duel. ${rival} is yours now, at level 0 with no items.\nSwitch with **Switch Hero** on \`/base\`.`);
-  else if (run.timedOut) e.setTitle(`${rival} Got Away`).setDescription(`Nobody went down in time and ${rival} slipped away. It cost you nothing.`);
-  else e.setTitle(`${hero} Was Defeated`).setDescription(`${rival} won the duel and moved on. It cost you nothing.`);
+  else if (run.timedOut) e.setTitle(`${rival} Got Away`).setDescription(`Nobody went down in time and ${rival} slipped away. ${cost}`);
+  else e.setTitle(`${hero} Was Defeated`).setDescription(`${rival} won the duel and moved on. ${cost}`);
   const lines = run.log.slice(-6);
   e.addFields(
     { name: 'Fight Time', value: clock(run.seconds), inline: true },
+    { name: 'Rejuvs Used', value: String(run.rejuvsUsed), inline: true },
     { name: hero, value: barLine(last.hero.hp, last.hero.max) },
     ...enemyFields(last),
     { name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' },
@@ -693,6 +709,6 @@ const notReady = (what, left) => `${what} isn't ready yet. Ready in ${timeLeft(l
 module.exports = {
   titleCase,
   HERO_ID, PICK_ID, TARGET_ID, SEND_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, LABELS, HOME_ORDER,
-  IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, DUEL_ID, WALK_ID, duelView, duelResultView,
+  IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, DUEL_ID, WALK_ID, withRival, duelView, duelResultView,
   pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, roamView, notReady, timeLeft, span, every, clock,
 };

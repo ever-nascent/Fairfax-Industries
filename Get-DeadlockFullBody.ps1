@@ -4,7 +4,7 @@
 
 $ErrorActionPreference = 'Stop'
 $WikiApi = 'https://deadlock.wiki/api.php'
-$OutDir  = 'D:\Projects\Discord Bots\Fairfax Industries\assets\heroes\full body'
+$OutDir  = Join-Path $PSScriptRoot 'assets\heroes\full body'
 $Heroes  = @(
     'Abrams', 'Apollo', 'Baba', 'Bebop', 'Billy', 'Calico', 'Celeste', 'The Doorman', 'Drifter',
     'Dynamo', 'Graves', 'Grey Talon', 'Haze', 'Holliday', 'Infernus', 'Ivy', 'Kelvin',

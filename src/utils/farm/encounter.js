@@ -43,9 +43,11 @@ function rivalKit(kit, rng = Math.random) {
 }
 
 // The duel, played at once like a trip (play.js simulate): the member's hero against the rival. Returns a run the fight screens can replay:
-//   { encounter: true, hero, rival, won, timedOut, seconds, frames, log: [[seconds, text]] }
-function duel(heroName, kit, rivalName, theirs, { rng = Math.random } = {}) {
+//   { encounter: true, hero, rival, won, timedOut, seconds, rejuvsUsed, frames, log: [[seconds, text]] }
+// `rejuvs`: the member's Rejuvs work here like in the siege and are used up (his call, Oct 10); a rival never has any.
+function duel(heroName, kit, rivalName, theirs, { rng = Math.random, rejuvs = 0 } = {}) {
   const hero = buildHero(heroName, kit);
+  hero.rejuvs = rejuvs;
   const rival = buildHero(rivalName, theirs);
   const fight = new Fight({ heroes: [hero], enemies: [rival], rng });
   const log = [];
@@ -54,7 +56,7 @@ function duel(heroName, kit, rivalName, theirs, { rng = Math.random } = {}) {
   let asleep = false; // the rival was asleep at some moment since the last snapshot
   const snapshot = () => ({
     t: fight.time, stage: 0,
-    hero: { hp: hero.health, max: hero.stats.maxHealth, respawning: false }, rejuvs: 0,
+    hero: { hp: hero.health, max: hero.stats.maxHealth, respawning: hero.has('rejuv') }, rejuvs: hero.rejuvs,
     enemies: [{ name: rivalName, hp: rival.health, max: rival.stats.maxHealth, asleep: asleep || rival.has('sleep') }],
     abilities: hero.abilities.filter((a) => !a.hidden).map((a) => ({ name: a.name, status: a.status(fight) })),
     log: log.slice(-4),
@@ -62,14 +64,14 @@ function duel(heroName, kit, rivalName, theirs, { rng = Math.random } = {}) {
   frames.push(snapshot());
   for (let steps = 1; fight.time < DUEL_SECONDS && hero.alive && rival.alive; steps++) {
     fight.step();
-    for (; seen < fight.log.length; seen++) log.push([fight.log[seen].t, `${fight.log[seen].who} used ${fight.log[seen].what}`]);
+    for (; seen < fight.log.length; seen++) log.push([fight.log[seen].t, `${fight.log[seen].who} used ${fight.log[seen].what === 'Rejuvenated' ? 'a Rejuv' : fight.log[seen].what}`]);
     if (rival.has('sleep')) asleep = true;
     if (steps % FRAME_STEPS === 0) { frames.push(snapshot()); asleep = false; }
   }
   for (const unit of [rival, hero]) if (!unit.alive) log.push([+fight.time.toFixed(1), `${unit.name} went down`]);
   frames.push(snapshot());
   const keep = frames.length <= MAX_FRAMES ? frames : Array.from({ length: MAX_FRAMES }, (_, i) => frames[Math.round((i * (frames.length - 1)) / (MAX_FRAMES - 1))]);
-  return { encounter: true, hero: heroName, rival: rivalName, won: hero.alive && !rival.alive, timedOut: hero.alive && rival.alive, seconds: fight.time, frames: keep, log };
+  return { encounter: true, hero: heroName, rival: rivalName, won: hero.alive && !rival.alive, timedOut: hero.alive && rival.alive, seconds: fight.time, rejuvsUsed: rejuvs - hero.rejuvs, frames: keep, log };
 }
 
 module.exports = { ENCOUNTER_CHANCE, DUEL_SECONDS, rollRival, rivalKit, duel };

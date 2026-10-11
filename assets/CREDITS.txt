@@ -70,3 +70,6 @@ deadlock-ui (github.com/deadlock-api/deadlock-ui) uses. Downloaded Oct 3, 2026. 
 
 assets/farm/rivals/ (encounters: each hero's "Gloat" and "Critical" portraits, shown when a rival wins or is beaten): deadlock.wiki files
 "<Hero> Gloat" / "<Hero> Critical" (Celeste: "Celeste Critical Health"), game art by Valve. Downloaded Oct 3, 2026 (npm run farm-data).
+
+assets/soulbag/ (the Soul Bag that drops in chat): map.png is deadlock.wiki's "Unsecured Souls" minimap icon, game art by Valve, downloaded
+Oct 10, 2026. bag.png is Zechariah's own picture of the in-game Soul Bag with the background colour cut out.

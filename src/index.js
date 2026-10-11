@@ -34,6 +34,7 @@ async function main() {
     intents: [
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMembers, // needed to give/remove roles
+      GatewayIntentBits.GuildExpressions, // emojis added while the bot runs (they are looked up by name)
       GatewayIntentBits.GuildMessageReactions, // needed to see reactions
       GatewayIntentBits.GuildVoiceStates, // needed to see who is in LFG lobbies / voice XP
       GatewayIntentBits.GuildMessages, // chat XP, audit log

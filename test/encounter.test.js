@@ -106,6 +106,24 @@ test('the offer: after a won fight, kept 5 minutes, Fight unlocks the rival on a
     assert.ok(won, 'a win within 40 encounters');
     const r = await getFarmUser(id);
     assert.deepStrictEqual([r.hero, r.heroes[won]], ['Paige', { earned: 0, tiers: {}, items: {} }]);
+    // Rejuvs work in a duel and are used up; the rival has none (his calls, Oct 10)
+    const kit = { boons: 0, unlocked: 1, tiers: {}, items: [], buffs: {} };
+    const strong = { boons: 35, unlocked: 4, tiers: { 1: 3, 2: 3, 3: 3, 4: 3 }, items: [], buffs: {} };
+    const bare = duel('Haze', kit, 'Abrams', strong, { rng: seeded(1) });
+    const revived = duel('Haze', kit, 'Abrams', strong, { rng: seeded(1), rejuvs: 2 });
+    assert.deepStrictEqual([bare.won, bare.rejuvsUsed, revived.rejuvsUsed], [false, 0, 2]);
+    assert.ok(revived.seconds > bare.seconds && revived.log.some(([, text]) => text === 'Haze used a Rejuv'));
+    await updateFarmUser(id, (rec) => { rec.rejuvs = 3; });
+    let spent = 0;
+    for (let i = 0; i < 40 && !spent; i++) {
+      const next = (await play(id, 'small-camp', { now: t0, rng: seeded(400 + i) })).run;
+      if (!next.rival) break;
+      const before = (await getFarmUser(id)).rejuvs;
+      const out = await fightRival(id, { now: t0, rng: seeded(500 + i) });
+      assert.strictEqual((await getFarmUser(id)).rejuvs, before - out.run.rejuvsUsed);
+      spent += out.run.rejuvsUsed;
+    }
+    assert.ok(spent > 0, 'a duel used a Rejuv');
     // an unlocked hero never shows up again
     for (let i = 0; i < 30; i++) assert.notStrictEqual((await play(id, 'small-camp', { now: t0, rng: seeded(300 + i) })).run.rival, won);
   } finally { setCooldowns(true); }

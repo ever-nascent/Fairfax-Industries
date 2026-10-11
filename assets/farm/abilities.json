@@ -14022,5 +14022,1448 @@
     "TechResist": 30
    }
   ]
+ },
+ "ability_baba_bubbling_brew": {
+  "AbilityCastRange": {
+   "Value": 35,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "AbilityCharges": {
+   "Value": 1,
+   "Scale": {
+    "Value": 1,
+    "Type": "max_charges"
+   }
+  },
+  "AbilityCooldown": {
+   "Value": 26,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": {
+   "Value": 6,
+   "Scale": {
+    "Value": 1,
+    "Type": "charge_cooldown"
+   }
+  },
+  "AbilityUnitTargetLimit": 1,
+  "AutoIntrinsicModifiers": [
+   {
+    "Class": "BabaBubblingBrewGunDamage",
+    "Subclass": "BabaBubblingBrewGunDamage"
+   }
+  ],
+  "BehaviourBits": [
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorDontInterruptSlideOnCast"
+  ],
+  "BuffModifier": {
+   "Class": "BabaBubblingBrewBuff",
+   "Subclass": "BabaBubblingBrewBuff"
+  },
+  "ChannelMoveSpeed": -1,
+  "Damage": 50,
+  "DebuffDuration": {
+   "Value": 22,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "DebuffModifier": {
+   "Class": "BabaBubblingBrewDebuff",
+   "Subclass": "BabaBubblingBrewDebuff"
+  },
+  "ExplodeRadius": {
+   "Value": 3.5,
+   "Scale": {
+    "Value": 1,
+    "Type": "radius"
+   }
+  },
+  "ExplodeTime": 0.9,
+  "ExplodeTimeInterval": 0.05,
+  "IsDisabled": false,
+  "Key": "ability_baba_bubbling_brew",
+  "MagicDamagePerBullet": {
+   "Value": 8,
+   "Scale": {
+    "Value": 0.26,
+    "Type": "spirit"
+   }
+  },
+  "MaxStacks": {
+   "Value": 45,
+   "Scale": {
+    "Value": 2,
+    "Type": "power_increase"
+   }
+  },
+  "Name": "Threadsap",
+  "ProjectileSpacingThinkInterval": 0.05,
+  "ProjectileSpeed": 2600,
+  "ProjectileTurnMaxDegrees": 270,
+  "ProjectileTurnRate": 220,
+  "PullDuration": 0.6,
+  "PullModifier": {
+   "Class": "BabaThreadPull",
+   "Subclass": "BabaThreadPull",
+   "ExitVelocityScale": 0.2
+  },
+  "StolenSpiritEffectiveness": 175,
+  "TechPowerGain": {
+   "Value": 10,
+   "Scale": {
+    "Value": 0.9,
+    "Type": "power_increase"
+   }
+  },
+  "Upgrades": [
+   {
+    "MagicDamagePerBullet": 8
+   },
+   {
+    "AbilityCooldown": -12,
+    "DebuffDuration": 8
+   },
+   {
+    "AbilityCharges": 1,
+    "PullDistance": 7
+   }
+  ]
+ },
+ "ability_baba_bench_run": {
+  "AbilityCooldown": {
+   "Value": 30,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityDuration": {
+   "Value": 10,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "AbilityUnitTargetLimit": 1,
+  "AirDashDistancePercent": 20,
+  "BehaviourBits": [
+   "BehaviorNoTarget",
+   "BehaviorNonCombat",
+   "BehaviorCastableWhileBusy"
+  ],
+  "BenchRunModifier": {
+   "Class": "BabaBenchRun",
+   "Subclass": "BabaBenchRun",
+   "HeavyKickSlowModifier": {
+    "Class": "SlowBase",
+    "Subclass": "BabaBenchHeavyKickSlow"
+   },
+   "GroundPoundFallModifier": {
+    "Class": "BabaGroundPoundFall",
+    "Subclass": "BabaGroundPoundFall"
+   },
+   "LightKickShoveModifier": {
+    "Class": "BabaThreadPull",
+    "Subclass": "BabaBenchLightKickShove"
+   },
+   "UpwardsForceOnHeavyMeleeStart": 600
+  },
+  "BonusMeleeRange": 2,
+  "BonusMoveSpeed": 5,
+  "ChannelMoveSpeed": 1,
+  "ChargedJumpForwardForce": 300,
+  "CrouchMoveSpeedBonus": 3.5,
+  "DashDistancePercent": 20,
+  "EndLaunchMaxLingerTime": 3,
+  "GravityScalePercent": 80,
+  "GroundPoundFallTimeReductionPercent": 30,
+  "GroundPoundKnockUpDuration": 0.3,
+  "GroundPoundKnockUpHeight": 2.54,
+  "HeavyMeleeDashSlowPercent": -25,
+  "HeavyMeleeSlowDuration": {
+   "Value": 4,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "HeavyMeleeSlowPercent": 50,
+  "HeavyMeleeSpiritDamage": {
+   "Value": 75,
+   "Scale": {
+    "Value": 0.6,
+    "Type": "spirit"
+   }
+  },
+  "IsDisabled": false,
+  "JumpSoundLayerVolumeMax": -4,
+  "JumpSoundLayerVolumeMin": -60,
+  "Key": "ability_baba_bench_run",
+  "KickKnockbackDuration": 0.45,
+  "LightKickKnockbackDistance": {
+   "Value": 10,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "LightKickKnockbackHeight": 0.75,
+  "MaxJumpHeight": 250,
+  "MeleeLifestealNonHeroPct": 60,
+  "MeleeResist": 30,
+  "MeleeSpiritDamage": {
+   "Value": 0,
+   "Scale": {
+    "Value": 0,
+    "Type": "spirit"
+   }
+  },
+  "MinJumpHeight": 75,
+  "MoveWhileShootingSpeedPenaltyReductionPercent": 100,
+  "Name": "Granny Long Legs",
+  "Radius": {
+   "Value": 8,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "RisingGravityScalePercent": 50,
+  "StatusResistancePercent": 30,
+  "Upgrades": [
+   {
+    "BonusMoveSpeed": 2.5
+   },
+   {
+    "AbilityCooldown": -7
+   },
+   {
+    "StatusResistancePercent": 15,
+    "MeleeResist": 15,
+    "MeleeLifesteal": 50
+   }
+  ]
+ },
+ "ability_baba_hexing_brew": {
+  "AbilityCastRange": {
+   "Value": 12,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "AbilityChannelTime": {
+   "Value": 1,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "AbilityCooldown": {
+   "Value": 25,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityUnitTargetLimit": 1,
+  "BarrierDuration": {
+   "Value": 8,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "BarrierLockTime": 2.5,
+  "BarrierModifier": {
+   "Class": "CombatBarrier",
+   "Subclass": "BabaBrewBarrier"
+  },
+  "BehaviourBits": [
+   "BehaviorChannelled",
+   "BehaviorNoTarget",
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorCannotCancelDuringChannel",
+   "BehaviorProjectileFiredAsBullet",
+   "BehaviorCooldownOnChannelEnd",
+   "BehaviorDontInterruptSlideOnCast",
+   "BehaviorHoldsAtMaxChannel"
+  ],
+  "BrewTime": 1.5,
+  "BurnDuration": {
+   "Value": 8,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "ChannelMoveSpeed": -1,
+  "CombatBarrier": {
+   "Value": 100,
+   "Scale": {
+    "Value": 1.2,
+    "Type": "spirit"
+   }
+  },
+  "DamagePerSecond": {
+   "Value": 12,
+   "Scale": {
+    "Value": 0.152,
+    "Type": "spirit"
+   }
+  },
+  "FireLockTime": 4.5,
+  "FireModifier": {
+   "Class": "BabaBrewBurn",
+   "Subclass": "BabaBrewFire",
+   "TickInterval": 0.5
+  },
+  "HoldingModifier": {
+   "Class": "BabaBrewHolding",
+   "Subclass": "BabaBrewHolding"
+  },
+  "IsDisabled": false,
+  "Key": "ability_baba_hexing_brew",
+  "Name": "Baba's Brew",
+  "Radius": {
+   "Value": 6,
+   "Scale": {
+    "Value": 1,
+    "Type": "radius"
+   }
+  },
+  "SelfCastForwardOffset": 1,
+  "SilenceDuration": {
+   "Value": 3,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "SilenceLockTime": 3.5,
+  "SilenceModifier": {
+   "Class": "CitadelSilenced",
+   "Subclass": "BabaBrewSilence",
+   "EnabledStateMask": [
+    "Silenced"
+   ]
+  },
+  "SpiritResistReduction": -15,
+  "Upgrades": [
+   {
+    "Radius": 3
+   },
+   {
+    "AbilityCooldown": -12
+   },
+   {
+    "BrewEffectiveness": 33.33,
+    "DamagePerSecond": {
+     "Value": 1.3333,
+     "Scale": {
+      "Value": 1.3333,
+      "Type": "spirit",
+      "Multiply": true
+     },
+     "Multiply": true
+    },
+    "CombatBarrier": {
+     "Value": 1.3333,
+     "Scale": {
+      "Value": 1.3333,
+      "Type": "spirit",
+      "Multiply": true
+     },
+     "Multiply": true
+    },
+    "SilenceDuration": {
+     "Value": 1.3333,
+     "Multiply": true
+    },
+    "SpiritResistReduction": {
+     "Value": 1.3333,
+     "Multiply": true
+    }
+   }
+  ]
+ },
+ "ability_baba_ultimate_2": {
+  "AbilityCastDelay": 0.15,
+  "AbilityCastRange": {
+   "Value": 18,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "AbilityChannelTime": {
+   "Value": 6.5,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "AbilityCooldown": {
+   "Value": 150,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityPostCastDuration": 0.6,
+  "AbilityUnitTargetLimit": 9999,
+  "BarrageMaxDamage": {
+   "Value": 450,
+   "Scale": {
+    "Value": 1.6,
+    "Type": "spirit"
+   }
+  },
+  "BarrageStartDelayMax": 1.8,
+  "BarrageStartDelayMin": 1.2,
+  "BehaviourBits": [
+   "BehaviorChannelled",
+   "BehaviorNoTarget",
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorCooldownOnChannelEnd",
+   "BehaviorTriggerCancelMashProtectionOnCast",
+   "BehaviorRequireAbilityButtonToCancel",
+   "BehaviorShowCastRangeAsSatSphereWhileCasting"
+  ],
+  "ChannelMoveSpeed": 99,
+  "FinalTickDelay": 1.2,
+  "HexDuration": {
+   "Value": 2.75,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "IsDisabled": false,
+  "Key": "ability_baba_ultimate_2",
+  "LockonConeAngle": 40,
+  "LosingLockGraceTime": 1,
+  "MaxLockonStacks": 1,
+  "MaxSlow": 32,
+  "Name": "Feed The Birds",
+  "TargetModifier": {
+   "Class": "BabaUlt2Mark",
+   "Subclass": "BabaUlt2Mark",
+   "ImpactDelay": 0.5,
+   "ImpactModifier": {
+    "Class": "BabaUlt2Impact",
+    "Subclass": "BabaUlt2Impact",
+    "HexModifier": {
+     "Class": "BabaHex",
+     "Subclass": "BabaUlt2Pigeon",
+     "ModelScale": 2.2,
+     "FlyAcceleration": 0.8,
+     "FlyDeceleration": 1.5,
+     "FlySpeedScale": 1,
+     "FlyIdleSinkSpeed": 40,
+     "LaunchUpSpeed": 0,
+     "FlyLaunchTime": 0.2,
+     "FlyHoverMinHeight": 50,
+     "FlyHoverMaxHeight": 300,
+     "FlyJumpImpulseUp": 0,
+     "FlyJumpImpulseHoriz": 0
+    }
+   }
+  },
+  "TickDamageIncreasePerHit": 30,
+  "TickInterval": 0.15,
+  "TimeToGainLockonStack": 0.7,
+  "TimeToLoseLockonStack": 2,
+  "TimeToMaxStacks": 3.5,
+  "Upgrades": [
+   {
+    "MaxSlow": 32,
+    "AbilityCastRange": 4
+   },
+   {
+    "AbilityCooldown": -55
+   },
+   {
+    "BarrageMaxDamage": {
+     "Value": 125,
+     "Scale": {
+      "Value": 1.5,
+      "Type": "spirit"
+     }
+    },
+    "HexDuration": 0.5
+   }
+  ]
+ },
+ "ability_ratking_scrap_grenade": {
+  "AbilityCooldown": {
+   "Value": 26,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityUnitTargetLimit": 1,
+  "AdditionalBounceDetonateTimer": 0.7,
+  "ArmorReductionPerStackNonHero": -3,
+  "BehaviourBits": [
+   "BehaviorProjectile",
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorProjectileFiredAsBullet",
+   "BehaviorCanSetQuickCast",
+   "BehaviorDontInterruptSlideOnCast"
+  ],
+  "BigExplosionDamage": {
+   "Value": 0,
+   "Scale": {
+    "Value": 0,
+    "Type": "weapon_damage_increase"
+   }
+  },
+  "BigExplosionRadius": {
+   "Value": 0,
+   "Scale": {
+    "Value": 0,
+    "Type": "range"
+   }
+  },
+  "BigExplosionSlowModifier": {
+   "Class": "SlowBase",
+   "Subclass": "RatkingScrapGrenadeBigSlow"
+  },
+  "BigExplosionSlowPercent": {
+   "Value": 40,
+   "Scale": {
+    "Value": 0,
+    "Type": "spirit"
+   }
+  },
+  "BounceGrenadeSpeed": 1200,
+  "ChannelMoveSpeed": -1,
+  "DamagePerShrapnel": {
+   "Value": 70,
+   "Scale": {
+    "Value": 0.6,
+    "Type": "weapon_damage_increase"
+   }
+  },
+  "Detonations": 3,
+  "FinalBounceDetonateTimer": 1.5,
+  "FirstBounceDetonateTimer": 0.8,
+  "IsDisabled": false,
+  "Key": "ability_ratking_scrap_grenade",
+  "MeleeImpulseHeavy": 1000,
+  "MeleeImpulseLight": 750,
+  "MeleeImpulseUpScale": 0.45,
+  "Name": "Scrap Grenade",
+  "ShrapnelSphereRadius": {
+   "Value": 8,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "SlowDuration": {
+   "Value": 4,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "SlowModifier": {
+   "Class": "SlowBase",
+   "Subclass": "RatkingScrapGrenadeSlow"
+  },
+  "SlowPercent": {
+   "Value": 20,
+   "Scale": {
+    "Value": 0.08,
+    "Type": "spirit"
+   }
+  },
+  "Upgrades": [
+   {
+    "AbilityCooldown": -8
+   },
+   {
+    "DamagePerShrapnel": 70
+   },
+   {
+    "Detonations": 1,
+    "BigExplosionDamage": {
+     "Value": 300,
+     "Scale": {
+      "Value": 1,
+      "Type": "weapon_damage_increase"
+     }
+    },
+    "BigExplosionRadius": {
+     "Value": 14,
+     "Scale": {
+      "Value": 0.0254,
+      "Type": "range"
+     }
+    },
+    "BigExplosionSlowPercent": {
+     "Value": 0,
+     "Scale": {
+      "Value": 0.12,
+      "Type": "spirit"
+     }
+    }
+   }
+  ]
+ },
+ "ability_ratking_ratnibble": {
+  "AbilityCastRange": {
+   "Value": 50,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "AbilityCharges": {
+   "Value": 1,
+   "Scale": {
+    "Value": 1,
+    "Type": "max_charges"
+   }
+  },
+  "AbilityCooldown": {
+   "Value": 24,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": {
+   "Value": 8,
+   "Scale": {
+    "Value": 1,
+    "Type": "charge_cooldown"
+   }
+  },
+  "AbilityDuration": {
+   "Value": 6,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "AbilityUnitTargetLimit": 1,
+  "ArmorReductionPerBite": -1,
+  "BehaviourBits": [
+   "BehaviorAlwaysPreviewRadius",
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorCanSetQuickCast",
+   "BehaviorDontInterruptSlideOnCast"
+  ],
+  "BiteInterval": 1,
+  "ChannelMoveSpeed": -1,
+  "DamagePerBite": {
+   "Value": 8,
+   "Scale": {
+    "Value": 0.08,
+    "Type": "spirit"
+   }
+  },
+  "DebuffDuration": {
+   "Value": 4,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "EnemyModifier": {
+   "Class": "RatkingRatnibble",
+   "Subclass": "RatkingNibbleEnemy",
+   "MaxRats": 5,
+   "LingerModifier": {
+    "Class": "RatkingRatnibbleLinger",
+    "Subclass": "RatkingNibbleEnemyLinger"
+   },
+   "ArmorTotalModifier": {
+    "Class": "RatkingNibbleArmorTotal",
+    "Subclass": "RatkingNibbleArmorTotal"
+   }
+  },
+  "IsDisabled": false,
+  "Key": "ability_ratking_ratnibble",
+  "MarkModifier": {
+   "Class": "RatkingRatTracker",
+   "Subclass": "ModiiferRatkingRatTracker"
+  },
+  "MaxRats": 5,
+  "Name": "Rat Swarm",
+  "Radius": 10,
+  "RatSwarmCols": 3,
+  "RatSwarmRowSpeedStep": 4,
+  "RatSwarmRows": 3,
+  "RatSwarmWidth": 400,
+  "RatsAttached": 2,
+  "ThrowAngle": 30,
+  "ThrowJitterSpeed": 2,
+  "ThrowSpeed": 22,
+  "Upgrades": [
+   {
+    "AbilityCharges": 1
+   },
+   {
+    "RatSwarmCols": 2,
+    "RatSwarmRows": 1,
+    "RatSwarmWidth": 100,
+    "DebuffDuration": 4
+   },
+   {
+    "ArmorReductionPerBite": -1,
+    "DamagePerBite": 8
+   }
+  ]
+ },
+ "ability_ratking_ratarmor": {
+  "AbilityCooldown": {
+   "Value": 22,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityDuration": {
+   "Value": 6,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "AbilityUnitTargetLimit": 1,
+  "BehaviourBits": [
+   "BehaviorDontInterruptSlideOnCast"
+  ],
+  "BulletDamageReflectedPct": 100,
+  "ChannelMoveSpeed": -1,
+  "IsDisabled": false,
+  "Key": "ability_ratking_ratarmor",
+  "MaxHealthPct": 15,
+  "Name": "Royal Pestments",
+  "RatArmorModifier": {
+   "Class": "RatkingRatarmor",
+   "Subclass": "RatkingArmorCaster"
+  },
+  "RatCount": 7,
+  "ReturnFireChance": {
+   "Value": 15,
+   "Scale": {
+    "Value": 0.1,
+    "Type": "spirit"
+   }
+  },
+  "Upgrades": [
+   {
+    "AbilityDuration": 4
+   },
+   {
+    "ReturnFireChance": 15,
+    "AbilityCooldown": -8
+   },
+   {
+    "MaxHealthPct": 10,
+    "MaxDamagePerHit": 250
+   }
+  ]
+ },
+ "ability_ratking_standard_bearer": {
+  "AbilityCastDelay": 2,
+  "AbilityCooldown": {
+   "Value": 160,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityDuration": {
+   "Value": 10,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "AbilityUnitTargetLimit": 1,
+  "AllyDamageReduction": 15,
+  "AllyFlagAuraModifier": {
+   "Class": "RatkingFlagAllyAura",
+   "Subclass": "RatkingFlagAllyAura",
+   "ProvidedByAura": {
+    "Class": "RatkingFlagAllyAuraBuff",
+    "Subclass": "RatkingFlagAuraPlantedBuff",
+    "EnabledStateMask": [
+     "SlowImmune"
+    ]
+   },
+   "AuraRadius": -1,
+   "ModifierProvidedByAuraDuration": 0.5
+  },
+  "BehaviourBits": [
+   "BehaviorChannelled",
+   "BehaviorAlwaysPreviewRadius",
+   "BehaviorCanSetQuickCast"
+  ],
+  "BonusMoveSpeed": 3,
+  "CasterModifier": {
+   "Class": "BaseAura",
+   "Subclass": "RatkingFlagAuraCarry",
+   "ProvidedByAura": {
+    "Class": "RatkingFlagAllyAuraBuff",
+    "Subclass": "RatkingFlagAuraBuff",
+    "EnabledStateMask": [
+     "SlowImmune"
+    ]
+   },
+   "AmbientParticleRadiusControlPoint": 2,
+   "AuraRadius": -1,
+   "ModifierProvidedByAuraDuration": 0.5,
+   "EnabledStateMask": [
+    "DuckingDisabled",
+    "SlidingDisabled"
+   ]
+  },
+  "Damage": {
+   "Value": 200,
+   "Scale": {
+    "Value": 1.2,
+    "Type": "weapon_damage_increase"
+   }
+  },
+  "DashSlowPercent": -20,
+  "EnemyFlagAuraModifier": {
+   "Class": "RatkingFlagAura",
+   "Subclass": "RatkingFlagAura",
+   "RatSpawnInterval": 0.5,
+   "RatsPerSpawn": 1,
+   "RatYawSegments": 8,
+   "RatLeapSpeed": 500,
+   "RatLeapAngle": 40,
+   "RatLifetime": 3,
+   "RatTravelRadiusFraction": 2,
+   "BannerRatsAttached": 1,
+   "ProvidedByAura": {
+    "Class": "Base",
+    "Subclass": "SlowBase"
+   },
+   "AmbientParticleRadiusControlPoint": 2,
+   "AuraRadius": -1,
+   "ModifierProvidedByAuraDuration": 0.5
+  },
+  "FlagDuration": {
+   "Value": 12,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "IsDisabled": false,
+  "Key": "ability_ratking_standard_bearer",
+  "Name": "Rule, Ratannia!",
+  "PlantedModifier": {
+   "Class": "RatkingSewerEruption",
+   "Subclass": "RatkingSewerEruptionModifier",
+   "ExplosionHalfHeightMeters": 10,
+   "TossSpeed": 500
+  },
+  "Radius": {
+   "Value": 20,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "SlowPercent": 40,
+  "TossDuration": 1.2,
+  "Upgrades": [
+   {
+    "BonusMoveSpeed": 2
+   },
+   {
+    "FlagDuration": 5,
+    "Radius": 8
+   },
+   {
+    "Damage": 150,
+    "AllyDamageReduction": 10
+   }
+  ]
+ },
+ "ability_chessmaster_throwbishop": {
+  "AbilityCastDelay": 0.2,
+  "AbilityCastRange": {
+   "Value": 20,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "AbilityCooldown": {
+   "Value": 12,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityUnitTargetLimit": 1,
+  "AuraHeight": 50,
+  "BehaviourBits": [
+   "BehaviorProjectile",
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorCanSetQuickCast",
+   "BehaviorDontInterruptSlideOnCast"
+  ],
+  "BishopTimemBetweenShots": 0.05,
+  "BlackPieceModifier": {
+   "Class": "Base",
+   "Subclass": "Black",
+   "EnabledStateMask": [
+    "ChessmasterBlackpiece"
+   ]
+  },
+  "BossDamageScale": 0.5,
+  "BulletResist": 25,
+  "ChannelMoveSpeed": -1,
+  "CurrentCooldownRefundPercent": 50,
+  "DPS": {
+   "Value": 30,
+   "Scale": {
+    "Value": 0.7,
+    "Type": "spirit"
+   }
+  },
+  "DPSTickInterval": 0.25,
+  "Damage": {
+   "Value": 25,
+   "Scale": {
+    "Value": 0.64,
+    "Type": "spirit"
+   }
+  },
+  "DashSlowPercent": -25,
+  "EnemyAuraModifier": {
+   "Class": "ChessmasterDamageaura",
+   "Subclass": "Aura",
+   "ProvidedByAura": {
+    "Class": "Base",
+    "Subclass": "Slow"
+   },
+   "PulseDelay": 0.5,
+   "TargetModifier": {
+    "Class": "Base",
+    "Subclass": "Target",
+    "EnabledStateMask": [
+     "ChessmasterBishopTarget"
+    ]
+   }
+  },
+  "ExpireDistance": 80,
+  "FadingSlowPercent": 30,
+  "GroundAuraHeight": 4,
+  "ImpactDamage": {
+   "Value": 70,
+   "Scale": {
+    "Value": 2,
+    "Type": "spirit"
+   }
+  },
+  "ImpactRadius": 2.5,
+  "IsDisabled": false,
+  "Key": "ability_chessmaster_throwbishop",
+  "MaxPieces": 1,
+  "MoveBuffModifier": {
+   "Class": "ChessmasterMovingpiecedamage",
+   "Subclass": "Movingpiecedamage",
+   "GroundAuraModifier": {
+    "Class": "ChessmasterGroundtile",
+    "Subclass": "Groundaura",
+    "ProvidedByAura": {
+     "Class": "Base",
+     "Subclass": "Target",
+     "EnabledStateMask": [
+      "ChessmasterBishopTarget"
+     ]
+    },
+    "SlowModifier": {
+     "Class": "DiminishingSlow",
+     "Subclass": "Dimslow",
+     "EnabledStateMask": [
+      "Slowed",
+      "ChessmasterBishopTarget"
+     ]
+    },
+    "ActivationDelay": -1
+   }
+  },
+  "MoveCooldown": {
+   "Value": 3,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "MoveDistance": {
+   "Value": 12,
+   "Scale": [
+    {
+     "Value": 0.23,
+     "Type": "power_increase"
+    },
+    {
+     "Value": 1,
+     "Type": "range"
+    }
+   ]
+  },
+  "MultiHitPenaltyPercentage": 25,
+  "Name": "Setup Bishop",
+  "PulseDamage": {
+   "Value": 0,
+   "Scale": {
+    "Value": 0.8,
+    "Type": "spirit"
+   }
+  },
+  "Radius": 3.5,
+  "SlowDuration": {
+   "Value": 3,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "SlowModifier": {
+   "Class": "DiminishingSlow",
+   "Subclass": "Slow"
+  },
+  "StackDuration": {
+   "Value": 0,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "StackingModifier": {
+   "Class": "ChessmasterStackingspiritresistreduction",
+   "Subclass": "Stack"
+  },
+  "SummonModifier": {
+   "Class": "Base",
+   "Subclass": "Base",
+   "EnabledStateMask": [
+    "GlowThroughWallsToProvider"
+   ]
+  },
+  "TechResist": 50,
+  "TickInterval": 0.15,
+  "TileSteps": 2,
+  "Upgrades": [
+   {
+    "MoveDistance": 5,
+    "FadingSlowPercent": 15
+   },
+   {
+    "MaxPieces": 1,
+    "RecastWindow": 8
+   },
+   {
+    "TechArmorDamageReductionPerStack": -2.5,
+    "MaxStacks": 10,
+    "StackDuration": 10,
+    "TileSteps": 1
+   }
+  ]
+ },
+ "ability_chessmaster_knightbuff": {
+  "AbilityCastRange": {
+   "Value": 28,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "AbilityCooldown": {
+   "Value": 25,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityPostCastDuration": 0.15,
+  "AbilityUnitTargetLimit": 1,
+  "AuraModifier": {
+   "Subclass": "Aura"
+  },
+  "BehaviourBits": [
+   "BehaviorProjectile",
+   "BehaviorProjectilePassThroughWorld",
+   "BehaviorAllowSelfCast",
+   "BehaviorUseInstantCastUnitTargetUi",
+   "BehaviorCanSetQuickCast",
+   "BehaviorDontInterruptSlideOnCast"
+  ],
+  "BonusMoveSpeed": null,
+  "BuffDuration": {
+   "Value": 7,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "BuffModifier": {
+   "Class": "ChessmasterBuffallyBuff",
+   "Subclass": "Rookbuff",
+   "EnabledStateMask": [
+    "ChessmasterBuffally",
+    "ChessmasterPiece"
+   ]
+  },
+  "ChannelMoveSpeed": -1,
+  "CombatBarrier": {
+   "Value": 80,
+   "Scale": {
+    "Value": 0.8,
+    "Type": "spirit"
+   }
+  },
+  "IsDisabled": false,
+  "Key": "ability_chessmaster_knightbuff",
+  "MaxPieces": 1,
+  "MoveBuffModifier": {
+   "Class": "Base",
+   "Subclass": "Buff"
+  },
+  "MoveCooldown": 10,
+  "MoveDistance": {
+   "Value": 13,
+   "Scale": [
+    {
+     "Value": 0.23,
+     "Type": "power_increase"
+    },
+    {
+     "Value": 1,
+     "Type": "range"
+    }
+   ]
+  },
+  "Name": "Kingside Knight",
+  "SelfMoveDistance": {
+   "Value": 7,
+   "Scale": [
+    {
+     "Value": 0.14,
+     "Type": "power_increase"
+    },
+    {
+     "Value": 1,
+     "Type": "range"
+    }
+   ]
+  },
+  "SlowModifier": {
+   "Class": "DiminishingSlow",
+   "Subclass": "Dimslow"
+  },
+  "Stamina": 1,
+  "TargetingConeAngle": 30,
+  "TechResist": {
+   "Value": null,
+   "Scale": {
+    "Value": 0.5,
+    "Type": "power_increase"
+   }
+  },
+  "Upgrades": [
+   {
+    "AbilityCooldown": -8
+   },
+   {
+    "Stamina": 1,
+    "CombatBarrier": 80
+   },
+   {
+    "MaxPieces": 1,
+    "BonusTargetRadius": 20,
+    "RemoveDebuffs": 1
+   }
+  ]
+ },
+ "ability_chessmaster_forkpiece": {
+  "AbilityCastDelay": 0.25,
+  "AbilityCooldown": {
+   "Value": 33,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityUnitTargetLimit": 1,
+  "AirDrag": 0.3,
+  "AirSpeedMax": 100,
+  "BehaviourBits": [
+   "BehaviorProjectile",
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorDontInterruptSlideOnCast"
+  ],
+  "BonusMoveSpeedPercent": {
+   "Value": 0,
+   "Scale": {
+    "Value": 0.1,
+    "Type": "spirit"
+   }
+  },
+  "BuffModifier": {
+   "Class": "Base",
+   "Subclass": "Buff"
+  },
+  "ChannelMoveSpeed": -1,
+  "CombatBarrier": 100,
+  "Damage": {
+   "Value": 50,
+   "Scale": {
+    "Value": 1.3,
+    "Type": "spirit"
+   }
+  },
+  "DebuffModifier": {
+   "Class": "Base",
+   "Subclass": "Debuff"
+  },
+  "DetonationDelay": 0.25,
+  "FallSpeedMax": 10,
+  "GroundAuraHeight": 2,
+  "GroundAuraLingerDuration": 0.5,
+  "GroundAuraRadius": {
+   "Value": 0,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "GroundAuraSpacing": {
+   "Value": 3,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "HexModifier": {
+   "Class": "CitadelRoot",
+   "Subclass": "Hex",
+   "ModelScale": 0.9,
+   "EnabledStateMask": [
+    "ChessmasterBishopTarget"
+   ]
+  },
+  "ImmobilizeDuration": {
+   "Value": 1,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "ImmunityModifier": {
+   "Class": "Base",
+   "Subclass": "Immune",
+   "EnabledStateMask": [
+    "ChessmasterRookImmune"
+   ]
+  },
+  "IsDisabled": false,
+  "Key": "ability_chessmaster_forkpiece",
+  "MaxReflectCount": 1,
+  "MaxTriggers": 1,
+  "MoveDistance": {
+   "Value": 12,
+   "Scale": [
+    {
+     "Value": 0.23,
+     "Type": "power_increase"
+    },
+    {
+     "Value": 1,
+     "Type": "range"
+    }
+   ]
+  },
+  "Name": "Rook Battery",
+  "SlideScale": 100,
+  "SlowModifier": {
+   "Class": "SlowBase",
+   "Subclass": "Slow"
+  },
+  "SummonHealth": 100,
+  "TossBackSpeed": 300,
+  "TossDuration": 1,
+  "TossUpSpeed": 220,
+  "Upgrades": [
+   {
+    "FireRateSlow": 25,
+    "DebuffDuration": 5
+   },
+   {
+    "CurrentHealthPercent": 5
+   },
+   {
+    "AbilityCooldown": -12,
+    "ImmobilizeDuration": 0.5,
+    "MaxReflectCount": 1
+   }
+  ]
+ },
+ "ability_chessmaster_queen": {
+  "AbilityCastDelay": 0.75,
+  "AbilityCastRange": {
+   "Value": 30,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "AbilityCooldown": {
+   "Value": 210,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityUnitTargetLimit": 1,
+  "AuraHeight": 8,
+  "AuraLingerDuration": 0.15,
+  "BehaviourBits": [
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorTargetThroughWalls",
+   "BehaviorCanSetQuickCast"
+  ],
+  "ChannelMoveSpeed": -1,
+  "CheckmateThreshold": {
+   "Value": 0,
+   "Scale": {
+    "Value": 0,
+    "Type": "power_increase"
+   }
+  },
+  "DPS": {
+   "Value": 50,
+   "Scale": {
+    "Value": 0.7,
+    "Type": "spirit"
+   }
+  },
+  "DPSTickInterval": 0.5,
+  "Damage": {
+   "Value": 120,
+   "Scale": {
+    "Value": 1.4,
+    "Type": "spirit"
+   }
+  },
+  "ExpireDistance": 80,
+  "GroundAuraHeight": 1,
+  "Height": 10,
+  "IsDisabled": false,
+  "Key": "ability_chessmaster_queen",
+  "LiftHeight": 4,
+  "LiftModifier": {
+   "Class": "ChessmasterQueenHoldinplace",
+   "Subclass": "Lift",
+   "DampingFactor": 0.25,
+   "ParallelTossSpeed": 0,
+   "UpTossSpeed": 0,
+   "SlamAcc": 5000,
+   "SlamMaxSpeed": 20000,
+   "RiseHeight": 180
+  },
+  "MaxPieces": 1,
+  "MaxStacks": 3,
+  "MoveCooldown": {
+   "Value": 5,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "MoveDistance": {
+   "Value": 16,
+   "Scale": [
+    {
+     "Value": 0.23,
+     "Type": "power_increase"
+    },
+    {
+     "Value": 1,
+     "Type": "range"
+    }
+   ]
+  },
+  "Name": "Develop Queen",
+  "QueenBonusMoves": 2,
+  "SlowDuration": {
+   "Value": 1.5,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "SlowModifier": {
+   "Class": "SlowBase",
+   "Subclass": "Slow"
+  },
+  "SlowPercent": 15,
+  "StunDuration": {
+   "Value": 1.25,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "TileModifier": {
+   "Class": "ChessmasterGroundtile",
+   "Subclass": "Tile",
+   "ActivationDelay": 0
+  },
+  "TileSteps": 3,
+  "TossUpSpeed": 600,
+  "Upgrades": [
+   {
+    "AbilityCooldown": -40
+   },
+   {
+    "CheckmateThreshold": {
+     "Value": 200,
+     "Scale": {
+      "Value": 5,
+      "Type": "power_increase"
+     }
+    },
+    "SlowPercent": 15
+   },
+   {
+    "TileSteps": 1,
+    "QueenBonusMoves": 2
+   }
+  ]
  }
 }

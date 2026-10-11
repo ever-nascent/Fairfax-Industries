@@ -15,7 +15,8 @@ const { ASSETS } = require('../art');
 const WIKI = 'https://deadlock.wiki';
 const OUT = path.join(ASSETS, 'farm');
 const FARM_HEROES = ['Mina', 'Haze', 'Celeste', 'Paige', 'Abrams', // the starter 5, his pick, Oct 1
-  'Apollo', 'Bebop', 'Billy', 'Calico', 'The Doorman', 'Drifter', 'Dynamo', 'Graves', 'Grey Talon', 'Holliday', 'Infernus', 'Ivy', 'Kelvin', 'Lady Geist', 'Lash', 'McGinnis', 'Mirage', 'Mo & Krill', 'Paradox', 'Pocket', 'Rem', 'Seven', 'Shiv', 'Silver', 'Sinclair', 'Venator', 'Victor', 'Vindicta', 'Viscous', 'Vyper', 'Warden', 'Wraith', 'Yamato']; // then the rest A to Z, one at a time (his call, Oct 3; each added with addHero below)
+  'Apollo', 'Bebop', 'Billy', 'Calico', 'The Doorman', 'Drifter', 'Dynamo', 'Graves', 'Grey Talon', 'Holliday', 'Infernus', 'Ivy', 'Kelvin', 'Lady Geist', 'Lash', 'McGinnis', 'Mirage', 'Mo & Krill', 'Paradox', 'Pocket', 'Rem', 'Seven', 'Shiv', 'Silver', 'Sinclair', 'Venator', 'Victor', 'Vindicta', 'Viscous', 'Vyper', 'Warden', 'Wraith', 'Yamato', // then the rest A to Z, one at a time (his call, Oct 3; each added with addHero below)
+  'Baba', 'Rat King', 'Solomon']; // the City Never Sleeps heroes, as they come out (Oct 10; the wiki still flags them InDevelopment, so a selectable one counts as live)
 
 // Target icons: the minimap camp icons (small / medium / large), each boss's / structure's own icon, and for Crate and Sinner's
 // Sacrifice (the wiki has no icons for them) a square crop of its picture (CROPS) so it fits an embed thumbnail.
@@ -127,7 +128,7 @@ const slotsOf = (hero) => [...Object.values(hero.BoundAbilities), ...Object.valu
 async function addHero(name) {
   const list = Object.values(await raw('Data:HeroData.json'));
   const found = list.find((x) => x.Name === name);
-  if (!found || found.IsDisabled || found.InDevelopment) throw new Error(`${name}: not a live hero in the wiki's HeroData`);
+  if (!found || found.IsDisabled || (found.InDevelopment && !found.IsSelectable)) throw new Error(`${name}: not a live hero in the wiki's HeroData`);
   const hero = withForm(found, list);
   const all = await raw('Data:AbilityData.json');
   const read = async (file) => JSON.parse(await fs.readFile(path.join(OUT, file), 'utf8'));
@@ -148,7 +149,7 @@ async function refresh() {
   const heroes = {};
   for (const name of FARM_HEROES) {
     const h = heroData.find((x) => x.Name === name);
-    if (!h || h.IsDisabled || h.InDevelopment) { console.log(`[FAIL] ${name}: not a live hero in the wiki's HeroData`); continue; }
+    if (!h || h.IsDisabled || (h.InDevelopment && !h.IsSelectable)) { console.log(`[FAIL] ${name}: not a live hero in the wiki's HeroData`); continue; }
     heroes[name] = withForm(h, heroData);
     const w = h.Weapon;
     console.log(`[ok] ${name} (${h.Type}): ${h.MaxHealth} HP, ${w.BulletDamage} x ${w.RoundsPerSecond.toFixed(1)}/s, clip ${w.ClipSize}, reload ${w.ReloadTime}s, ${Math.round(w.DPS)} DPS`);
