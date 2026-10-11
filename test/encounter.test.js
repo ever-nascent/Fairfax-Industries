@@ -7,7 +7,7 @@ const { buildHero, roster } = require('../src/utils/farm/hero');
 const { rollRival, rivalKit, duel, ENCOUNTER_CHANCE, DUEL_SECONDS } = require('../src/utils/farm/encounter');
 const { itemByName } = require('../src/utils/farm/stats');
 const { TIER_COSTS } = require('../src/utils/farm/levels');
-const { chooseHero, getFarmUser, updateFarmUser, play, setCooldowns, offerFor, walkAway, fightRival, OFFER_MS } = require('../src/utils/farm/play');
+const { chooseHero, getFarmUser, updateFarmUser, play, setCooldowns, offerFor, holdOffer, walkAway, fightRival, unlockHero, OFFER_MS } = require('../src/utils/farm/play');
 
 const seeded = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
 
@@ -86,19 +86,23 @@ test('the offer: after a won fight, kept 5 minutes, Fight unlocks the rival on a
     const t0 = Date.parse('2026-10-03T12:00:00Z');
     const { run } = await play(id, 'small-camp', { now: t0, rng: seeded(5) });
     assert.ok(run.won && roster().includes(run.rival) && run.rival !== 'Paige');
-    assert.strictEqual(offerFor(id, t0 + OFFER_MS - 1), run.rival);
-    assert.strictEqual(offerFor(id, t0 + OFFER_MS), null, 'the rival left');
-    assert.strictEqual(walkAway(id, t0), run.rival);
-    assert.strictEqual(offerFor(id, t0), null);
-    assert.deepStrictEqual(await fightRival(id, { now: t0 }), { error: 'gone' });
+    assert.strictEqual(offerFor(id, run.rival, t0 + OFFER_MS - 1), run.rival);
+    assert.strictEqual(holdOffer(id, run.rival, t0 + 60000), run.rival, 'the result is shown a minute later');
+    assert.strictEqual(offerFor(id, run.rival, t0 + 60000 + OFFER_MS - 1), run.rival, 'its 5 minutes start when the result is shown');
+    assert.strictEqual(offerFor(id, run.rival, t0 + 60000 + OFFER_MS), null, 'the rival left');
+    assert.strictEqual(holdOffer(id, run.rival, t0 + 60000 + OFFER_MS), null);
+    const { rival } = (await play(id, 'small-camp', { now: t0, rng: seeded(6) })).run;
+    assert.strictEqual(walkAway(id, rival, t0), rival);
+    assert.strictEqual(offerFor(id, rival, t0), null);
+    assert.deepStrictEqual(await fightRival(id, rival, { now: t0 }), { error: 'gone' });
 
     // fight until one is beaten: the rival is unlocked at level 0 with nothing, the hero and the souls are untouched
     let won = null;
     for (let i = 0; i < 40 && !won; i++) {
       const next = (await play(id, 'small-camp', { now: t0, rng: seeded(100 + i) })).run;
-      const out = await fightRival(id, { now: t0, rng: seeded(200 + i) });
+      const out = await fightRival(id, next.rival, { now: t0, rng: seeded(200 + i) });
       assert.strictEqual(out.run.rival, next.rival);
-      assert.strictEqual(offerFor(id, t0), null, 'one fight per offer');
+      assert.strictEqual(offerFor(id, next.rival, t0), null, 'one fight per offer');
       const r = await getFarmUser(id);
       assert.strictEqual(!!r.heroes[next.rival], out.run.won, 'unlocked only by a win');
       if (out.run.won) won = next.rival;
@@ -129,18 +133,50 @@ test('the offer: after a won fight, kept 5 minutes, Fight unlocks the rival on a
   } finally { setCooldowns(true); }
 });
 
+test('several rivals can wait at once: each keeps its own 5 minutes, none shows up twice, an unlocked one can not be fought', async () => {
+  const id = 'enc3';
+  await chooseHero(id, 'Paige');
+  await updateFarmUser(id, (r) => { r.earned = 1e6; r.tiers = { 1: 3, 2: 3, 3: 3, 4: 3 }; r.tokens = 1; });
+  setCooldowns(false); // every won fight brings a rival
+  try {
+    const t0 = Date.parse('2026-10-11T12:00:00Z');
+    const met = [];
+    for (let i = 0; i < 6; i++) met.push((await play(id, 'small-camp', { now: t0 + i * 1000, rng: seeded(400 + i) })).run.rival);
+    assert.ok(met.every(Boolean));
+    assert.strictEqual(new Set(met).size, met.length, 'a rival already waiting is not offered again');
+    for (const rival of met) assert.strictEqual(offerFor(id, rival, t0 + 5000), rival, 'a new rival does not send the others away');
+    // the first one's 5 minutes run out on their own, the others still wait
+    assert.strictEqual(offerFor(id, met[0], t0 + OFFER_MS), null);
+    assert.strictEqual(offerFor(id, met[5], t0 + OFFER_MS), met[5]);
+    // Walk Away from one leaves the rest
+    assert.strictEqual(walkAway(id, met[1], t0 + 6000), met[1]);
+    assert.strictEqual(offerFor(id, met[2], t0 + 6000), met[2]);
+    // a rival unlocked with a token meanwhile: its offer is gone, and an old button for it can't start a duel
+    assert.deepStrictEqual(await unlockHero(id, met[2]), { ok: true });
+    assert.strictEqual(offerFor(id, met[2], t0 + 6000), null);
+    assert.strictEqual(holdOffer(id, met[2], t0 + 6000), null, 'its result shows no rival');
+    await updateFarmUser(id, (r) => { r.heroes[met[3]] = { earned: 0, tiers: {}, items: {} }; }); // unlocked without going through unlockHero
+    assert.deepStrictEqual(await fightRival(id, met[3], { now: t0 + 6000 }), { error: 'owned' });
+    // the right rival is fought from each button
+    const out = await fightRival(id, met[4], { now: t0 + 6000, rng: seeded(9) });
+    assert.strictEqual(out.run.rival, met[4]);
+    assert.strictEqual(offerFor(id, met[5], t0 + 6000), met[5]);
+    assert.deepStrictEqual(await fightRival(id, undefined, { now: t0 + 6000 }), { error: 'gone' }, 'a button from before rivals were named');
+  } finally { setCooldowns(true); }
+});
+
 test('no encounter after a loss or a roam; with cooldowns on it is the 5% roll', async () => {
   const id = 'enc2';
   await chooseHero(id, 'Haze');
   const t0 = Date.parse('2026-10-03T12:00:00Z');
   const lost = (await play(id, 'mid-boss', { now: t0, rng: seeded(1) })).run; // level 0 against the Mid-Boss
-  assert.ok(!lost.won && lost.rival === null && offerFor(id, t0) === null);
+  assert.ok(!lost.won && lost.rival === null && !roster().some((n) => offerFor(id, n, t0)));
   await updateFarmUser(id, (r) => { r.earned = 1e6; r.cooldowns = {}; });
   const miss = (await play(id, 'small-camp', { now: t0, rng: () => 0.5 })).run;
   assert.ok(miss.won && miss.rival === null, 'the roll missed');
   await updateFarmUser(id, (r) => { r.cooldowns = {}; });
   const { haul } = await play(id, 'roam', { now: t0, rng: () => 0 });
-  assert.ok(haul && offerFor(id, t0) === null);
+  assert.ok(haul && !roster().some((n) => offerFor(id, n, t0)));
 });
 
 test('Cultist Sacrifice never eats a rival hero', () => {
