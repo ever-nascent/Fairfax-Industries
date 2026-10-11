@@ -3,8 +3,8 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 process.env.FARM_FRAME_MS = '0';
 const test = require('node:test');
 const assert = require('node:assert');
-const { getUser, changeSouls } = require('../src/utils/xp');
-const { getFarmUser, chooseHero, play, simulate, cooldownLeft } = require('../src/utils/farm/play');
+const { getUser } = require('../src/utils/xp');
+const { getFarmUser, chooseHero, play, simulate, cooldownLeft, updateFarmUser: changeRecord } = require('../src/utils/farm/play');
 const views = require('../src/utils/farm/views');
 const routes = require('../src/components/farm');
 const base = require('../src/commands/farm/base');
@@ -22,6 +22,9 @@ require('../src/utils/trivia').loadStreakEmojis({
 });
 const member = (id) => ({ id, guild, toString: () => `<@${id}>` });
 const seeded = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
+// the current hero's own souls (his call, Oct 11: farm souls are per hero, apart from the server balance)
+const giveSouls = (id, n) => changeRecord(id, (r) => { r.souls += n; });
+const heroSouls = async (id) => (await getFarmUser(id)).souls;
 const KEYS = ['small-camp', 'medium-camp', 'large-camp', 'guardian', 'walker', 'mid-boss', 'siege'];
 
 // Discord's limits on one message
@@ -157,12 +160,13 @@ test('Send plays the fight as a live message, pays once, and the cooldown blocks
   assert.match(edits[0].embeds[0].toJSON().description, /is fighting/);
   const result = edits.at(-1).embeds[0].toJSON();
   assert.match(result.title, /Cleared|Defeated/);
-  if (result.title.endsWith('Cleared')) assert.ok((await getUser(id)).souls > 0);
+  if (result.title.endsWith('Cleared')) assert.ok((await heroSouls(id)) > 0, "paid into the hero's own souls");
+  assert.strictEqual((await getUser(id)).souls, 0, 'never the server balance');
   assert.ok(cooldownLeft(await getFarmUser(id), 'small-camp') > 59 * 60000, 'the cooldown started');
-  const before = (await getUser(id)).souls;
+  const before = await heroSouls(id);
   const second = fake(id, `farm_send:${id}:small-camp`);
   await route('Send button').execute(second);
-  assert.strictEqual((await getUser(id)).souls, before, 'a second Send pays nothing');
+  assert.strictEqual(await heroSouls(id), before, 'a second Send pays nothing');
   assert.ok(second.log.some((l) => l[0] === 'followUp' && /isn't ready/.test(l[1].content)));
 });
 
@@ -179,7 +183,7 @@ test('a failed attempt pays nothing and still uses the cooldown', async () => {
   await chooseHero(id, 'Haze');
   const r = await play(id, 'mid-boss', { rng: seeded(2) });
   assert.ok(r.run && !r.run.won && r.run.souls === 0);
-  assert.strictEqual((await getUser(id)).souls, 0);
+  assert.strictEqual(await heroSouls(id), 0);
   assert.ok(cooldownLeft(await getFarmUser(id), 'mid-boss') > 11 * 3600 * 1000);
 });
 
@@ -198,7 +202,7 @@ test('roam: a haul with buffs that stay on the hero, once every 30 minutes', asy
   assert.ok(first.haul && first.haul.hero === 'Haze');
   const record = await getFarmUser(id);
   assert.strictEqual(Object.values(record.buffs).reduce((s, n) => s + n, 0), first.haul.buffs.length);
-  assert.strictEqual((await getUser(id)).souls, first.haul.souls);
+  assert.strictEqual(await heroSouls(id), first.haul.souls);
   assert.strictEqual((await play(id, 'roam', { now: now + 10 * 60000 })).error, 'cooldown');
   assert.ok(!(await play(id, 'roam', { now: now + 31 * 60000, rng: seeded(10) })).error);
   const cmd = fake('roam2');
@@ -261,15 +265,16 @@ test('cooldowns can be switched off for testing, and back on', async () => {
   assert.strictEqual((await play(id, 'roam', { now: now + 4000 })).error, 'cooldown', 'on again: the first roam is still cooling down');
 });
 
-test('more heroes: unlock once with a token, switch once a day, and each hero keeps its own progress', async () => {
-  const { unlockHero, switchHero, updateFarmUser, buyItem, SWITCH_WAIT } = require('../src/utils/farm/play');
+test('more heroes: unlock once with a token, switch any time, and each hero keeps its own souls, progress, cooldowns and buffs (his calls, Oct 11)', async () => {
+  const { unlockHero, switchHero, updateFarmUser, buyItem } = require('../src/utils/farm/play');
   const id = 'sw1';
   const labels = (p) => p.components.at(-1).toJSON().components.map((b) => [b.label, !!b.disabled]);
   const press = async (label, customId, values = []) => { const i = fake(id, customId, { values }); await route(label).execute(i); return i; };
   await chooseHero(id, 'Haze');
-  await changeSouls(id, 10000);
-  await updateFarmUser(id, (r) => { r.earned = 3000; r.tiers = { 1: 1 }; r.buffs = { fireRate: 2 }; });
+  await giveSouls(id, 10000);
+  await updateFarmUser(id, (r) => { r.earned = 3000; r.tiers = { 1: 1 }; r.buffs = { fireRate: 2 }; r.rejuvs = 2; r.clears = { 'small-camp': 4 }; });
   await buyItem(id, 'Extra Health');
+  const hazeSouls = await heroSouls(id);
   const home = fake(id);
   await homeCommand(home);
   assert.deepStrictEqual(labels(home.log.at(-1)[1]), [['Hero', false], ['Switch Hero', false]]);
@@ -279,6 +284,7 @@ test('more heroes: unlock once with a token, switch once a day, and each hero ke
   checkLimits(list, 'switch list');
   assert.strictEqual(list.embeds[0].toJSON().title, 'Switch Hero');
   assert.match(list.embeds[0].toJSON().description, /\*\*Haze\*\* {2}- {2}Level \d+ {2}- {2}Current Hero\n[\s\S]*\*\*Abrams\*\* {2}- {2}Locked/);
+  assert.match(list.embeds[0].toJSON().footer.text, /^You can switch any time\./);
 
   // locked and no token: Unlock is greyed out, and pressing it anyway does nothing
   const locked = (await press('Hero select', `farm_hero:${id}`, ['Abrams'])).log.at(-1)[1];
@@ -290,44 +296,63 @@ test('more heroes: unlock once with a token, switch once a day, and each hero ke
 
   // unlock: uses one token and no souls, doesn't switch
   await updateFarmUser(id, (r) => { r.tokens = 2; });
-  const before = (await getUser(id)).souls;
   const bought = await press('Unlock button', `farm_unlock:${id}:Abrams`);
-  assert.strictEqual((await getUser(id)).souls, before, 'no souls');
+  assert.strictEqual(await heroSouls(id), hazeSouls, 'no souls');
   assert.strictEqual((await getFarmUser(id)).tokens, 1);
   assert.strictEqual((await getFarmUser(id)).hero, 'Haze', 'unlocking does not switch');
   assert.deepStrictEqual(labels(bought.log.at(-1)[1]), [['Switch', false], ['Back', false]]);
   assert.strictEqual((await unlockHero(id, 'Abrams')).error, 'owned');
   assert.strictEqual((await getFarmUser(id)).tokens, 1, 'never charged twice');
 
-  // switch: the new hero starts from nothing, the member's buffs come along
+  // Haze is on cooldown at its camp; Abrams starts from nothing (no souls, buffs, Rejuvs or growth) and its camp is ready
   const t0 = Date.parse('2026-10-03T12:00:00Z');
-  assert.deepStrictEqual(await switchHero(id, 'Abrams', t0), { ok: true });
+  assert.ok((await play(id, 'small-camp', { now: t0, rng: seeded(3) })).run);
+  assert.strictEqual((await play(id, 'small-camp', { now: t0 + 1000 })).error, 'cooldown');
+  const hazeAfter = await getFarmUser(id);
+  assert.deepStrictEqual(await switchHero(id, 'Abrams'), { ok: true });
   const abrams = await getFarmUser(id);
-  assert.deepStrictEqual([abrams.hero, abrams.earned, abrams.tiers, abrams.items.vitality, abrams.buffs], ['Abrams', 0, {}, [], { fireRate: 2 }]);
-  await updateFarmUser(id, (r) => { r.earned = 500; });
+  assert.deepStrictEqual([abrams.hero, abrams.souls, abrams.earned, abrams.tiers, abrams.items.vitality, abrams.buffs, abrams.rejuvs, abrams.clears, abrams.cooldowns],
+    ['Abrams', 0, 0, {}, [], {}, 0, {}, {}]);
+  assert.strictEqual(cooldownLeft(abrams, 'small-camp', t0 + 1000), 0, 'cooldowns are per hero');
+  const abramsRun = (await play(id, 'small-camp', { now: t0 + 1000, rng: seeded(4) })).run;
+  assert.ok(abramsRun);
+  assert.strictEqual(await heroSouls(id), abramsRun.souls, "Abrams' trip pays Abrams");
 
-  // once a day
-  const soon = await switchHero(id, 'Haze', t0 + 3600000);
-  assert.strictEqual(soon.error, 'wait');
-  assert.strictEqual(soon.left, SWITCH_WAIT - 3600000);
-  assert.strictEqual((await switchHero(id, 'Abrams', t0)).error, 'same');
-  const waiting = await views.pickView(member(id), 'Haze', await getFarmUser(id), t0 + 3600000);
-  assert.deepStrictEqual(labels(waiting), [['Switch', true], ['Back', false]]);
-  assert.match(waiting.embeds[0].toJSON().footer.text, /switch again in 23h 0m/);
-
-  // back to Haze a day later: everything it had is still there, and Abrams keeps what it earned
-  assert.deepStrictEqual(await switchHero(id, 'Haze', t0 + SWITCH_WAIT), { ok: true });
+  // no wait to switch back (his call, Oct 11): Haze has everything it had, and Abrams keeps what it earned
+  assert.deepStrictEqual(await switchHero(id, 'Haze'), { ok: true });
+  assert.strictEqual((await switchHero(id, 'Haze')).error, 'same');
   const haze = await getFarmUser(id);
-  assert.deepStrictEqual([haze.hero, haze.earned, haze.tiers, haze.items.vitality], ['Haze', 3000, { 1: 1 }, ['Extra Health']]);
-  assert.strictEqual(haze.heroes.Abrams.earned, 500);
+  assert.deepStrictEqual([haze.hero, haze.souls, haze.earned, haze.tiers, haze.items.vitality, haze.buffs, haze.rejuvs, haze.cooldowns],
+    ['Haze', hazeAfter.souls, hazeAfter.earned, { 1: 1 }, ['Extra Health'], { fireRate: 2 }, 2, hazeAfter.cooldowns]);
+  assert.deepStrictEqual([haze.heroes.Abrams.souls, haze.heroes.Abrams.earned], [abramsRun.souls, abramsRun.souls]);
+  assert.strictEqual((await play(id, 'small-camp', { now: t0 + 2000 })).error, 'cooldown', "Haze's own cooldown still runs");
+  assert.strictEqual((await getUser(id)).souls, 0, 'the server balance never moved');
+  const preview = await views.pickView(member(id), 'Abrams', await getFarmUser(id));
+  assert.deepStrictEqual(labels(preview), [['Switch', false], ['Back', false]]);
 
-  // the Switch button itself: goes to the new hero's home screen
-  await updateFarmUser(id, (r) => { r.switchedAt = 0; });
+  // the Switch button itself: goes to the new hero's home screen, and straight back
   const done = await press('Switch button', `farm_switchto:${id}:Abrams`);
   assert.match(done.log.at(-1)[1].embeds[0].toJSON().title, /^Abrams {2}- {2}Level \d+$/);
-  const blocked = await press('Switch button', `farm_switchto:${id}:Haze`);
-  assert.match(blocked.log.at(-1)[1].content, /Switching isn't ready yet/);
-  assert.strictEqual((await getFarmUser(id)).hero, 'Abrams');
+  const back = await press('Switch button', `farm_switchto:${id}:Haze`);
+  assert.match(back.log.at(-1)[1].embeds[0].toJSON().title, /^Haze {2}- {2}Level \d+$/);
+  assert.strictEqual((await getFarmUser(id)).hero, 'Haze');
+});
+
+test('a fight is settled on the hero that went, even after a switch while it was played (switching takes no time since Oct 11)', async () => {
+  const { updateFarmUser, unlockHero, switchHero } = require('../src/utils/farm/play');
+  const id = 'sw2';
+  await chooseHero(id, 'Haze');
+  await updateFarmUser(id, (r) => { r.tokens = 1; r.earned = 1e6; r.tiers = { 1: 3, 2: 3, 3: 3, 4: 3 }; });
+  await unlockHero(id, 'Abrams');
+  // the record store runs one change at a time: the switch is queued behind the claim, and lands before the fight is settled
+  const trip = play(id, 'small-camp', { now: Date.parse('2026-10-11T12:00:00Z'), rng: seeded(7) });
+  const switched = switchHero(id, 'Abrams');
+  const [{ run }, sw] = await Promise.all([trip, switched]);
+  assert.ok(run.won && sw.ok);
+  const r = await getFarmUser(id);
+  assert.strictEqual(r.hero, 'Abrams');
+  assert.deepStrictEqual([r.souls, r.earned, r.clears, r.cooldowns], [0, 0, {}, {}], 'Abrams got nothing of it');
+  assert.deepStrictEqual([r.heroes.Haze.souls, r.heroes.Haze.earned, r.heroes.Haze.clears], [run.souls, 1e6 + run.souls, { 'small-camp': 1 }]);
 });
 
 test('a camp screen: the triangle is the author icon, a Haunt is in the corner, Title Case text, and Send fights the Haunt shown', async () => {
@@ -480,10 +505,10 @@ test('waves: an endless run down a lane, every wave cleared pays, once a day per
   await chooseHero(id, 'Haze');
   await updateFarmUser(id, (r) => { r.earned = 5000; r.tiers = { 1: 2, 2: 1, 3: 1, 4: 1 }; });
   assert.strictEqual((await play(id, 'waves', { now: t0 })).error, 'lane');
-  const before = (await getUser(id)).souls;
+  const before = await heroSouls(id);
   const out = await play(id, 'waves', { lane: 'york', now: t0, rng: seeded(5) });
   assert.ok(out.run.waves && out.run.lane === 'york' && out.run.cleared >= 1);
-  assert.strictEqual((await getUser(id)).souls, before + wavesPay(out.run.cleared), 'falling loses nothing');
+  assert.strictEqual(await heroSouls(id), before + wavesPay(out.run.cleared), 'falling loses nothing');
   const r = await getFarmUser(id);
   assert.deepStrictEqual([r.bestWave, r.earned, r.clears.waves, Object.keys(r.down)], [out.run.cleared, 5000 + out.run.souls, undefined, []]);
   assert.strictEqual((await play(id, 'waves', { lane: 'york', now: t0 + 3600000 })).error, 'cooldown');
@@ -510,7 +535,7 @@ test('waves: an endless run down a lane, every wave cleared pays, once a day per
 test('buying an upgrade says which components it used up; a component of an owned item is refused', async () => {
   const id = 'cmd-upgrade';
   await chooseHero(id, 'Haze');
-  await changeSouls(id, 100000);
+  await giveSouls(id, 100000);
   const buy = async (name) => {
     const i = fake(id, `${views.BUY_ID}:${id}:weapon:1:${name}`);
     await route('Buy item').execute(i);
@@ -549,7 +574,7 @@ test('Character Unlock Token: each hero earns one from its first siege win, and 
 test('item shop: the /base dropdown opens it, every tab fits the limits, buying and selling redraw their tab', async () => {
   const id = 'cmd-shop';
   await chooseHero(id, 'Haze');
-  await changeSouls(id, 100000);
+  await giveSouls(id, 100000);
   const open = fake(id, `${views.TARGET_ID}:${id}`, { values: ['shop'] });
   await route('Target select').execute(open);
   const first = open.log.find((l) => l[0] === 'editReply')[1];
@@ -577,7 +602,7 @@ test('item shop: the /base dropdown opens it, every tab fits the limits, buying 
   const sell = fake(id, `${views.SELL_ID}:${id}`, { values: ['Extra Health'] });
   await route('Sell item').execute(sell);
   assert.match(sell.log.find((l) => l[0] === 'editReply')[1].embeds[0].toJSON().title, /Sell/);
-  const hero = await views.heroView(member(id), await getFarmUser(id), 5);
+  const hero = await views.heroView(member(id), await getFarmUser(id));
   assert.deepStrictEqual(hero.components.at(-1).toJSON().components.map((c) => c.label), ['Back', 'Item Shop'], 'selling and the Broker moved to the shop');
 });
 

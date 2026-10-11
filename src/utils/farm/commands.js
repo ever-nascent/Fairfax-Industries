@@ -1,7 +1,6 @@
 // What the farm commands (/base, /jungle, /lane, /siege) do when run. The replies are public (his call, Oct 4); only the member who ran
 // one can press its buttons. Rules: server-plan.md ("Hero Farming").
 const { getFarmUser, play } = require('./play');
-const { getUser } = require('../xp');
 const { pickView, homeView, heroView, targetView, roamView, notReady } = require('./views');
 
 const start = (interaction) => interaction.deferReply();
@@ -18,7 +17,7 @@ async function openHero(interaction) {
   await start(interaction);
   const record = await getFarmUser(interaction.user.id);
   if (!record.hero) return interaction.editReply(await pickView(interaction.member));
-  return interaction.editReply(await heroView(interaction.member, record, (await getUser(interaction.user.id)).souls));
+  return interaction.editReply(await heroView(interaction.member, record));
 }
 
 // A target's details screen with Send (a camp, a lane's Guardian or Walker, the Mid-Boss or the siege). No hero yet: pick one first.

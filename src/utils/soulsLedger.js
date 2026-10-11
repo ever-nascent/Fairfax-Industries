@@ -1,6 +1,8 @@
 // The souls ledger: one line for every change to a member's souls (who, how much, the balance after, why).
 // Append-only JSON lines in data/soulsLedger.jsonl (one older file kept), so a wrong balance can be traced, a staff slip
 // undone from the old value, and the economy checked: what each faucet pays and each sink takes.
+// A Hero Farming hero's own souls (his call, Oct 11: separate per hero, not the server balance) are logged here too, tagged with the hero (`h`);
+// their `b` is that hero's souls after the change.
 const fs = require('node:fs');
 const path = require('node:path');
 const { DATA_DIR } = require('../storage/jsonAdapter');
@@ -18,6 +20,7 @@ const LABELS = {
   lockle: 'Lockle',
   farm: 'Hero Farming',
   'farm-shop': 'Hero Farming item shop',
+  'farm-move': 'Moved to hero souls', // Oct 11, once: the server balance went into Haze's own souls (economy.js moveToHeroes)
   'shop:card': 'Hero card',
   'shop:boost': 'Soul Boost',
   'shop:rejuv': 'Rejuv',
@@ -31,15 +34,15 @@ const GAMES = {
 };
 const label = (reason) => (reason.startsWith('game:') ? GAMES[reason.slice(5)] ?? reason.slice(5) : LABELS[reason] ?? reason);
 
-// Adds a line. `meta`: a reason string, or { reason, with } (`with` = the other member, for a duel's pot).
+// Adds a line. `meta`: a reason string, or { reason, with, hero } (`with` = the other member, for a duel's pot; `hero` = a farm hero's own souls).
 // Never throws: a full disk must not undo a purchase.
 function record(userId, delta, meta, balance) {
   if (!delta) return;
-  const { reason = 'other', with: other } = typeof meta === 'string' ? { reason: meta } : meta ?? {};
+  const { reason = 'other', with: other, hero } = typeof meta === 'string' ? { reason: meta } : meta ?? {};
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     if (fs.existsSync(FILE()) && fs.statSync(FILE()).size > MAX_BYTES) fs.renameSync(FILE(), OLD());
-    const line = { t: Date.now(), u: userId, d: delta, b: balance, r: reason, ...(other ? { w: other } : {}) };
+    const line = { t: Date.now(), u: userId, d: delta, b: balance, r: reason, ...(other ? { w: other } : {}), ...(hero ? { h: hero } : {}) };
     fs.appendFileSync(FILE(), `${JSON.stringify(line)}\n`);
   } catch (error) {
     console.error('[ledger] Could not write:', error.message);
@@ -55,8 +58,8 @@ function entries() {
   );
 }
 
-// A member's last `count` changes, newest first.
-const history = (userId, count = 10) => entries().filter((e) => e.u === userId).slice(-count).reverse();
+// A member's last `count` changes, newest first. `heroes: false` leaves out their farm heroes' own souls (the server balance only).
+const history = (userId, count = 10, { heroes = true } = {}) => entries().filter((e) => e.u === userId && (heroes || !e.h)).slice(-count).reverse();
 
 // What came in and went out per reason since `since` (ms timestamp), plus duel pots by pair.
 // Returns { rows: [{ reason, in, out, count }] sorted by net, pairs: [{ winner, loser, count, souls }] sorted by count }.

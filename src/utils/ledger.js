@@ -47,11 +47,11 @@ async function recordEdit(interaction, member, command, before, after) {
 
 const signed = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${fmt(Math.abs(n))}`;
 
-// /souls history: a member's last 15 souls changes, newest first, each with the balance after it.
+// /souls history: a member's last 15 souls changes, newest first, each with the balance after it (a farm hero's own souls: "→ Haze: 1,234").
 async function showHistory(interaction, member) {
   const rows = souls.history(member.id, 15);
   if (!rows.length) return privateReply(interaction, `Nothing recorded for ${member} yet. (The ledger started on Oct 4, 2026.)`);
-  const lines = rows.map((e) => `<t:${Math.floor(e.t / 1000)}:f> **${signed(e.d)}** ${souls.label(e.r)}${e.w ? ` (with <@${e.w}>)` : ''} → ${fmt(e.b)}`);
+  const lines = rows.map((e) => `<t:${Math.floor(e.t / 1000)}:f> **${signed(e.d)}** ${souls.label(e.r)}${e.w ? ` (with <@${e.w}>)` : ''} → ${e.h ? `${e.h}: ` : ''}${fmt(e.b)}`);
   const embed = new EmbedBuilder().setColor(REPLY_COLOR).setTitle(`Souls: ${member.username}`).setDescription(lines.join('\n'));
   return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
 }

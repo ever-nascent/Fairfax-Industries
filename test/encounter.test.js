@@ -123,7 +123,7 @@ test('the offer: after a won fight, kept 5 minutes, Fight unlocks the rival on a
       const next = (await play(id, 'small-camp', { now: t0, rng: seeded(400 + i) })).run;
       if (!next.rival) break;
       const before = (await getFarmUser(id)).rejuvs;
-      const out = await fightRival(id, { now: t0, rng: seeded(500 + i) });
+      const out = await fightRival(id, next.rival, { now: t0, rng: seeded(500 + i) });
       assert.strictEqual((await getFarmUser(id)).rejuvs, before - out.run.rejuvsUsed);
       spent += out.run.rejuvsUsed;
     }

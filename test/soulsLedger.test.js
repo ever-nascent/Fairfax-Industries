@@ -5,7 +5,7 @@ process.env.DATA_DIR = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'fa
 const test = require('node:test');
 const assert = require('node:assert');
 const { changeSouls, addXp, claimUrn, editUser, buyBoost, BOOST_PRICE } = require('../src/utils/xp');
-const { history, report, label } = require('../src/utils/soulsLedger');
+const { history, report, label, record } = require('../src/utils/soulsLedger');
 const { forGame, takeBet, expireGames } = require('../src/utils/casino');
 const { backupToday, KEEP_DAYS } = require('../src/utils/backup');
 const { walletEmbed } = require('../src/commands/xp/wallet');
@@ -85,4 +85,19 @@ test('wallet embed: balance, boost, urn, trivia and recent changes', () => {
   assert.ok(e.description.includes('1,234'));
   assert.ok(text.includes('Claimed. Next') && text.includes('6 paid answers left') && text.includes('2 / 3'));
   assert.ok(text.includes('+1,000') && text.includes('Soul Urn') && text.includes('−100') && text.includes('Blackjack'));
+});
+
+test("a farm hero's own souls (Oct 11) are tagged with the hero; /wallet's list leaves them out", async () => {
+  const { chooseHero, updateFarmUser, buyItem, sellItem } = require('../src/utils/farm/play');
+  const id = 'ledger-hero';
+  await changeSouls(id, 300, 'urn');
+  await chooseHero(id, 'Haze');
+  await updateFarmUser(id, (r) => { r.souls = 1000; });
+  assert.ok((await buyItem(id, 'Extra Health')).ok);
+  assert.ok((await sellItem(id, 'Extra Health')).ok);
+  record(id, 0, { reason: 'farm', hero: 'Haze' }, 1); // nothing moved: no line
+  const rows = history(id, 10);
+  assert.deepStrictEqual(rows.map((e) => [e.r, e.d, e.b, e.h]), [['farm-shop', 400, 600, 'Haze'], ['farm-shop', -800, 200, 'Haze'], ['urn', 300, 300, undefined]]);
+  assert.deepStrictEqual(history(id, 10, { heroes: false }).map((e) => e.r), ['urn']);
+  assert.strictEqual(label('farm-move'), 'Moved to hero souls');
 });

@@ -20,7 +20,7 @@ const { progress, pointsSpent, campMultiplier, TIER_COSTS, MAX_TIER, SLOTS, MAX_
 const { homeCard } = require('./homeCard');
 const { siegeCard } = require('./siegeCard');
 const { BUFFS, BRIDGE, buffText, dailyBuffs } = require('./buffs');
-const { MAX_REJUVS, cooldownSeconds, cooldownLeft, hauntFile, campFamilies, CAMP_SIZE, fightKit, hasHero, switchLeft, PER_LANE, slotOf, isDown, walkersDown, lockedBy, EGG, cooldownsActive: cooldownsOnNow } = require('./play');
+const { MAX_REJUVS, cooldownSeconds, cooldownLeft, hauntFile, campFamilies, CAMP_SIZE, fightKit, hasHero, PER_LANE, slotOf, isDown, walkersDown, lockedBy, EGG, cooldownsActive: cooldownsOnNow } = require('./play');
 const { PAYOUT_SCALE } = require('./targets');
 const { SPECIALS } = require('./haunts');
 const { HEROES, heroEmoji, heroArt } = require('../heroes');
@@ -129,13 +129,12 @@ const statLines = (name) => {
 // ---- hero pick ----
 // No `selected`: the list of heroes. With one: that hero's stats and abilities and a Select button (nothing is saved until then).
 // A member who already has a hero (`record`) gets the same screen for switching: each hero shows its level or its unlock price, and the
-// button is Switch (once a day) or Unlock (a Character Unlock Token).
-async function pickView(member, selected = null, record = null, now = Date.now()) {
+// button is Switch (any time, his call Oct 11) or Unlock (a Character Unlock Token).
+async function pickView(member, selected = null, record = null) {
   const guild = member.guild;
   const names = roster();
   const switching = !!record?.hero;
   const levelOf = (n) => progress(n === record.hero ? record.earned : record.heroes?.[n]?.earned).level;
-  const wait = switching ? switchLeft(record, now) : 0;
   const tokens = record?.tokens ?? 0;
   const back = new ButtonBuilder().setCustomId(`${BACK_ID}:${member.id}`).setLabel('Back').setStyle(ButtonStyle.Secondary);
   // a dropdown holds 25 options: a bigger roster is split A to Z over two of them
@@ -149,9 +148,9 @@ async function pickView(member, selected = null, record = null, now = Date.now()
   const components = menus.map((m) => row(m));
   if (switching && !selected) {
     e.setTitle('Switch Hero').setDescription(
-      'Each hero keeps its own level, abilities and items.\nBuffs, cooldowns and Rejuvs stay with you.\n\n' +
+      'Each hero keeps its own souls, level, abilities and items,\nand its own buffs, cooldowns and Rejuvs.\n\n' +
       names.map((n) => `${heroText(guild, n)}**${n}**  -  ${hasHero(record, n) ? `Level ${levelOf(n)}${n === record.hero ? '  -  Current Hero' : ''}` : 'Locked'}`).join('\n'),
-    ).setFooter({ text: `${wait > 0 ? `You can switch again in ${timeLeft(wait)}.` : 'You can switch once a day.'}  ${tokenText(tokens)}` });
+    ).setFooter({ text: `You can switch any time.  ${tokenText(tokens)}` });
     components.push(row(back));
   } else if (!selected) {
     e.setTitle('Pick Your Hero').setDescription(
@@ -170,14 +169,14 @@ async function pickView(member, selected = null, record = null, now = Date.now()
       )
       .setThumbnail('attachment://thumb.png')
       .setFooter({ text: current ? 'Pick another hero to switch or unlock.'
-        : owned ? (wait > 0 ? `You can switch again in ${timeLeft(wait)}.` : 'You can switch once a day. Your heroes keep their own level, abilities and items.')
-        : switching ? `Unlocking does not switch. ${selected} starts at level 0 with no items. ${tokenText(tokens)}`
+        : owned ? `You can switch any time. ${selected} has its own souls, items and cooldowns.`
+        : switching ? `Unlocking does not switch. ${selected} starts at level 0 with no souls or items. ${tokenText(tokens)}`
         : `Select to make ${selected} your hero. Your first hero is free.` });
     files.push(await heroPicture(selected));
     const button = (id, label, disabled = false) => new ButtonBuilder().setCustomId(`${id}:${member.id}:${selected}`).setLabel(label).setStyle(ButtonStyle.Success).setDisabled(disabled);
     if (!switching) components.push(row(button(PICK_ID, 'Select')));
     else if (current) components.push(row(back));
-    else if (owned) components.push(row(button(SWITCHTO_ID, 'Switch', wait > 0), back));
+    else if (owned) components.push(row(button(SWITCHTO_ID, 'Switch'), back));
     else components.push(row(button(UNLOCK_ID, 'Unlock (1 Token)', tokens < 1), back));
   }
   return { embeds: [e], components, files };
@@ -271,7 +270,8 @@ const eggWorth = (record) => ({
 const brokerLine = (now) => (brokerOpen(now) ? `The Broker is open for ${timeLeft(brokerCloses(now) - now)} more.` : `The Broker opens in ${timeLeft(brokerNext(now) - now)}.`);
 
 // mode: 'main' | 'imbue:<item>' (pick its ability). Buying, selling and the Broker are in the item shop (shopView).
-async function heroView(member, record, balance = 0, mode = 'main', now = Date.now()) {
+// The souls shown are the hero's own (his call, Oct 11).
+async function heroView(member, record, mode = 'main') {
   const hero = record.hero;
   const p = progress(record.earned);
   const left = p.points - pointsSpent(record.tiers);
@@ -289,7 +289,7 @@ async function heroView(member, record, balance = 0, mode = 'main', now = Date.n
     'Ability Range': `+${pct(st.rangeMult - 1)}`, 'Movement Speed': `${+st.moveSpeed.toFixed(1)} m/s`,
     'Health Regen': `${+st.healthRegen.toFixed(1)}/s`, 'Bullet Armor': pct(st.bulletResist), 'Spirit Armor': pct(st.spiritResist),
   };
-  const card = await heroCard({ hero, progress: p, pointsLeft: Math.max(0, left), abilities: slots, stats, items: owned, souls: balance, corrupted: record.corrupted?.name });
+  const card = await heroCard({ hero, progress: p, pointsLeft: Math.max(0, left), abilities: slots, stats, items: owned, souls: record.souls ?? 0, corrupted: record.corrupted?.name });
   const e = embed().setTitle(`${hero}  -  Level ${p.level}`).setImage('attachment://hero.png').setThumbnail('attachment://thumb.png');
   const held = SLOTS.flatMap((slot) => owned[slot]);
   const notes = [];
@@ -341,13 +341,15 @@ const buyText = (name, owned) => {
   return titleCase(`${owned[kind].includes(name) ? 'Owned  -  ' : holder ? `In ${holder}  -  ` : used.length ? `Upgrade from ${used.join(' + ')}  -  ` : ''}${fmt(price)} souls  -  ${itemStats(c) || 'effect only'}`).slice(0, 100);
 };
 // `picked` is the item chosen in the dropdown: its card is framed, its page (description, stats, price, souls left) is in the embed, and Buy confirms.
-async function shopView(member, record, balance = 0, tab = 'weapon', now = Date.now(), tier = 1, picked = null) {
+// Items are paid with the hero's own souls (his call, Oct 11).
+async function shopView(member, record, tab = 'weapon', now = Date.now(), tier = 1, picked = null) {
+  const balance = record.souls ?? 0;
   if (!SHOP_TABS[tab]) tab = 'weapon';
   tier = [1, 2, 3, 4].includes(Number(tier)) ? Number(tier) : 1;
   const owned = itemsOf(record.items);
   const held = SLOTS.flatMap((slot) => owned[slot]);
   const e = embed().setTitle(`Item Shop  -  ${SHOP_TABS[tab]}${SLOTS.includes(tab) ? `  -  ${fmt(TIER_PRICE[tier])}` : ''}`).setImage('attachment://shop.png').setThumbnail('attachment://thumb.png')
-    .addFields({ name: 'Souls', value: fmt(balance), inline: true }, { name: 'Items', value: `${countItems(owned)} / ${MAX_ITEMS}`, inline: true });
+    .addFields({ name: `${record.hero}'s Souls`, value: fmt(balance), inline: true }, { name: 'Items', value: `${countItems(owned)} / ${MAX_ITEMS}`, inline: true });
   const components = [row(...Object.entries(SHOP_TABS).map(([key, label]) => new ButtonBuilder().setCustomId(`${SHOPTAB_ID}:${member.id}:${key}`).setLabel(label)
     .setStyle(key === tab ? ButtonStyle.Primary : ButtonStyle.Secondary).setDisabled(key === tab)))];
   let pic;
@@ -602,20 +604,12 @@ function resultView(run) {
   const lines = run.log.slice(-(run.won ? 8 : 5));
   e.addFields({ name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' });
   e.setFooter({ text: run.waves ? `Every wave cleared paid. ${hero} can hold this lane again in ${span(cooldown)}.` : run.won ? `${hero} can clear this ${run.family ? 'Camp' : label} again in ${span(cooldown).replace(/hour|minute/, (u) => u[0].toUpperCase() + u.slice(1))}.` : `Nothing is paid, and the cooldown has started. ${hero} can try again in ${span(cooldown)}.` });
-  const components = [];
-  if (run.rival && ownerId) { // an encounter: a hero the member hasn't unlocked showed up (play.js meet); the offer waits OFFER_MS
-    e.addFields({ name: 'A Rival Appears', value: `**${run.rival}** steps out and wants a duel. Win it and ${run.rival} is yours to play. Losing costs nothing.\n${run.rival} waits for 5 minutes.` });
-    components.push(row(
-      new ButtonBuilder().setCustomId(`${DUEL_ID}:${ownerId}:${run.rival}`).setLabel(`Fight ${run.rival}`).setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId(`${WALK_ID}:${ownerId}:${run.rival}`).setLabel('Walk Away').setStyle(ButtonStyle.Secondary),
-    ));
-  }
-  return { embeds: [e], components, files: [soulsFile(), picture(enemyPicture(run, last))], attachments: [] };
+  return { embeds: [e], components: [], files: [soulsFile(), picture(enemyPicture(run, last))], attachments: [] };
 }
 
 // ---- encounters: the duel with a rival hero (rules: encounter.js; the offer and the unlock: play.js) ----
 // The offer: a hero the member hasn't unlocked showed up (play.js meet) and waits OFFER_MS. Its own embed under the fight's result
-// (his call, Oct 10), in the rival's colour with its picture, and the Fight / Walk Away buttons.
+// (his call, Oct 10), in the rival's colour with its picture, and the Fight / Walk Away buttons, which name their rival (Oct 11: several can wait).
 async function withRival(view, rival, ownerId) {
   const { color } = await heroArt(slugOf(rival), 'icon');
   view.embeds.push(new EmbedBuilder().setColor(color).setTitle('A Rival Appears').setThumbnail('attachment://rival.png')
@@ -626,8 +620,8 @@ async function withRival(view, rival, ownerId) {
     ).setFooter({ text: `${rival} waits for 5 minutes.` }));
   view.files.push((await heroPicture(rival)).setName('rival.png'));
   view.components.push(row(
-    new ButtonBuilder().setCustomId(`${DUEL_ID}:${ownerId}`).setLabel(`Fight ${rival}`).setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId(`${WALK_ID}:${ownerId}`).setLabel('Walk Away').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`${DUEL_ID}:${ownerId}:${rival}`).setLabel(`Fight ${rival}`).setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`${WALK_ID}:${ownerId}:${rival}`).setLabel('Walk Away').setStyle(ButtonStyle.Secondary),
   ));
   return view;
 }
@@ -667,7 +661,7 @@ async function duelResultView(run) {
     { name: hero, value: barLine(last.hero.hp, last.hero.max) },
     ...enemyFields(last),
     { name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' },
-  ).setFooter({ text: run.won ? 'You can switch heroes once a day. Each hero keeps its own level, abilities and items.' : 'Another rival may show up after a won fight.' });
+  ).setFooter({ text: run.won ? 'Switch any time. Each hero keeps its own souls, items and cooldowns.' : 'Another rival may show up after a won fight.' });
   return { embeds: [e], components: [], files: [soulsFile(), await rivalFace(rival, run.won ? 'critical' : 'gloat')], attachments: [] };
 }
 
