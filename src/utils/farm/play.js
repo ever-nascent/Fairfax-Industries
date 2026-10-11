@@ -10,7 +10,8 @@
 //   Eternal Gift buff, gifts: { <buff key>: count } (Eternal Gift's permanent buffs),
 //   cooldowns: { <target | '<guardian | walker | waves>:<lane>' | 'siege' | 'roam'>: ms timestamp it is ready again },
 //   down: { '<guardian | walker>:<lane>': ms timestamp until which it stays beaten } (the lanes, below), clears: { <target>: times cleared },
-//   rejuvs, buffs: { <buff key>: how many it holds } (permanent, from roaming; buffs.js), bridge: [bridge buff keys held for its next fight] } }.
+//   rejuvs, buffs: { <buff key>: how many it holds } (permanent, from roaming; buffs.js), bridge: [bridge buff keys held for its next fight],
+//   stacks: { kills, hits, bats } the stacks its abilities keep from fight to fight (his calls, Oct 11; ability.js KEEP) } }.
 //   In the code the current hero's part sits on the record itself (`load` below).
 // The cooldown is claimed (and the result is known) when they press Send, so a restart mid-replay never loses or repeats a payout.
 const path = require('node:path');
@@ -18,7 +19,7 @@ const { getStore } = require('../../storage');
 const { ASSETS } = require('../art');
 const ledger = require('../soulsLedger');
 const { pickRandom } = require('../random');
-const { buildHero, roster } = require('./hero');
+const { buildHero, roster, keptStacksOf } = require('./hero');
 const { TARGETS, SIEGE, WAVES, WAVE, wavesPay, LANES, LANED, WALKER_STEP, payout, runStages, clearSouls, strengthen, CLEAR_CAP } = require('./targets');
 const { roam, COOLDOWN: ROAM_COOLDOWN } = require('./roam');
 const { progress, pointsSpent, campMultiplier, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, rollLegendary, waitingLegendary, SLOT_OF, ITEM_POOL, itemsOf, sellPrice,
@@ -42,6 +43,7 @@ const heroPart = (mine = {}) => ({
   souls: mine.souls ?? 0, earned: mine.earned ?? 0, tiers: { ...mine.tiers }, items: itemsOf(mine.items), legendary: mine.legendary ?? null, corrupted: mine.corrupted ?? null,
   imbues: { ...mine.imbues }, egg: mine.egg ?? 0, giftTime: mine.giftTime ?? 0, gifts: { ...mine.gifts },
   cooldowns: { ...mine.cooldowns }, down: { ...mine.down }, clears: { ...mine.clears }, rejuvs: mine.rejuvs ?? 0, buffs: { ...mine.buffs }, bridge: [...(mine.bridge ?? [])],
+  stacks: { ...mine.stacks },
 });
 const HERO_KEYS = Object.keys(heroPart());
 const savedPart = (r) => Object.fromEntries(HERO_KEYS.map((k) => [k, r[k]]).filter(([k, v]) => ['earned', 'tiers', 'items'].includes(k) || (v && (typeof v !== 'object' || Object.keys(v).length))));
@@ -166,13 +168,13 @@ const hauntFile = (family, size) => path.join(ASSETS, 'farm', 'haunts', `${famil
 // `cleared` is how many waves were beaten and every one of them pays. Returns the run:
 //   { key, siege, hero, won, timedOut, cleared (stages beaten), stageNames, seconds, souls, rejuvsUsed, rejuvsEarned,
 //     family: { key, name, size } | null (camps), frames (snapshots to replay), log: [[seconds, text]] }
-function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, clears = 0, family: wanted, walkersDown: fallen = 0 } = {}) {
+function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, stacks = {}, clears = 0, family: wanted, walkersDown: fallen = 0 } = {}) {
   const rnd = (n) => Math.floor(rng() * n);
   const isSiege = requested === 'siege';
   const isWaves = requested === 'waves';
   const key = requested;
   const target = isSiege || isWaves ? null : TARGETS[key];
-  const hero = buildHero(heroName, { buffs, bridge, boons, items, tiers, unlocked, corrupted, imbues, copies });
+  const hero = buildHero(heroName, { buffs, bridge, boons, items, tiers, unlocked, corrupted, imbues, copies, stacks });
   hero.rejuvs = isSiege ? rejuvs : 0; // Rejuvs are for the siege (his design); the Mid-Boss gives them, never takes them
   const size = CAMP_SIZE[key];
   // a camp's family: the one its details screen showed (`wanted`), else a random one of its size
@@ -230,7 +232,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
   const total = isWaves ? 0 : isSiege ? SIEGE.stages.reduce((s, st) => s + st.souls, 0) : target.souls;
   if (isWaves) {
     return { key, waves: true, siege: false, hero: heroName, won: out.stage > 0, timedOut: out.timedOut, cleared: out.stage, stageNames: stages.map((s) => s.name), seconds: out.time,
-      souls: wavesPay(out.stage) + payout(out.bonusSouls), itemSouls: payout(out.bonusSouls), kills: killed(out.stage), rejuvsUsed: 0, rejuvsEarned: 0, family: null, frames: downsample(frames, MAX_FRAMES), log };
+      souls: wavesPay(out.stage) + payout(out.bonusSouls), itemSouls: payout(out.bonusSouls), kills: killed(out.stage), rejuvsUsed: 0, rejuvsEarned: 0, family: null, frames: downsample(frames, MAX_FRAMES), log, stacks: keptStacksOf(hero) };
   }
   return {
     key, siege: isSiege, hero: heroName, won: out.won, timedOut: out.timedOut,
@@ -241,6 +243,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     rejuvsUsed: isSiege ? rejuvs - hero.rejuvs : 0, rejuvsEarned: out.won && target ? target.rejuv || 0 : 0,
     family: family ? { key: family, name: familyName(family), size } : null,
     frames: downsample(frames, MAX_FRAMES), log,
+    stacks: keptStacksOf(hero), // what its abilities keep for the next fight, won or lost (his calls, Oct 11)
   };
 }
 
@@ -259,6 +262,7 @@ const fightKit = (r) => ({
   boons: progress(r.earned).level, unlocked: progress(r.earned).unlocks, points: progress(r.earned).points, tiers: r.tiers, items: Object.values(r.items).flat(), corrupted: r.corrupted ?? null, imbues: r.imbues ?? {},
   buffs: Object.entries(r.gifts ?? {}).reduce((all, [k, n]) => ({ ...all, [k]: (all[k] ?? 0) + n }), { ...r.buffs }),
   copies: roster().filter((n) => n !== r.hero && !!r.heroes?.[n]), // Sinclair copies the ultimate of one of the member's other unlocked heroes (his call, Oct 5)
+  stacks: { ...r.stacks }, // its kept stacks (ability.js KEEP)
 });
 
 async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
@@ -286,11 +290,11 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
     const run = simulate(claim.hero, key, { rng, family, rejuvs: claim.rejuvs, bridge: claim.bridge, ...claim.kit });
     if (PER_LANE.has(key)) run.lane = lane;
     if (run.waves) { // a wave run: no clears, nothing goes down; the member's furthest run is kept (his call, Oct 11: the member's, not the hero's)
-      paid(run.souls, await settle((h, r) => { h.earned += run.souls; h.souls += run.souls; run.best = r.bestWave = Math.max(r.bestWave ?? 0, run.cleared); run.legendary = dropLegendary(h, run.kills, rng); afterFight(h, run, rng); run.rival = meet(userId, r, run, rng, now); }));
+      paid(run.souls, await settle((h, r) => { h.earned += run.souls; h.souls += run.souls; keepStacks(h, run); run.best = r.bestWave = Math.max(r.bestWave ?? 0, run.cleared); run.legendary = dropLegendary(h, run.kills, rng); afterFight(h, run, rng); run.rival = meet(userId, r, run, rng, now); }));
       return { run };
     }
     paid(run.souls, await settle((h, r) => {
-      h.earned += run.souls; h.souls += run.souls; run.legendary = dropLegendary(h, run.kills, rng); afterFight(h, run, rng);
+      h.earned += run.souls; h.souls += run.souls; keepStacks(h, run); run.legendary = dropLegendary(h, run.kills, rng); afterFight(h, run, rng);
       if (run.won && LANED.has(key)) h.down[slot] = now + cooldownSeconds(slot) * 1000;
       h.clears[key] = Math.max(0, Math.min(CLEAR_CAP, (h.clears[key] ?? 0) + (run.won ? 1 : -1)));
       h.rejuvs = Math.max(0, Math.min(MAX_REJUVS, h.rejuvs - run.rejuvsUsed + run.rejuvsEarned));
@@ -342,7 +346,7 @@ function walkAway(userId, rival, now = Date.now()) {
 }
 // Fight: the duel is played at once (like a trip) and a win unlocks the rival, at level 0 with nothing; a loss costs nothing but the Rejuvs it used (his call, Oct 10:
 // the member's Rejuvs work in a duel and are used up). Uses up the offer.
-// Nothing else changes: no cooldown, souls, bridge buffs or item time. Returns { run } or { error: 'gone' | 'owned' | 'no-hero' }.
+// Nothing else changes but its kept stacks (Oct 11): no cooldown, souls, bridge buffs or item time. Returns { run } or { error: 'gone' | 'owned' | 'no-hero' }.
 async function fightRival(userId, rival, { rng = Math.random, now = Date.now() } = {}) {
   if (!walkAway(userId, rival, now)) return { error: 'gone' };
   const r = await getFarmUser(userId);
@@ -350,8 +354,15 @@ async function fightRival(userId, rival, { rng = Math.random, now = Date.now() }
   if (hasHero(r, rival)) return { error: 'owned' }; // unlocked meanwhile (a token)
   const kit = fightKit(r);
   const run = duel(r.hero, kit, rival, rivalKit(kit, rng), { rng, rejuvs: r.rejuvs });
-  if (run.won || run.rejuvsUsed) await updateHero(userId, r.hero, (h, rec) => { h.rejuvs = Math.max(0, h.rejuvs - run.rejuvsUsed); if (run.won && !hasHero(rec, rival)) rec.heroes[rival] = { earned: 0, tiers: {}, items: {} }; }); // the Rejuvs of the hero that duelled
+  if (run.won || run.rejuvsUsed || Object.keys(run.stacks ?? {}).length) {
+    await updateHero(userId, r.hero, (h, rec) => { h.rejuvs = Math.max(0, h.rejuvs - run.rejuvsUsed); keepStacks(h, run); if (run.won && !hasHero(rec, rival)) rec.heroes[rival] = { earned: 0, tiers: {}, items: {} }; }); // the hero that duelled
+  }
   return { run };
+}
+
+// The stacks the hero's abilities keep (his calls, Oct 11; ability.js KEEP), from a fight or a duel, won or lost: they are where the fight left them.
+function keepStacks(h, run) {
+  if (Object.keys(run.stacks ?? {}).length) h.stacks = { ...run.stacks };
 }
 
 // What a fight's time does for the hero's items (inside its record update): a Golden Goose Egg grows by its souls per minute, and every 165 s of fight

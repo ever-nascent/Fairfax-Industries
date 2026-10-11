@@ -1,7 +1,7 @@
 // Vindicta's abilities (deadlock.wiki/Vindicta, checked Oct 5 2026; page updated that day). Numbers come from the wiki data through
-// Ability.value(); this file is only what each ability does. Standing rules used: "hero kill" bonuses count any enemy and last the fight only;
+// Ability.value(); this file is only what each ability does. Standing rules used: "hero kill" bonuses count any enemy (Assassinate's are kept for good since Oct 11, ability.js KEEP);
 // health shares are cut against NPCs; like Apollo's ultimate, Assassinate is held for an enemy below half health.
-const { Ability } = require('./../ability');
+const { Ability, KEEP, keptStacks, keptOf } = require('./../ability');
 const { DT } = require('./../engine');
 const { npcShare } = require('./../items');
 
@@ -77,13 +77,17 @@ class CrowFamiliar extends Ability {
 }
 
 // 4. Assassinate: held for an enemy below half health (the weakest one, wherever it stands): a second scoped without shooting, then the shot:
-// spirit damage, plus a bonus that grows the lower the target is below half. A kill adds weapon damage for the rest of the fight.
+// spirit damage, plus a bonus that grows the lower the target is below half. A kill adds weapon damage, kept for good (ability.js KEEP).
 // T1: shorter cooldown. T2: a bigger bonus. T3: more weapon damage per kill. (The game's bonus souls for a kill are not paid here.)
 class Assassinate extends Ability {
   constructor(...args) {
     super(...args);
-    this.kills = 0;
+    this.kills = Math.min(KEEP.cap, keptOf(this, 'Vindicta').kills ?? 0); // kept from earlier fights
   }
+
+  get bonus() { return keptStacks(this.kills) * this.value('WeaponDamageBonusPerKill'); }
+  keep() { return { kills: this.kills }; }
+  keptText() { return this.kills ? `${this.name}: ${this.kills} kills, +${+this.bonus.toFixed(1)}% Weapon Damage` : null; }
 
   prey(fight) {
     const low = this.data.LowHealthEnemyThresholdPct / 100;
@@ -92,7 +96,7 @@ class Assassinate extends Ability {
 
   get castDelay() { return this.data.TimeToFullCharge; }
   want(fight) { return !!this.prey(fight); }
-  status(fight) { return this.kills && !this.ready() ? `+${this.kills * this.value('WeaponDamageBonusPerKill')}% Weapon` : super.status(fight); }
+  status(fight) { return this.kills && !this.ready() ? `+${+this.bonus.toFixed(1)}% Weapon` : super.status(fight); }
 
   on(event, fight, p) {
     if (event === 'cast' && p.ability === this) this.unit.busyUntil = Math.max(this.unit.busyUntil, fight.time + this.castDelay);
@@ -104,11 +108,11 @@ class Assassinate extends Ability {
     const low = this.data.LowHealthEnemyThresholdPct / 100;
     const under = Math.max(0, 1 - e.health / e.stats.maxHealth / low); // 0 at half health, 1 at none left
     fight.damage(this.unit, e, this.value('Damage') + this.value('LowHealthEnemyDamageBonus') * under, 'spirit');
-    if (!e.alive) this.kills += 1;
+    if (!e.alive) this.kills = Math.min(KEEP.cap, this.kills + 1);
   }
 
   tick(fight) {
-    if (this.kills) fight.addStatus(this.unit, { id: 'assassinate', duration: DT * 1.5, mods: { weaponDamage: (this.kills * this.value('WeaponDamageBonusPerKill')) / 100 } });
+    if (this.kills) fight.addStatus(this.unit, { id: 'assassinate', duration: DT * 1.5, mods: { weaponDamage: this.bonus / 100 } });
   }
 }
 
@@ -117,7 +121,7 @@ const info = [
   ['Stake', 'Throws a stake that damages and slows the enemies around it.'],
   ['Flight', 'Takes to the air for a while: every bullet deals bonus spirit damage.'],
   ['Crow Familiar', 'Sends a crow that damages an enemy, weakens its resists and makes it bleed.'],
-  ['Assassinate', 'Waits for a weakened enemy, then fires a scoped shot that hits harder the lower its health. Kills add weapon damage.'],
+  ['Assassinate', 'Waits for a weakened enemy, then fires a scoped shot that hits harder the lower its health. Kills add weapon damage for good.'],
 ];
 
 module.exports = { name: 'Vindicta', abilities: { 1: Stake, 2: Flight, 3: CrowFamiliar, 4: Assassinate }, info };

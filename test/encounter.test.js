@@ -59,7 +59,9 @@ test("the rival's kit mirrors the member's: level, buffs, as many items of the s
   assert.strictEqual(new Set(theirs.items).size, theirs.items.length);
   const spent = Object.values(theirs.tiers).reduce((sum, t) => sum + TIER_COSTS.slice(0, t).reduce((a, b) => a + b, 0), 0);
   assert.ok(spent <= 14 && spent >= 13, `spent ${spent} of 14`); // 1 may be left when nothing costs 1 any more
-  assert.deepStrictEqual(rivalKit({ boons: 0, unlocked: 1, points: 0, items: [], buffs: {} }, seeded(1)), { boons: 0, unlocked: 1, tiers: {}, items: [], buffs: {} });
+  const { stacks, ...bare } = rivalKit({ boons: 0, unlocked: 1, points: 0, items: [], buffs: {} }, seeded(1));
+  assert.deepStrictEqual(bare, { boons: 0, unlocked: 1, tiers: {}, items: [], buffs: {} });
+  assert.ok(stacks.kills >= 15 && stacks.kills <= 30, 'kept stacks: half to full (test/keptstacks.test.js)');
 });
 
 test('every hero can duel every other hero, with any kit, and the duel always ends', () => {
@@ -139,7 +141,7 @@ test('several rivals can wait at once: each keeps its own 5 minutes, none shows 
   await updateFarmUser(id, (r) => { r.earned = 1e6; r.tiers = { 1: 3, 2: 3, 3: 3, 4: 3 }; r.tokens = 1; });
   setCooldowns(false); // every won fight brings a rival
   try {
-    const t0 = Date.parse('2026-10-11T12:00:00Z');
+    const t0 = Date.now(); // the real clock: unlockHero drops offers whose 5 minutes ran out by it (a fixed date broke this test once that date had passed)
     const met = [];
     for (let i = 0; i < 6; i++) met.push((await play(id, 'small-camp', { now: t0 + i * 1000, rng: seeded(400 + i) })).run.rival);
     assert.ok(met.every(Boolean));

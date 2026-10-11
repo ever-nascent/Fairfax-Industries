@@ -206,7 +206,8 @@ const payText = (key, record) => {
 
 // The stats the hero fights with right now: base, its boons (level), items, permanent buffs and what its own abilities add
 // (Abrams' Infernal Resilience: health and regen), so it is the very sheet a fight uses.
-const currentStats = (record) => buildHero(record.hero, fightKit({ ...record, items: itemsOf(record.items) })).stats;
+const builtHero = (record) => buildHero(record.hero, fightKit({ ...record, items: itemsOf(record.items) }));
+const currentStats = (record) => builtHero(record).stats;
 
 // One drawn card (homeCard.js) with every target; the dropdown below it still lists them with their cooldowns.
 async function homeView(member, record, now = Date.now()) {
@@ -279,7 +280,8 @@ async function heroView(member, record, mode = 'main') {
   const slots = Object.entries(HERO_DATA[hero].BoundAbilities).map(([slot, { Key }]) => ({
     slot: Number(slot), name: ABILITIES[Key].Name, tier: record.tiers?.[slot] ?? 0, locked: Number(slot) > p.unlocks,
   }));
-  const st = currentStats(record);
+  const unit = builtHero(record);
+  const st = unit.stats;
   const pct = (x) => `${+(x * 100).toFixed(1)}%`;
   const stats = {
     Health: fmt(Math.round(st.maxHealth)), 'Bullet Damage': `${+(st.bulletDamage * st.weaponDamageMult).toFixed(1)}`, 'Fire Rate': `${+st.fireRate.toFixed(2)}/s`,
@@ -301,6 +303,8 @@ async function heroView(member, record, mode = 'main') {
   const abilityName = (slot) => slots.find((a) => a.slot === slot)?.name ?? `Ability ${slot}`;
   if (imbued.length) itemFields.push({ name: 'Imbued', value: imbued.map((n) => `${n}\ninto ${abilityName(record.imbues?.[n] ?? 1)}`).join('\n') });
   if (held.includes(EGG.Name)) { const w = eggWorth(record); itemFields.push({ name: 'Golden Goose Egg', value: `Hatches for ${fmt(w.souls)} souls\nand ${plural(w.buffs, 'permanent buff')}` }); }
+  const kept = unit.abilities.filter((a) => a.keptText && !a.origin).map((a) => a.keptText()).filter(Boolean); // stacks kept from fight to fight (Oct 11)
+  if (kept.length) itemFields.push({ name: 'Kept Stacks', value: kept.join('\n') });
   const components = [];
   const button = (id, label) => new ButtonBuilder().setCustomId(id).setLabel(label).setStyle(ButtonStyle.Secondary);
   const [where, kind] = mode.split(':');

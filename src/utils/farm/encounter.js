@@ -3,11 +3,15 @@
 // ability points spent at random, an item of the same tier for each of the member's, and the hero's permanent buffs (a fair fight).
 // This file is the rules only: who shows up, what it carries, and the duel itself. The member's side (the offer, the unlock) is in play.js.
 const { Fight } = require('./engine');
-const { buildHero, roster } = require('./hero');
+const { buildHero, roster, keptStacksOf } = require('./hero');
 const { TIER_COSTS, MAX_TIER, ITEM_POOL } = require('./levels');
+const { KEEP } = require('./ability');
+const { HIT_CAP } = require('./heroes/bebop');
+const { HEROES, ABILITIES } = require('./stats');
 const { itemByName } = require('./stats');
 const { pickRandom } = require('../random');
 
+const MINA_BATS = ABILITIES[HEROES.Mina.BoundAbilities[4].Key].BonusBatsMax; // Nox Nostra's own cap (the game's 50)
 const ENCOUNTER_CHANCE = 0.05; // per won fight. ponytail: placeholder, his to tune
 const DUEL_SECONDS = 120; // a duel nobody has won by then: the rival slips away (counts as lost; costs nothing)
 const FRAME_STEPS = 10; // a snapshot every second of fight: duels are short (about 10 s), a trip's 3 s would show two or three
@@ -21,7 +25,7 @@ function rollRival(has, rng = Math.random, chance = ENCOUNTER_CHANCE) {
 }
 
 // What the rival fights with, rolled around the member's own kit (play.js fightKit, with `points`): same level and permanent buffs, its ability points spent
-// at random, and for each of the member's items a random one of the same tier (a legendary counts as tier 4; nothing corrupted).
+// at random, for each of the member's items a random one of the same tier (a legendary counts as tier 4; nothing corrupted), and kept stacks.
 function rivalKit(kit, rng = Math.random) {
   const rnd = (n) => Math.floor(rng() * n);
   const tiers = {};
@@ -39,11 +43,14 @@ function rivalKit(kit, rng = Math.random) {
     const choices = ITEM_POOL.filter((n) => itemByName(n).Tier === tier && !items.includes(n));
     if (choices.length) items.push(pickRandom(choices, rnd));
   }
-  return { boons: kit.boons, unlocked: kit.unlocked, tiers, items, buffs: kit.buffs };
+  // kept stacks (his call, Oct 11: "a decent number"): each kind rolls between half its cap and the full cap; only the rival's own kit reads its kinds
+  const between = (cap) => Math.ceil(cap / 2) + rnd(cap - Math.ceil(cap / 2) + 1);
+  const stacks = { kills: between(KEEP.cap), hits: between(HIT_CAP), bats: between(MINA_BATS) };
+  return { boons: kit.boons, unlocked: kit.unlocked, tiers, items, buffs: kit.buffs, stacks };
 }
 
 // The duel, played at once like a trip (play.js simulate): the member's hero against the rival. Returns a run the fight screens can replay:
-//   { encounter: true, hero, rival, won, timedOut, seconds, rejuvsUsed, frames, log: [[seconds, text]] }
+//   { encounter: true, hero, rival, won, timedOut, seconds, rejuvsUsed, frames, log: [[seconds, text]], stacks (the hero's kept stacks after it) }
 // `rejuvs`: the hero's Rejuvs work here like in the siege and are used up (his call, Oct 10); a rival never has any.
 function duel(heroName, kit, rivalName, theirs, { rng = Math.random, rejuvs = 0 } = {}) {
   const hero = buildHero(heroName, kit);
@@ -71,7 +78,7 @@ function duel(heroName, kit, rivalName, theirs, { rng = Math.random, rejuvs = 0 
   for (const unit of [rival, hero]) if (!unit.alive) log.push([+fight.time.toFixed(1), `${unit.name} went down`]);
   frames.push(snapshot());
   const keep = frames.length <= MAX_FRAMES ? frames : Array.from({ length: MAX_FRAMES }, (_, i) => frames[Math.round((i * (frames.length - 1)) / (MAX_FRAMES - 1))]);
-  return { encounter: true, hero: heroName, rival: rivalName, won: hero.alive && !rival.alive, timedOut: hero.alive && rival.alive, seconds: fight.time, rejuvsUsed: rejuvs - hero.rejuvs, frames: keep, log };
+  return { encounter: true, hero: heroName, rival: rivalName, won: hero.alive && !rival.alive, timedOut: hero.alive && rival.alive, seconds: fight.time, rejuvsUsed: rejuvs - hero.rejuvs, frames: keep, log, stacks: keptStacksOf(hero) };
 }
 
 module.exports = { ENCOUNTER_CHANCE, DUEL_SECONDS, rollRival, rivalKit, duel };

@@ -1,7 +1,7 @@
 // Mina's abilities (deadlock.wiki/Mina, checked Oct 2 2026). Numbers come from the wiki data through Ability.value(); this file is only
-// what each ability does. His calls (Oct 2): bites on any enemy grow Nox Nostra for the rest of the fight; Sanguine Retreat slips an enemy's
+// what each ability does. His calls (Oct 2, Oct 11): bites on any enemy grow Nox Nostra for good (kept stacks, up to the game's 50 bats); Sanguine Retreat slips an enemy's
 // blast, and in fights without blasts is used when hurt.
-const { Ability } = require('./../ability');
+const { Ability, keptOf } = require('./../ability');
 const { isBoss, npcShare } = require('./../items');
 
 // 1. Rake: slashes the enemies in reach for spirit damage plus a share of their missing health, finishes off non-boss enemies left under the
@@ -50,7 +50,7 @@ class SanguineRetreat extends Ability {
 
 // 3. Love Bites (passive): every bullet adds spirit damage. Bullets, Rake and bats fill a bar on the enemy (it empties after a few quiet seconds);
 // a full bar is a bite of bonus spirit damage, then that enemy can't be bitten for a while. T1: the bite slows. T3: fire rate after a bite.
-// Every bite adds bats to Nox Nostra for the rest of the fight. ponytail: headshot build-up isn't modelled.
+// Every bite adds bats to Nox Nostra, kept for good up to the game's BonusBatsMax (ability.js KEEP). ponytail: headshot build-up isn't modelled.
 class LoveBites extends Ability {
   get passive() { return true; }
 
@@ -98,11 +98,13 @@ class LoveBites extends Ability {
 class NoxNostra extends Ability {
   constructor(...args) {
     super(...args);
-    this.bonus = 0; // bats added by bites, this fight (his call, Oct 2)
+    this.bonus = Math.min(this.data.BonusBatsMax, keptOf(this, 'Mina').bats ?? 0); // bats added by bites, kept from fight to fight (his calls, Oct 2 and Oct 11)
     this.left = 0; // bats still to fly
   }
 
   grow() { this.bonus = Math.min(this.data.BonusBatsMax, this.bonus + this.data.BonusBatsPerProc); }
+  keep() { return { bats: this.bonus }; }
+  keptText() { return this.bonus ? `${this.name}: +${this.bonus} bats (of ${this.data.BonusBatsMax})` : null; }
 
   want(fight) {
     return fight.foes.length > 0;
@@ -136,7 +138,7 @@ const info = [
   ['Rake', 'Slashes nearby enemies, hitting harder the more health they have lost. Heals for every kill.'],
   ['Sanguine Retreat', 'Disperses for a moment, out of every enemy\'s reach. Slips a blast as it lands.'],
   ['Love Bites', 'Bullets deal extra spirit damage, and hits build up to a vicious bite.'],
-  ['Nox Nostra', 'Unleashes a cloud of bats that damage and silence enemies. Every bite adds bats for the rest of the fight.'],
+  ['Nox Nostra', 'Unleashes a cloud of bats that damage and silence enemies. Every bite adds bats for good.'],
 ];
 
 module.exports = { name: 'Mina', abilities: { 1: Rake, 2: SanguineRetreat, 3: LoveBites, 4: NoxNostra }, info };

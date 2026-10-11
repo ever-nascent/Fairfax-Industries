@@ -1,8 +1,8 @@
 // Mo & Krill's abilities (deadlock.wiki/Mo_&_Krill, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through
 // Ability.value(); this file is only what each ability does. Combo's max health for a kill counts any enemy and lasts the fight only, like the
 // other heroes' growing bonuses (his standing rule). Taken by me: they come out of Burrow as soon as they are under (the game lets them stay).
-const { Ability } = require('./../ability');
-const { DT, MELEE, LIFESTEAL_VS_NPC } = require('./../engine');
+const { Ability, KEEP, keptStacks, keptOf } = require('./../ability');
+const { DT, MELEE, LIFESTEAL_VS_NPC, HEAL_POOL } = require('./../engine');
 
 // 1. Scorn: spirit damage to the enemies around the front one, healing them for a share of it (a smaller share from NPCs: the wiki's numbers).
 // T1: more damage. T2: shorter cooldown, wider. T3: every Scorn leaves a stack on the enemies hit: they take more damage, no limit on stacks.
@@ -85,15 +85,24 @@ class SandBlast extends Ability {
 }
 
 // 4. Combo: they walk up to the front enemy and hold it: stunned for the channel (a boss shrugs part of that off), spirit damage every step, no
-// shooting or casting meanwhile. If it dies during the hold or within KILL_WINDOW seconds after, they gain max health for the rest of the fight
-// (the health that comes with it is a heal under the cap, like Billy's). T1: they heal for the damage. T2: bullet resist meanwhile. T3: longer,
+// shooting or casting meanwhile. If it dies during the hold or within KILL_WINDOW seconds after, they gain max health, kept for good (ability.js
+// KEEP: the kept kills' health is there from the start of a fight; a new kill's comes as a heal under the cap, like Billy's). T1: they heal for the damage. T2: bullet resist meanwhile. T3: longer,
 // more damage.
 const KILL_WINDOW = 3;
 class Combo extends Ability {
   constructor(...args) {
     super(...args);
     this.held = null; // { e, until, watch }
+    this.kills = Math.min(KEEP.cap, keptOf(this, 'Mo & Krill').kills ?? 0); // kept from earlier fights
+    const health = this.bonus; // the kept kills' health is there from the start (like Abrams' Infernal Resilience, so the hero screen shows it)
+    this.unit.stats.maxHealth += health;
+    this.unit.health += health;
+    this.unit.healPool += health * HEAL_POOL;
   }
+
+  get bonus() { return keptStacks(this.kills) * this.value('BonusHealthOnKill'); }
+  keep() { return { kills: this.kills }; }
+  keptText() { return this.kills ? `${this.name}: ${this.kills} kills, +${Math.round(this.bonus)} Max Health` : null; }
 
   want(fight) { return fight.foes.length > 0; }
   status(fight) { return fight && this.held && fight.time < this.held.until ? 'Holding' : super.status(fight); }
@@ -118,7 +127,9 @@ class Combo extends Ability {
       fight.heal(this.unit, ((dealt * this.value('LifeStealPercentOnHit')) / 100) * (h.e.team === 'hero' ? 1 : LIFESTEAL_VS_NPC), 'lifesteal');
     }
     if (!h.e.alive) {
-      const health = this.value('BonusHealthOnKill');
+      const before = this.bonus;
+      this.kills = Math.min(KEEP.cap, this.kills + 1);
+      const health = this.bonus - before; // less past KEEP.full kills, none past the cap
       this.unit.stats.maxHealth += health;
       fight.heal(this.unit, health);
       this.held = null;
@@ -131,7 +142,7 @@ const info = [
   ['Scorn', 'Damages the enemies nearby and heals for part of the damage done.'],
   ['Burrow', 'Burrows underground, then jumps out among the enemies: a knock-up and a damaging spin.'],
   ['Sand Blast', 'Sprays sand over the enemies in front, damaging and disarming them.'],
-  ['Combo', 'Holds an enemy in place, stunned and taking damage. A kill adds max health for the fight.'],
+  ['Combo', 'Holds an enemy in place, stunned and taking damage. A kill adds max health for good.'],
 ];
 
 module.exports = { name: 'Mo & Krill', abilities: { 1: Scorn, 2: Burrow, 3: SandBlast, 4: Combo }, info };

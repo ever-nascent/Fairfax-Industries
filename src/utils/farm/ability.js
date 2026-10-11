@@ -7,9 +7,19 @@
 //   on(event, fight, p)  'damage' / 'bulletHit' / 'kill' / 'melee' ... payloads, e.g. Fixation stacking on bullet hits
 //   wantsMelee(fight, t) optional: true when the hero should melee now (engine.js wantMelee)
 //   passive = true       no cooldown, never cast, only tick() and on()
+//   keep()               optional: the stacks it keeps for its hero after a fight ({ kills | hits | bats }), see KEEP below
 // Slot 4 is the ultimate (Diviner's Kevlar, Lightning Scroll and ultimate cooldown reduction look for it).
 const MIN_COOLDOWN = 0.2; // cooldown reduction stops at 80% off. ponytail: the game's own cap isn't on the wiki; reductions add up here.
 const CHARGE_GAP = 1; // seconds between two charges of one ability when the wiki gives no gap (so extra charges don't all fire at once)
+
+// Kept stacks (his calls, Oct 11): the stacks the game keeps for the whole match (Guided Owl, Assassinate, Combo and Bloodscent kills, Sticky Bomb
+// hits and kills, Nox Nostra's bonus bats) stay with the hero from fight to fight, saved on its record (`stacks`: { kills, hits, bats }). Any
+// kill counts; like Bebop's in the game the first KEEP.full count in full and the rest at half, and nothing counts past KEEP.cap.
+// Only the hero's own ability keeps them: a copy (Sinclair's ultimate) starts at none and saves nothing.
+const KEEP = { full: 7, cap: 30 };
+const keptStacks = (n, full = KEEP.full, cap = KEEP.cap) => Math.min(n, full) + Math.max(0, Math.min(n, cap) - full) / 2;
+// The saved stacks an ability starts from: its hero's own (buildHero's `stacks`), or none when another hero runs it (a copy, a rival's of another kit).
+const keptOf = (ability, owner) => (ability.unit.name === owner ? ability.unit.kept ?? {} : {});
 
 class Ability {
   /** @param slot 1-4, @param data the wiki's entry (abilities.json), @param unit the hero, @param tier upgrades bought, 0-3 */
@@ -134,4 +144,4 @@ function spinUp(state, weapon, fight, dt) {
   if (state.spin) fight.addStatus(u, { id: 'spin_up', duration: dt * 1.5, mods: { fireRate: state.spin * (weapon.RoundsPerSecondAtMaxSpin / weapon.RoundsPerSecond - 1) } });
 }
 
-module.exports = { Ability, Unimplemented, Locked, MIN_COOLDOWN, spinUp };
+module.exports = { Ability, Unimplemented, Locked, MIN_COOLDOWN, spinUp, KEEP, keptStacks, keptOf };

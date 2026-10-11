@@ -1,7 +1,7 @@
 // Grey Talon's abilities (deadlock.wiki/Grey_Talon, checked Oct 5 2026; page updated Sept 30). Numbers come from the wiki data through
 // Ability.value(); this file is only what each ability does. His call (Oct 5): Guided Owl's tier 3 execute is cut against NPCs like every health
 // share. Guided Owl's spirit power counts any enemy and lasts the fight only, like the other heroes' growing bonuses.
-const { Ability } = require('./../ability');
+const { Ability, KEEP, keptStacks, keptOf } = require('./../ability');
 const { DT } = require('./../engine');
 const { npcShare } = require('./../items');
 
@@ -73,14 +73,14 @@ class SpiritSnare extends Ability {
 }
 
 // 4. Guided Owl: he stops shooting for the cast, then the owl hits: spirit damage around the front enemy and a stun. Every enemy that dies within
-// KILL_WINDOW seconds of the hit (the wiki's note) adds spirit power for the rest of the fight. T3: after the hit, an enemy below a share of its
+// KILL_WINDOW seconds of the hit (the wiki's note) adds spirit power, kept for good (ability.js KEEP). T3: after the hit, an enemy below a share of its
 // health dies (pure damage; his call: the share is cut against NPCs like every health share).
 // ponytail: the owl lands when the cast ends; the wiki gives no owl speed.
 const KILL_WINDOW = 4;
 class GuidedOwl extends Ability {
   constructor(...args) {
     super(...args);
-    this.kills = 0;
+    this.kills = Math.min(KEEP.cap, keptOf(this, 'Grey Talon').kills ?? 0); // kept from earlier fights
     this.hit = []; // [{ e, until }] enemies the owl hit, while their death still counts
   }
 
@@ -97,10 +97,14 @@ class GuidedOwl extends Ability {
   }
 
   tick(fight) {
-    this.kills += this.hit.filter((h) => !h.e.alive).length;
+    this.kills = Math.min(KEEP.cap, this.kills + this.hit.filter((h) => !h.e.alive).length);
     this.hit = this.hit.filter((h) => h.e.alive && h.until > fight.time);
-    if (this.kills) fight.addStatus(this.unit, { id: 'owl_spirit', duration: DT * 1.5, mods: { spirit: this.kills * this.data.BonusTechPowerPerKill } });
+    if (this.kills) fight.addStatus(this.unit, { id: 'owl_spirit', duration: DT * 1.5, mods: { spirit: this.bonus } });
   }
+
+  get bonus() { return keptStacks(this.kills) * this.data.BonusTechPowerPerKill; }
+  keep() { return { kills: this.kills }; }
+  keptText() { return this.kills ? `${this.name}: ${this.kills} kills, +${+this.bonus.toFixed(1)} Spirit Power` : null; }
 
   on(event, fight, p) {
     if (event !== 'cast' || p.ability !== this) return;
@@ -114,7 +118,7 @@ const info = [
   ['Charged Shot', 'Draws a powerful arrow that pierces through every enemy.'],
   ['Rain of Arrows', 'Takes to the air for a while: more weapon damage, and every shot also hits other enemies.'],
   ['Spirit Snare', 'Throws a trap that curses the enemies around it: they cannot attack and are slowed.'],
-  ['Guided Owl', 'Launches a spirit owl that explodes, damaging and stunning enemies. Each kill it sets up adds spirit power for the fight.'],
+  ['Guided Owl', 'Launches a spirit owl that explodes, damaging and stunning enemies. Each kill it sets up adds spirit power for good.'],
 ];
 
 module.exports = { name: 'Grey Talon', abilities: { 1: ChargedShot, 2: RainOfArrows, 3: SpiritSnare, 4: GuidedOwl }, info };

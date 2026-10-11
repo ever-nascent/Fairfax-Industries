@@ -21,13 +21,15 @@ const heroInfo = (name) => LOGIC[name]?.info ?? [];
 
 /** @param tiers upgrades bought per slot, e.g. { 1: 2 }; @param boons level-ups; @param items item names; @param buffs permanent buffs; @param unlocked how many abilities
  *  (slots 1-4 in order) are unlocked; @param corrupted its corrupted item { name, drawback, amount } | null; @param imbues { item name: ability slot };
- *  @param copies the heroes whose ultimate Sinclair may copy: the member's other unlocked heroes (default: the whole roster, for simulations and rivals) */
-function buildHero(name, { boons = 0, items = [], buffs = {}, bridge = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null } = {}) {
+ *  @param copies the heroes whose ultimate Sinclair may copy: the member's other unlocked heroes (default: the whole roster, for simulations and rivals)
+ *  @param stacks its kept stacks { kills, hits, bats } (ability.js KEEP) */
+function buildHero(name, { boons = 0, items = [], buffs = {}, bridge = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, stacks = {} } = {}) {
   const data = HEROES[name];
   if (!data) throw new Error(`Unknown hero: ${name}`);
   const unit = new Unit({ name, team: 'hero', stats: heroStats(data, { boons, items, buffs, bridge, corrupted }) });
   unit.boons = boons; // item numbers that scale per boon read it
   unit.copies = copies ?? roster().filter((n) => n !== name);
+  unit.kept = { ...stacks }; // its kept stacks (ability.js KEEP), read by its own abilities as they are built
   unit.items = makeItems(items.map((n) => cardFor(n, corrupted)), unit, imbues);
   unit.abilities = Object.entries(data.BoundAbilities).map(([slot, { Key }]) => {
     const Cls = Number(slot) > unlocked ? Locked : LOGIC[name]?.abilities[slot] || Unimplemented;
@@ -37,4 +39,7 @@ function buildHero(name, { boons = 0, items = [], buffs = {}, bridge = [], tiers
   return unit;
 }
 
-module.exports = { buildHero, heroNames, roster, heroInfo, implemented: Object.keys(LOGIC), logicOf: (name) => LOGIC[name] };
+// The stacks a hero keeps after a fight, from its own abilities (not a copy): { kills, hits, bats } with only what its kit has.
+const keptStacksOf = (unit) => Object.assign({}, ...unit.abilities.filter((a) => a.keep && !a.origin).map((a) => a.keep()));
+
+module.exports = { buildHero, heroNames, roster, heroInfo, keptStacksOf, implemented: Object.keys(LOGIC), logicOf: (name) => LOGIC[name] };

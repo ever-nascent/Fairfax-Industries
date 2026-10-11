@@ -1,7 +1,7 @@
 // Bebop's abilities (deadlock.wiki/Bebop, checked Oct 3 2026). Numbers come from the wiki data through Ability.value(); this file is only
-// what each ability does. His calls (Oct 3): Sticky Bomb grows with any enemy it hits or kills, for the rest of the fight only; Grapple Arm's
+// what each ability does. His calls (Oct 3, Oct 11): Sticky Bomb grows with any enemy it hits or kills, kept for good (ability.js KEEP); Grapple Arm's
 // tier 2 (range, which does nothing here) stuns the hooked enemy for a moment instead. "On hero hit" effects work on any enemy.
-const { Ability } = require('./../ability');
+const { Ability, KEEP, keptStacks, keptOf } = require('./../ability');
 const { MELEE } = require('./../engine');
 const { isBoss } = require('./../items');
 
@@ -31,21 +31,24 @@ class ExplodingUppercut extends Ability {
 }
 
 // 2. Sticky Bomb: sticks to the front enemy and explodes after its fuse (at once if that enemy dies): spirit damage around it. Every enemy a
-// bomb hits or kills makes the next ones stronger for the rest of the fight (his call; the game: heroes, for good), half as fast after
-// OnHitDiminish hits / OnKillDiminish kills. The damage is set when the bomb is thrown. T3: speed and debuff resist on cast.
+// bomb hits or kills makes the next ones stronger, kept for good like the game (his calls, Oct 3 and Oct 11; any enemy counts), half as fast after
+// OnHitDiminish hits / OnKillDiminish kills, and nothing past HIT_CAP hits / KEEP.cap kills. The damage is set when the bomb is thrown. T3: speed and debuff resist on cast.
+const HIT_CAP = 120; // his call, Oct 11
 class StickyBomb extends Ability {
   constructor(...args) {
     super(...args);
-    this.hits = 0;
-    this.kills = 0;
+    const kept = keptOf(this, 'Bebop'); // kept from earlier fights
+    this.hits = Math.min(HIT_CAP, kept.hits ?? 0);
+    this.kills = Math.min(KEEP.cap, kept.kills ?? 0);
     this.bombs = []; // { target, at, damage }
   }
 
-  // stacks of a kind: full ones up to `cap`, half ones after
-  static stacks(n, cap) { return Math.min(n, cap) + Math.max(0, n - cap) / 2; }
   get bonus() {
-    return (StickyBomb.stacks(this.hits, this.data.OnHitDiminish) * this.value('BonusDamagePctPerPlayerHit') + StickyBomb.stacks(this.kills, this.data.OnKillDiminish) * this.value('BonusDamagePctPerPlayerKilled')) / 100;
+    return (keptStacks(this.hits, this.data.OnHitDiminish, HIT_CAP) * this.value('BonusDamagePctPerPlayerHit') + keptStacks(this.kills, this.data.OnKillDiminish) * this.value('BonusDamagePctPerPlayerKilled')) / 100;
   }
+
+  keep() { return { hits: this.hits, kills: this.kills }; }
+  keptText() { return this.hits || this.kills ? `${this.name}: ${this.hits} hits and ${this.kills} kills, +${Math.round(this.bonus * 100)}% bomb damage` : null; }
 
   want(fight) {
     return fight.foes.length > 0;
@@ -66,8 +69,8 @@ class StickyBomb extends Ability {
     for (const bomb of due) {
       const spot = bomb.target.offset ?? 0;
       for (const e of fight.enemies.filter((x) => x.alive && Math.abs((x.offset ?? 0) - spot) <= this.value('Radius'))) {
-        if (fight.damage(this.unit, e, bomb.damage, 'spirit') > 0) this.hits++;
-        if (!e.alive) this.kills++;
+        if (fight.damage(this.unit, e, bomb.damage, 'spirit') > 0) this.hits = Math.min(HIT_CAP, this.hits + 1);
+        if (!e.alive) this.kills = Math.min(KEEP.cap, this.kills + 1);
       }
     }
   }
@@ -130,9 +133,9 @@ class HyperBeam extends Ability {
 // What the hero pick shows: each ability's general description, in slot order (the 4th is the Ultimate). No pronouns, on purpose.
 const info = [
   ['Exploding Uppercut', 'Launches an enemy into the air. Where it lands, the enemies around take damage and hit less hard.'],
-  ['Sticky Bomb', 'Attaches a bomb that explodes after a short fuse. Every enemy it hits or kills makes the next bombs stronger for the fight.'],
+  ['Sticky Bomb', 'Attaches a bomb that explodes after a short fuse. Every enemy it hits or kills makes the next bombs stronger for good.'],
   ['Grapple Arm', 'Launches a mechanical hand that pulls an enemy in close.'],
   ['Hyper Beam', 'Channels a torrent of energy through every enemy in its path, damaging and slowing them.'],
 ];
 
-module.exports = { name: 'Bebop', abilities: { 1: ExplodingUppercut, 2: StickyBomb, 3: GrappleArm, 4: HyperBeam }, info };
+module.exports = { HIT_CAP, name: 'Bebop', abilities: { 1: ExplodingUppercut, 2: StickyBomb, 3: GrappleArm, 4: HyperBeam }, info };

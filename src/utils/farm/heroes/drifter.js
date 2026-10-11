@@ -1,7 +1,7 @@
 // Drifter's abilities (deadlock.wiki/Drifter, checked Oct 3 2026). Numbers come from the wiki data through Ability.value(); this file is only
 // what each ability does. His calls (Oct 3): an enemy in Eternal Night's darkness can't attack him at all. An enemy is "isolated" when it is
 // the only one left standing, or in the darkness. Bloodscent's kill bonus lasts the fight only, like the other heroes' growing bonuses.
-const { Ability } = require('./../ability');
+const { Ability, KEEP, keptStacks, keptOf } = require('./../ability');
 const { DT, MELEE } = require('./../engine');
 const { npcShare } = require('./../items');
 
@@ -61,29 +61,32 @@ class StalkersMark extends Ability {
   }
 }
 
-// 3. Bloodscent (passive): more damage to an isolated enemy; every isolated enemy that dies adds weapon damage for the rest of the fight.
+// 3. Bloodscent (passive): more damage to an isolated enemy; every isolated enemy that dies adds weapon damage, kept for good (ability.js KEEP).
 // T1: faster while an enemy is isolated. T2: such a death heals part of the missing health and gives stamina back.
 class Bloodscent extends Ability {
   get passive() { return true; }
 
   constructor(...args) {
     super(...args);
-    this.kills = 0;
+    this.kills = Math.min(KEEP.cap, keptOf(this, 'Drifter').kills ?? 0); // kept from earlier fights
   }
 
-  status() { return this.kills ? `+${this.kills * this.data.WeaponDmgPerIsolationKill}% Weapon` : 'Passive'; }
+  get bonus() { return keptStacks(this.kills) * this.data.WeaponDmgPerIsolationKill; }
+  keep() { return { kills: this.kills }; }
+  keptText() { return this.kills ? `${this.name}: ${this.kills} kills, +${+this.bonus.toFixed(1)}% Weapon Damage` : null; }
+  status() { return this.kills ? `+${+this.bonus.toFixed(1)}% Weapon` : 'Passive'; }
 
   tick(fight) {
     const prey = fight.enemies.filter((e) => isolated(fight, e));
     for (const e of prey) fight.addStatus(e, { id: 'bloodscent', duration: DT * 1.5, mods: { damageTaken: this.value('AmpDamagePercent') / 100 }, tags: ['isolated'] });
-    const mods = { weaponDamage: (this.kills * this.data.WeaponDmgPerIsolationKill) / 100, moveSpeed: prey.length ? this.value('BonusMoveSpeed') : 0 };
+    const mods = { weaponDamage: this.bonus / 100, moveSpeed: prey.length ? this.value('BonusMoveSpeed') : 0 };
     if (mods.weaponDamage || mods.moveSpeed) fight.addStatus(this.unit, { id: 'bloodscent_hunt', duration: DT * 1.5, mods });
   }
 
   on(event, fight, { target }) {
     if (event !== 'kill' || target === this.unit || !target.has('isolated') || target.scented) return;
     target.scented = true;
-    this.kills++;
+    this.kills = Math.min(KEEP.cap, this.kills + 1);
     fight.heal(this.unit, ((this.unit.stats.maxHealth - this.unit.health) * this.value('HealOnKillPct')) / 100);
     this.unit.stamina = Math.min(Math.max(0, Math.floor(this.unit.stat('stamina'))), this.unit.stamina + this.value('StaminaToRestore'));
   }
@@ -108,7 +111,7 @@ class EternalNight extends Ability {
 const info = [
   ['Rend', 'Swipes at the enemies ahead for spirit damage. The close ones take melee damage too.'],
   ["Stalker's Mark", 'Marks an enemy, making it bleed, and teleports behind it.'],
-  ['Bloodscent', 'Deals more damage to an enemy left on its own. Every such kill adds weapon damage for the fight.'],
+  ['Bloodscent', 'Deals more damage to an enemy left on its own. Every such kill adds weapon damage for good.'],
   ['Eternal Night', 'Wraps the strongest enemies in darkness: they count as alone and cannot see to attack.'],
 ];
 
