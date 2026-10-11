@@ -34,6 +34,7 @@ test('every innate stat on every shop item is either modelled or knowingly ignor
 test('a hero shoots, reloads and the gun matches its wiki DPS', () => {
   const haze = buildHero('Haze');
   haze.abilities.forEach((a) => { a.cdLeft = 1e9; }); // gun only
+  haze.abilities[2].on = () => {}; // Fixation (passive) adds to every bullet
   haze.meleeAt = Infinity;
   const f = fight(haze);
   f.run(20);
@@ -104,7 +105,19 @@ test('Haze: Fixation stacks on bullet hits and adds damage', () => {
   };
   const stacks = buildHero('Haze').abilities[2];
   assert.strictEqual(stacks.value('MaxStacks'), 40);
-  assert.ok(run(true) > run(false) * 1.03);
+  assert.ok(run(true) > run(false) * 1.5, 'at 40 stacks a level 0 bullet (5.26) does more than twice its damage');
+});
+
+test("Haze: each Fixation stack adds 0.2 to the bullet's own damage (the wiki's +0.2 weapon damage a stack), not 0.2%", () => {
+  const haze = buildHero('Haze');
+  const dummy = enemy('Dummy', { maxHealth: 100000, dps: 0, distance: 30 }); // past falloff's start: the bonus is cut like the bullet
+  const f = fight(haze, dummy);
+  haze.abilities[2].addStacks(f, dummy, 40);
+  const shot = f.shotDamage(haze, dummy);
+  const scale = shot / haze.stats.bulletDamage; // falloff (and weapon damage) on this bullet
+  assert.ok(scale < 1, 'falloff applies at this distance');
+  f.damage(haze, dummy, shot, 'bullet');
+  close(f.dealt.get(haze), shot + 40 * 0.2 * scale);
 });
 
 test('Haze: Bullet Dance speeds the gun and never reloads', () => {
