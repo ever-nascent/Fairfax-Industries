@@ -58,8 +58,10 @@ function entries() {
   );
 }
 
-// A member's last `count` changes, newest first. `heroes: false` leaves out their farm heroes' own souls (the server balance only).
-const history = (userId, count = 10, { heroes = true } = {}) => entries().filter((e) => e.u === userId && (heroes || !e.h)).slice(-count).reverse();
+// A member's last `count` changes, newest first. `heroes: false` leaves out their farm heroes' own souls (the server balance only);
+// `hero: '<name>'` keeps only that hero's.
+const history = (userId, count = 10, { heroes = true, hero } = {}) =>
+  entries().filter((e) => e.u === userId && (heroes || !e.h) && (!hero || e.h === hero)).slice(-count).reverse();
 
 // What came in and went out per reason since `since` (ms timestamp), plus duel pots by pair.
 // Returns { rows: [{ reason, in, out, count }] sorted by net, pairs: [{ winner, loser, count, souls }] sorted by count }.

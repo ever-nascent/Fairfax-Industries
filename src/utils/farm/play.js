@@ -70,6 +70,8 @@ function unload(working) {
   return record;
 }
 const getFarmUser = async (id) => load(await farm().get(id));
+// One of the member's heroes' own part (souls, level, buffs ...) to read, whether or not it is the current one.
+const heroOf = (record, name) => (name === record.hero ? record : heroPart(record.heroes[name]));
 
 // Changes one member's record inside the store lock; `change(record)` edits the copy and returns what the caller wants.
 async function updateFarmUser(id, change) {
@@ -508,4 +510,4 @@ async function hatchEgg(userId, rng = Math.random) {
   return done;
 }
 
-module.exports = { offerFor, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, hasHero, unlockHero, switchHero, updateFarmUser, updateHero, OLD_OWNER, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, familyName, hauntFile, campFamilies, CAMP_SIZE, simulate, play };
+module.exports = { heroOf, offerFor, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, hasHero, unlockHero, switchHero, updateFarmUser, updateHero, OLD_OWNER, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, familyName, hauntFile, campFamilies, CAMP_SIZE, simulate, play };

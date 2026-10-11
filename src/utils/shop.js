@@ -335,7 +335,7 @@ const receipts = {
 };
 // When a purchase throws. A Hideout that failed part-way has already been refunded.
 const FAILED = {
-  card: 'Something went wrong with that purchase. Check your balance with `/wallet`.',
+  card: 'Something went wrong with that purchase. Check your balance with `/souls balance`.',
   hideout: "Something went wrong making your Hideout, and any Souls taken were returned. Tell staff if it keeps happening.",
 };
 
