@@ -14,6 +14,7 @@ const LABELS = {
   'level-up': 'Level-up',
   urn: 'Soul Urn',
   trivia: 'Trivia',
+  'soul-bag': 'Soul Bag',
   lockle: 'Lockle',
   farm: 'Hero Farming',
   'farm-shop': 'Hero Farming item shop',

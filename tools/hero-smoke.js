@@ -13,6 +13,7 @@ const { ITEM_POOL, LEGENDARY_NAMES, MAX_ITEMS } = require('../src/utils/farm/lev
 const { BUFFS } = require('../src/utils/farm/buffs');
 const { simulate } = require('../src/utils/farm/play');
 const { TARGETS } = require('../src/utils/farm/targets');
+const { specialFor } = require('../src/utils/farm/haunts');
 const { duel, rivalKit } = require('../src/utils/farm/encounter');
 const views = require('../src/utils/farm/views');
 
@@ -32,6 +33,8 @@ const SCENES = [
   () => Array.from({ length: 5 }, (_, i) => enemy(`Haunt ${i + 1}`, { maxHealth: 500, dps: 6, distance: 10, souls: 41 })),
   () => [enemy('Tank', { maxHealth: 20000, dps: 35, distance: 20, healthRegen: 15, blast: { every: 6, damage: 300, maxHealthPct: 0.1, curse: 2, type: 'spirit', what: 'stomp' }, damageType: 'spirit' })],
   () => [enemy('Brute', { maxHealth: 60000, dps: 300, distance: 8, blast: { every: 3, damage: 50, maxHealthPct: 0, curse: 0.5 } })],
+  // a camp of large Haunts with their special attacks (haunts.js): burns, a heal cut and slow, a sleep, a melee slam on the hero
+  () => ['slum_shroom', 'past_due', 'crabbage_pot', 'stage_hand'].map((family, i) => { const e = enemy(`Haunt ${i + 1}`, { maxHealth: 3000, dps: 14, distance: 10, souls: 181 }); e.stats.special = specialFor(family, false); return e; }),
 ];
 // Two long ones for the tiers check only (cooldown tiers of 100 s+ abilities need a fight long enough to cast twice; the hero keeps getting back up):
 // a lone sponge that blasts, and a crowd of them.

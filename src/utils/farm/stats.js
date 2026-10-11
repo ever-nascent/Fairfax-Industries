@@ -140,6 +140,8 @@ const cardFor = (name, corrupted) => (corrupted?.name === name ? corruptCard(ite
 // Guns that deal full damage at any distance: Graves' beam (the wiki: no falloff; his call, Oct 5: its 17 m limit isn't simulated). The game data's
 // falloff numbers for it only shape Essence Theft's build-up (heroes/graves.js).
 const NO_FALLOFF = new Set(['Graves']);
+// Pellets of a spread shot that always land: one of Rat King's two is perfectly accurate (the wiki); the other can miss like any shotgun pellet.
+const SURE_PELLETS = { 'Rat King': 1 };
 
 // Stat sheet for a wiki hero (an entry of heroes.json) with `boons` level-ups, a list of item names, the member's permanent
 // buffs ({ key: count }, buffs.js) and its corrupted item ({ name, drawback, amount } | null).
@@ -151,6 +153,7 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
     healthRegen: hero.BaseHealthRegen || 0,
     bulletDamage: w.BulletDamage + (ls.BulletDamage || 0) * boons, // per bullet
     pellets: w.HitOnceAcrossAllBullets ? 1 : w.BulletsPerShot, // Drifter's 3 pellets deal one shot's damage however many hit (the wiki)
+    surePellets: SURE_PELLETS[hero.Name] ?? 0,
     fireRate: w.RoundsPerSecond,
     clip: w.ClipSize,
     reload: w.ReloadTime,

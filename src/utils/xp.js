@@ -19,6 +19,8 @@ const DEFAULTS = {
   levelUpChannelId: null, // null = level-ups aren't announced
   minLength: 0, // chat messages shorter than this (characters) earn no XP; 0 = any message counts
   ignoredChannelIds: [], // channels (or categories) where chat and voice earn no XP
+  bagChance: 2, // Soul Bag (soulBag.js): % chance a counted chat message drops one; 0 = off
+  bagCooldownMinutes: 60, // at most one bag per this many minutes, whole server
 };
 const URN_BASE = 100 * SCALE; // day 1 of a streak
 const URN_PER_DAY = 20 * SCALE; // extra per day in a row
@@ -192,6 +194,17 @@ async function changeSouls(userId, delta, meta = 'other') {
   return user;
 }
 
+// A grabbed Soul Bag (soulBag.js) holding `souls`, doubled by a running Soul Boost. Returns { user, souls (paid) }.
+async function grabBag(userId, souls) {
+  const result = await updateUser(userId, (user) => {
+    const paid = souls * boostMultiplier(user);
+    user.souls += paid;
+    return { user, souls: paid };
+  });
+  ledger.record(userId, result.souls, 'soul-bag', result.user.souls);
+  return result;
+}
+
 // What the next right /trivia answer would pay (before a Soul Boost), and how many paid answers are left today.
 function triviaOdds(user, now = new Date()) {
   const paid = user.triviaDay === now.toISOString().slice(0, 10) ? user.triviaPaid : 0;
@@ -359,6 +372,7 @@ module.exports = {
   standing,
   claimUrn,
   changeSouls,
+  grabBag,
   buyCard,
   equipCard,
   EDITS,

@@ -594,9 +594,10 @@ test('encounters: a rival shows on the result with Fight / Walk Away, the duel i
     const sent = await press('Send button', `farm_send:${id}:small-camp`);
     const result = sent.log.at(-1)[1];
     checkLimits(result, 'result with a rival');
-    const offer = result.embeds[0].toJSON().fields.find((f) => f.name === 'A Rival Appears');
+    const offer = result.embeds[1].toJSON(); // its own embed, with the rival's picture
     const rival = buttons(result)[0].replace('Fight ', '');
-    assert.ok(offer && offer.value.includes(rival) && buttons(result)[1] === 'Walk Away' && rival !== 'Lady Geist');
+    assert.ok(offer.title === 'A Rival Appears' && offer.description.includes(rival) && buttons(result)[1] === 'Walk Away' && rival !== 'Lady Geist');
+    assert.ok(offer.thumbnail.url === 'attachment://rival.png' && result.files.some((f) => f.name === 'rival.png'));
 
     // someone else can't press it
     const stranger = await press('Rival Fight button', `farm_duel:${id}`, 'someone-else');

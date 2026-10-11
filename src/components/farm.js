@@ -5,7 +5,7 @@ const { drawbackText } = require('../utils/farm/stats');
 const { buffText } = require('../utils/farm/buffs');
 const { getUser } = require('../utils/xp');
 const { fmt } = require('../utils/format');
-const { DUEL_ID, WALK_ID, duelView, duelResultView, HERO_ID, PICK_ID, TARGET_ID, SEND_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, titleCase, timeLeft, pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, notReady } = require('../utils/farm/views');
+const { DUEL_ID, WALK_ID, withRival, duelView, duelResultView, HERO_ID, PICK_ID, TARGET_ID, SEND_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, titleCase, timeLeft, pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, notReady } = require('../utils/farm/views');
 
 // the live fight message is edited this often (Discord allows about 5 edits per 5 s per channel); tests set FARM_FRAME_MS=0
 const FRAME_MS = Number(process.env.FARM_FRAME_MS ?? 3000);
@@ -24,7 +24,8 @@ async function replay(interaction, run) {
     await interaction.editReply(fightView(run, frame));
     await sleep(FRAME_MS);
   }
-  await interaction.editReply(resultView(run, interaction.user.id)); // with Fight / Walk Away if a rival showed up
+  const result = resultView(run);
+  await interaction.editReply(run.rival ? await withRival(result, run.rival, interaction.user.id) : result); // its own embed with Fight / Walk Away
   if (run.legendary) await interaction.followUp({ ...legendaryView(run.legendary.name), flags: MessageFlags.Ephemeral }); // its own message (his call, Oct 2)
   if (run.token) await interaction.followUp({ ...tokenView(run.hero), flags: MessageFlags.Ephemeral });
 }

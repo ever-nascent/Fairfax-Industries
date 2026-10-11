@@ -70,6 +70,22 @@ module.exports = {
             .setRequired(true),
         ),
     )
+    .addSubcommand((s) =>
+      s
+        .setName('soul-bag')
+        .setDescription('How often a Soul Bag drops in chat')
+        .addNumberOption((o) =>
+          o
+            .setName('chance')
+            .setDescription('% chance per counted chat message (default 2, 0 = off)')
+            .setMinValue(0)
+            .setMaxValue(100)
+            .setRequired(true),
+        )
+        .addIntegerOption((o) =>
+          o.setName('cooldown').setDescription('Minutes between bags (default 60)').setMinValue(0).setMaxValue(1440).setRequired(true),
+        ),
+    )
     .addSubcommand((s) => s.setName('show').setDescription('Show the current XP settings')),
 
   async execute(interaction) {
@@ -117,6 +133,15 @@ module.exports = {
       return reply(s.ignoredChannelIds.includes(channel.id) ? `${channel} no longer gives XP.` : `${channel} gives XP again.`);
     }
 
+    if (sub === 'soul-bag') {
+      const chance = interaction.options.getNumber('chance');
+      const cooldown = interaction.options.getInteger('cooldown');
+      await updateSettings(guildId, (s) => Object.assign(s, { bagChance: chance, bagCooldownMinutes: cooldown }));
+      return reply(
+        chance ? `A Soul Bag has a **${chance}%** chance per chat message, at most once every **${cooldown} min**.` : 'Soul Bags are **off**.',
+      );
+    }
+
     // show
     const s = await getSettings(guildId);
     const embed = new EmbedBuilder()
@@ -129,6 +154,7 @@ module.exports = {
           inline: true,
         },
         { name: 'Voice XP', value: s.voiceEnabled ? `On, ${s.voiceXpPerMinute}/min` : 'Off', inline: true },
+        { name: 'Soul Bag', value: s.bagChance ? `${s.bagChance}% per message, every ${s.bagCooldownMinutes} min` : 'Off', inline: true },
         {
           name: 'Level-up channel',
           value: s.levelUpChannelId ? `<#${s.levelUpChannelId}>` : 'Off: nobody sees level-ups. Set one with `/xp-config level-up-channel`.',

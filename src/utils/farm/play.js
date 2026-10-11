@@ -26,6 +26,7 @@ const { IMBUES } = require('./items');
 const { rollAnyBuff } = require('./buffs');
 const { PAYOUT_SCALE } = require('./targets');
 const { rollRival, rivalKit, duel, ENCOUNTER_CHANCE } = require('./encounter');
+const { specialFor } = require('./haunts');
 const { HAUNTS } = require('./refresh'); // the Haunt families live with the download list that fetches their pictures
 
 const SWITCH_WAIT = 24 * 3600 * 1000; // switching between unlocked heroes: once a day (his call, Oct 2)
@@ -158,6 +159,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     enemies: () => target.enemies().map((e) => {
       if (key === 'walker' && fallen) { e.stats.maxHealth += WALKER_STEP * fallen; e.health = e.stats.maxHealth; } // tougher for every other Walker that is down
       if (family) {
+        e.stats.special = specialFor(family, e.name === 'Small Haunt'); // its family's special attack (medium and large Haunts only)
         const t = pickRandom(TRAITS, rnd);
         e.name = `${t.name ? `${t.name} ` : ''}${familyName(family)}`;
         e.stats.bulletResist = resistClamp(e.stats.bulletResist + t.bullet);
@@ -190,7 +192,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     }
     for (; seen < fight.log.length; seen++) {
       const l = fight.log[seen];
-      log.push([l.t, l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : `${l.who} ${l.what === 'stomp' ? 'stomped' : 'cursed'} ${hero.name}`) : `${hero.name} used ${l.what}`]);
+      log.push([l.t, l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.special ? `${l.who} used ${l.what}` : `${l.who} ${l.what === 'stomp' ? 'stomped' : 'cursed'} ${hero.name}`) : `${hero.name} used ${l.what}`]);
     }
     fight.enemies.forEach((e, i) => { if (!e.alive && !dead.has(i)) { dead.add(i); kills[stage]++; log.push([+fight.time.toFixed(1), `${label(fight, i)} went down`]); } });
     if (!hero.alive && !downLogged) { downLogged = true; log.push([+fight.time.toFixed(1), `${hero.name} went down`]); }
@@ -292,16 +294,16 @@ function walkAway(userId, now = Date.now()) {
   offers.delete(userId);
   return rival;
 }
-// Fight: the duel is played at once (like a trip) and a win unlocks the rival, at level 0 with nothing; a loss costs nothing. Uses up the offer.
-// Nothing else changes: no cooldown, souls, bridge buffs, Rejuvs or item time. Returns { run } or { error: 'gone' | 'no-hero' }.
+// Fight: the duel is played at once (like a trip) and a win unlocks the rival, at level 0 with nothing; a loss costs nothing but the Rejuvs it used (his call, Oct 10:
+// the member's Rejuvs work in a duel and are used up). Uses up the offer. Nothing else changes: no cooldown, souls, bridge buffs or item time. Returns { run } or { error: 'gone' | 'no-hero' }.
 async function fightRival(userId, { rng = Math.random, now = Date.now() } = {}) {
   const rival = walkAway(userId, now);
   if (!rival) return { error: 'gone' };
   const r = await getFarmUser(userId);
   if (!r.hero || hasHero(r, rival)) return { error: r.hero ? 'gone' : 'no-hero' };
   const kit = fightKit(r);
-  const run = duel(r.hero, kit, rival, rivalKit(kit, rng), { rng });
-  if (run.won) await updateFarmUser(userId, (rec) => { if (!hasHero(rec, rival)) rec.heroes[rival] = { earned: 0, tiers: {}, items: {} }; });
+  const run = duel(r.hero, kit, rival, rivalKit(kit, rng), { rng, rejuvs: r.rejuvs });
+  if (run.won || run.rejuvsUsed) await updateFarmUser(userId, (rec) => { rec.rejuvs = Math.max(0, rec.rejuvs - run.rejuvsUsed); if (run.won && !hasHero(rec, rival)) rec.heroes[rival] = { earned: 0, tiers: {}, items: {} }; });
   return { run };
 }
 
