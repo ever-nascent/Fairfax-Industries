@@ -567,9 +567,18 @@ function fightView(run, frame) {
 }
 
 // The winner's voice line under a fight's result (his calls, Oct 16: every fight, text in the embed, said by the winner): one of the hero's lines
-// from deadlock.wiki that /trivia keeps (assets/trivia/trivia.json; not sorted by moment). Nothing when the hero has no lines yet.
-function voiceLine(hero, rng) {
-  const lines = triviaHeroes().find((h) => h.name === hero)?.lines;
+// from deadlock.wiki that /trivia keeps (assets/trivia/trivia.json). Oct 16 (his call): the lines go with who was fought. Beating a hero
+// (`beat`) uses the winner's kill lines about that hero, else its generic kill lines; a camp or a boss, lines that name no hero.
+// Nothing when the hero has no such lines yet.
+function voiceLine(hero, beat, rng) {
+  const all = triviaHeroes();
+  const me = all.find((h) => h.name === hero);
+  let lines;
+  if (beat) lines = me?.kills?.heroes?.[beat]?.length ? me.kills.heroes[beat] : me?.kills?.any;
+  else {
+    const names = new RegExp(`\\b(${all.flatMap((h) => h.name.split(/[\s&]+/)).filter((w) => w && w !== 'The').join('|')}|Doorman)\\b`);
+    lines = me?.lines.filter((l) => !names.test(l));
+  }
   return lines?.length ? `\n\n**${hero}:** *"${pickRandom(lines, rng)}"*` : '';
 }
 
@@ -668,8 +677,8 @@ async function duelResultView(run) {
   const e = embed(run.won ? WIN : LOSS).setThumbnail('attachment://thumb.png');
   if (run.won) e.setTitle(`${rival} Unlocked`).setDescription(`${hero} won the duel. ${rival} is yours now, at level 0 with no items.\nSwitch with **Switch Hero** on \`/base\`.`);
   else if (run.timedOut) e.setTitle(`${rival} Got Away`).setDescription(`Nobody went down in time and ${rival} slipped away. ${cost}`);
-  else e.setTitle(`${hero} Was Defeated`).setDescription(`${rival} won the duel and moved on. ${cost}${voiceLine(rival)}`);
-  if (run.won) e.setDescription(e.data.description + voiceLine(hero)); // the winner speaks; a duel that ran out of time has no winner
+  else e.setTitle(`${hero} Was Defeated`).setDescription(`${rival} won the duel and moved on. ${cost}${voiceLine(rival, hero)}`);
+  if (run.won) e.setDescription(e.data.description + voiceLine(hero, rival)); // the winner speaks; a duel that ran out of time has no winner
   const lines = run.log.slice(-6);
   e.addFields(
     { name: 'Fight Time', value: clock(run.seconds), inline: true },

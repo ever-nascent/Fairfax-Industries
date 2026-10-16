@@ -17,7 +17,7 @@ const WIKI = 'https://deadlock.wiki';
 const OUT = path.join(ASSETS, 'farm');
 const FARM_HEROES = ['Mina', 'Haze', 'Celeste', 'Paige', 'Abrams', // the starter 5, his pick, Oct 1
   'Apollo', 'Bebop', 'Billy', 'Calico', 'The Doorman', 'Drifter', 'Dynamo', 'Graves', 'Grey Talon', 'Holliday', 'Infernus', 'Ivy', 'Kelvin', 'Lady Geist', 'Lash', 'McGinnis', 'Mirage', 'Mo & Krill', 'Paradox', 'Pocket', 'Rem', 'Seven', 'Shiv', 'Silver', 'Sinclair', 'Venator', 'Victor', 'Vindicta', 'Viscous', 'Vyper', 'Warden', 'Wraith', 'Yamato', // then the rest A to Z, one at a time (his call, Oct 3; each added with addHero below)
-  'Baba', 'Rat King', 'Solomon']; // the City Never Sleeps heroes, as they come out (Oct 10; the wiki still flags them InDevelopment, so a selectable one counts as live)
+  'Baba', 'Rat King', 'Solomon', 'Deadman Danny']; // the City Never Sleeps heroes, as they come out (Oct 10, Danny Oct 16; the wiki still flags them InDevelopment, so a selectable one counts as live)
 
 // Target icons: the minimap camp icons (small / medium / large), each boss's / structure's own icon, and for Crate and Sinner's
 // Sacrifice (the wiki has no icons for them) a square crop of its picture (CROPS) so it fits an embed thumbnail.
@@ -68,10 +68,13 @@ const get = (url) => (new URL(url).host.endsWith('deadlock.wiki') ? wikiFetch(ur
 // Pictures already in assets/farm are kept (Oct 16: the daily startup check runs this; they rarely change); `--all` downloads every one again.
 const ALL = process.argv.includes('--all');
 const have = (dir, name) => require('node:fs').existsSync(path.join(OUT, dir, name));
+// A Data: page's JSON through the wiki's API (Oct 16: index.php?action=raw started answering 403 to this user agent; api.php still answers it).
 const raw = async (page) => {
-  const res = await get(`${WIKI}/index.php?title=${encodeURIComponent(page)}&action=raw`);
+  const res = await get(`${WIKI}/api.php?${new URLSearchParams({ action: 'query', prop: 'revisions', rvprop: 'content', rvslots: 'main', formatversion: 2, format: 'json', titles: page })}`);
   if (!res.ok) throw new Error(`deadlock.wiki answered ${res.status} for ${page}`);
-  return res.json();
+  const content = (await res.json()).query?.pages?.[0]?.revisions?.[0]?.slots?.main?.content;
+  if (content === undefined) throw new Error(`deadlock.wiki sent no ${page}`);
+  return JSON.parse(content);
 };
 const save = (file, data) => fs.writeFile(path.join(OUT, file), typeof data === 'string' ? data : JSON.stringify(data, null, 1));
 
