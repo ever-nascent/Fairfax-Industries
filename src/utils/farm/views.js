@@ -26,7 +26,7 @@ const { SPECIALS } = require('./haunts');
 const { HEROES, heroEmoji, heroArt } = require('../heroes');
 const { fmt, soulsIcon } = require('../format');
 const { pickRandom } = require('../random');
-const { streakBar } = require('../trivia'); // the same bar as /trivia and /urn
+const { streakBar, heroes: triviaHeroes } = require('../trivia'); // the same bar as /trivia and /urn; the heroes' voice lines
 
 const DUEL_ID = 'farm_duel'; // button: farm_duel:<user id>:<rival> (fight the rival that showed up)
 const WALK_ID = 'farm_walk'; // button: farm_walk:<user id>:<rival> (let it go)
@@ -566,6 +566,13 @@ function fightView(run, frame) {
   return { embeds: [e], components: [], files: [soulsFile(), picture(enemyPicture(run, frame))], attachments: [] };
 }
 
+// The winner's voice line under a fight's result (his calls, Oct 16: every fight, text in the embed, said by the winner): one of the hero's lines
+// from deadlock.wiki that /trivia keeps (assets/trivia/trivia.json; not sorted by moment). Nothing when the hero has no lines yet.
+function voiceLine(hero, rng) {
+  const lines = triviaHeroes().find((h) => h.name === hero)?.lines;
+  return lines?.length ? `\n\n**${hero}:** *"${pickRandom(lines, rng)}"*` : '';
+}
+
 function resultView(run) {
   const hero = run.hero;
   const last = run.frames[run.frames.length - 1];
@@ -583,6 +590,7 @@ function resultView(run) {
   } else {
     e.setTitle(`${hero} Was Defeated`).setDescription(run.timedOut ? `${hero} ran out of time and the ${group} is back to full health.` : `The ${group} won and ${run.family ? 'the camp' : 'the target'} is back to full health.`);
   }
+  if (run.won) e.setDescription(e.data.description + voiceLine(hero)); // a camp or a boss has no lines: a lost fight has none
   e.addFields(
     { name: 'Souls Earned', value: run.won ? `+${souls(run.souls)}` : souls(0), inline: true },
     { name: 'Fight Time', value: clock(run.seconds), inline: true },
@@ -633,6 +641,13 @@ async function rivalFace(name, mood = null) {
   return file && fs.existsSync(file) ? picture(file) : heroPicture(name);
 }
 
+// The rival's mood in a snapshot (his call, Oct 16): gloating while it has more of its health left than the member's hero, hurt while it has less.
+function rivalMood(frame) {
+  const rival = frame.enemies[0];
+  const ahead = rival.hp / rival.max - frame.hero.hp / frame.hero.max;
+  return ahead > 0 ? 'gloat' : ahead < 0 ? 'critical' : null;
+}
+
 // One snapshot of a duel (frames come from encounter.duel, the same shape as a trip's).
 async function duelView(run, frame) {
   const e = embed().setTitle(`${run.hero} vs ${run.rival}`).setThumbnail('attachment://thumb.png').setDescription(`${run.hero} is duelling ${run.rival}.`)
@@ -643,7 +658,7 @@ Rejuvs Left: ${frame.rejuvs}` },
       { name: 'Abilities', value: frame.abilities.map((a) => `${a.name}  -  ${a.status}`).join('\n') },
       { name: 'Battle Log', value: frame.log.length ? frame.log.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing yet' },
     ).setFooter({ text: `Fight time ${clock(frame.t)}  -  win and ${run.rival} is unlocked` });
-  return { embeds: [e], components: [], files: [soulsFile(), await rivalFace(run.rival)], attachments: [] };
+  return { embeds: [e], components: [], files: [soulsFile(), await rivalFace(run.rival, rivalMood(frame))], attachments: [] };
 }
 
 async function duelResultView(run) {
@@ -653,7 +668,8 @@ async function duelResultView(run) {
   const e = embed(run.won ? WIN : LOSS).setThumbnail('attachment://thumb.png');
   if (run.won) e.setTitle(`${rival} Unlocked`).setDescription(`${hero} won the duel. ${rival} is yours now, at level 0 with no items.\nSwitch with **Switch Hero** on \`/base\`.`);
   else if (run.timedOut) e.setTitle(`${rival} Got Away`).setDescription(`Nobody went down in time and ${rival} slipped away. ${cost}`);
-  else e.setTitle(`${hero} Was Defeated`).setDescription(`${rival} won the duel and moved on. ${cost}`);
+  else e.setTitle(`${hero} Was Defeated`).setDescription(`${rival} won the duel and moved on. ${cost}${voiceLine(rival)}`);
+  if (run.won) e.setDescription(e.data.description + voiceLine(hero)); // the winner speaks; a duel that ran out of time has no winner
   const lines = run.log.slice(-6);
   e.addFields(
     { name: 'Fight Time', value: clock(run.seconds), inline: true },
@@ -711,6 +727,6 @@ const notReady = (what, left) => `${what} isn't ready yet. Ready in ${timeLeft(l
 module.exports = {
   titleCase,
   HERO_ID, PICK_ID, TARGET_ID, SEND_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, LABELS, HOME_ORDER,
-  IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, DUEL_ID, WALK_ID, withRival, duelView, duelResultView,
+  IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, DUEL_ID, WALK_ID, withRival, duelView, duelResultView, voiceLine, rivalMood,
   pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, roamView, notReady, timeLeft, span, every, clock, heroPicture,
 };
