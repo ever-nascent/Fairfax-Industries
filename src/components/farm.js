@@ -20,7 +20,8 @@ async function mine(interaction) {
 // The rival a Fight / Walk Away button belongs to (farm_duel:<user id>:<rival>); buttons from before Oct 11 have none.
 const rivalOf = (interaction) => interaction.customId.split(':')[2];
 
-// Replays the fight the member just paid for (already settled when they pressed Send), then shows the result.
+// Replays the fight the member just paid for (already settled when they pressed Send), then sends the result as a new message
+// (his call, Oct 16): the fight message stays on its last moment.
 async function replay(interaction, run) {
   for (const frame of run.frames) {
     await interaction.editReply(fightView(run, frame));
@@ -28,7 +29,7 @@ async function replay(interaction, run) {
   }
   if (run.rival) run.rival = holdOffer(interaction.user.id, run.rival); // its 5 minutes start now; it is dropped if it was unlocked meanwhile
   const result = resultView(run);
-  await interaction.editReply(run.rival ? await withRival(result, run.rival, interaction.user.id) : result); // its own embed with Fight / Walk Away (his call, Oct 10)
+  await interaction.followUp(run.rival ? await withRival(result, run.rival, interaction.user.id) : result); // its own embed with Fight / Walk Away (his call, Oct 10)
   if (run.legendary) await interaction.followUp({ ...legendaryView(run.legendary.name), flags: MessageFlags.Ephemeral }); // its own message (his call, Oct 2)
   if (run.token) await interaction.followUp({ ...tokenView(run.hero), flags: MessageFlags.Ephemeral });
 }
@@ -258,11 +259,16 @@ module.exports = [
         await interaction.editReply({ components: [] });
         return interaction.followUp({ content: result.error === 'owned' ? `You already have ${rival} unlocked.` : 'That rival has already left.', flags: MessageFlags.Ephemeral });
       }
-      for (const frame of result.run.frames) {
-        await interaction.editReply(await duelView(result.run, frame));
+      // The trip's result keeps its rival embed without the buttons; the duel plays in a message of its own, and its result is a new one (his call, Oct 16).
+      await interaction.editReply({ components: [] });
+      const [first, ...rest] = result.run.frames;
+      const live = await interaction.followUp(await duelView(result.run, first));
+      for (const frame of rest) {
         await sleep(FRAME_MS);
+        await interaction.editReply({ ...(await duelView(result.run, frame)), message: live });
       }
-      return interaction.editReply(await duelResultView(result.run));
+      await sleep(FRAME_MS);
+      return interaction.followUp(await duelResultView(result.run));
     },
   },
   {

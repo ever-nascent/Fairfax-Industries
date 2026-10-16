@@ -156,10 +156,12 @@ test('Send plays the fight as a live message, pays once, and the cooldown blocks
   const send = fake(id, `farm_send:${id}:small-camp`);
   await route('Send button').execute(send);
   const edits = send.log.filter((l) => l[0] === 'editReply').map((l) => l[1]);
-  assert.ok(edits.length >= 3, 'frames, then the result');
-  assert.match(edits[0].embeds[0].toJSON().description, /is fighting/);
-  const result = edits.at(-1).embeds[0].toJSON();
+  assert.ok(edits.length >= 2, 'the frames');
+  assert.ok(edits.every((p) => /is fighting/.test(p.embeds[0].toJSON().description)), 'the fight message stays on the fight');
+  const result = send.log.find((l) => l[0] === 'followUp')[1].embeds[0].toJSON(); // the result is a new message (his call, Oct 16)
   assert.match(result.title, /Cleared|Defeated/);
+  if (result.title.endsWith('Cleared')) assert.match(result.description, /\*\*Haze:\*\* \*"[^"]+"\*$/, "Haze's voice line when Haze wins");
+  else assert.doesNotMatch(result.description, /\*"/, 'no voice line when the camp wins');
   if (result.title.endsWith('Cleared')) assert.ok((await heroSouls(id)) > 0, "paid into the hero's own souls");
   assert.strictEqual((await getUser(id)).souls, 0, 'never the server balance');
   assert.ok(cooldownLeft(await getFarmUser(id), 'small-camp') > 59 * 60000, 'the cooldown started');
@@ -529,7 +531,7 @@ test('waves: an endless run down a lane, every wave cleared pays, once a day per
   const result = views.resultView(out.run);
   checkLimits(result, 'waves result');
   assert.match(result.embeds[0].toJSON().title, /^York Waves: \d+ Waves? Cleared$/);
-  assert.match(result.embeds[0].toJSON().description, /^Haze (fell|ran out of time) on Wave \d+\.$/);
+  assert.match(result.embeds[0].toJSON().description, /^Haze (fell|ran out of time) on Wave \d+\.(\n\n\*\*Haze:\*\* \*"[^"]+"\*)?$/); // a voice line once a wave was cleared
 });
 
 test('buying an upgrade says which components it used up; a component of an owned item is refused', async () => {
@@ -640,7 +642,8 @@ test('encounters: a rival shows on the result with Fight / Walk Away, the duel i
     for (let n = 0; n < 2; n++) names.push(buttons((await press('Send button', `farm_send:${id}:small-camp`)).log.at(-1)[1])[0].replace('Fight ', ''));
     assert.notStrictEqual(names[0], names[1], 'a rival already waiting is not offered again');
     const older = await press('Rival Fight button', `farm_duel:${id}:${names[0]}`);
-    assert.strictEqual(older.log.find(([kind]) => kind === 'editReply')[1].embeds[0].toJSON().title, `Lady Geist vs ${names[0]}`);
+    assert.deepStrictEqual(older.log.find(([kind]) => kind === 'editReply')[1], { components: [] }, "the result's buttons go");
+    assert.strictEqual(older.log.find(([kind]) => kind === 'followUp')[1].embeds[0].toJSON().title, `Lady Geist vs ${names[0]}`, 'the duel is a message of its own');
     const newer = await press('Rival Walk Away button', `farm_walk:${id}:${names[1]}`);
     assert.ok(newer.log.some(([kind, p]) => kind === 'followUp' && p.content === `You let ${names[1]} go.`));
 
@@ -650,15 +653,41 @@ test('encounters: a rival shows on the result with Fight / Walk Away, the duel i
       const again = await press('Send button', `farm_send:${id}:small-camp`);
       const name = buttons(again.log.at(-1)[1])[0].replace('Fight ', '');
       const duel = await press('Rival Fight button', `farm_duel:${id}:${name}`);
-      const screens = duel.log.filter(([kind]) => kind === 'editReply').map(([, p]) => p);
-      assert.ok(screens.length >= 2);
+      const screens = duel.log.filter(([, p]) => p?.embeds).map(([, p]) => p); // the first frame, the edits of that message, then the result
+      assert.ok(screens.length >= 3);
       screens.forEach((p, k) => checkLimits(p, `duel screen ${k}`));
       assert.strictEqual(screens[0].embeds[0].toJSON().title, `Lady Geist vs ${name}`);
-      const title = screens.at(-1).embeds[0].toJSON().title;
+      const live = duel.log.filter(([kind, p]) => kind === 'editReply' && p.embeds);
+      assert.ok(live.length && live.every(([, p]) => p.message !== undefined), 'frames edit the duel message, not the result');
+      assert.strictEqual(duel.log.at(-1)[0], 'followUp', 'the result is a new message');
+      const end = screens.at(-1).embeds[0].toJSON();
+      const title = end.title;
       assert.ok([`${name} Unlocked`, 'Lady Geist Was Defeated', `${name} Got Away`].includes(title), title);
+      if (title === `${name} Unlocked`) assert.match(end.description, /\*\*Lady Geist:\*\* \*"/, 'the winner speaks');
+      if (title === 'Lady Geist Was Defeated') assert.match(end.description, new RegExp(`\\*\\*${name}:\\*\\* \\*"`), 'the rival speaks when it wins');
       assert.strictEqual(!!(await getFarmUser(id)).heroes[name], title === `${name} Unlocked`);
       if (title === `${name} Unlocked`) won = name;
     }
     assert.ok(won, 'a duel won within 40 tries');
   } finally { setCooldowns(true); }
+});
+
+test('duels: the rival gloats while ahead and is hurt while behind; every hero a rival can be has both faces', () => {
+  const frame = (hero, rival) => ({ hero: { hp: hero, max: 1000 }, enemies: [{ hp: rival, max: 2000 }] });
+  assert.strictEqual(views.rivalMood(frame(400, 1600)), 'gloat');
+  assert.strictEqual(views.rivalMood(frame(900, 600)), 'critical');
+  assert.strictEqual(views.rivalMood(frame(1000, 2000)), null, 'even: the plain icon');
+  const fs = require('node:fs');
+  const path = require('node:path');
+  for (const name of require('../src/utils/farm/hero').roster()) {
+    for (const mood of ['gloat', 'critical']) assert.ok(fs.existsSync(path.join(__dirname, '..', 'assets', 'farm', 'rivals', `${name.toLowerCase()}_${mood}.png`)), `${name} ${mood}`);
+  }
+});
+
+test('voice lines: a hero with lines says one of them, a hero without says nothing', () => {
+  const lines = require('../src/utils/trivia').heroes().find((h) => h.name === 'Haze').lines;
+  const said = views.voiceLine('Haze', () => 0);
+  assert.strictEqual(said, `\n\n**Haze:** *"${lines[0]}"*`);
+  assert.doesNotMatch(views.voiceLine('Haze'), /undefined/, 'the default random pick');
+  assert.strictEqual(views.voiceLine('Nobody'), '');
 });
