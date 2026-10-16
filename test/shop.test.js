@@ -18,7 +18,7 @@ test('hero list matches setup.py and the hero icons', () => {
   const pngs = (dir) => fs.readdirSync(path.join(ASSETS, dir)).filter((f) => f.endsWith('.png')).map((f) => f.replace('.png', '')).sort();
   assert.deepStrictEqual(HEROES.map((h) => h.slug).sort(), pngs('heroes'));
   assert.deepStrictEqual(HEROES.map((h) => h.slug).sort(), pngs('heroes/full body'));
-  assert.strictEqual(HEROES.length, 41);
+  assert.strictEqual(HEROES.length, 42);
 });
 
 test('shop dropdowns hold every hero, 25 max each', () => {

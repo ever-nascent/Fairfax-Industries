@@ -26,7 +26,7 @@ const SELECT_ID = 'shop_heroes'; // custom id: shop_heroes:<userId>:<menu index>
 const STYLE_ID = 'shop_style'; // custom id: shop_style:<userId>:<hero slug>:<style>
 const BUY_ID = 'shop_buy'; // custom id: shop_buy:<userId>:<hero slug>:<style>
 const EQUIP_ID = 'shop_equip'; // custom id: shop_equip:<userId>:<hero slug, or 'plain'>:<style>
-// 41 heroes, but a dropdown holds at most 25 options: two menus, split in half.
+// 42 heroes, but a dropdown holds at most 25 options: two menus, split in half.
 const HALF = Math.ceil(HEROES.length / 2);
 const MENUS = [HEROES.slice(0, HALF), HEROES.slice(HALF)];
 const SHOP_COLOR = 0xe39a3b; // the Curiosity Shop sign's glow
