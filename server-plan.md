@@ -295,6 +295,18 @@ The City Never Sleeps update (Sept 29) adds six heroes, one released each Tuesda
 | Step 1 for Deadman Danny (Oct 16) | Added A-Z (after Celeste, before The Doorman) to `setup.py HEROES`, `src/utils/heroes.js` and `Get-DeadlockFullBody.ps1`; chat icon `assets/heroes/deadman_danny.png` (deadlock-api.com's `deadpack_sm.png` through `setup.py`'s conversion; the same conversion of Solomon's file gives his committed icon pixel for pixel). The Shop and Lockle dropdowns are now 21 + 21 (Abrams - McGinnis, Mina - Yamato). Still to run on his PC (the wiki blocks the cloud session): full-body render (`Get-DeadlockFullBody.ps1`), emoji (`setup.py hero-emojis`), trivia data (`Refresh Trivia Data.bat`); until then `node --test` fails the render and trivia-data checks for him |
 | Next steps | Danny's PC steps above; hero roles + the A-Z repost of the hero menus; his open Hero Farming calls above; Hero Farming for Danny |
 
+## Startup check (Oct 16, 2026)
+
+His ask: "can you make the start.bat run the files needed, so that when i restart, it does everything it needs to? and it should check that we have all the needed data and that its up to date."
+
+| Decision | Choice |
+|----------|--------|
+| What runs | `Start Bot.bat`: `npm install`, then `tools/startup-check.js`, then the bot. The check never stops the bot from starting; it lists its problems at the end |
+| Every start | New playable heroes the bot doesn't list (deadlock-api.com, reported only: adding a hero is his call per hero); anything missing is fetched at once: hero chat icons (`setup.py hero-icons`), full-body renders (the wiki, only the missing ones), hero emojis in the server (`setup.py hero-emojis`, only when one is missing; the bot itself still never uploads emojis), a hero missing from the trivia data, a Hero Farming hero missing its rival portraits |
+| How often the full check runs (his call) | **Once a day**: the first start of the day refreshes the trivia data and the Hero Farming data; other restarts only check for missing files. The day is remembered in `data/startupCheck.json`, only when both refreshes went through (a wiki outage retries next start) |
+| Hero Farming numbers after a patch (his call) | **Applied automatically** (the enemy tuning was built on today's numbers; a patch can make fights easier or harder until it is re-checked). `refresh.js` now saves nothing unless every hero, ability, the items and the legendaries came down (before, a failed hero was dropped from `heroes.json`), and lists what changed per file |
+| Tested (Oct 16, in the cloud, where the wiki answers 403) | The failure paths: every problem listed, nothing saved, no day remembered, exit to the bot; the "already ran today" path. Not tested: a successful wiki download (only his PC can reach the wiki), the emoji upload |
+
 ## Deadlock ranks (current, lowest → highest)
 
 Initiate, Seeker, Acolyte, Sentinel, Mystic, Ritualist, Emissary, Oracle, Phantom, Ascendant, Eternus.
