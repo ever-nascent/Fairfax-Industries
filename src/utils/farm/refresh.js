@@ -63,7 +63,11 @@ const NPC_KEYS = ['neutral_trooper_weak', 'neutral_trooper_normal', 'neutral_tro
 
 // the wiki's firewall blocks some user agents (e.g. a browser one with "bot" in it); this plain one works
 const get = (url) => fetch(url, { signal: AbortSignal.timeout(60000), headers: { 'User-Agent': 'FairfaxBot/1.0' } });
-const raw = async (page) => (await get(`${WIKI}/index.php?title=${encodeURIComponent(page)}&action=raw`)).json();
+const raw = async (page) => {
+  const res = await get(`${WIKI}/index.php?title=${encodeURIComponent(page)}&action=raw`);
+  if (!res.ok) throw new Error(`deadlock.wiki answered ${res.status} for ${page}`);
+  return res.json();
+};
 const save = (file, data) => fs.writeFile(path.join(OUT, file), typeof data === 'string' ? data : JSON.stringify(data, null, 1));
 
 const SLOT_NAMES = { weapon: 'Weapon', vitality: 'Armor', spirit: 'Tech' }; // deadlock-api's slot -> the wiki's
@@ -143,13 +147,20 @@ async function addHero(name) {
   console.log(`[ok] ${name}: ${hero.MaxHealth} HP, ${w.BulletDamage} x ${w.RoundsPerSecond.toFixed(1)}/s, clip ${w.ClipSize}, reload ${w.ReloadTime}s, ${Math.round(w.DPS)} DPS; ${Object.values(hero.BoundAbilities).map((s) => all[s.Key].Name).join(', ')}`);
 }
 
+// What a refresh would change in one saved file: the keys (heroes, abilities, items ...) whose data differs, added or removed.
+async function changedKeys(file, next) {
+  const old = await fs.readFile(path.join(OUT, file), 'utf8').then(JSON.parse, () => ({}));
+  return [...new Set([...Object.keys(old), ...Object.keys(next)])].filter((k) => JSON.stringify(old[k]) !== JSON.stringify(next[k]));
+}
+
 async function refresh() {
   await fs.mkdir(OUT, { recursive: true });
   const heroData = Object.values(await raw('Data:HeroData.json'));
   const heroes = {};
+  const failed = []; // the game numbers are saved only when every one of them came down (Start Bot runs this on its own, Oct 16)
   for (const name of FARM_HEROES) {
     const h = heroData.find((x) => x.Name === name);
-    if (!h || h.IsDisabled || (h.InDevelopment && !h.IsSelectable)) { console.log(`[FAIL] ${name}: not a live hero in the wiki's HeroData`); continue; }
+    if (!h || h.IsDisabled || (h.InDevelopment && !h.IsSelectable)) { console.log(`[FAIL] ${name}: not a live hero in the wiki's HeroData`); failed.push(name); continue; }
     heroes[name] = withForm(h, heroData);
     const w = h.Weapon;
     console.log(`[ok] ${name} (${h.Type}): ${h.MaxHealth} HP, ${w.BulletDamage} x ${w.RoundsPerSecond.toFixed(1)}/s, clip ${w.ClipSize}, reload ${w.ReloadTime}s, ${Math.round(w.DPS)} DPS`);
@@ -159,7 +170,7 @@ async function refresh() {
   for (const hero of Object.values(heroes)) {
     for (const slot of slotsOf(hero)) {
       if (allAbilities[slot.Key]) abilities[slot.Key] = allAbilities[slot.Key];
-      else console.log(`[FAIL] ${slot.Name}: no ability data on the wiki`);
+      else { console.log(`[FAIL] ${slot.Name}: no ability data on the wiki`); failed.push(slot.Name); }
     }
   }
   const cards = await raw('Data:ItemCards.json');
@@ -167,7 +178,18 @@ async function refresh() {
   const allNpcs = await raw('Data:NpcData.json');
   const npcs = { npcs: Object.fromEntries(NPC_KEYS.map((k) => [k, allNpcs[k]])), objectives: (await raw('Data:GenericData.json')).ObjectiveParams };
   const legends = await legendaries();
-  await Promise.all([save('heroes.json', heroes), save('abilities.json', abilities), save('items.json', items), save('npcs.json', npcs), save('legendaries.json', legends)]);
+  if (!Object.keys(legends).length) failed.push('the legendaries (deadlock-api.com)');
+  if (Object.keys(items).length < 100) failed.push(`only ${Object.keys(items).length} items (expected about 150)`);
+  if (failed.length) {
+    console.log(`\nNOTHING WAS SAVED. The download has problems: ${failed.join(', ')}`);
+    return false;
+  }
+  const data = { 'heroes.json': heroes, 'abilities.json': abilities, 'items.json': items, 'npcs.json': npcs, 'legendaries.json': legends };
+  for (const [file, next] of Object.entries(data)) {
+    const changed = await changedKeys(file, next);
+    console.log(changed.length ? `Changed in ${file} (${changed.length}): ${changed.slice(0, 12).join(', ')}${changed.length > 12 ? ', ...' : ''}` : `No changes in ${file}`);
+  }
+  await Promise.all(Object.entries(data).map(([file, next]) => save(file, next)));
 
   const icons = await download('icons', Object.fromEntries(Object.entries(ICONS).map(([k, f]) => [`${k}.png`, f])));
   for (const [key, [x, y, size]] of Object.entries(CROPS)) {
@@ -201,4 +223,4 @@ async function refresh() {
 
 module.exports = { refresh, addHero, rivalArt, FARM_HEROES, ICONS, HAUNTS, BUFF_TOMES };
 
-if (require.main === module) refresh().then((ok) => process.exit(ok ? 0 : 1), (e) => { console.error(e); process.exit(1); });
+if (require.main === module) refresh().then((ok) => process.exit(ok ? 0 : 1), (e) => { console.error(`NOTHING WAS SAVED. ${e.message}`); process.exit(1); });
