@@ -4,10 +4,13 @@
 //                 missing hero chat icons (`setup.py hero-icons`), full-body renders (the wiki, only the missing ones),
 //                 hero emojis in the server (`setup.py hero-emojis` uploads the missing ones), a hero missing from the trivia data,
 //                 a Hero Farming hero missing its gloat / critical portraits: anything missing is fetched right away
-//   once a day    the full up-to-date check (his call, Oct 16): the trivia data (`tools/trivia-data.js`) and the Hero Farming data
-//                 (`src/utils/farm/refresh.js`, applied automatically, his call Oct 16); each saves nothing unless its whole
-//                 download checks out. The day is remembered in data/startupCheck.json only when both went through.
-// Touches nothing in data/ but that one file. `node tools/startup-check.js [--full]` (--full runs the daily part now).
+//   once a day    the up-to-date check (his call, Oct 16): one request asks the wiki for the last edit of every page the trivia data
+//                 and the Hero Farming data come from; only a part whose pages changed since its last refresh is refreshed
+//                 (`tools/trivia-data.js`, `src/utils/farm/refresh.js`, applied automatically, his call Oct 16); each saves nothing
+//                 unless its whole download checks out. (Oct 16: refreshing everything daily, ~50 requests back to back, got us
+//                 throttled.) data/startupCheck.json keeps the day and the page edits each part was refreshed from.
+// Touches nothing in data/ but that one file. Wiki requests are paced (src/utils/wikiFetch.js).
+// `node tools/startup-check.js [--full]` (--full refreshes both now, changed or not).
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
@@ -17,15 +20,35 @@ require('dotenv').config({ path: path.join(ROOT, '.env'), quiet: true });
 const { HEROES } = require('../src/utils/heroes');
 const { roster } = require('../src/utils/farm/hero');
 const { GUILD_ID } = require('../src/config');
+const { wikiFetch } = require('../src/utils/wikiFetch');
 
 const ASSETS = path.join(ROOT, 'assets');
 const STAMP = path.join(process.env.DATA_DIR || path.join(ROOT, 'data'), 'startupCheck.json');
-const UA = { 'User-Agent': 'FairfaxBot/1.0' }; // the wiki's firewall lets this one through (refresh.js)
+const UA = 'FairfaxBot/1.0'; // the wiki's firewall lets this one through (refresh.js)
 async function get(url, headers = {}) {
-  const res = await fetch(url, { headers: { ...UA, ...headers }, signal: AbortSignal.timeout(60_000) });
+  const res = new URL(url).host.endsWith('deadlock.wiki') ? await wikiFetch(url, { userAgent: UA })
+    : await fetch(url, { headers: { 'User-Agent': UA, ...headers }, signal: AbortSignal.timeout(60_000) });
   if (!res.ok) throw new Error(`${new URL(url).host} answered ${res.status}`);
   return res;
 }
+
+// The wiki pages each part is built from (trivia-data.js, refresh.js).
+const TRIVIA_PAGES = [...HEROES.map((h) => `${h.name}/Voice lines`), 'Data:ItemCards.json', 'Data:Lang en.json'];
+const FARM_PAGES = ['Data:HeroData.json', 'Data:AbilityData.json', 'Data:ItemCards.json', 'Data:NpcData.json', 'Data:GenericData.json'];
+// The last edit (revision id) of each page, 50 pages to a request: { title: id }, null for a page that doesn't exist.
+async function lastEdits(titles) {
+  const out = {};
+  for (let i = 0; i < titles.length; i += 50) {
+    const batch = titles.slice(i, i + 50);
+    const params = new URLSearchParams({ action: 'query', prop: 'revisions', rvprop: 'ids', formatversion: 2, format: 'json', titles: batch.join('|') });
+    const { query } = await (await get(`https://deadlock.wiki/api.php?${params}`)).json();
+    const asked = new Map((query.normalized ?? []).map((n) => [n.to, n.from]));
+    for (const page of query.pages) out[asked.get(page.title) ?? page.title] = page.revisions?.[0]?.revid ?? null;
+  }
+  return out;
+}
+const pick = (edits, pages) => Object.fromEntries(pages.map((t) => [t, edits[t] ?? null]));
+const changedSince = (edits, old, pages) => pages.filter((t) => (edits[t] ?? null) !== (old?.[t] ?? null));
 
 const problems = [];
 const say = (text) => console.log(`  ${text}`);
@@ -49,7 +72,7 @@ function setup(command) {
 const node = (label, file) => run(label, process.execPath, [path.join(ROOT, file)]);
 
 const today = () => new Date().toLocaleDateString('en-CA'); // the PC's own date, YYYY-MM-DD
-const lastFull = () => { try { return JSON.parse(fs.readFileSync(STAMP, 'utf8')).day; } catch { return null; } };
+const readStamp = () => { try { return JSON.parse(fs.readFileSync(STAMP, 'utf8')); } catch { return {}; } };
 
 async function newHeroes() {
   try {
@@ -86,9 +109,24 @@ async function missingEmojis() {
 }
 
 async function main() {
-  const full = process.argv.includes('--full') || lastFull() !== today();
-  console.log(`Startup check (${full ? 'full check, once a day' : 'missing files only; the full check already ran today'})`);
+  const stamp = readStamp();
+  const force = process.argv.includes('--full');
+  const daily = force || stamp.day !== today();
+  console.log(`Startup check (${daily ? 'with the once-a-day up-to-date check' : 'missing files only; the up-to-date check already ran today'})`);
   await newHeroes();
+
+  let edits = null; // what the wiki's pages are at now (once a day)
+  let changed = { trivia: [], farm: [] };
+  if (daily) {
+    try {
+      edits = await lastEdits([...new Set([...TRIVIA_PAGES, ...FARM_PAGES])]);
+      changed = { trivia: changedSince(edits, stamp.edits?.trivia, TRIVIA_PAGES), farm: changedSince(edits, stamp.edits?.farm, FARM_PAGES) };
+      say(!stamp.edits ? 'Wiki: first check, both parts get refreshed'
+        : `Wiki: ${changed.trivia.length || changed.farm.length ? `changed since the last refresh: ${[...new Set([...changed.trivia, ...changed.farm])].join(', ')}` : 'nothing changed since the last refresh'}`);
+    } catch (e) {
+      problems.push(`could not ask the wiki what changed (${e.message}); trying again next start`);
+    }
+  }
 
   const has = (...parts) => fs.existsSync(path.join(ASSETS, ...parts));
   const noIcon = HEROES.filter((h) => !has('heroes', `${h.slug}.png`));
@@ -112,24 +150,25 @@ async function main() {
   let trivia = true;
   const lines = (() => { try { return JSON.parse(fs.readFileSync(path.join(ASSETS, 'trivia', 'trivia.json'), 'utf8')); } catch { return []; } })();
   const noLines = HEROES.filter((h) => !lines.some((x) => x.slug === h.slug));
-  if (full || noLines.length) {
+  if (force || noLines.length || changed.trivia.length) {
     if (noLines.length) say(`Trivia data missing: ${noLines.map((h) => h.name).join(', ')}`);
     trivia = node('Trivia data (deadlock.wiki)', 'tools/trivia-data.js');
     if (!trivia) problems.push('trivia data: not refreshed (see above)');
-  } else say('Trivia data: every hero there');
+    else if (edits) stamp.edits = { ...stamp.edits, trivia: pick(edits, TRIVIA_PAGES) };
+  } else say(edits ? 'Trivia data: up to date' : 'Trivia data: every hero there');
 
   let farm = true;
   const noFace = roster().filter((name) => ['gloat', 'critical'].some((mood) => !has('farm', 'rivals', `${name.toLowerCase()}_${mood}.png`)));
-  if (full || noFace.length) {
+  if (force || noFace.length || changed.farm.length) {
     if (noFace.length) say(`Rival portraits missing: ${noFace.join(', ')}`);
     farm = node('Hero Farming data (deadlock.wiki)', 'src/utils/farm/refresh.js');
     if (!farm) problems.push('Hero Farming data: not refreshed (see above)');
-  } else say('Hero Farming portraits: all there');
+    else if (edits) stamp.edits = { ...stamp.edits, farm: pick(edits, FARM_PAGES) };
+  } else say(edits ? 'Hero Farming data: up to date' : 'Hero Farming portraits: all there');
 
-  if (full && trivia && farm) {
-    fs.mkdirSync(path.dirname(STAMP), { recursive: true });
-    fs.writeFileSync(STAMP, JSON.stringify({ day: today() }));
-  }
+  if (edits && trivia && farm) stamp.day = today(); // the day counts only when the check went through; otherwise the next start tries again
+  fs.mkdirSync(path.dirname(STAMP), { recursive: true });
+  fs.writeFileSync(STAMP, JSON.stringify(stamp));
   console.log(problems.length ? `\nStartup check found problems (the bot starts anyway):\n${problems.map((p) => `  - ${p}`).join('\n')}` : '\nStartup check: everything is there and up to date.');
 }
 

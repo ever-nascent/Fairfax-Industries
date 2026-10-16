@@ -15,7 +15,8 @@ if not "%~1"=="updated" (
   ) else (
     "%GIT%" rev-parse --abbrev-ref HEAD | findstr /x main >nul
     if errorlevel 1 (
-      echo This folder is not on the main branch, so nothing was pulled.
+      echo This folder is not on the main branch, so nothing was pulled. Switch it to main once ^(GitHub Desktop: Current branch^). It is on:
+      "%GIT%" branch --show-current
     ) else (
       "%GIT%" pull --ff-only origin main
       if errorlevel 1 echo Could not update from GitHub ^(see above^), starting with the files on this PC.
