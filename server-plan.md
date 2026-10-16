@@ -86,7 +86,7 @@ Not enforceable by roles: Eternus' "within 3 subranks" rule (subranks aren't tra
 | Hero cards | Bought in the Shop. Two styles per hero, **sold separately** (priced like in-game item tiers): **Icon** card (hero chat icon) **800 souls**, **Full Portrait** card (hero's full-body render from deadlock.wiki, `File:<Hero>_Render.png`) **3,200 souls**. The hero's own colours on the XP bar, flask liquid, background tint and text accents |
 | Style preview | In `/shop`, after picking a hero: two buttons under the card, **Icon** and **Full Portrait**, switch the card between the two looks; the Price field shows the price of the one on screen |
 | Shop preview | Dropdown to pick a hero; the embed image updates to preview that hero's card before buying |
-| Preview details (built, awaiting check) | `/shop` reply is only visible to the person who ran it. Two dropdowns (41 heroes since Oct 10, split in half, 25 max per dropdown): Abrams – Mina, Mirage – Yamato, each option with the hero's `:<hero>:` emoji. Picking a hero redraws the card with **your own** name, level and souls. Embed colour = hero colour. Wording (approved Sept 28, Shopkeeper voice): no hero "Pick a face, any face. Every hero in the city, framed and ready for your `/rank`." / preview "The **Haze** card (Full Portrait). Looks good on ya. Want it?" / owned "You already own the ... Hit Equip and show it off." / equipped "Your ... is on your `/rank`. Wearin' it well, pal." Fields Price / Your Balance |
+| Preview details (built, awaiting check) | `/shop` reply is only visible to the person who ran it. Two dropdowns (42 heroes since Oct 16, split in half, 25 max per dropdown): Abrams – McGinnis, Mina – Yamato, each option with the hero's `:<hero>:` emoji. Picking a hero redraws the card with **your own** name, level and souls. Embed colour = hero colour. Wording (approved Sept 28, Shopkeeper voice): no hero "Pick a face, any face. Every hero in the city, framed and ready for your `/rank`." / preview "The **Haze** card (Full Portrait). Looks good on ya. Want it?" / owned "You already own the ... Hit Equip and show it off." / equipped "Your ... is on your `/rank`. Wearin' it well, pal." Fields Price / Your Balance |
 | Hero art files | Full-body renders in `assets/heroes/full body` (from `Get-DeadlockFullBody.ps1`, original size; the bot shrinks them in memory). If a hero's render is missing, the card uses their chat icon |
 | Hero colours | **Sampled from the art** (the most common strong hue), not hand-picked. Any hero can be overridden in `COLOR_OVERRIDES` in `src/utils/heroes.js`. Colours change once the renders replace the chat icons |
 
@@ -281,7 +281,7 @@ Message memory: last 7 days saved to disk (text + image/GIF copies; videos/other
 
 ## New heroes (Oct 10, 2026)
 
-The City Never Sleeps update (Sept 29) adds six heroes, one released each Tuesday and Friday in the order players vote. Out by Oct 10 (deadlock-api.com: `player_selectable`): **Rat King** (Oct 2), **Baba** (Oct 6), **Solomon** (Oct 9). Still to come: Nurse Harrow, Deadman Danny, Violet (Oct 13 / 16 / 20 per fan trackers, not confirmed).
+The City Never Sleeps update (Sept 29) adds six heroes, one released each Tuesday and Friday in the order players vote. Out by Oct 10 (deadlock-api.com: `player_selectable`): **Rat King** (Oct 2), **Baba** (Oct 6), **Solomon** (Oct 9), **Deadman Danny** (Oct 14 per deadlock.one; `player_selectable` on deadlock-api.com, checked Oct 16). Still to come: Nurse Harrow, Violet (both not `player_selectable` on Oct 16).
 
 | Decision | Choice |
 |----------|--------|
@@ -291,7 +291,9 @@ The City Never Sleeps update (Sept 29) adds six heroes, one released each Tuesda
 | Trivia refresh (Oct 10) | His first run found all 41 heroes' lines and abilities (Baba 246 lines, Rat King 400, Solomon 52) but saved nothing: the wiki had no icon for Baba's **Feed the Birds** (deadlock-api.com spells it "Feed The Birds"). `tools/trivia-data.js` now takes an ability icon the wiki lacks from deadlock-api.com (the same pictures: Sleep Dagger is identical) |
 | Shop + emojis fix (Oct 10) | The three had no Full Portrait and no emoji in the bot's dropdowns: `Get-DeadlockFullBody.ps1` still saved into the old `Fairfax Industries` folder (it now saves next to itself; the three renders were copied over), and the bot never heard about emojis added while it ran (the `GuildExpressions` intent is on now). He checked `/shop` after a restart: works |
 | Hero Farming (Oct 10) | **Baba, Rat King and Solomon are in** (see "Hero Farming"). Open: the camp retune after the Haunt specials, Baba's two tiers that do next to nothing, whether to trim Baba and Rat King |
-| Next steps | Hero roles + the A-Z repost of the hero menus; his open Hero Farming calls above |
+| Deadman Danny (his call, Oct 16) | **Step 1 only, just Danny** (not Nurse Harrow); Hero Farming later |
+| Step 1 for Deadman Danny (Oct 16) | Added A-Z (after Celeste, before The Doorman) to `setup.py HEROES`, `src/utils/heroes.js` and `Get-DeadlockFullBody.ps1`; chat icon `assets/heroes/deadman_danny.png` (deadlock-api.com's `deadpack_sm.png` through `setup.py`'s conversion; the same conversion of Solomon's file gives his committed icon pixel for pixel). The Shop and Lockle dropdowns are now 21 + 21 (Abrams - McGinnis, Mina - Yamato). Still to run on his PC (the wiki blocks the cloud session): full-body render (`Get-DeadlockFullBody.ps1`), emoji (`setup.py hero-emojis`), trivia data (`Refresh Trivia Data.bat`); until then `node --test` fails the render and trivia-data checks for him |
+| Next steps | Danny's PC steps above; hero roles + the A-Z repost of the hero menus; his open Hero Farming calls above; Hero Farming for Danny |
 
 ## Deadlock ranks (current, lowest → highest)
 

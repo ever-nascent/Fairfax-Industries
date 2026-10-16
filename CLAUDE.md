@@ -68,11 +68,11 @@ Reaction roles and the storage/loader scaffolding were ported from
 
 - Ranks since the July 30, 2026 update: Initiate, Seeker, Acolyte, Sentinel, Mystic, Ritualist, Emissary, Oracle, Phantom, Ascendant, Eternus (subranks I–VI; Obscurus = uncalibrated).
 - Ranked is solo/duo, max 1 rank apart; Eternus only with Eternus (within 3 subranks).
-- 38 heroes (list in the role-menu task below).
+- 42 playable heroes (Oct 16, 2026: the 38 + Rat King, Baba, Solomon and Deadman Danny from the City Never Sleeps update; Nurse Harrow and Violet not playable yet). The list is `setup.py HEROES` = `src/utils/heroes.js`. deadlock-api.com `/v1/assets/heroes` shows who is playable (`player_selectable`).
 
 ## Discord limits that matter here
 
-- Boost level 1 (checked Sept 27, 2026): 100 static emoji slots (73 used: 11 ranks + 38 heroes + `:souls:` + `:hideout:` + 2 patrons + `:rejuv:` + 6 `:streak_*:` bar pieces + `:sticky_bomb:` + 3 Yamato stances + 4 Silver shell/charge emojis + 5 `:remling_*:`, Sept 29), 15 sticker slots (2 used: smug, whats the plan; checked Sept 30), 20 unique reactions per message.
+- Boost level 1 (checked Sept 27, 2026): 100 static emoji slots (73 used: 11 ranks + 38 heroes (+ Baba, Rat King, Solomon Oct 10, + Deadman Danny once `setup.py hero-emojis` uploads him: 77) + `:souls:` + `:hideout:` + 2 patrons + `:rejuv:` + 6 `:streak_*:` bar pieces + `:sticky_bomb:` + 3 Yamato stances + 4 Silver shell/charge emojis + 5 `:remling_*:`, Sept 29), 15 sticker slots (2 used: smug, whats the plan; checked Sept 30), 20 unique reactions per message.
 - Footers and embed titles/author names don't render markdown (no italics there).
 
 ## Open tasks (in rough priority order)

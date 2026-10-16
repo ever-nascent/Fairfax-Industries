@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 $WikiApi = 'https://deadlock.wiki/api.php'
 $OutDir  = Join-Path $PSScriptRoot 'assets\heroes\full body'
 $Heroes  = @(
-    'Abrams', 'Apollo', 'Baba', 'Bebop', 'Billy', 'Calico', 'Celeste', 'The Doorman', 'Drifter',
+    'Abrams', 'Apollo', 'Baba', 'Bebop', 'Billy', 'Calico', 'Celeste', 'Deadman Danny', 'The Doorman', 'Drifter',
     'Dynamo', 'Graves', 'Grey Talon', 'Haze', 'Holliday', 'Infernus', 'Ivy', 'Kelvin',
     'Lady Geist', 'Lash', 'McGinnis', 'Mina', 'Mirage', 'Mo & Krill', 'Paige', 'Paradox',
     'Pocket', 'Rat King', 'Rem', 'Seven', 'Shiv', 'Silver', 'Sinclair', 'Solomon', 'Venator', 'Victor',
@@ -14,7 +14,7 @@ $Heroes  = @(
 )
 $UA = 'Mozilla/5.0 (fairfax-setup)'
 
-# One API call for all 41 file URLs (the wiki allows 50 titles per query).
+# One API call for all 42 file URLs (the wiki allows 50 titles per query).
 # Titles use spaces, not underscores: the wiki answers with that spelling, so the lookups below match.
 $titles = ($Heroes | ForEach-Object { "File:$_ Render.png" }) -join '|'
 $query  = "$WikiApi`?action=query&prop=imageinfo&iiprop=url&format=json&titles=$([uri]::EscapeDataString($titles))"
