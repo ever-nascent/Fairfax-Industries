@@ -11,6 +11,7 @@ const fs = require('node:fs/promises');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const path = require('node:path');
 const { ASSETS } = require('../art');
+const { wikiFetch } = require('../wikiFetch');
 
 const WIKI = 'https://deadlock.wiki';
 const OUT = path.join(ASSETS, 'farm');
@@ -61,8 +62,12 @@ const NPC_KEYS = ['neutral_trooper_weak', 'neutral_trooper_normal', 'neutral_tro
   'npc_boss_tier1', 'npc_boss_tier2', 'npc_boss_tier3', 'npc_barrack_boss', 'npc_super_neutral', 'destroyable_building',
   'trooper_normal', 'trooper_melee', 'trooper_medic']; // the lane troopers (waves)
 
-// the wiki's firewall blocks some user agents (e.g. a browser one with "bot" in it); this plain one works
-const get = (url) => fetch(url, { signal: AbortSignal.timeout(60000), headers: { 'User-Agent': 'FairfaxBot/1.0' } });
+// the wiki's firewall blocks some user agents (e.g. a browser one with "bot" in it); this plain one works. Wiki requests are paced (wikiFetch).
+const UA = 'FairfaxBot/1.0';
+const get = (url) => (new URL(url).host.endsWith('deadlock.wiki') ? wikiFetch(url, { userAgent: UA }) : fetch(url, { signal: AbortSignal.timeout(60000), headers: { 'User-Agent': UA } }));
+// Pictures already in assets/farm are kept (Oct 16: the daily startup check runs this; they rarely change); `--all` downloads every one again.
+const ALL = process.argv.includes('--all');
+const have = (dir, name) => require('node:fs').existsSync(path.join(OUT, dir, name));
 const raw = async (page) => {
   const res = await get(`${WIKI}/index.php?title=${encodeURIComponent(page)}&action=raw`);
   if (!res.ok) throw new Error(`deadlock.wiki answered ${res.status} for ${page}`);
@@ -101,15 +106,18 @@ async function fileUrls(files) {
   return urls;
 }
 
-// Downloads { savedName: wikiFile } into `dir`; returns how many arrived (missing ones are reported).
-async function download(dir, files) {
+// Downloads { savedName: wikiFile } into `dir` (only the missing ones, unless --all); returns how many are there now (missing ones
+// are reported). The names saved this time go into `saved`.
+async function download(dir, files, saved = []) {
   await fs.mkdir(path.join(OUT, dir), { recursive: true });
-  const urls = await fileUrls(Object.values(files));
-  let ok = 0;
-  for (const [name, file] of Object.entries(files)) {
+  const wanted = Object.entries(files).filter(([name]) => ALL || !have(dir, name));
+  const urls = wanted.length ? await fileUrls(wanted.map(([, file]) => file)) : {};
+  let ok = Object.keys(files).length - wanted.length;
+  for (const [name, file] of wanted) {
     const url = urls[`File:${file}`];
     if (!url) { console.log(`[FAIL] ${name}: no File:${file} on the wiki`); continue; }
     await fs.writeFile(path.join(OUT, dir, name), Buffer.from(await (await get(url)).arrayBuffer()));
+    saved.push(name);
     ok++;
   }
   return ok;
@@ -191,8 +199,9 @@ async function refresh() {
   }
   await Promise.all(Object.entries(data).map(([file, next]) => save(file, next)));
 
-  const icons = await download('icons', Object.fromEntries(Object.entries(ICONS).map(([k, f]) => [`${k}.png`, f])));
-  for (const [key, [x, y, size]] of Object.entries(CROPS)) {
+  const fresh = [];
+  const icons = await download('icons', Object.fromEntries(Object.entries(ICONS).map(([k, f]) => [`${k}.png`, f])), fresh);
+  for (const [key, [x, y, size]] of Object.entries(CROPS).filter(([k]) => fresh.includes(`${k}.png`))) { // only a picture just downloaded is cropped
     const file = path.join(OUT, 'icons', `${key}.png`);
     const out = createCanvas(Math.min(size, 256), Math.min(size, 256));
     out.getContext('2d').drawImage(await loadImage(file), x, y, size, size, 0, 0, out.width, out.height);
@@ -201,9 +210,10 @@ async function refresh() {
   const haunts = await download('haunts', Object.fromEntries(Object.entries(HAUNTS).flatMap(([fam, sizes]) => Object.entries(sizes).map(([size, f]) => [`${fam}_${size}.png`, f]))));
   // buffs/<key>.png: the tomes are 512 px webp files, kept as 256 px PNGs
   await fs.mkdir(path.join(OUT, 'buffs'), { recursive: true });
-  const tomeUrls = await fileUrls(Object.values(BUFF_TOMES));
-  let tomes = 0;
-  for (const [key, file] of Object.entries(BUFF_TOMES)) {
+  const tomesWanted = Object.entries(BUFF_TOMES).filter(([key]) => ALL || !have('buffs', `${key}.png`));
+  const tomeUrls = tomesWanted.length ? await fileUrls(tomesWanted.map(([, file]) => file)) : {};
+  let tomes = Object.keys(BUFF_TOMES).length - tomesWanted.length;
+  for (const [key, file] of tomesWanted) {
     const url = tomeUrls[`File:${file}`];
     if (!url) { console.log(`[FAIL] ${key}: no File:${file} on the wiki`); continue; }
     const img = await loadImage(Buffer.from(await (await get(url)).arrayBuffer()));
@@ -223,4 +233,5 @@ async function refresh() {
 
 module.exports = { refresh, addHero, rivalArt, FARM_HEROES, ICONS, HAUNTS, BUFF_TOMES };
 
-if (require.main === module) refresh().then((ok) => process.exit(ok ? 0 : 1), (e) => { console.error(`NOTHING WAS SAVED. ${e.message}`); process.exit(1); });
+// exitCode, not process.exit(): exiting with a download still open crashes Node on Windows ("Assertion failed: ... UV_HANDLE_CLOSING", Oct 16)
+if (require.main === module) refresh().then((ok) => { process.exitCode = ok ? 0 : 1; }, (e) => { console.error(`NOTHING WAS SAVED. ${e.message}`); process.exitCode = 1; });

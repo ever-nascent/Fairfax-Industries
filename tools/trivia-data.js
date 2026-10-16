@@ -11,6 +11,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { HEROES } = require('../src/utils/heroes');
 const { ASSETS } = require('../src/utils/art');
+const { wikiFetch } = require('../src/utils/wikiFetch');
 
 const WIKI = 'https://deadlock.wiki';
 const DEADLOCK_API = 'https://api.deadlock-api.com'; // ability icons the wiki doesn't have yet (unofficial)
@@ -30,8 +31,10 @@ const SLOTS = { Weapon: 'Weapon', Armor: 'Vitality', Tech: 'Spirit' };
 const fileOf = (name) => `${name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}.png`;
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-async function get(url, as = 'json') {
-  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (fairfax-trivia-data)' }, signal: AbortSignal.timeout(60_000) });
+const UA = 'Mozilla/5.0 (fairfax-trivia-data)';
+async function get(url, as = 'json') { // wiki requests are paced (wikiFetch); deadlock-api.com's go straight
+  const res = new URL(url).host.endsWith('deadlock.wiki') ? await wikiFetch(url, { userAgent: UA })
+    : await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(60_000) });
   if (!res.ok) throw new Error(`${url.split('?')[0]}: HTTP ${res.status}`);
   return as === 'json' ? res.json() : Buffer.from(await res.arrayBuffer());
 }
@@ -104,15 +107,38 @@ function abilityIcons(list) {
   return (name) => urls.get(name.toLowerCase());
 }
 
+// The wikitext of many pages, PAGES_PER_REQUEST to a request (Oct 16: one request per hero, ~45 back to back, got the startup check
+// throttled). Returns { title: text }, null for a page that doesn't exist. A page the wiki leaves out (its answer was too big) is asked again.
+const PAGES_PER_REQUEST = 10;
+async function pageTexts(titles) {
+  const out = {};
+  const pending = [...titles];
+  while (pending.length) {
+    const batch = pending.splice(0, PAGES_PER_REQUEST);
+    const { query } = await api({ action: 'query', prop: 'revisions', rvprop: 'content', rvslots: 'main', formatversion: 2, titles: batch.join('|') });
+    const asked = new Map((query.normalized ?? []).map((n) => [n.to, n.from])); // the wiki's spelling -> ours
+    const left = [];
+    for (const page of query.pages) {
+      const title = asked.get(page.title) ?? page.title;
+      if (page.missing) out[title] = null;
+      else if (page.revisions?.[0]?.slots?.main?.content !== undefined) out[title] = page.revisions[0].slots.main.content;
+      else left.push(title);
+    }
+    if (left.length === batch.length) throw new Error(`the wiki sent none of ${batch.length} pages`);
+    pending.unshift(...left);
+  }
+  return out;
+}
+
 async function buildHeroes(problems) {
   const heroes = [];
+  const texts = await pageTexts(HEROES.map(({ name }) => `${name}/Voice lines`));
   for (const { name, slug } of HEROES) {
-    const page = await api({ action: 'parse', page: `${name}/Voice lines`, prop: 'wikitext' });
-    if (!page.parse) {
+    const text = texts[`${name}/Voice lines`];
+    if (text == null) {
       problems.push(`${name}: no "${name}/Voice lines" page on the wiki`);
       continue;
     }
-    const text = page.parse.wikitext['*'];
     const lines = voiceLines(name, text);
     const abilities = [...text.matchAll(/===\s*\{\{AbilityIcon\|([^}]+)\}\}\s*===/g)].map((m) => cleanWikiText(m[1])).slice(0, 4);
     if (!lines.length || abilities.length !== 4) problems.push(`${name}: ${lines.length} lines, ${abilities.length} abilities (needs lines and 4 abilities)`);
