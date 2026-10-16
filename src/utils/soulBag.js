@@ -23,11 +23,8 @@ const DROP_LINES = [
   "Would ya look at that, a Soul Bag, just sittin' there. I ain't bendin' down for it. First one to grab it, it's yours.",
   "Bag of Souls fell off the back of a truck. I didn't see nothin'. Quick hands win.",
 ];
-const GRAB_LINES = [
-  '{member} got there first and walked off with {souls}. Quick hands.',
-  "{member} snatched it: {souls}. Rest of ya, better luck next bag.",
-  "And it's gone. {member} is {souls} richer. Come spend it in my shop, pal.",
-];
+const GRAB_LINE = '{member} retrieved the soul bag worth {souls}!';
+const GRAB_FOOTER = 'Rest of ya, better luck next bag!';
 const TOO_LATE = "Too slow, pal. That bag's gone.";
 
 // ponytail: the cooldown and the grabbed bags live in memory. A restart lets a bag drop right away and forgets which
@@ -66,8 +63,8 @@ async function onGrab(interaction) {
   if (grabbed.has(id)) return interaction.reply({ content: TOO_LATE, flags: MessageFlags.Ephemeral });
   grabbed.add(id); // before anything is awaited, so two presses at once can't both pay
   const { souls } = await grabBag(interaction.user.id, rollSouls());
-  const text = pickRandom(GRAB_LINES).replace('{member}', `${interaction.user}`).replace('{souls}', boldSouls(souls));
-  return interaction.update({ embeds: [bagEmbed(text, GRABBED_COLOR)], components: [], allowedMentions: { parse: [] } });
+  const text = GRAB_LINE.replace('{member}', `${interaction.user}`).replace('{souls}', boldSouls(souls));
+  return interaction.update({ embeds: [bagEmbed(text, GRABBED_COLOR).setFooter({ text: GRAB_FOOTER })], components: [], allowedMentions: { parse: [] } });
 }
 
 module.exports = { GRAB_ID, BAG_MIN, BAG_MAX, shouldDrop, rollSouls, dropBag, onGrab };
