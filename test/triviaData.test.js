@@ -2,7 +2,7 @@
 // what a refresh would change. No network.
 const test = require('node:test');
 const assert = require('node:assert');
-const { voiceLines, cleanWikiText, changes, fileOf, abilityIcons } = require('../tools/trivia-data');
+const { voiceLines, killLines, cleanWikiText, changes, fileOf, abilityIcons } = require('../tools/trivia-data');
 
 const audio = (text) => `| {{Audio link|file.mp3|${text}}}`;
 
@@ -26,6 +26,22 @@ test('voice lines: only the hero\'s own, 25-150 characters, none that name them,
 test('voice lines: a Japanese line uses the English translation in the next cell', () => {
   const page = ['== Kill ==', audio('斬る、ただそれだけのこと。'), '| I cut. That is all there is to it.', '|-'].join('\n');
   assert.deepStrictEqual(voiceLines('Yamato', page), ['I cut. That is all there is to it.']);
+});
+
+test('kill lines: generic ones, and each enemy hero\'s "Kill" rows only', () => {
+  const page = [
+    '=== Kill Enemy Hero ===', '!Context', '!Audio', '| rowspan="2" |Generic', audio('One down.'), '|-', audio('Dead.'), '|-', '|Revenge', audio('Pay up!'),
+    '=== Killstreak ===', audio('Unstoppable.'),
+    '=== Allies ===', '| rowspan="1" |{{HeroIcon|Wraith}}', '|Kill', audio('Good job, Wraith.'),
+    '=== Enemies ===', '|-', '| rowspan="3" |{{HeroIcon|Wraith}}', '| rowspan="2" |Kill', audio('You should\'ve run, Wraith.'), '|-', audio('Finally, a worthy target.'),
+    '|-', '|Lifted', audio('Put me down!'),
+    '|-', '| rowspan="1" |{{HeroIcon|Doorman}}', '|Kill', audio('You overstepped, Doorman.'),
+    '== Other Characters ==', '| rowspan="1" |{{HeroIcon|Dynamo}}', '|Kill', audio('Not a kill line.'),
+  ].join('\n');
+  assert.deepStrictEqual(killLines(page), {
+    any: ['One down.', 'Dead.'],
+    heroes: { Wraith: ["You should've run, Wraith.", 'Finally, a worthy target.'], 'The Doorman': ['You overstepped, Doorman.'] },
+  });
 });
 
 test('clean text and file names', () => {

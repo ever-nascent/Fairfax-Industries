@@ -50,6 +50,53 @@ function cleanWikiText(text) {
     .trim();
 }
 
+// The line spoken in an {{Audio link}} on rows[i], or null.
+function saidOn(rows, i) {
+  const found = rows[i].match(/\{\{Audio link\|[^|}]*\|([^}]*)\}\}/);
+  if (!found) return null;
+  let said = found[1];
+  // Yamato speaks Japanese: the wiki puts the English translation in the next table cell
+  if (/[぀-ヿ一-鿿]/.test(said)) {
+    const after = rows[i + 1] ?? '';
+    if (!after.startsWith('|') || after.startsWith('|-') || after.startsWith('|}')) return null;
+    said = after.slice(1);
+  }
+  return cleanWikiText(said) || null;
+}
+
+// What a hero says on a kill (his call, Oct 16: a duel's winner speaks about the hero it beat): `any` from the Generic rows of "Kill Enemy Hero",
+// `heroes[<name>]` from the "Kill" rows under "Hero-Specific Voice Lines > Enemies".
+function killLines(text) {
+  const kills = { any: [], heroes: {} };
+  const rows = text.split('\n');
+  let part = null; // 'any', 'enemies' or null
+  let hero = null;
+  let kind = null;
+  rows.forEach((row, i) => {
+    const heading = row.match(/^(=+)\s*(.*?)\s*=+\s*$/);
+    if (heading) {
+      const title = heading[2].toLowerCase();
+      part = /^(kill enemy hero|generic kill voice lines)$/.test(title) ? 'any' : title === 'enemies' ? 'enemies' : null;
+      hero = kind = null;
+      return;
+    }
+    if (!part) return;
+    const icon = row.match(/\{\{HeroIcon\|([^|}]+)/);
+    if (part === 'enemies' && icon && !row.includes('Audio link')) { hero = icon[1].trim(); hero = Object.keys(ALIASES).find((h) => ALIASES[h].includes(hero)) ?? hero; kind = null; return; }
+    const prev = rows[i - 1] ?? '';
+    // a category cell ("| rowspan="5" |Kill") follows a row break, the table header or the hero's cell; Yamato's translations follow their line
+    if (row.startsWith('|') && !row.startsWith('|-') && !row.startsWith('|}') && !row.includes('Audio link') && (prev.startsWith('|-') || prev.startsWith('!') || prev.includes('HeroIcon'))) {
+      kind = cleanWikiText(row.slice(row.lastIndexOf('|') + 1)).toLowerCase();
+      return;
+    }
+    const line = saidOn(rows, i);
+    if (!line || '(['.includes(line[0]) || line.includes('[')) return;
+    if (part === 'any') { if (kind === 'generic') kills.any.push(line); } // not melee, assist, revenge ...
+    else if (hero && kind === 'kill') (kills.heroes[hero] ??= []).push(line);
+  });
+  return kills;
+}
+
 // One hero's own lines from their voice-lines page: 25-150 characters, no stage directions, none that name them.
 function voiceLines(hero, text) {
   const names = [...hero.split(/[\s&]+/).filter((w) => w && w !== 'The'), ...(ALIASES[hero] ?? [])];
@@ -62,16 +109,8 @@ function voiceLines(hero, text) {
     if (SKIP_SECTIONS.some((skip) => title.includes(skip))) continue;
     const rows = section.split('\n');
     rows.forEach((row, i) => {
-      const found = row.match(/\{\{Audio link\|[^|}]*\|([^}]*)\}\}/);
-      if (!found) return;
-      let said = found[1];
-      // Yamato speaks Japanese: the wiki puts the English translation in the next table cell
-      if (/[぀-ヿ一-鿿]/.test(said)) {
-        const after = rows[i + 1] ?? '';
-        if (!after.startsWith('|') || after.startsWith('|-') || after.startsWith('|}')) return;
-        said = after.slice(1);
-      }
-      const line = cleanWikiText(said);
+      const line = saidOn(rows, i);
+      if (!line) return;
       if (line.length < 25 || line.length > 150 || '(['.includes(line[0]) || line.includes('[') || giveaway.test(line) || seen.has(line.toLowerCase())) return;
       seen.add(line.toLowerCase());
       lines.push(line);
@@ -142,7 +181,7 @@ async function buildHeroes(problems) {
     const lines = voiceLines(name, text);
     const abilities = [...text.matchAll(/===\s*\{\{AbilityIcon\|([^}]+)\}\}\s*===/g)].map((m) => cleanWikiText(m[1])).slice(0, 4);
     if (!lines.length || abilities.length !== 4) problems.push(`${name}: ${lines.length} lines, ${abilities.length} abilities (needs lines and 4 abilities)`);
-    heroes.push({ name, slug, lines, abilities });
+    heroes.push({ name, slug, lines, abilities, kills: killLines(text) });
     console.log(`  ${name}: ${lines.length} lines, abilities: ${abilities.join(', ') || 'none found'}`);
   }
   const urlOf = await fileUrls(heroes.flatMap((h) => h.abilities));
@@ -291,4 +330,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { voiceLines, cleanWikiText, changes, fileOf, abilityIcons };
+module.exports = { voiceLines, killLines, cleanWikiText, changes, fileOf, abilityIcons };

@@ -685,9 +685,9 @@ test('duels: the rival gloats while ahead and is hurt while behind; every hero a
 });
 
 test('voice lines: a hero with lines says one of them, a hero without says nothing', () => {
-  const lines = require('../src/utils/trivia').heroes().find((h) => h.name === 'Haze').lines;
-  const said = views.voiceLine('Haze', () => 0);
-  assert.strictEqual(said, `\n\n**Haze:** *"${lines[0]}"*`);
-  assert.doesNotMatch(views.voiceLine('Haze'), /undefined/, 'the default random pick');
+  const haze = require('../src/utils/trivia').heroes().find((h) => h.name === 'Haze');
+  for (let i = 0; i < 200; i++) assert.doesNotMatch(views.voiceLine('Haze'), /Dynamo|Wraith|Yamato|undefined/, 'a camp or boss: no line about a hero');
+  assert.strictEqual(views.voiceLine('Haze', 'Wraith', () => 0), `\n\n**Haze:** *"${haze.kills.heroes.Wraith[0]}"*`, 'a duel: a kill line about that hero');
+  assert.strictEqual(views.voiceLine('Haze', 'Nobody', () => 0), `\n\n**Haze:** *"${haze.kills.any[0]}"*`, 'no lines about them: a generic kill line');
   assert.strictEqual(views.voiceLine('Nobody'), '');
 });

@@ -15465,5 +15465,447 @@
     "QueenBonusMoves": 2
    }
   ]
+ },
+ "ability_deadpack_chargeblast": {
+  "AbilityCastRange": {
+   "Value": 35,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "AbilityCooldown": {
+   "Value": 25,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityUnitTargetLimit": 1,
+  "BehaviourBits": [
+   "BehaviorProjectile",
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorProjectilePassThroughWorld",
+   "BehaviorShowCastRangeAsSatSphereWhileCasting",
+   "BehaviorDontInterruptSlideOnCast",
+   "BehaviorRefundHalfCooldownOnChannelInterrupt"
+  ],
+  "BuffModifier": {
+   "Class": "Base",
+   "Subclass": "CoatedBuff"
+  },
+  "ChannelMoveSpeed": -1,
+  "CoatedDamage": {
+   "Value": 45,
+   "Scale": {
+    "Value": 1.1,
+    "Type": "spirit"
+   }
+  },
+  "CoatedDuration": {
+   "Value": 10,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "CoatedModifier": {
+   "Class": "DeadpackCoated",
+   "Subclass": "Coated"
+  },
+  "CoatedSlowDuration": {
+   "Value": 1.5,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "CoatedSlowModifier": {
+   "Class": "DiminishingSlow",
+   "Subclass": "CoatedSlow"
+  },
+  "CoatedSlowPercent": 40,
+  "Damage": {
+   "Value": 27,
+   "Scale": {
+    "Value": 0.74,
+    "Type": "spirit"
+   }
+  },
+  "ExplosionRadius": {
+   "Value": 3.5,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "IsDisabled": false,
+  "Key": "ability_deadpack_chargeblast",
+  "MarksTotal": 3,
+  "MineArmTime": 0.3,
+  "MissileGroundDuration": {
+   "Value": 6,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "Name": "Strix Salvo",
+  "Range": {
+   "Value": 21,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "StuckMineAuraModifier": {
+   "Class": "DeadpackChargeblastMineAura",
+   "Subclass": "MineAura",
+   "ProvidedByAura": {
+    "Class": "Base",
+    "Subclass": "MineTriggerMarker"
+   }
+  },
+  "Upgrades": [
+   {
+    "AbilityCooldown": -12
+   },
+   {
+    "Damage": 30,
+    "CoatedDamage": 45
+   },
+   {
+    "MarksTotal": 2,
+    "Range": 14,
+    "CoatedDamage": {
+     "Value": 0,
+     "Scale": {
+      "Value": 0.35,
+      "Type": "spirit"
+     }
+    },
+    "Damage": {
+     "Value": 0,
+     "Scale": {
+      "Value": 0.35,
+      "Type": "spirit"
+     }
+    }
+   }
+  ]
+ },
+ "ability_deadpack_rocketeer": {
+  "AbilityCastDelay": 0.7,
+  "AbilityChannelTime": 5,
+  "AbilityCooldown": {
+   "Value": 21,
+   "Scale": [
+    {
+     "Value": -0.45,
+     "Type": "power_increase"
+    },
+    {
+     "Value": 1,
+     "Type": "cooldown"
+    }
+   ]
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityUnitTargetLimit": 1,
+  "AutoIntrinsicModifiers": [
+   {
+    "Class": "DeadpackHeatPool",
+    "Subclass": "DeadpackHeatPool"
+   }
+  ],
+  "BehaviourBits": [
+   "BehaviorChannelled",
+   "BehaviorCannotCancelDuringChannel",
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorMovement",
+   "BehaviorCanSetQuickCast"
+  ],
+  "BounceBackModifier": {
+   "Class": "DeadpackOverloadedlaunch",
+   "Subclass": "Bounceback"
+  },
+  "ChannelMoveSpeed": -1,
+  "ExplosionBulletDamage": {
+   "Value": 70,
+   "Scale": {
+    "Value": 1.4,
+    "Type": "weapon_damage_increase"
+   }
+  },
+  "ExplosionDamage": {
+   "Value": 70,
+   "Scale": {
+    "Value": 1.5,
+    "Type": "spirit"
+   }
+  },
+  "HealOnHit": {
+   "Value": 0,
+   "Scale": {
+    "Value": 0,
+    "Type": "spirit"
+   }
+  },
+  "Heat": 40,
+  "HeatDrainRate": -3,
+  "HeatGainAirDash": 4,
+  "HeatGainLaunch": 18,
+  "HeatGainRate": 33,
+  "HeatGainRateVTOL": 60,
+  "HeatPct": 100,
+  "IsDisabled": false,
+  "JetpackingModifier": {
+   "Class": "Base",
+   "Subclass": "Jetpacking"
+  },
+  "JetpackingVTOLModifier": {
+   "Class": "Base",
+   "Subclass": "Jetpackingvtol"
+  },
+  "Key": "ability_deadpack_rocketeer",
+  "MaxHealthSelfDamagePercent": 10,
+  "MaxHeatModifier": {
+   "Class": "CitadelModifierDeadpackMaxheat",
+   "Subclass": "Maxheat",
+   "LaunchAngleRandom": 40,
+   "JetpackLockoutModifier": {
+    "Class": "CitadelModifierDeadpackJetpacklockout",
+    "Subclass": "Lockout"
+   },
+   "OverheatAirToBackflipModifier": {
+    "Class": "DeadpackForcedtoairmovement",
+    "Subclass": "Backflip"
+   },
+   "OverheatLaunchModifier": {
+    "Class": "DeadpackOverloadedlaunch",
+    "Subclass": "Overloaded"
+   }
+  },
+  "Name": "Chimera Mk1",
+  "OverheatStunDelayDuration": 2.5,
+  "OverheatStunDurationSelf": 1.3,
+  "Radius": {
+   "Value": 8,
+   "Scale": {
+    "Value": 1,
+    "Type": "radius"
+   }
+  },
+  "TossDuration": 0.9,
+  "Upgrades": [
+   {
+    "HeatDrainRate": -4
+   },
+   {
+    "HealOnHit": {
+     "Value": 150,
+     "Scale": {
+      "Value": 2,
+      "Type": "spirit"
+     }
+    },
+    "SelfDamageReductionOnPlayerHitPercent": 100
+   },
+   {
+    "ExplosionDamage": 120,
+    "OverheatLockoutDurationReductionOnPlayerHitPercent": 50
+   }
+  ]
+ },
+ "ability_deadpack_flamethrower": {
+  "AbilityCastRange": {
+   "Value": 22,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "AbilityCooldown": {
+   "Value": 22,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityDuration": {
+   "Value": 2,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "AbilityUnitTargetLimit": 1,
+  "BackblastConeAngle": 40,
+  "BackblastModifier": {
+   "Class": "DeadpackForcedtoairmovement",
+   "Subclass": "BackblastBackflip",
+   "HeroStateDuration": 0.25,
+   "DashRemovalDelay": 0.18
+  },
+  "BeamWidth": 2.75,
+  "BehaviourBits": [
+   "BehaviorSilentCastFailureFeedback",
+   "BehaviorStartCooldownOnToggleOff",
+   "BehaviorNoTarget",
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorDontAimFacingEnemy",
+   "BehaviorRequireAbilityButtonToCancel",
+   "BehaviorDoNotAllowSpamProc",
+   "BehaviorDoNotCancelOnParry"
+  ],
+  "BuffModifier": {
+   "Class": "DeadpackFlamethrowerFireRate",
+   "Subclass": "FirerateBuff"
+  },
+  "BulletResistReduction": -15,
+  "ChannelMoveSpeed": -1,
+  "DPS": {
+   "Value": 30,
+   "Scale": {
+    "Value": 0.8,
+    "Type": "weapon_damage_increase"
+   }
+  },
+  "DebuffDuration": {
+   "Value": 7,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "DebuffModifier": {
+   "Class": "SlowBase",
+   "Subclass": "Debuff"
+  },
+  "HeatGainRate": -1,
+  "HeatGainRateHittingEnemy": -20,
+  "IsDisabled": false,
+  "Key": "ability_deadpack_flamethrower",
+  "Name": "Jettison Fuel",
+  "ResistModifier": {
+   "Class": "DeadpackFlamethrowerResistReduction",
+   "Subclass": "ResistReduction"
+  },
+  "ScorchDamage": {
+   "Value": 35,
+   "Scale": {
+    "Value": 0.95,
+    "Type": "spirit"
+   }
+  },
+  "TickRate": 0.1,
+  "Upgrades": [
+   {
+    "AbilityCooldown": -8
+   },
+   {
+    "ScorchDamage": 60,
+    "BonusFireRate": 18,
+    "BuffDuration": 7
+   },
+   {
+    "BulletResistReduction": -10,
+    "BurstMarkStacks": 1
+   }
+  ]
+ },
+ "ability_deadpack_ultimate": {
+  "AbilityCastDelay": 0.5,
+  "AbilityCastRange": {
+   "Value": 10,
+   "Scale": {
+    "Value": 1,
+    "Type": "range"
+   }
+  },
+  "AbilityCooldown": {
+   "Value": 135,
+   "Scale": {
+    "Value": 1,
+    "Type": "cooldown"
+   }
+  },
+  "AbilityCooldownBetweenCharge": -1,
+  "AbilityPostCastDuration": 0.1,
+  "AbilityUnitTargetLimit": 1,
+  "AutoCastDelayModifier": {
+   "Class": "Base",
+   "Subclass": "Castdelay"
+  },
+  "BehaviourBits": [
+   "BehaviorDisplaysDamageImpact",
+   "BehaviorDeactivateCrouchToggleOnCast",
+   "BehaviorUseInstantCastUnitTargetUi",
+   "BehaviorCanSetQuickCast"
+  ],
+  "BonusDamagePercent": 75,
+  "ChannelMoveSpeed": -1,
+  "ChargingModifier": {
+   "Class": "Base",
+   "Subclass": "Charging"
+  },
+  "Damage": {
+   "Value": 70,
+   "Scale": {
+    "Value": 1,
+    "Type": "spirit"
+   }
+  },
+  "DamagePerMeter": {
+   "Value": 3,
+   "Scale": {
+    "Value": 0.09,
+    "Type": "spirit"
+   }
+  },
+  "GoingDownModifier": {
+   "Class": "DeadpackUltimateGoingdown",
+   "Subclass": "Goingdown"
+  },
+  "GoingUpModifier": {
+   "Class": "Base",
+   "Subclass": "Goingup"
+  },
+  "IsDisabled": false,
+  "Key": "ability_deadpack_ultimate",
+  "LowHealthEnemyThresholdPct": 50,
+  "MaxHeight": 1700,
+  "Name": "Close The Deal",
+  "SelfDamagePercent": 25,
+  "StunDuration": {
+   "Value": 0.5,
+   "Scale": {
+    "Value": 1,
+    "Type": "duration"
+   }
+  },
+  "StunDurationSelf": 0.4,
+  "TargetModifier": {
+   "Class": "DeadpackUltimateTarget",
+   "Subclass": "DeadpackUltGrabbed",
+   "ForwardOffset": 50,
+   "VerticalOffset": 0,
+   "ForceDistScale": 20,
+   "SelfViewOpacity": 0.7
+  },
+  "Upgrades": [
+   {
+    "Damage": 90
+   },
+   {
+    "AbilityCooldown": -35
+   },
+   {
+    "DamagePerMeter": 8,
+    "StunDuration": 0.5
+   }
+  ]
  }
 }
