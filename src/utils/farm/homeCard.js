@@ -142,4 +142,4 @@ async function homeCard({ tiles, heldBridge = [], now = Date.now(), day }) {
   return c.toBuffer('image/png');
 }
 
-module.exports = { homeCard, ORDER };
+module.exports = { homeCard };

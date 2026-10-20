@@ -1,6 +1,6 @@
 // Registers the bot's slash commands in the Fairfax Industries server. The bot does this itself on startup
 // (only when a command changed), so `npm start` is all a host needs; `npm run deploy` does it by hand.
-require('dotenv').config();
+try { process.loadEnvFile(); } catch {}
 const crypto = require('node:crypto');
 const { REST, Routes } = require('discord.js');
 const { loadCommands } = require('./handlers/loadCommands');

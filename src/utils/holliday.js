@@ -11,7 +11,7 @@ const { getStore } = require('../storage');
 const { fmt, soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, seeded, halftone, grain, grainAndVignette, loadSouls, drawSouls } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { staked, plainTimeout, resultFields, playAgainButton, gameMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'holliday'); // deadlock-api.com + deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xd9782d, name: "Holliday's Powder Keg", icon: path.join(ART, 'powder_keg.png'), art: ART, prefix: 'holliday' }; // orange; Powder Keg
@@ -479,13 +479,7 @@ async function cashOut(id, userId, now = Date.now()) {
 }
 
 // Called off (casino.js expireGames: the start message never went up, or the bot restarted mid-game): the bet back.
-const staked = (game) => game.bet;
-async function timeoutView(id, game, balance) {
-  return timeoutMessage(HOST, {
-    staked: staked(game), balance, againId: AGAIN_ID, bet: game.bet, userId: game.userId,
-    line: `"${pickRandom(TIMEOUT_LINES)}"`,
-  });
-}
+const timeoutView = plainTimeout(HOST, TIMEOUT_LINES, AGAIN_ID);
 
 module.exports = {
   games,
@@ -507,5 +501,4 @@ module.exports = {
   BUTTON_ID,
   AGAIN_ID,
   FUSE_MS,
-  CAP,
 };

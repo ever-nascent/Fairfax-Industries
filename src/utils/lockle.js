@@ -446,4 +446,4 @@ async function view(game, guild, now = new Date()) {
   return { embeds: [embed], files, components };
 }
 
-module.exports = { startPractice, startDaily, guess, view, randomBuild, practice, MAX_PRACTICE, forget, renderBuild, toBuild, applyGuess, DAILY_PAY, MAX_GUESSES, MIN_ITEMS, GUESS_ID, AGAIN_ID };
+module.exports = { startPractice, startDaily, guess, view, randomBuild, practice, MAX_PRACTICE, forget, toBuild, DAILY_PAY, MIN_ITEMS, GUESS_ID, AGAIN_ID };

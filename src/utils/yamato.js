@@ -9,12 +9,10 @@ const { fmt, soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS } = require('./art');
 const { findEmoji } = require('./guild');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { GREEN, RED, mention, pot, versusLine, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'yamato'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x7b5ea7, name: "Yamato's Dojo", icon: path.join(ART, 'power_slash.png'), art: ART, prefix: 'yamato' };
-const GREEN = 0x248046;
-const RED = 0xda373c;
 
 const PAYOUT = 1.85; // against Yamato: (1.85 + 1) / 3 = 95% back, like the other games
 const PVP = true; // casino.js: /mini-game accepts an opponent for this game
@@ -68,8 +66,6 @@ const TIMEOUT_LINES = [
 const games = () => getStore('duelGames');
 
 const solo = (game) => !game.opponentId;
-const mention = (id) => `<@${id}>`;
-const pot = (game) => game.bet * 2;
 const staked = (game) => (!solo(game) && game.phase === 'pick' ? game.bet * 2 : game.bet);
 const refunds = (game) =>
   !solo(game) && game.phase === 'pick' ? [[game.userId, game.bet], [game.opponentId, game.bet]] : [[game.userId, game.bet]];
@@ -85,7 +81,6 @@ function loadStanceEmojis(guild) {
 
 // Every view but the invite clears the invite's @mention text.
 const view = (message) => ({ ...gameMessage(HOST, { title: 'Duel of Stances', ...message }), content: '' });
-const versusLine = (game) => `${mention(game.userId)} vs ${mention(game.opponentId)}, ${boldSouls(game.bet)} each.`;
 const stanceButtons = (id) =>
   [Object.entries(STANCES).map(([key, s]) => [`${BUTTON_ID}:${id}:${key}`, s.label, ButtonStyle.Secondary, { emoji: s.emoji }])];
 
@@ -276,5 +271,5 @@ async function timeoutView(id, game, balance) {
 
 module.exports = {
   games, staked, refunds, timeoutView, finishOnTimeout, loadStanceEmojis, startGame, play,
-  STANCES, versus, winnings, WIN_LINES, LOSE_LINES, DRAW_LINES, DUEL_LINES, TIMEOUT_LINES, BUTTON_ID, AGAIN_ID, PVP,
+  versus, winnings, WIN_LINES, LOSE_LINES, DUEL_LINES, TIMEOUT_LINES, BUTTON_ID, AGAIN_ID, PVP,
 };

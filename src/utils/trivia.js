@@ -1,4 +1,4 @@
-// /trivia: Deadlock trivia rounds from the wiki data in assets/trivia (built by `setup.py trivia`).
+// /trivia: Deadlock trivia rounds from the wiki data in assets/trivia (built by `tools/trivia-data.js`).
 // Solo: one question (4 answer buttons, a dropdown of items, or a typed answer), only the runner answers, one guess; right wins souls (more for a streak,
 // up to 10 paid answers a day: xp.js triviaAnswer). Rules: server-plan.md.
 const fs = require('node:fs');
@@ -527,5 +527,5 @@ function loadStreakEmojis(guild) {
 }
 
 module.exports = {
-  startRound, guess, roundError, answerModal, upgradeGraph, makeQuestion, splitLine, streakBar, loadStreakEmojis, heroes, items, RIGHT_LINES, WRONG_LINES, TIMEOUT_LINES, MODES, BUTTON_ID, NEXT_ID, TYPE_ID, MAX_LABEL, MENU_SIZE,
+  startRound, guess, roundError, answerModal, makeQuestion, splitLine, streakBar, loadStreakEmojis, heroes, items, RIGHT_LINES, WRONG_LINES, TIMEOUT_LINES, MODES, BUTTON_ID, NEXT_ID, TYPE_ID, MAX_LABEL, MENU_SIZE,
 };

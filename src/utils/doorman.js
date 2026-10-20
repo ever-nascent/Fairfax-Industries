@@ -8,7 +8,7 @@ const { getStore } = require('../storage');
 const { soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, loadSouls, seeded, halftone, grain, grainAndVignette } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'doorman'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x8c1d24, name: 'The Baroness Hotel', icon: path.join(ART, 'hotel_guest.png'), art: ART, prefix: 'doorman' }; // burgundy; his ult icon
@@ -425,7 +425,6 @@ function finishOnTimeout(id, game) {
   return { pays: [[game.userId, won ? winnings(game.bet) : 0]], view: (balance) => resultView(id, game, game.pick, won, balance) };
 }
 
-const staked = (game) => game.bet;
 async function timeoutView(id, game, balance) {
   const rooms = ROOMS.map((_, i) => ({ open: i === game.opened, mine: i === game.pick }));
   return timeoutMessage(HOST, {

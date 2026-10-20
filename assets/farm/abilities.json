@@ -6339,7 +6339,8 @@
    "BehaviorCanHealPlayers",
    "BehaviorProjectileFiredAsBullet",
    "BehaviorCanSetQuickCast",
-   "BehaviorDontInterruptSlideOnCast"
+   "BehaviorDontInterruptSlideOnCast",
+   "BehaviorAbilityIsCold"
   ],
   "ChannelMoveSpeed": -1,
   "Damage": {
@@ -9432,6 +9433,10 @@
   "InfestModifier": {
    "Class": "CitadelModifierFamiliarInfested",
    "Subclass": "Infest"
+  },
+  "InfestOwnerWatcherModifier": {
+   "Class": "FamiliarInfestOwnerWatcher",
+   "Subclass": "FamiliarInfestOwnerWatcher"
   },
   "InfestWaitingModifier": {
    "Class": "Base",
@@ -14039,7 +14044,7 @@
    }
   },
   "AbilityCooldown": {
-   "Value": 26,
+   "Value": 28,
    "Scale": {
     "Value": 1,
     "Type": "cooldown"
@@ -14140,7 +14145,7 @@
  },
  "ability_baba_bench_run": {
   "AbilityCooldown": {
-   "Value": 30,
+   "Value": 32,
    "Scale": {
     "Value": 1,
     "Type": "cooldown"
@@ -14270,7 +14275,7 @@
    }
   },
   "AbilityCooldown": {
-   "Value": 25,
+   "Value": 27,
    "Scale": {
     "Value": 1,
     "Type": "cooldown"
@@ -14310,9 +14315,9 @@
   },
   "ChannelMoveSpeed": -1,
   "CombatBarrier": {
-   "Value": 100,
+   "Value": 90,
    "Scale": {
-    "Value": 1.2,
+    "Value": 0.7,
     "Type": "spirit"
    }
   },
@@ -14365,7 +14370,7 @@
     "Radius": 3
    },
    {
-    "AbilityCooldown": -12
+    "AbilityCooldown": -14
    },
    {
     "BrewEffectiveness": 33.33,

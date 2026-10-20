@@ -971,4 +971,4 @@ const makeItems = (cards, unit, imbues = {}) => cards.filter((c) => FX[c.Name]).
   return it;
 });
 
-module.exports = { Item, FX, IMBUES, makeItems, HEADSHOT_CHANCE, ACTIVE_RELOAD_CHANCE, BOSS_HEALTH, isBoss, npcShare };
+module.exports = { Item, FX, IMBUES, makeItems, HEADSHOT_CHANCE, isBoss, npcShare };

@@ -303,6 +303,6 @@ async function ownerLeftOrReturned(member, present) {
 }
 
 module.exports = {
-  HIDEOUT_PRICE, HIDEOUT_LEVEL, MAX_MEMBERS, MAX_IN_CATEGORY, PANEL_ID, getHideout, ensureCategory, setCategory, buyHideout, panelMessage, panelModal,
+  HIDEOUT_PRICE, HIDEOUT_LEVEL, MAX_MEMBERS, PANEL_ID, getHideout, ensureCategory, setCategory, buyHideout, panelModal,
   defaultName, rename, setLimit, addMembers, removeMembers, ownerLeftOrReturned, channelDeleted, removeHideout, makeChannels, reconcile, textName, overwrites,
 };

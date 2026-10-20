@@ -109,7 +109,7 @@ const waitingLegendary = (r) => (r.legendary && !SLOTS.some((slot) => r.items[sl
 const itemsOf = (items = {}) => Object.fromEntries(SLOTS.map((slot) => [slot, [].concat(items[slot] ?? []).filter(Boolean)]));
 
 module.exports = {
-  THRESHOLDS, MAX_LEVEL, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, componentsOf, heldIn, LEGENDARY_CHANCE, LEGENDARY_NAMES, rollLegendary, waitingLegendary, SLOT_OF, SELL_BACK, sellPrice, POOL, ITEM_POOL, itemsOf,
-  BROKER, brokerOpen, brokerNext, brokerCloses, corruptible, corruptPrice, rollDrawback, NO_DRAWBACK,
-  progress, pointsSpent, unlockLevel, campMultiplier, CAMP_BONUS_PER_LEVEL,
+  THRESHOLDS, MAX_LEVEL, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, LEGENDARY_NAMES, rollLegendary, waitingLegendary, SLOT_OF, sellPrice, POOL, ITEM_POOL, itemsOf,
+  BROKER, brokerOpen, brokerNext, brokerCloses, corruptible, corruptPrice, rollDrawback,
+  progress, pointsSpent, unlockLevel, campMultiplier,
 };

@@ -9,7 +9,7 @@ const { getStore } = require('../storage');
 const { soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, halftone, grain, grainAndVignette } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'sinclair'); // deadlock.wiki, see assets/CREDITS.txt
 // the pale sage of his select art; his Rabbit Hex icon
@@ -291,7 +291,6 @@ async function pickHat(id, userId, pick) {
 }
 
 // Called off with no click for too long (casino.js expireGames): the hats stay down, the bet back.
-const staked = (game) => game.bet;
 async function timeoutView(id, game, balance) {
   return timeoutMessage(HOST, {
     image: { name: `hats_${id}.png`, data: await renderReveal(null, null) },

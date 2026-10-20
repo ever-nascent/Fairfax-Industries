@@ -7,13 +7,7 @@ function withLock(key, task) {
   const previous = chains.get(key) ?? Promise.resolve();
   const run = previous.then(task, task);
   // Keep the chain alive even if a task rejects, so later work still runs.
-  chains.set(
-    key,
-    run.then(
-      () => {},
-      () => {},
-    ),
-  );
+  chains.set(key, run.catch(() => {}));
   return run;
 }
 

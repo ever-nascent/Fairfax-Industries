@@ -7,7 +7,7 @@ const { getStore } = require('../storage');
 const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
 const { pickRandom, shuffle } = require('./random');
 const { ASSETS } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'pocket'); // portraits from the deadlock-api.com assets API ("synth"), icon from deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xf46f0b, name: "Pocket's Suitcases", icon: path.join(ART, 'satchel.png'), art: ART, prefix: 'pocket' }; // orange; Enchanter's Satchel
@@ -308,7 +308,6 @@ function finishOnTimeout(id, state) {
   return { pays: [[game.userId, game.prize]], view: (balance) => view(id, { ...game, balance }) };
 }
 
-const staked = (game) => game.bet;
 async function timeoutView(id, game, balance) {
   return timeoutMessage(HOST, {
     staked: staked(game), balance, againId: AGAIN_ID, bet: game.bet, userId: game.userId,
@@ -326,14 +325,12 @@ module.exports = {
   moves,
   play,
   offerFor,
-  lastCase,
   amount,
   VALUES,
   ROUNDS,
   OFFER_SHARE,
   WIN_LINES,
   LOSE_LINES,
-  OFFER_LINES,
   TIMEOUT_LINES,
   BUTTON_ID,
   AGAIN_ID,

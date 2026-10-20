@@ -357,4 +357,4 @@ async function handleEntry(entry, guild) {
   }
 }
 
-module.exports = { handleEntry, TYPES, changeFields, permDiff };
+module.exports = { handleEntry, TYPES, permDiff };

@@ -37,6 +37,9 @@ from deadlock.wiki (https://deadlock.wiki), game art by Valve.
 Rem's Remling Race (assets/rem): Rem's portraits ("Rem card", "Rem Gloat (Familiar)", "Rem Critical (Familar)") and the Lil Helpers ability icon
 from deadlock.wiki (https://deadlock.wiki), game art by Valve. The five Remling emojis (remling_<colour>.png) are that icon recoloured.
 
+Deadman Danny's Drop Zone (assets/danny): Deadman Danny's portraits ("Deadman Danny card", "Deadman Danny Gloat", "Deadman Danny Critical")
+and the Close The Deal ability icon from deadlock.wiki (https://deadlock.wiki), game art by Valve.
+
 Shop (assets/shop): hideout.png is the Deadlock minimap Stairs icon (deadlock.wiki "Stairs.png"), redrawn as vector at 128 px.
 The /shop banner art in assets/shop/art (curiosity_shop.png = "The Curiosity Shop in-game.png", shop_icon.png = "MinimapShopIcon.png",
 rejuv.png = "Mid-Boss.png"; the in-game shop screen "Weapon shop.png" was the style reference)

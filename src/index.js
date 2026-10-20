@@ -1,8 +1,8 @@
-require('dotenv').config();
+try { process.loadEnvFile(); } catch {} // .env (missing = the DISCORD_TOKEN check below says so)
 const { Client, GatewayIntentBits, Partials, REST } = require('discord.js');
 const { loadCommands } = require('./handlers/loadCommands');
 const { loadEvents } = require('./handlers/loadEvents');
-const { initStorage, getStore } = require('./storage');
+const { getStore } = require('./storage');
 const { deployCommands } = require('./deploy-commands');
 const { backupToday } = require('./utils/backup');
 const { migrate, moveToHeroes } = require('./utils/economy');
@@ -12,8 +12,6 @@ async function main() {
     console.error('[fatal] DISCORD_TOKEN is not set. Run setup.py once so it saves your token to .env.');
     process.exit(1);
   }
-
-  await initStorage();
 
   // Data work that needs no Discord runs before the bot logs in, so nothing can touch souls half-way through:
   // today's backup first (utils/backup.js, then hourly in case the bot runs past midnight UTC), then the souls
