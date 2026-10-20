@@ -60,4 +60,4 @@ function grainAndVignette(g, w, h, grainTexture, { grainAlpha, inner, outer, dar
   g.fillRect(0, 0, w, h);
 }
 
-module.exports = { ASSETS, SOULS_PNG, loadSouls, drawSouls, seeded, halftone, grain, grainAndVignette };
+module.exports = { ASSETS, loadSouls, drawSouls, seeded, halftone, grain, grainAndVignette };

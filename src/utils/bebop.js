@@ -8,7 +8,7 @@ const { findEmoji } = require('./guild');
 const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { staked, plainTimeout, resultFields, playAgainButton, gameMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'bebop'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xd9822b, name: "Bebop's Bombs", icon: path.join(ART, 'sticky_bomb.png'), art: ART, prefix: 'bebop' }; // copper; Sticky Bomb
@@ -189,13 +189,7 @@ function finishOnTimeout(id, state) {
   return { pays: [[game.userId, prizeFor(game.bet, game.picked.length)]], view: (balance) => view(id, { ...game, balance }) };
 }
 
-const staked = (game) => game.bet;
-async function timeoutView(id, game, balance) {
-  return timeoutMessage(HOST, {
-    staked: staked(game), balance, againId: AGAIN_ID, bet: game.bet, userId: game.userId,
-    line: `"${pickRandom(TIMEOUT_LINES)}"`,
-  });
-}
+const timeoutView = plainTimeout(HOST, TIMEOUT_LINES, AGAIN_ID);
 
 // On startup: his Sticky Bomb icon as the :sticky_bomb: emoji, shown on the bombs once a game is over.
 function loadBombEmoji(guild) {

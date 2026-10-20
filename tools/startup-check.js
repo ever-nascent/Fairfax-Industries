@@ -16,7 +16,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const ROOT = path.join(__dirname, '..');
-require('dotenv').config({ path: path.join(ROOT, '.env'), quiet: true });
+try { process.loadEnvFile(path.join(ROOT, '.env')); } catch {}
 const { HEROES } = require('../src/utils/heroes');
 const { roster } = require('../src/utils/farm/hero');
 const { GUILD_ID } = require('../src/config');

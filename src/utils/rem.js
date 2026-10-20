@@ -8,7 +8,7 @@ const { findEmoji } = require('./guild');
 const { soulsText, boldSouls } = require('./format');
 const { pickRandom, shuffle, randomInt } = require('./random');
 const { ASSETS } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { staked, plainTimeout, resultFields, playAgainButton, gameMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'rem'); // deadlock.wiki (portraits, Lil Helpers icon), Remlings drawn from that icon, see assets/CREDITS.txt
 const HOST = { color: 0x7b6cf6, name: "Rem's Remling Race", icon: path.join(ART, 'lil_helpers.png'), art: ART, prefix: 'rem' }; // Lil Helpers
@@ -191,13 +191,7 @@ async function pick(id, userId, lane) {
 }
 
 // Called off (casino.js expireGames: never picked, or the bot restarted mid-race): the bet back.
-const staked = (game) => game.bet;
-async function timeoutView(id, game, balance) {
-  return timeoutMessage(HOST, {
-    staked: staked(game), balance, againId: AGAIN_ID, bet: game.bet, userId: game.userId,
-    line: `"${pickRandom(TIMEOUT_LINES)}"`,
-  });
-}
+const timeoutView = plainTimeout(HOST, TIMEOUT_LINES, AGAIN_ID);
 
 // On startup: the Remling icons as :remling_<colour>: emojis, used in the lanes and buttons.
 function loadRemlingEmojis(guild) {

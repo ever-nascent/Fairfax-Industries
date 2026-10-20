@@ -40,4 +40,4 @@ const SPECIALS = {
 // The special a Haunt of `family` fights with (small Haunts have none).
 const specialFor = (family, small) => (!small && SPECIALS[family] ? { ...SPECIALS[family], chance: CHANCE } : null);
 
-module.exports = { SPECIALS, CHANCE, TICK, specialFor };
+module.exports = { SPECIALS, specialFor };

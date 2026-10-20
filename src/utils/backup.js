@@ -22,4 +22,4 @@ function backupToday(now = new Date()) {
   return dir;
 }
 
-module.exports = { backupToday, FILES, KEEP_DAYS };
+module.exports = { backupToday, KEEP_DAYS };

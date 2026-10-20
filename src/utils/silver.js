@@ -9,12 +9,10 @@ const { fmt, soulsText, boldSouls } = require('./format');
 const { pickRandom, shuffle, randomInt } = require('./random');
 const { ASSETS } = require('./art');
 const { findEmoji } = require('./guild');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { GREEN, RED, mention, pot, versusLine, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'silver'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x9aa5b1, name: "Silver's Shotgun Roulette", icon: path.join(ART, 'slam_fire.png'), art: ART, prefix: 'silver' };
-const GREEN = 0x248046;
-const RED = 0xda373c;
 
 const PAYOUT = 1.85;
 const PVP = true; // casino.js: /mini-game accepts an opponent for this game
@@ -45,8 +43,6 @@ const TIMEOUT_LINES = ['Nobody pulled the trigger. Your Souls are back, coward.'
 const games = () => getStore('rouletteGames');
 
 const solo = (game) => !game.opponentId;
-const mention = (id) => `<@${id}>`;
-const pot = (game) => game.bet * 2;
 const staked = (game) => (!solo(game) && game.phase === 'play' ? game.bet * 2 : game.bet);
 const refunds = (game) =>
   !solo(game) && game.phase === 'play' ? [[game.userId, game.bet], [game.opponentId, game.bet]] : [[game.userId, game.bet]];
@@ -117,7 +113,6 @@ function play(game, atSelf, rnd = randomInt) {
 
 // Every view but the invite clears the invite's @mention text.
 const view = (message) => ({ ...gameMessage(HOST, { title: 'Shotgun Roulette', ...message }), content: '' });
-const versusLine = (game) => `${mention(game.userId)} vs ${mention(game.opponentId)}, ${boldSouls(game.bet)} each.`;
 // The shots so far, as a quote (the > bar)
 const quote = (lines) => lines.map((l) => `> ${l}`);
 const bolts = (n) => SHELLS.charge.emoji.repeat(n) + SHELLS.lost.emoji.repeat(CHARGES - n);

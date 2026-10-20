@@ -4,9 +4,9 @@
 const path = require('node:path');
 const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, SlashCommandBuilder } = require('discord.js');
 const { changeSouls } = require('./xp');
-const { fmt, soulsText } = require('./format');
+const { fmt, soulsText, boldSouls } = require('./format');
 const { replyEmbed, privateReply } = require('./embeds');
-const { shortId } = require('./random');
+const { shortId, pickRandom } = require('./random');
 
 const { SCALE } = require('./economy');
 const MIN_BET = 10 * SCALE;
@@ -55,6 +55,13 @@ async function openGame(store, userId, bet, build, reason) {
 }
 
 // Once a game is over: the Bet / Won / Balance fields and a Play Again button for the same bet (only its player can press it).
+// Shared by the member-vs-member games (Duel of Stances, Shotgun Roulette, Danny's Drop Zone).
+const GREEN = 0x248046;
+const RED = 0xda373c;
+const mention = (id) => `<@${id}>`;
+const pot = (game) => game.bet * 2;
+const versusLine = (game) => `${mention(game.userId)} vs ${mention(game.opponentId)}, ${boldSouls(game.bet)} each.`;
+
 const resultFields = (bet, won, balance) => [['Bet', bet], ['Won', won], ['Balance', balance]];
 const playAgainButton = (againId, bet, userId) => [`${againId}:${bet}:${userId}`, `Play Again (${fmt(bet)})`, ButtonStyle.Success];
 
@@ -134,6 +141,8 @@ async function startAndPost(interaction, game, bet, slow, opponent = null) {
 // One slash command for all the games: /<name> game:<choice> bet:<souls>.
 // games: { value: { label, game (module), slow } }.
 function betCommand(name, description, games) {
+  const duels = Object.values(games).filter((g) => g.game.PVP).map((g) => g.label);
+  const list = (type) => new Intl.ListFormat('en', { type }).format(duels);
   return {
     data: new SlashCommandBuilder()
       .setName(name)
@@ -148,12 +157,12 @@ function betCommand(name, description, games) {
       .addIntegerOption((o) =>
         o.setName('bet').setDescription(`Souls to bet (at least ${MIN_BET}, up to your whole balance)`).setMinValue(MIN_BET).setRequired(true),
       )
-      .addUserOption((o) => o.setName('opponent').setDescription('Duel of Stances or Shotgun Roulette: play this member instead of the host')),
+      .addUserOption((o) => o.setName('opponent').setDescription(`${list('disjunction')}: play this member instead of the host`)),
     execute(interaction) {
       const g = games[interaction.options.getString('game')];
       const opponent = interaction.options.getUser('opponent');
       if (opponent && !g.game.PVP) {
-        return interaction.reply({ content: `${g.label} is played alone. Only Duel of Stances and Shotgun Roulette can be played against a member.`, flags: MessageFlags.Ephemeral });
+        return interaction.reply({ content: `${g.label} is played alone. Only ${list('conjunction')} can be played against a member.`, flags: MessageFlags.Ephemeral });
       }
       return startAndPost(interaction, g.game, interaction.options.getInteger('bet'), g.slow, opponent);
     },
@@ -215,6 +224,11 @@ function timeoutMessage(host, { image, staked, balance, againId, bet, userId, li
   });
 }
 
+// For a solo game: the bet is all that was staked, and a time's-up view with no picture.
+const staked = (game) => game.bet;
+const plainTimeout = (host, lines, againId) => async (id, game, balance) =>
+  timeoutMessage(host, { staked: game.bet, balance, againId, bet: game.bet, userId: game.userId, line: `"${pickRandom(lines)}"` });
+
 // The top of a game's last message when time ran out and it was finished for the player.
 function markTimedOut(payload) {
   const embed = payload.embeds?.[0];
@@ -264,4 +278,4 @@ async function expireGames(client, gameModules, now = Date.now()) {
   }
 }
 
-module.exports = { MIN_BET, TIME_LIMIT_MINUTES, forGame, takeBet, stake, pay, openGame, resultFields, playAgainButton, gameMessage, betCommand, gameButtons, timeoutMessage, expireGames };
+module.exports = { MIN_BET, TIME_LIMIT_MINUTES, forGame, takeBet, stake, pay, openGame, GREEN, RED, mention, pot, versusLine, resultFields, playAgainButton, gameMessage, betCommand, gameButtons, timeoutMessage, staked, plainTimeout, expireGames };

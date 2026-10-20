@@ -447,4 +447,4 @@ class Fight {
 const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', blast = null, souls = 0 } = {}) =>
   new Unit({ name, team: 'enemy', stats: { maxHealth, dps, dpsMaxHealthPct, damageType, blast: blast && { ...blast }, bulletResist, spiritResist, distance, healthRegen, lifesteal: 0, souls } });
 
-module.exports = { PELLETS, pelletChance, DUEL, DT, Unit, Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC, SPREAD, DODGE, dodgeChance, MELEE, MOVE, ATTACK_EVERY, HELPLESS };
+module.exports = { PELLETS, pelletChance, DUEL, DT, Unit, Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC, SPREAD, DODGE, dodgeChance, MELEE, HELPLESS };

@@ -515,6 +515,7 @@
    "DPS": 51.429,
    "SustainedDPS": 30.542,
    "NameKey": "citadel_weapon_atlas_set",
+   "DescKey": "citadel_weapon_atlas_set_desc",
    "WeaponTypes": [
     "Attribute_EWeaponAttribute_Spreadshot",
     "Attribute_EWeaponAttribute_CloseRange"
@@ -722,6 +723,7 @@
    "DPS": 59.287,
    "SustainedDPS": 41.637,
    "NameKey": "citadel_weapon_bebop_set",
+   "DescKey": "citadel_weapon_bebop_set_desc",
    "WeaponTypes": [
     "Attribute_EWeaponAttribute_BeamWeapon",
     "Attribute_EWeaponAttribute_MediumRange"
@@ -2166,6 +2168,7 @@
    "DPS": 72.381,
    "SustainedDPS": 45.424,
    "NameKey": "citadel_weapon_forge_set",
+   "DescKey": "citadel_weapon_forge_set_desc",
    "WeaponTypes": [
     "Attribute_EWeaponAttribute_RapidFire",
     "Attribute_EWeaponAttribute_MediumRange"
@@ -4157,6 +4160,7 @@
     "Key": "ability_baba_ultimate_2"
    }
   },
+  "BulletResist": -7,
   "CritDamageBonusPercent": -20,
   "CritDamageReceivedPercent": 0,
   "CrouchSpeed": 4.75,
@@ -4193,7 +4197,7 @@
   "ReloadSpeed": 0,
   "Role": "hero_baba_role",
   "SpiritScaling": {
-   "TechResist": 0.12
+   "TechResist": 0.1
   },
   "SprintSpeed": 1.6,
   "Stamina": 2,

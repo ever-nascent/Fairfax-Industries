@@ -257,4 +257,4 @@ const info = [
 ];
 
 // copyWith: what a copy of the ultimate needs beside it (Sinclair's Audience Participation): Grasping Hands keeps the Ghouls.
-module.exports = { name: 'Graves', abilities: { 1: JarOfDead, 2: GraspingHands, 3: EssenceTheft, 4: BorrowedDecree }, info, DRAW_FIRE, copyWith: [2] };
+module.exports = { name: 'Graves', abilities: { 1: JarOfDead, 2: GraspingHands, 3: EssenceTheft, 4: BorrowedDecree }, info, copyWith: [2] };

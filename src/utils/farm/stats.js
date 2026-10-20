@@ -213,4 +213,4 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
   return s;
 }
 
-module.exports = { HEROES, ABILITIES, ITEMS, LEGENDARIES, itemByName, innateStats, heroStats, ITEM_STATS, PASSIVE_STATS, effectValue, corruptCard, cardFor, DRAWBACKS, drawbackText };
+module.exports = { HEROES, ABILITIES, ITEMS, LEGENDARIES, itemByName, innateStats, heroStats, ITEM_STATS, effectValue, corruptCard, cardFor, DRAWBACKS, drawbackText };

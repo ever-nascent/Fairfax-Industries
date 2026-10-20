@@ -247,4 +247,4 @@ function siege(hero, { maxSecondsPerStage = 900, rng, rejuvs = 0 } = {}) {
   return { won: out.won, stage: out.stage, stageName: out.won ? null : SIEGE.stages[out.stage].name, souls, rejuvsLeft: hero.rejuvs };
 }
 
-module.exports = { WAVES, WAVE, wavePay, wavesPay, PATRON_BLAST, LANES, LANED, WALKER_STEP, CLEAR_CAP, GROWTH, clearsOf, clearPower, clearSouls, strengthen, TARGETS, SIEGE, HARDNESS, PAYOUT_SCALE, payout, runStages, attempt, siege };
+module.exports = { WAVES, WAVE, wavePay, wavesPay, LANES, LANED, WALKER_STEP, CLEAR_CAP, GROWTH, clearsOf, clearPower, clearSouls, strengthen, TARGETS, SIEGE, HARDNESS, PAYOUT_SCALE, payout, runStages, attempt, siege };

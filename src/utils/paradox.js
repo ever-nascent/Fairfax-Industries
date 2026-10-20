@@ -10,7 +10,7 @@ const { encodeGif } = require('./gif');
 const { fmt, soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, halftone, grain, grainAndVignette } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'paradox'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xc24fa0, name: 'Borrowed Time', icon: path.join(ART, 'pulse_grenade.png'), art: ART, prefix: 'paradox' }; // magenta; Pulse Grenade
@@ -392,7 +392,6 @@ function finishOnTimeout(id, state) {
   return { pays: [[game.userId, game.prize]], view: (balance) => view(id, { ...game, balance }) };
 }
 
-const staked = (game) => game.bet;
 async function timeoutView(id, game, balance) {
   return timeoutMessage(HOST, {
     image: { name: `clock_${id}_timeout.gif`, data: await renderClock(game, null) },
@@ -406,8 +405,6 @@ module.exports = {
   staked,
   timeoutView,
   finishOnTimeout,
-  prizeAt,
-  fairOdds,
   TIMEOUT_LINES,
   startGame,
   move,
