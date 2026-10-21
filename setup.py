@@ -274,9 +274,9 @@ def shop_emojis(session: requests.Session):
 HEROES = [
     "Abrams", "Apollo", "Baba", "Bebop", "Billy", "Calico", "Celeste", "Deadman Danny", "The Doorman", "Drifter",
     "Dynamo", "Graves", "Grey Talon", "Haze", "Holliday", "Infernus", "Ivy", "Kelvin",
-    "Lady Geist", "Lash", "McGinnis", "Mina", "Mirage", "Mo & Krill", "Paige", "Paradox",
+    "Lady Geist", "Lash", "McGinnis", "Mina", "Mirage", "Mo & Krill", "Nurse Harrow", "Paige", "Paradox",
     "Pocket", "Rat King", "Rem", "Seven", "Shiv", "Silver", "Sinclair", "Solomon", "Venator", "Victor",
-    "Vindicta", "Viscous", "Vyper", "Warden", "Wraith", "Yamato",
+    "Vindicta", "Violet", "Viscous", "Vyper", "Warden", "Wraith", "Yamato",
 ]
 HERO_DIR = ASSETS / "heroes"
 WIKI_API = "https://deadlock.wiki/api.php"
