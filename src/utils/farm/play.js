@@ -122,7 +122,7 @@ const unlockHero = (userId, name) => updateFarmUser(userId, (r) => {
   if (!(r.tokens > 0)) return { error: 'token' };
   r.tokens -= 1;
   r.heroes[name] = { earned: 0, tiers: {}, items: {} };
-  walkAway(userId, name); // a rival waiting as that hero has nothing left to offer
+  offers.get(userId)?.delete(name); // a rival waiting as that hero has nothing left to offer (only that one: the others keep their time)
   return { ok: true };
 });
 

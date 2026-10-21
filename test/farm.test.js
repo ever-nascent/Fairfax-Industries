@@ -2599,9 +2599,9 @@ test('Baba: each ability does its job', () => {
   assert.ok(scalded[0].health < 2000 && scalded[1].health < 2000 && scalded[2].health === 2000);
   close(scalded[0].mod('spiritResist'), -0.15);
   const [soothed] = brew(0.1);
-  close(soothed.statuses.find((s) => s.id === 'soothing_brew').barrier, 100);
+  close(soothed.statuses.find((s) => s.id === 'soothing_brew').barrier, 90); // the Oct 20 patch: 100 -> 90
   const [stronger] = brew(0.1, { 3: 3 }); // tier 3: every brew a third stronger
-  close(stronger.statuses.find((s) => s.id === 'soothing_brew').barrier, 133.33, 0.01);
+  close(stronger.statuses.find((s) => s.id === 'soothing_brew').barrier, 120, 0.01);
 
   // Feed The Birds: a 6.5 s channel without casting while the bread slows them, then 450 to each and 2.75 s as pigeons (no attacks)
   const f = quiet(buildHero('Baba', { unlocked: 4 }), 1, 2, 3);
