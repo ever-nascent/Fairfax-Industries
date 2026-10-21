@@ -55,7 +55,7 @@ async function openGame(store, userId, bet, build, reason) {
 }
 
 // Once a game is over: the Bet / Won / Balance fields and a Play Again button for the same bet (only its player can press it).
-// Shared by the member-vs-member games (Duel of Stances, Shotgun Roulette, Danny's Drop Zone).
+// Shared by the member-vs-member games (Duel of Stances, Shotgun Roulette).
 const GREEN = 0x248046;
 const RED = 0xda373c;
 const mention = (id) => `<@${id}>`;
@@ -70,7 +70,7 @@ const playAgainButton = (againId, bet, userId) => [`${againId}:${bet}:${userId}`
 // image: { name, data } (a new name each step, so Discord doesn't reuse the old picture), optional;
 // fields: [[label, souls]]; footer: shown as given (footers can't be italic).
 // buttons: one row of [customId, label, style, { emoji, disabled }?] (label may be null when there's an emoji),
-// or rows: several such rows (up to 5).
+// or rows: several such rows (up to 5), each either that list or a finished ActionRowBuilder (the Bookwyrm game's dropdowns).
 // Optional: title, color (instead of the host's), rows: [] for no buttons.
 function gameMessage(host, { lines, image, buttons, rows = [buttons], fields, footer, mood = 'portrait', title, color = host.color }) {
   const icon = path.basename(host.icon);
@@ -97,7 +97,7 @@ function gameMessage(host, { lines, image, buttons, rows = [buttons], fields, fo
       new AttachmentBuilder(path.join(host.art, `${mood}.png`), { name: portrait }),
       ...(image ? [new AttachmentBuilder(image.data, { name: image.name })] : []),
     ],
-    components: rows.map((row) => new ActionRowBuilder().addComponents(row.map(button))),
+    components: rows.map((row) => (row instanceof ActionRowBuilder ? row : new ActionRowBuilder().addComponents(row.map(button)))), // a finished row (dropdowns) passes through
   };
 }
 
