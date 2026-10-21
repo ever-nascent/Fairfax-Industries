@@ -2696,6 +2696,103 @@ test('Rat King: each ability does its job', () => {
   assert.ok(k.mod('moveSpeed') === 0 && ruled[0].mod('slow') === 0);
 });
 
+test('Violet: each ability does its job', () => {
+  const quiet = (hero, ...slots) => { hero.weapon.reloadLeft = 1e9; hero.meleeAt = Infinity; hero.stamina = 0; hero.nextDash = Infinity; hero.stats.healthRegen = 0; hero.stats.oocRegen = 0; slots.forEach((s) => { hero.abilities[s - 1].cdLeft = 1e9; hero.abilities[s - 1].gapLeft = 1e9; }); return hero; };
+  const dummy = (o = {}) => enemy('Dummy', { maxHealth: 2000, dps: 0, distance: 10, ...o });
+  const row = () => [dummy(), dummy(), dummy()]; // 4 m apart
+  const lost = (list) => list.map((e) => +(2000 - e.health).toFixed(3));
+
+  // Living Ink: an ink shot deals 120% of the gun's 30 and splashes 35 spirit damage; each hit takes 1.5 s off her cooldowns
+  const v = buildHero('Violet', { unlocked: 1 });
+  v.stamina = 0; v.nextDash = Infinity; v.meleeAt = Infinity;
+  const target = dummy({ maxHealth: 1e6 });
+  const fi = new Fight({ heroes: [v], enemies: [target], rng: () => 0.5 });
+  while (target.health === 1e6) fi.step();
+  close(1e6 - target.health, 30 * 1.2 + 35);
+  const ink = v.abilities[0];
+  assert.strictEqual(ink.shots, 2);
+  close(ink.cdLeft, 22 - (fi.time - fi.log.find((l) => l.what === 'Living Ink').t) - 1.5, 0.01);
+  assert.ok(v.mod('fireRate') < 0, 'slower while the ink is loaded');
+
+  // Flow State: the flick 2 s after the cast: 100 spirit damage and a 60% slow within 15 m; she slides on the trail
+  const f = quiet(buildHero('Violet', { unlocked: 2 }), 1);
+  const flicked = row();
+  const ff = new Fight({ heroes: [f], enemies: flicked, rng: () => 0.5 });
+  ff.run(1.5);
+  assert.deepStrictEqual(lost(flicked), [0, 0, 0]);
+  assert.ok(f.has('sliding'));
+  ff.run(1);
+  assert.deepStrictEqual(lost(flicked), [100, 100, 100]);
+  close(flicked[2].mod('slow'), 0.6);
+
+  // Still Life: 2.6 s of 30 a second on the front enemy, then 60 and a stun, and a sketch (roll 0.5: +20 max health)
+  const s = quiet(buildHero('Violet', { unlocked: 3 }), 1, 2);
+  const drawn = row();
+  const fs3 = new Fight({ heroes: [s], enemies: drawn, rng: () => 0.5 });
+  fs3.run(3);
+  close(lost(drawn)[0], 30 * 2.6 + 60, 0.03);
+  assert.deepStrictEqual(lost(drawn).slice(1), [0, 0]);
+  assert.ok(drawn[0].has('stun'));
+  assert.strictEqual(s.stats.maxHealth, 730);
+
+  // Abstract Landscape: +25 spirit power while it stands; every enemy within 18 m of the front one: 100 + 1.4 x spirit, a 2 s silence and a 30% slow
+  const a = quiet(buildHero('Violet', { unlocked: 4 }), 1, 2, 3);
+  const ringed = row();
+  const fa = new Fight({ heroes: [a], enemies: ringed, rng: () => 0.5 });
+  fa.run(0.8);
+  assert.deepStrictEqual(lost(ringed), [135, 135, 135]); // 100 + 1.4 x the ring's own 25 spirit power
+  assert.ok(ringed.every((e) => e.has('silence') && e.mod('slow') === 0.3) && a.mod('spirit') === 25);
+});
+
+test('Nurse Harrow: each ability does its job', () => {
+  const quiet = (hero, ...slots) => { hero.weapon.reloadLeft = 1e9; hero.meleeAt = Infinity; hero.stamina = 0; hero.nextDash = Infinity; hero.stats.healthRegen = 0; hero.stats.oocRegen = 0; slots.forEach((s) => { hero.abilities[s - 1].cdLeft = 1e9; hero.abilities[s - 1].gapLeft = 1e9; }); return hero; };
+  const dummy = (o = {}) => enemy('Dummy', { maxHealth: 2000, dps: 0, distance: 10, ...o });
+  const row = () => [dummy(), dummy(), dummy()]; // 4 m apart
+  const lost = (list) => list.map((e) => +(2000 - e.health).toFixed(3));
+
+  // Leech Therapy: 4 leeches over the enemies within 6.5 m (2 each), 23 a second each for 5 s; 1 s later she keeps all 4: +5% fire rate and +0.6 regen each
+  const l = quiet(buildHero('Nurse Harrow', { unlocked: 1 }));
+  const fed = row();
+  const fl = new Fight({ heroes: [l], enemies: fed, rng: () => 0.5 });
+  fl.run(5.5);
+  close(lost(fed)[0], 2 * 23 * 5, 0.02);
+  close(lost(fed)[1], 2 * 23 * 5, 0.02);
+  assert.strictEqual(lost(fed)[2], 0);
+  fl.run(1.5);
+  assert.strictEqual(l.abilities[0].stacks, 4);
+  close(l.mod('fireRate'), 0.2);
+  close(l.stats.healthRegen, 4 * 0.6);
+
+  // Wretched Vapors: the brute's hits are held back during the 4 s rush, then land at once with 30% more
+  const w = quiet(buildHero('Nurse Harrow', { unlocked: 2 }), 1);
+  const fw = new Fight({ heroes: [w], enemies: [dummy({ dps: 100 })], rng: () => 0.5 });
+  fw.run(4.2);
+  assert.strictEqual(w.health, 730);
+  close(w.mod('fireRate'), 0.25);
+  fw.run(0.2);
+  assert.strictEqual(w.health, 730 - 4 * 100 * 1.3);
+
+  // Healing Needles: below 60% she swaps (1.3 s) and shoots herself with a clip of 11 syringes, 25 each; the charge is spent
+  const n = quiet(buildHero('Nurse Harrow', { unlocked: 3 }), 1, 2);
+  n.health = 300;
+  new Fight({ heroes: [n], enemies: [dummy({ maxHealth: 1e6 })], rng: () => 0.5 }).run(6);
+  close(n.health, 300 + 11 * 25);
+  assert.ok(n.abilities[2].stock === 0 && n.abilities[2].loaded === 0);
+
+  // Lurking Terrors: 1.3 s to open, then 7 s of 60 a second within 35 m, a 30% slow and 30% slower attacks; after 1.3 s of looking, fear
+  const t = quiet(buildHero('Nurse Harrow', { unlocked: 4 }), 1, 2, 3);
+  const scared = row();
+  const ft = new Fight({ heroes: [t], enemies: scared, rng: () => 0.5 });
+  ft.run(2);
+  assert.ok(scared.every((e) => e.mod('slow') === 0.3 && e.mod('damageDealt') === -0.3 && !e.has('disarm')));
+  ft.run(1);
+  assert.ok(scared.every((e) => e.has('disarm') && e.has('silence')));
+  ft.run(6);
+  for (const x of lost(scared)) close(x, 60 * 7, 0.02);
+  ft.run(1);
+  assert.ok(scared.every((e) => e.mod('slow') === 0));
+});
+
 test('Solomon: each ability does its job', () => {
   const { BISHOP } = require('../src/utils/farm/heroes/solomon');
   const quiet = (hero, ...slots) => { hero.weapon.reloadLeft = 1e9; hero.meleeAt = Infinity; hero.stamina = 0; hero.nextDash = Infinity; hero.stats.healthRegen = 0; hero.stats.oocRegen = 0; slots.forEach((s) => { hero.abilities[s - 1].cdLeft = 1e9; hero.abilities[s - 1].gapLeft = 1e9; }); return hero; };

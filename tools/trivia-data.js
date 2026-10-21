@@ -169,18 +169,26 @@ async function pageTexts(titles) {
   return out;
 }
 
-async function buildHeroes(problems) {
+// `known`: the slugs already in trivia.json. A hero not in it yet whose page isn't written (Oct 20: Nurse Harrow came out that day with 5 lines
+// and no abilities on it) is left out instead of stopping the save; the startup check runs this again every start until the page is there.
+async function buildHeroes(problems, known = new Set(), waiting = []) {
   const heroes = [];
   const texts = await pageTexts(HEROES.map(({ name }) => `${name}/Voice lines`));
   for (const { name, slug } of HEROES) {
     const text = texts[`${name}/Voice lines`];
+    const lines = text == null ? [] : voiceLines(name, text);
+    const abilities = text == null ? [] : [...text.matchAll(/===\s*\{\{AbilityIcon\|([^}]+)\}\}\s*===/g)].map((m) => cleanWikiText(m[1])).slice(0, 4);
+    const unwritten = text == null || !lines.length || abilities.length !== 4;
+    if (unwritten && !known.has(slug)) {
+      waiting.push(name);
+      console.log(`  ${name}: left out, the wiki's voice lines page isn't written yet (${lines.length} lines, ${abilities.length} abilities)`);
+      continue;
+    }
     if (text == null) {
       problems.push(`${name}: no "${name}/Voice lines" page on the wiki`);
       continue;
     }
-    const lines = voiceLines(name, text);
-    const abilities = [...text.matchAll(/===\s*\{\{AbilityIcon\|([^}]+)\}\}\s*===/g)].map((m) => cleanWikiText(m[1])).slice(0, 4);
-    if (!lines.length || abilities.length !== 4) problems.push(`${name}: ${lines.length} lines, ${abilities.length} abilities (needs lines and 4 abilities)`);
+    if (unwritten) problems.push(`${name}: ${lines.length} lines, ${abilities.length} abilities (needs lines and 4 abilities)`);
     heroes.push({ name, slug, lines, abilities, kills: killLines(text) });
     console.log(`  ${name}: ${lines.length} lines, abilities: ${abilities.join(', ') || 'none found'}`);
   }
@@ -290,10 +298,12 @@ async function main(args = process.argv.slice(2)) {
   const all = args.includes('--all');
   const problems = [];
   console.log('Voice lines and abilities (deadlock.wiki):');
-  const { heroes, pictures: abilityPictures } = await buildHeroes(problems);
+  const heroFile = path.join(OUT, 'trivia.json');
+  const waiting = [];
+  const { heroes, pictures: abilityPictures } = await buildHeroes(problems, new Set(readJson(heroFile).map((h) => h.slug)), waiting);
   console.log('Items (deadlock.wiki):');
   const { items, pictures: itemPictures } = await buildItems();
-  if (heroes.length !== HEROES.length) problems.push(`only ${heroes.length} of ${HEROES.length} heroes`);
+  if (heroes.length + waiting.length !== HEROES.length) problems.push(`only ${heroes.length} of ${HEROES.length} heroes`);
   if (items.length < 100) problems.push(`only ${items.length} items (expected about 150)`);
   if (problems.length) {
     console.log(`\nNOTHING WAS SAVED. The download has problems:\n${problems.map((p) => `  - ${p}`).join('\n')}`);
@@ -301,7 +311,6 @@ async function main(args = process.argv.slice(2)) {
     return;
   }
 
-  const heroFile = path.join(OUT, 'trivia.json');
   const itemFile = path.join(OUT, 'items.json');
   const list = changes(readJson(heroFile), heroes, readJson(itemFile), items);
   console.log(list.length ? `\nChanges (${list.length}):\n${list.map((c) => `  - ${c}`).join('\n')}` : '\nNo changes: the data is up to date.');

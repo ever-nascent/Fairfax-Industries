@@ -17,7 +17,7 @@ const WIKI = 'https://deadlock.wiki';
 const OUT = path.join(ASSETS, 'farm');
 const FARM_HEROES = ['Mina', 'Haze', 'Celeste', 'Paige', 'Abrams', // the starter 5, his pick, Oct 1
   'Apollo', 'Bebop', 'Billy', 'Calico', 'The Doorman', 'Drifter', 'Dynamo', 'Graves', 'Grey Talon', 'Holliday', 'Infernus', 'Ivy', 'Kelvin', 'Lady Geist', 'Lash', 'McGinnis', 'Mirage', 'Mo & Krill', 'Paradox', 'Pocket', 'Rem', 'Seven', 'Shiv', 'Silver', 'Sinclair', 'Venator', 'Victor', 'Vindicta', 'Viscous', 'Vyper', 'Warden', 'Wraith', 'Yamato', // then the rest A to Z, one at a time (his call, Oct 3; each added with addHero below)
-  'Baba', 'Rat King', 'Solomon', 'Deadman Danny']; // the City Never Sleeps heroes, as they come out (Oct 10, Danny Oct 16; the wiki still flags them InDevelopment, so a selectable one counts as live)
+  'Baba', 'Rat King', 'Solomon', 'Deadman Danny', 'Nurse Harrow', 'Violet']; // the City Never Sleeps heroes, as they come out (Oct 10, Danny Oct 16, Harrow and Violet Oct 20; the wiki still flags them InDevelopment, so a selectable one counts as live)
 
 // Target icons: the minimap camp icons (small / medium / large), each boss's / structure's own icon, and for Crate and Sinner's
 // Sacrifice (the wiki has no icons for them) a square crop of its picture (CROPS) so it fits an embed thumbnail.
@@ -128,7 +128,7 @@ async function download(dir, files, saved = []) {
 
 // rivals/<hero>_gloat.png and <hero>_critical.png: the portraits an encounter's rival shows when it wins and when it is beaten (his OK, Oct 3).
 // The wiki names them "<Hero> Gloat" / "<Hero> Critical", with the odd exception.
-const RIVAL_FILES = { Celeste: { critical: 'Celeste_Critical_Health.png' } };
+const RIVAL_FILES = { Celeste: { critical: 'Celeste_Critical_Health.png' }, Violet: { gloat: 'Violet_gloat.png', critical: 'Violet_ciritcal.png' } }; // Violet's as the wiki spells them (Oct 20)
 const rivalArt = () => download('rivals', Object.fromEntries(FARM_HEROES.flatMap((name) => [['gloat', 'Gloat'], ['critical', 'Critical']]
   .map(([key, word]) => [`${name.toLowerCase()}_${key}.png`, RIVAL_FILES[name]?.[key] ?? `${name}_${word}.png`]))));
 
