@@ -1,6 +1,6 @@
 const { expireGames } = require('../utils/casino');
 const { ourGuild } = require('../utils/guild');
-const games = ['doorman', 'blackjack', 'sinclair', 'paradox', 'bebop', 'holliday', 'yamato', 'silver', 'rem', 'pocket', 'danny'].map((name) => require(`../utils/${name}`));
+const games = ['doorman', 'blackjack', 'sinclair', 'paradox', 'bebop', 'holliday', 'yamato', 'silver', 'rem', 'pocket', 'paige'].map((name) => require(`../utils/${name}`));
 const bebop = require('../utils/bebop');
 const yamato = require('../utils/yamato');
 const silver = require('../utils/silver');

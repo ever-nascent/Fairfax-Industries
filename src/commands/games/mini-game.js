@@ -9,7 +9,7 @@ const yamato = require('../../utils/yamato');
 const silver = require('../../utils/silver');
 const rem = require('../../utils/rem');
 const pocket = require('../../utils/pocket');
-const danny = require('../../utils/danny');
+const paige = require('../../utils/paige');
 
 // slow: the first picture (shuffle GIF, clock, fuse GIF) takes a moment to draw.
 module.exports = betCommand('mini-game', 'Bet Souls on one of the mini-games', {
@@ -23,5 +23,5 @@ module.exports = betCommand('mini-game', 'Bet Souls on one of the mini-games', {
   'shotgun-roulette': { label: 'Shotgun Roulette', game: silver },
   'remling-race': { label: 'Remling Race', game: rem },
   'deal-or-no-deal': { label: 'Deal or No Deal', game: pocket },
-  'dannys-drop-zone': { label: "Danny's Drop Zone", game: danny },
+  'dont-wake-the-bookwyrm': { label: "Don't Wake the Bookwyrm", game: paige, slow: true },
 });

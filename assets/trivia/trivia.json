@@ -4810,7 +4810,7 @@
    "Lash, that was a thing of beauty.",
    "Getting to watch the Bear Pit champion up close is a privilege.",
    "That was one helluva stomp!",
-   "Beers on me later, Maggie!",
+   "Beer's on me later, Maggie!",
    "I knew I could count on you, Maggie.",
    "I'm gonna kiss that beautiful mole bastard!",
    "Seven is a force of nature...",
@@ -22378,7 +22378,91 @@
    "They never saw that coming.",
    "That guy's pretty intense!",
    "Glad Warden's fighting for us...",
-   "They can't escape Yamato."
+   "They can't escape Yamato.",
+   "Can't believe I beat him...",
+   "Better than killing a cop, I guess.",
+   "Nothing against Ixians, just need to do this ritual.",
+   "Wish you were on my side, Detective!",
+   "Need help with the Detective!",
+   "Who carries a sword in Manhattan?",
+   "I'm an art major. I know how to deal with pretentious assholes.",
+   "Guess you're not as great as you thought you were, Apollo!",
+   "That's gonna make the park awkward.",
+   "Someone put that lady in a home!",
+   "She's not really making a case for respecting my elders.",
+   "I won't let you stop me, Baba.",
+   "That's too bad. Would've liked to meet his mom.",
+   "Kinda wish the other team was all golems. That would be cool.",
+   "Pretty laser, but not very effective.",
+   "You really should work on standing still.",
+   "No wonder you lost to Lash.",
+   "See you at the rally later.",
+   "It'll be fine. He'll find something else to be pissed at later.",
+   "I'm not afraid of you, Calico!",
+   "I just made an enemy for life, didn't I...",
+   "Someone overcharges their clients, don't they?",
+   "I'm gonna be picking off glitter for a week, aren't I?",
+   "Her hair game is so strong.",
+   "I took out the jetpack asshole.",
+   "Shoulda flown away, Danny.",
+   "What kind of person dedicates themselves to a corporation?",
+   "I could never afford brunch at the Baroness anyway.",
+   "That guy gave me the creeps.",
+   "He seemed a lot nicer when I walked by the hotel.",
+   "Get away from me, monster!",
+   "Maybe my parents were right to be paranoid about New York.",
+   "I'm lucky I survived that.",
+   "I'm never whistling again.",
+   "Why are we fighting, Professor?",
+   "Oh God, if he knows anyone at Jamie West, I'm getting expelled.",
+   "I'm sticking with art school.",
+   "You body's fine, Professor. Stay down!",
+   "Definitely not interested in the hard sciences.",
+   "Look out for the black hole!",
+   "You are such a cliché, Graves.",
+   "I go to school with hundreds of people just like you.",
+   "Wow, Graves. You're so edgy.",
+   "One day, you're gonna realize how easy you have it at Blackmore.",
+   "Grey Talon didn't really give me a choice.",
+   "Thank God I'm used to disappointing father figures.",
+   "You're holding your team back, old man!",
+   "He had one foot in the grave already.",
+   "I'm ending up on a watch list, aren't I?",
+   "Not liking my green card chances...",
+   "I kicked the wrong hornet's nest...",
+   "The OSIC's gonna find me, aren't they?",
+   "You couldn't hide from me, Haze.",
+   "She thought she was being sneaky!",
+   "Oh God. I'm going to have a record.",
+   "Don't cops have bigger problems to deal with than me?",
+   "That sheriff went off the deep end...",
+   "If my art fails, I guess a life of crime's an option?",
+   "I knew you were a coward!",
+   "Glad I'm not a regular...",
+   "I think that was the guy that carded Mina.",
+   "Glad my ink's not flammable.",
+   "So much for asking about using Jezebel's as a venue...",
+   "That's not happening, Infernus.",
+   "Stopped him just in time!",
+   "What the hell did I do, Ivy?! I look like a mobster?!",
+   "I'm gonna feel pretty guilty about that later...",
+   "Hope I didn't just make an enemy of the future mayor.",
+   "Family isn't everything, Ivy.",
+   "Oh, come on, Ivy, play fair!",
+   "It's probably not murder if they're a wight.",
+   "Kelvin's down, but he'll be back.",
+   "I want an etching of that rock so bad!",
+   "I'm never going ice skating again...",
+   "You're not escaping me, Kelvin!",
+   "You were never getting away, Kelvin.",
+   "Oh shit, she was a patron of the arts...",
+   "Sorry! Your husband was amazing!",
+   "Looks like I'm not getting into any galleries she donated to.",
+   "I took out Lady Geist!.. Oh, God, I took out Lady Geist!",
+   "She's a little crazy. Maybe that... bought some respect with her?",
+   "Don't fall for Lady Geist's tricks.",
+   "Don't get close to Lady Geist!",
+   "Lady Geist is looking to swap."
   ],
   "abilities": [
    {
@@ -22411,7 +22495,141 @@
     "Well... that was weirdly cathartic.",
     "Always had a knack for still-life."
    ],
-   "heroes": {}
+   "heroes": {
+    "Abrams": [
+     "Can't believe I beat him...",
+     "Better than killing a cop, I guess.",
+     "Nothing against Ixians, just need to do this ritual.",
+     "Wish you were on my side, Detective!",
+     "That dude lifts."
+    ],
+    "Apollo": [
+     "Took down the fencer.",
+     "Who carries a sword in Manhattan?",
+     "Blackmore asshole...",
+     "I'm an art major. I know how to deal with pretentious assholes.",
+     "Guess you're not as great as you thought you were, Apollo!"
+    ],
+    "Baba": [
+     "Took out the old woman.",
+     "That's gonna make the park awkward.",
+     "Someone put that lady in a home!",
+     "She's not really making a case for respecting my elders.",
+     "I won't let you stop me, Baba."
+    ],
+    "Bebop": [
+     "That's too bad. Would've liked to meet his mom.",
+     "Don't hate me, Bebop!",
+     "I can hit hard too!",
+     "Kinda wish the other team was all golems. That would be cool.",
+     "Thought he'd be tougher!"
+    ],
+    "Billy": [
+     "Sorry about that, Billy.",
+     "See you at the rally later.",
+     "It'll be fine. He'll find something else to be pissed at later.",
+     "I handled Billy.",
+     "God, Billy, relax!"
+    ],
+    "Calico": [
+     "That poor cat...",
+     "I'm not afraid of you, Calico!",
+     "I just made an enemy for life, didn't I...",
+     "Someone overcharges their clients, don't they?",
+     "It was her or me!"
+    ],
+    "Celeste": [
+     "Big fan, Celeste!",
+     "I took down the unicorn.",
+     "I'm gonna be picking off glitter for a week, aren't I?",
+     "Her hair game is so strong.",
+     "God, she's so cool..."
+    ],
+    "Deadman Danny": [
+     "I think I hate that guy.",
+     "I took out the jetpack asshole.",
+     "Shoulda flown away, Danny.",
+     "What kind of person dedicates themselves to a corporation?",
+     "I hate salesmen..."
+    ],
+    "The Doorman": [
+     "I could never afford brunch at the Baroness anyway.",
+     "What a dick!",
+     "That guy gave me the creeps.",
+     "I stopped the Doorman.",
+     "He seemed a lot nicer when I walked by the hotel."
+    ],
+    "Drifter": [
+     "Get away from me, monster!",
+     "Maybe my parents were right to be paranoid about New York.",
+     "I took out the Drifter!",
+     "I'm lucky I survived that.",
+     "I'm never whistling again."
+    ],
+    "Dynamo": [
+     "Why are we fighting, Professor?",
+     "Oh God, if he knows anyone at Jamie West, I'm getting expelled.",
+     "I'm sticking with art school.",
+     "You body's fine, Professor. Stay down!",
+     "Definitely not interested in the hard sciences."
+    ],
+    "Graves": [
+     "You are such a cliché, Graves.",
+     "I go to school with hundreds of people just like you.",
+     "Wow, Graves. You're so edgy.",
+     "Grow up, Graves.",
+     "One day, you're gonna realize how easy you have it at Blackmore."
+    ],
+    "Grey Talon": [
+     "Grey Talon didn't really give me a choice.",
+     "Thank God I'm used to disappointing father figures.",
+     "Stop standing in my way!",
+     "You're holding your team back, old man!",
+     "He had one foot in the grave already."
+    ],
+    "Haze": [
+     "I'm ending up on a watch list, aren't I?",
+     "Not liking my green card chances...",
+     "I kicked the wrong hornet's nest...",
+     "I stopped the sandman!",
+     "The OSIC's gonna find me, aren't they?"
+    ],
+    "Holliday": [
+     "Sorry Sheriff!",
+     "Oh God. I'm going to have a record.",
+     "Don't cops have bigger problems to deal with than me?",
+     "That sheriff went off the deep end...",
+     "If my art fails, I guess a life of crime's an option?"
+    ],
+    "Infernus": [
+     "Glad I'm not a regular...",
+     "I think that was the guy that carded Mina.",
+     "Glad my ink's not flammable.",
+     "Took out the bartender.",
+     "So much for asking about using Jezebel's as a venue..."
+    ],
+    "Ivy": [
+     "What the hell did I do, Ivy?! I look like a mobster?!",
+     "I'm gonna feel pretty guilty about that later...",
+     "Stopped Ivy!",
+     "Hope I didn't just make an enemy of the future mayor.",
+     "Family isn't everything, Ivy."
+    ],
+    "Kelvin": [
+     "It's probably not murder if they're a wight.",
+     "Kelvin's down, but he'll be back.",
+     "I want an etching of that rock so bad!",
+     "Took down their support!",
+     "I'm never going ice skating again..."
+    ],
+    "Lady Geist": [
+     "Oh shit, she was a patron of the arts...",
+     "Sorry! Your husband was amazing!",
+     "Looks like I'm not getting into any galleries she donated to.",
+     "I took out Lady Geist!.. Oh, God, I took out Lady Geist!",
+     "She's a little crazy. Maybe that... bought some respect with her?"
+    ]
+   }
   }
  },
  {

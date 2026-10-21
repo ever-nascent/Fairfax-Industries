@@ -11,7 +11,7 @@ const holliday = require('../utils/holliday');
 const yamato = require('../utils/yamato');
 const silver = require('../utils/silver');
 const rem = require('../utils/rem');
-const danny = require('../utils/danny');
+const paige = require('../utils/paige');
 
 module.exports = [
   // Room 1-3 (pick), then Stay / Switch
@@ -36,6 +36,6 @@ module.exports = [
   ...gameButtons('shotgun-roulette', silver, { play: silver.move }),
   // Remling 1-5
   ...gameButtons('remling-race', rem, { play: (id, userId, [lane]) => rem.pick(id, userId, Number(lane)) }),
-  // Accept / Decline (a challenge), then Column 1-7
-  ...gameButtons('dannys-drop-zone', danny, { play: danny.play }),
+  // Play Again (the letter dropdowns, Solve It and its pop-up are in components/paige.js)
+  ...gameButtons('dont-wake-the-bookwyrm', paige, { play: () => null, slow: true }),
 ];
