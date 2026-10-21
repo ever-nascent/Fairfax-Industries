@@ -568,7 +568,8 @@ function fightView(run, frame) {
 
 // The winner's voice line under a fight's result (his calls, Oct 16: every fight, text in the embed, said by the winner): one of the hero's lines
 // from deadlock.wiki that /trivia keeps (assets/trivia/trivia.json). Oct 16 (his call): the lines go with who was fought. Beating a hero
-// (`beat`) uses the winner's kill lines about that hero, else its generic kill lines; a camp or a boss, lines that name no hero.
+// (`beat`) uses the winner's kill lines about that hero, else its generic kill lines; a camp or a boss, lines that name no hero and
+// aren't a kill line about one (Oct 20: Wraith's 'Tch. "Savior of Spanish Harlem."' is about Ivy without naming her).
 // Nothing when the hero has no such lines yet.
 function voiceLine(hero, beat, rng) {
   const all = triviaHeroes();
@@ -577,7 +578,8 @@ function voiceLine(hero, beat, rng) {
   if (beat) lines = me?.kills?.heroes?.[beat]?.length ? me.kills.heroes[beat] : me?.kills?.any;
   else {
     const names = new RegExp(`\\b(${all.flatMap((h) => h.name.split(/[\s&]+/)).filter((w) => w && w !== 'The').join('|')}|Doorman)\\b`);
-    lines = me?.lines.filter((l) => !names.test(l));
+    const aboutHero = new Set(Object.values(me?.kills?.heroes ?? {}).flat());
+    lines = me?.lines.filter((l) => !names.test(l) && !aboutHero.has(l));
   }
   return lines?.length ? `\n\n**${hero}:** *"${pickRandom(lines, rng)}"*` : '';
 }
