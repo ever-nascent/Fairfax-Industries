@@ -4,10 +4,10 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { getStore } = require('../storage');
-const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
+const { fmt, soulsIcon, soulsText } = require('./format');
 const { pickRandom, shuffle } = require('./random');
 const { ASSETS } = require('./art');
-const { staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { GREEN, RED, staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'pocket'); // portraits from the deadlock-api.com assets API ("synth"), icon from deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xf46f0b, name: "Pocket's Suitcases", icon: path.join(ART, 'satchel.png'), art: ART, prefix: 'pocket' }; // orange; Enchanter's Satchel
@@ -206,24 +206,25 @@ function board(id, game, frozen) {
   return rows;
 }
 
+// The template every game follows (his pick Oct 22): one plain line and the state in fields while playing (Bet last), one
+// bold line, the money in fields and green / red once it's over. Your case is the blue one on the board.
 function view(id, game) {
   const board20 = (frozen) => board(id, game, frozen);
-  const mine = `Your Case: **#${game.mine + 1}**`;
-  const big = () => `> Biggest Prize Left: **${game.opened.some((i) => game.values[i] === Math.max(...game.values)) ? '???' : times(biggestLeft(game))}**`; // once the top prize is gone, it isn't revealed
+  const big = () => ['Top Prize Left', game.opened.some((i) => game.values[i] === Math.max(...game.values)) ? '???' : times(biggestLeft(game))]; // once the top prize is gone, it isn't revealed
+  const held = game.last === null ? '' : `That Case Held ${times(game.values[game.last])}. `;
   if (game.phase === 'pick') {
     return gameMessage(HOST, {
-      lines: [`<@${game.userId}> Bet ${boldSouls(game.bet)}`, 'Pocket Has **20 Suitcases**. Pick One To Keep.'],
+      lines: ['Pocket Has 20 Suitcases. Pick One To Keep.'],
       rows: board20(false),
       fields: [['Bet', game.bet]],
       footer: `"${say(PICK_LINES, game)}"`,
     });
   }
   if (game.phase === 'open') {
-    const last = game.last === null ? [] : [`> That Case Held **${times(game.values[game.last])}**.`];
     return gameMessage(HOST, {
-      lines: [mine, big(), ...last, `Open **${game.toOpen}** More Case${game.toOpen === 1 ? '' : 's'}.`],
+      lines: [`${held}Open ${game.toOpen} More Case${game.toOpen === 1 ? '' : 's'}.`],
       rows: board20(false),
-      fields: [['Bet', game.bet]],
+      fields: [big(), ['Bet', game.bet]],
       footer: `"${say(openLines(game), game)}"`,
     });
   }
@@ -234,9 +235,9 @@ function view(id, game) {
       [`${BUTTON_ID}:${id}:nodeal`, 'No Deal', ButtonStyle.Danger],
     ]);
     return gameMessage(HOST, {
-      lines: [mine, big(), `> That Case Held **${times(game.values[game.last])}**.`, `Pocket Offers **${soulsText(game.offer)}**. **Deal Or No Deal?**`],
+      lines: [`${held}Deal Or No Deal?`],
       rows,
-      fields: [['Bet', game.bet], ['Offer', game.offer]],
+      fields: [['Offer', game.offer], big(), ['Bet', game.bet]],
       footer: `"${say(game.offer >= game.bet ? GOOD_OFFER_LINES : game.offer >= game.bet * 0.6 ? OFFER_LINES : LOW_OFFER_LINES, game)}"`,
     });
   }
@@ -247,9 +248,9 @@ function view(id, game) {
       [`${BUTTON_ID}:${id}:swap`, 'Swap Cases', ButtonStyle.Secondary],
     ]);
     return gameMessage(HOST, {
-      lines: [mine, big(), 'Two Cases Left: Yours And The Last One On The Board.', '**Keep Yours, Or Swap?**'],
+      lines: ['Two Cases Left: Yours And The Last One On The Board. Keep Yours, Or Swap?'],
       rows,
-      fields: [['Bet', game.bet]],
+      fields: [big(), ['Bet', game.bet]],
       footer: `"${say(FINAL_LINES, game)}"`,
     });
   }
@@ -257,18 +258,18 @@ function view(id, game) {
   rows.push([playAgainButton(AGAIN_ID, game.bet, game.userId)]);
   const won = game.prize >= game.bet;
   const owned = amount(game.bet, game.values[game.mine]);
-  const lines = game.how === 'deal'
-    ? ['You Took The Deal.', `Your Case Held **${soulsText(owned)}**.`]
+  const line = game.how === 'deal'
+    ? `You Took The Deal. Your Case Held ${soulsText(owned)}.`
     : game.how === 'swap'
-      ? ['You Swapped.', `The Other Case Held **${soulsText(game.prize)}**.`, `Your Old Case Held **${soulsText(owned)}**.`]
-      : ['You Kept Your Case.', `It Held **${soulsText(game.prize)}**.`];
-  lines.push(game.prize > game.bet ? `**You Win ${soulsText(game.prize)}.**` : `**You Get ${soulsText(game.prize)}.**`);
+      ? `You Swapped. The Other Case Held ${soulsText(game.prize)}, Your Old One Held ${soulsText(owned)}.`
+      : `You Kept Your Case. It Held ${soulsText(game.prize)}.`;
   return gameMessage(HOST, {
-    lines,
+    lines: [`**${line}**`],
     rows,
     fields: resultFields(game.bet, game.prize, game.balance),
     footer: `"${say(resultLines(game, won), game)}"`,
     mood: won ? 'injured' : 'gloat', // he gloats when you lose, he's hurt when you win
+    color: won ? GREEN : RED,
   });
 }
 

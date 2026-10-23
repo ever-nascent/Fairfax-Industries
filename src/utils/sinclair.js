@@ -6,10 +6,9 @@ const { ButtonStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { encodeGif } = require('./gif');
 const { getStore } = require('../storage');
-const { soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, halftone, grain, grainAndVignette } = require('./art');
-const { staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { GREEN, RED, staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'sinclair'); // deadlock.wiki, see assets/CREDITS.txt
 // the pale sage of his select art; his Rabbit Hex icon
@@ -255,7 +254,8 @@ async function startGame(user, name, bet) {
   const { error, id } = await openGame(games(), user.id, bet, () => ({ userId: user.id, name, bet, rabbit: crypto.randomInt(3), done: false }));
   if (error) return { error };
   return gameMessage(HOST, {
-    lines: [`${name} bet ${boldSouls(bet)}.`, 'Sinclair shuffles the hats...', '**Where is the rabbit?**'],
+    lines: ['Sinclair shuffles the hats. Where is the rabbit?'],
+    fields: [['Win Pays', winnings(bet)], ['Bet', bet]],
     buttons: HX.map((_, i) => [`${BUTTON_ID}:${id}:${i}`, `Hat ${i + 1}`, ButtonStyle.Secondary]),
     footer: pickRandom(START_LINES), // already "Henry: ..." / "Savannah: ..."
     image: { name: `shuffle_${id}.gif`, data: await renderShuffle() },
@@ -278,11 +278,11 @@ async function pickHat(id, userId, pick) {
   const user = await pay(userId, won ? winnings(game.bet) : 0);
   await games().delete(id);
   return gameMessage(HOST, {
-    lines: [
-      won ? `Hat ${pick + 1}... and there's the rabbit!` : `Hat ${pick + 1}... empty. The rabbit was under hat ${game.rabbit + 1}.`,
-      won ? `**You win ${soulsText(winnings(game.bet))}.**` : `**You lose ${soulsText(game.bet)}.**`,
-    ],
+    // the template every game follows (his pick Oct 22): one bold line, the money in fields, green or red; the line names the
+    // hats, so no field repeats them (his call)
+    lines: [won ? `**Hat ${pick + 1}, and there's the rabbit!**` : `**Hat ${pick + 1} is empty. The rabbit was under Hat ${game.rabbit + 1}.**`],
     fields: resultFields(game.bet, won ? winnings(game.bet) : 0, user.souls),
+    color: won ? GREEN : RED,
     buttons: [playAgainButton(AGAIN_ID, game.bet, game.userId)],
     footer: pickRandom(won ? WIN_LINES : LOSE_LINES), // already "Henry: ..." / "Savannah: ..."
     mood: won ? 'injured' : 'gloat', // he's hurt when you win, he gloats when you lose

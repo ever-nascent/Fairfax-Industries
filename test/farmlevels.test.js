@@ -258,14 +258,15 @@ test('camp Haunts roll a random trait that moves their resists, and bosses resis
   assert.ok(Math.abs(boss.statuses.find((x) => x.id === 'sleep').until - 1) < 1e-9, 'a 4 s sleep lasts 1 s on a boss that shrugs off 75%');
 });
 
-test('legendaries: 0.01% a kill in a won fight, one per hero ever, it takes a slot or waits for one, and it can never be sold', async () => {
+test('legendaries: 1% a kill in a won fight, one per hero ever, it takes a slot or waits for one, and it can never be sold', async () => {
   const { rollLegendary, LEGENDARY_NAMES, POOL, MAX_ITEMS } = require('../src/utils/farm/levels');
   const { dropLegendary, updateFarmUser, switchHero, unlockHero } = require('../src/utils/farm/play');
   const { itemByName } = require('../src/utils/farm/stats');
   assert.strictEqual(LEGENDARY_NAMES.length, 17);
   assert.ok(LEGENDARY_NAMES.every((n) => itemByName(n)?.Tier === 5));
   assert.strictEqual(rollLegendary(0, () => 0), null, 'no kills, no roll');
-  assert.strictEqual(rollLegendary(1000, () => 0.0001), null, 'just above the chance');
+  assert.strictEqual(rollLegendary(1000, () => 0.01), null, 'just above the chance');
+  assert.strictEqual(rollLegendary(1, () => 0.0099), LEGENDARY_NAMES[0], 'just below the chance');
   assert.strictEqual(rollLegendary(1, () => 0), LEGENDARY_NAMES[0]);
   // a won camp counts every enemy in it; a lost fight counts none
   const won = simulate('Haze', 'small-camp', { rng: () => 0.5, boons: 30, items: POOL.weapon.slice(0, 6) });

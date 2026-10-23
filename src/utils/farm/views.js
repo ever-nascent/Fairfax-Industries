@@ -7,7 +7,7 @@ const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBu
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { ASSETS } = require('../art');
 const { HEROES: HERO_DATA, ABILITIES, itemByName, innateStats, drawbackText, effectValue } = require('./stats');
-const { IMBUES } = require('./items');
+const { IMBUES, NO_ULT_IMBUE } = require('./items');
 const { roster, heroInfo, buildHero } = require('./hero');
 const { TARGETS, SIEGE, WAVES, wavePay, wavesPay, LANES, LANED, WALKER_STEP, payout, CLEAR_CAP, clearsOf, clearPower, clearSouls } = require('./targets');
 const { COOLDOWN: ROAM_COOLDOWN } = require('./roam');
@@ -15,6 +15,7 @@ const { roamCard, BRIDGE_COLOR, GOLD } = require('./roamCard');
 const { itemFile } = require('./itemArt');
 const { heroCard } = require('./heroCard');
 const { shopTab, listPage, brokerPage, BROKER, CORRUPTED, TIER_PRICE } = require('./shopCard');
+const { bonusLines, corruptionBlock } = require('./corruption');
 const { progress, pointsSpent, campMultiplier, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, waitingLegendary, POOL, itemsOf, sellPrice,
   brokerOpen, brokerNext, brokerCloses, corruptible, corruptPrice } = require('./levels');
 const { homeCard } = require('./homeCard');
@@ -24,7 +25,7 @@ const { MAX_REJUVS, cooldownSeconds, cooldownLeft, hauntFile, campFamilies, CAMP
 const { PAYOUT_SCALE } = require('./targets');
 const { SPECIALS } = require('./haunts');
 const { HEROES, heroEmoji, heroArt } = require('../heroes');
-const { fmt, soulsIcon } = require('../format');
+const { fmt, soulsIcon, rejuvIcon } = require('../format');
 const { pickRandom } = require('../random');
 const { streakBar, heroes: triviaHeroes } = require('../trivia'); // the same bar as /trivia and /urn; the heroes' voice lines
 
@@ -67,13 +68,13 @@ const TEXT = {
   'large-camp': 'Three large Haunts guard this camp.',
   guardian: 'A lane Guardian, the first line of defense.',
   walker: 'A giant Walker, the second line of defense.',
-  'mid-boss': 'A huge boss with a shield that keeps coming back.\nDefeating it drops a Rejuv to keep.',
+  'mid-boss': () => `A huge boss with a shield that keeps coming back.\nDefeating it drops a ${rejuvIcon()}Rejuv to keep.`,
 };
 const CAMP_ENEMIES = { 'small-camp': '3 small Haunts', 'medium-camp': '2 medium + 3 small Haunts', 'large-camp': '3 large Haunts' };
 
 // ---- small helpers ----
 const embed = (color = COLOR) => new EmbedBuilder().setColor(color).setAuthor({ name: 'Hero Farming', iconURL: 'attachment://souls.png' });
-const soulsFile = () => new AttachmentBuilder(path.join(ASSETS, 'card', 'souls.png'), { name: 'souls.png' });
+const soulsFile = () => new AttachmentBuilder(path.join(ASSETS, 'card', 'souls_icon.png'), { name: 'souls.png' }); // souls.png centred on a square, so Discord's square author icon doesn't stretch it
 const picture = (file) => new AttachmentBuilder(file, { name: 'thumb.png' });
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const span = (secs) => (secs >= 3600 ? plural(Math.round(secs / 3600), 'hour') : plural(Math.round(secs / 60), 'minute'));
@@ -148,7 +149,7 @@ async function pickView(member, selected = null, record = null) {
   const components = menus.map((m) => row(m));
   if (switching && !selected) {
     e.setTitle('Switch Hero').setDescription(
-      'Each hero keeps its own souls, level, abilities and items,\nand its own buffs, cooldowns and Rejuvs.\n\n' +
+      `Each hero keeps its own souls, level, abilities and items,\nand its own buffs, cooldowns and ${rejuvIcon()}Rejuvs.\n\n` +
       names.map((n) => `${heroText(guild, n)}**${n}**  -  ${hasHero(record, n) ? `Level ${levelOf(n)}${n === record.hero ? '  -  Current Hero' : ''}` : 'Locked'}`).join('\n'),
     ).setFooter({ text: `You can switch any time.  ${tokenText(tokens)}` });
     components.push(row(back));
@@ -201,7 +202,7 @@ const payAmount = (key, record) => {
 const grownField = (key, record) => ({ name: 'Grown Stronger', value: `${Math.round((clearPower(record.clears?.[key], key) - 1) * 100)}%  (${clearsOf(record.clears?.[key])} / ${CLEAR_CAP} clears)` });
 const payText = (key, record) => {
   if (key === 'roam') return 'Crates, buffs and more';
-  return souls(payAmount(key, record)) + (TARGETS[key]?.rejuv ? ' + 1 Rejuv' : '');
+  return souls(payAmount(key, record)) + (TARGETS[key]?.rejuv ? ` + ${rejuvIcon()}1 Rejuv` : '');
 };
 
 // The stats the hero fights with right now: base, its boons (level), items, permanent buffs and what its own abilities add
@@ -240,7 +241,7 @@ async function homeView(member, record, now = Date.now()) {
       { name: 'Ammo', value: `${st.clip}`, inline: true },
       { name: 'Spirit Power', value: `${+st.spirit.toFixed(1)}`, inline: true },
       { name: 'Cooldown Reduction', value: `${+(st.cdr * 100).toFixed(1)}%`, inline: true },
-      { name: 'Rejuvs', value: `${record.rejuvs} / ${MAX_REJUVS}`, inline: true },
+      { name: 'Rejuvs', value: `${rejuvIcon()}${record.rejuvs} / ${MAX_REJUVS}`, inline: true },
     );
   const heroButton = new ButtonBuilder().setCustomId(`${HEROCARD_ID}:${member.id}`).setLabel('Hero').setStyle(ButtonStyle.Secondary);
   const buttons = [heroButton];
@@ -283,7 +284,7 @@ async function heroView(member, record, mode = 'main') {
   const pct = (x) => `${+(x * 100).toFixed(1)}%`;
   const stats = {
     Health: fmt(Math.round(st.maxHealth)), 'Bullet Damage': `${+(st.bulletDamage * st.weaponDamageMult).toFixed(1)}`, 'Fire Rate': `${+st.fireRate.toFixed(2)}/s`,
-    Ammo: `${st.clip}`, 'Spirit Power': `${+st.spirit.toFixed(1)}`, Lifesteal: pct(st.lifesteal),
+    Ammo: `${st.clip}`, 'Spirit Power': `${+st.spirit.toFixed(1)}`, Lifesteal: pct(st.lifesteal), Precision: `${+st.precision.toFixed(1)}`,
     // the game's names for them on the HUD (his list, Oct 3)
     'Ability Cooldown': st.cdr ? `-${pct(st.cdr)}` : '0%', 'Ability Duration': `+${pct(st.durationMult - 1)}`,
     'Ability Range': `+${pct(st.rangeMult - 1)}`, 'Movement Speed': `${+st.moveSpeed.toFixed(1)} m/s`,
@@ -296,7 +297,6 @@ async function heroView(member, record, mode = 'main') {
   const itemFields = []; // what the hero's items are doing, one field each (his call, Oct 3)
   const waiting = waitingLegendary(record);
   if (waiting) itemFields.push({ name: 'Legendary Waiting', value: `${waiting}\nSell an item to make room.` });
-  if (record.corrupted) itemFields.push({ name: 'Corrupted', value: `${record.corrupted.name}\n${drawbackText(record.corrupted)}` });
   const imbued = held.filter((n) => IMBUES.includes(n));
   const abilityName = (slot) => slots.find((a) => a.slot === slot)?.name ?? `Ability ${slot}`;
   if (imbued.length) itemFields.push({ name: 'Imbued', value: imbued.map((n) => `${n}\ninto ${abilityName(record.imbues?.[n] ?? 1)}`).join('\n') });
@@ -307,7 +307,7 @@ async function heroView(member, record, mode = 'main') {
   if (where === 'imbue' && held.includes(kind)) { // which ability the item goes into (his call, Oct 3: the member picks; free to change)
     notes.push(titleCase(`Choose the ability to imbue ${kind} into.`));
     components.push(row(new StringSelectMenuBuilder().setCustomId(`${IMBUESET_ID}:${member.id}:${kind}`).setPlaceholder(titleCase(`Imbue ${kind} into`))
-      .addOptions(slots.map((a) => ({ label: a.name, value: String(a.slot), default: (record.imbues?.[kind] ?? 1) === a.slot, description: a.slot === 4 ? 'Ultimate' : `Ability ${a.slot}` })))));
+      .addOptions(slots.filter((a) => !NO_ULT_IMBUE.has(kind) || a.slot !== 4).map((a) => ({ label: a.name, value: String(a.slot), default: (record.imbues?.[kind] ?? 1) === a.slot, description: a.slot === 4 ? 'Ultimate' : `Ability ${a.slot}` }))))); // Echo Shard, Omnicharge Signet: non-ultimates only (the wiki)
     components.push(row(button(`${SHOPMODE_ID}:${member.id}:off`, 'Done')));
   } else {
     const upgradable = slots.filter((a) => !a.locked && a.tier < MAX_TIER);
@@ -325,6 +325,8 @@ async function heroView(member, record, mode = 'main') {
   }
   if (notes.length) e.setDescription(notes.join('\n'));
   if (itemFields.length) e.addFields(itemFields.map((f) => ({ ...f, inline: true })));
+  // the corrupted item on its own full-width field: its bonuses (before -> after), then its drawback (his ask, Oct 22)
+  if (record.corrupted) e.addFields({ name: `Corrupted: ${record.corrupted.name}`, value: corruptionBlock(record.corrupted) });
   return { embeds: [e], components, files: [soulsFile(), await heroPicture(hero), new AttachmentBuilder(card, { name: 'hero.png' })] };
 }
 
@@ -386,9 +388,19 @@ async function shopView(member, record, tab = 'weapon', now = Date.now(), tier =
   } else if (tab === 'broker') { // corrupt one owned tier 3 or 4 item (one per hero), only while he is open
     const open = brokerOpen(now) || !cooldownsOnNow();
     const choices = held.filter((n) => corruptible(itemByName(n)) && n !== record.legendary);
-    const lines = [titleCase(brokerLine(now)), titleCase("Corrupting makes an item stronger, with one random drawback. It costs the item's price again, and a hero can have one.")];
+    const lines = [titleCase(brokerLine(now)), titleCase("Corrupting makes an item stronger, with one random drawback. It costs the item's price again, and a hero can have one."),
+      titleCase('Each item below lists what corrupting it changes. The drawback is rolled when you corrupt it.')];
     if (record.corrupted) lines.push(titleCase(`${record.hero} already has a corrupted item. Sell it to corrupt another.`));
     e.setDescription(lines.join('\n'));
+    // what corrupting each item changes (his ask, Oct 22), the corrupted one with its drawback; Discord allows 6,000 characters in all
+    let room = 5000 - lines.join('\n').length;
+    for (const name of choices.slice(0, 20)) {
+      const value = record.corrupted?.name === name ? corruptionBlock(record.corrupted) : (bonusLines(name).join('\n') || 'None listed').slice(0, 1024);
+      const field = { name: record.corrupted?.name === name ? `${name} (Corrupted)` : `${name}  -  ${fmt(corruptPrice(itemByName(name)))} Souls`, value };
+      room -= field.name.length + field.value.length;
+      if (room < 0) break;
+      e.addFields(field);
+    }
     const can = open && !record.corrupted; // lit and corruptible; otherwise greyed
     pic = await brokerPage({
       open, timer: timeLeft(brokerOpen(now) ? brokerCloses(now) - now : brokerNext(now) - now), empty: titleCase('Corrupting needs a tier 3 or 4 item.'),
@@ -463,7 +475,7 @@ async function targetView(member, key, record, now = Date.now(), variant = null)
   if (key === 'siege') {
     e.setDescription(`${hero} fights through the enemy base in one go. No stopping,\nand health carries from one stage to the next.`)
       .addFields(
-        { name: 'Pays', value: payText('siege', record), inline: true }, { name: 'Cooldown', value: 'Once a day', inline: true }, { name: 'Rejuvs', value: `${record.rejuvs} / ${MAX_REJUVS}`, inline: true }, { ...grownField('siege', record), inline: true },
+        { name: 'Pays', value: payText('siege', record), inline: true }, { name: 'Cooldown', value: 'Once a day', inline: true }, { name: 'Rejuvs', value: `${rejuvIcon()}${record.rejuvs} / ${MAX_REJUVS}`, inline: true }, { ...grownField('siege', record), inline: true },
       ).setImage('attachment://siege.png');
     footer = `Pays only if every stage is cleared. If ${hero} dies at any stage, it all restarts, nothing is paid, and the cooldown starts.`;
     pic = SIEGE.stages[3].icon;
@@ -499,9 +511,9 @@ async function targetView(member, key, record, now = Date.now(), variant = null)
     // the family's special attack (haunts.js): small Haunts have none, so a Tier 1 camp never shows one
     if (SPECIALS[family] && CAMP_SIZE[key] !== 'small') fields.push({ name: key === 'medium-camp' ? 'Special Attack (Medium Haunts)' : 'Special Attack', value: SPECIALS[family].text });
     fields.push({ name: 'Pays', value: payText(key, record) }, { name: 'Cooldown', value: every(t.cooldown) });
-    if (t.rejuv) fields.push({ name: 'Rejuvs Held', value: `${record.rejuvs}` });
+    if (t.rejuv) fields.push({ name: 'Rejuvs Held', value: `${rejuvIcon()}${record.rejuvs}` });
     fields.push(grownField(key, record));
-    e.setDescription(TEXT[key]).addFields(fields.map((f) => ({ ...f, inline: true })));
+    e.setDescription(typeof TEXT[key] === 'function' ? TEXT[key]() : TEXT[key]).addFields(fields.map((f) => ({ ...f, inline: true })));
     footer = t.rejuv ? `No Rejuvs work in this fight. If ${hero} dies, nothing is paid and the cooldown still starts.` : `If ${hero} dies, nothing is paid and the cooldown still starts.`;
     pic = t.icon;
   }
@@ -509,7 +521,7 @@ async function targetView(member, key, record, now = Date.now(), variant = null)
     : by === 'guardian' ? `Locked: ${LANES[lane].name}'s Guardian must fall first.` : by === 'walkers' ? 'Locked: all three Walkers must be down first.' : '';
   const text = why ? `${why} ${footer}` : footer;
   // every line of text on a target's screen is in Title Case (not the souls emoji's own text)
-  const cased = (line) => (line.includes('<') ? line : titleCase(line));
+  const cased = (line) => line.split(/(<[^>]*>)/).map((part, i) => (i % 2 ? part : titleCase(part))).join('');
   e.setDescription(cased(e.data.description)).setFields(e.data.fields.map((f) => ({ ...f, value: cased(f.value) }))).setFooter({ text: titleCase(text) });
   const send = new ButtonBuilder().setCustomId(`${SEND_ID}:${member.id}:${key}${family || lane ? `:${family || lane}` : ''}`).setLabel('Send').setStyle(ButtonStyle.Success).setDisabled(left > 0 || !!by);
   const back = new ButtonBuilder().setCustomId(`${BACK_ID}:${member.id}`).setLabel('Back').setStyle(ButtonStyle.Secondary);
@@ -557,7 +569,7 @@ function fightView(run, frame) {
   }
   fields.push({
     name: hero,
-    value: `${barLine(frame.hero.hp, frame.hero.max)}${frame.hero.respawning ? '  -  Respawning' : ''}${run.siege ? `\nRejuvs Left: ${frame.rejuvs}` : ''}`,
+    value: `${barLine(frame.hero.hp, frame.hero.max)}${frame.hero.respawning ? '  -  Respawning' : ''}${run.siege ? `\nRejuvs Left: ${rejuvIcon()}${frame.rejuvs}` : ''}`,
   });
   fields.push(...enemyFields(frame));
   fields.push({ name: 'Abilities', value: frame.abilities.map((a) => `${a.name}  -  ${a.status}`).join('\n') });
@@ -595,19 +607,19 @@ function resultView(run) {
     e.setTitle(`${label}: ${plural(run.cleared, 'Wave')} Cleared`).setDescription(run.timedOut ? `${hero} ran out of time on ${run.stageNames[run.cleared]}.` : `${hero} fell on ${run.stageNames[Math.min(run.cleared, run.stageNames.length - 1)]}.`);
   } else if (run.won) {
     e.setTitle(`${label} Cleared`).setDescription(run.siege ? `${hero} took down the Base Guardians, both Shrines and the Patron.`
-      : run.family ? `${hero} took down all ${last.enemies.length} ${group}.` : `${hero} took down the ${label}.`);
+      : run.family ? `${hero} took down all ${last.enemies.length} ${group}.` : run.key === 'mid-boss' ? null : `${hero} took down the ${label}.`);
   } else if (run.siege) {
     e.setTitle('Base Siege Failed').setDescription(run.timedOut ? `${hero} ran out of time at the ${run.stageNames[run.cleared]}. The siege starts over.` : `${hero} fell to the ${run.stageNames[run.cleared]}. The siege starts over.`);
   } else {
     e.setTitle(`${hero} Was Defeated`).setDescription(run.timedOut ? `${hero} ran out of time and the ${group} is back to full health.` : `The ${group} won and ${run.family ? 'the camp' : 'the target'} is back to full health.`);
   }
-  if (run.won) e.setDescription(e.data.description + voiceLine(hero)); // a camp or a boss has no lines: a lost fight has none
+  if (run.won) e.setDescription(((e.data.description ?? '') + voiceLine(hero)).trim() || null); // a camp or a boss has no lines: a lost fight has none. The Mid-Boss has no line of its own, so trim the gap (none at all if no voice line)
   e.addFields(
     { name: 'Souls Earned', value: run.won ? `+${souls(run.souls)}` : souls(0), inline: true },
     { name: 'Fight Time', value: clock(run.seconds), inline: true },
     { name: 'Next Attempt', value: `In ${span(cooldown)}`, inline: true },
   );
-  if (run.rejuvsEarned) e.addFields({ name: 'Rejuv Earned', value: `+${run.rejuvsEarned}`, inline: true });
+  if (run.rejuvsEarned) e.addFields({ name: 'Rejuv Earned', value: `+${rejuvIcon()}${run.rejuvsEarned}`, inline: true });
   if (run.itemSouls) e.addFields({ name: 'From Items', value: `+${souls(run.itemSouls)}`, inline: true }); // Trophy Collector, Cultist Sacrifice (already in Souls Earned)
   if (run.gifts?.length) { // Eternal Gift's permanent buffs
     const got = {};
@@ -635,7 +647,7 @@ async function withRival(view, rival, ownerId) {
     .setDescription(`**${rival}** steps out and wants a duel.`)
     .addFields(
       { name: 'Win', value: `${rival} is yours to play`, inline: true },
-      { name: 'Lose', value: 'Costs nothing but Rejuvs used', inline: true },
+      { name: 'Lose', value: `Costs nothing but ${rejuvIcon()}Rejuvs used`, inline: true },
     ).setFooter({ text: `${rival} waits for 5 minutes.` }));
   view.files.push((await heroPicture(rival)).setName('rival.png'));
   view.components.push(row(
@@ -664,7 +676,7 @@ async function duelView(run, frame) {
   const e = embed().setTitle(`${run.hero} vs ${run.rival}`).setThumbnail('attachment://thumb.png').setDescription(`${run.hero} is duelling ${run.rival}.`)
     .addFields(
       { name: run.hero, value: `${barLine(frame.hero.hp, frame.hero.max)}${frame.hero.respawning ? '  -  Respawning' : ''}
-Rejuvs Left: ${frame.rejuvs}` },
+Rejuvs Left: ${rejuvIcon()}${frame.rejuvs}` },
       ...enemyFields(frame),
       { name: 'Abilities', value: frame.abilities.map((a) => `${a.name}  -  ${a.status}`).join('\n') },
       { name: 'Battle Log', value: frame.log.length ? frame.log.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing yet' },
@@ -675,7 +687,7 @@ Rejuvs Left: ${frame.rejuvs}` },
 async function duelResultView(run) {
   const { hero, rival } = run;
   const last = run.frames[run.frames.length - 1];
-  const cost = `It cost you ${run.rejuvsUsed ? plural(run.rejuvsUsed, 'Rejuv') : 'nothing'}.`;
+  const cost = `It cost you ${run.rejuvsUsed ? rejuvIcon() + plural(run.rejuvsUsed, 'Rejuv') : 'nothing'}.`;
   const e = embed(run.won ? WIN : LOSS).setThumbnail('attachment://thumb.png');
   if (run.won) e.setTitle(`${rival} Unlocked`).setDescription(`${hero} won the duel. ${rival} is yours now, at level 0 with no items.\nSwitch with **Switch Hero** on \`/base\`.`);
   else if (run.timedOut) e.setTitle(`${rival} Got Away`).setDescription(`Nobody went down in time and ${rival} slipped away. ${cost}`);
@@ -684,7 +696,7 @@ async function duelResultView(run) {
   const lines = run.log.slice(-6);
   e.addFields(
     { name: 'Fight Time', value: clock(run.seconds), inline: true },
-    { name: 'Rejuvs Used', value: String(run.rejuvsUsed), inline: true },
+    { name: 'Rejuvs Used', value: `${rejuvIcon()}${run.rejuvsUsed}`, inline: true },
     { name: hero, value: barLine(last.hero.hp, last.hero.max) },
     ...enemyFields(last),
     { name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' },

@@ -12,7 +12,8 @@
 const K = 2;                 // the plate is worked at twice the page's resolution, then halved
 const PAD = 22;              // page px of working room around the drawing
 const FIT = 0.935;           // the drawing's size as a share of the box book.js gives (room for drips under it)
-const INK = [42, 26, 16], WET = [16, 10, 6];
+const INK = [82, 56, 36], WET = [64, 40, 25]; // a faded brown ink, the colour of an old printed plate (his call Oct 21: it looked like solid black); the wake is its darkest, still a brown
+const FADE = 0.9;            // the plate is laid on the page a little translucent, so the paper shows through the ink
 const HI = [255, 240, 218];  // the candle caught on wet ink
 const TO_LIGHT = [-0.55, -0.83]; // towards the candle, top left
 // the icon's eye slits (left eye; the right one is its mirror), as shares: outer corner, inner corner
@@ -529,6 +530,6 @@ module.exports = {
     const key = `${ctx.stage}:${ctx.cx}:${ctx.y}:${ctx.size}`;
     let pic = cache.get(key);
     if (!pic) { pic = build(ctx); cache.set(key, pic); }
-    g.drawImage(pic, ctx.PAGE.left, ctx.PAGE.top);
+    g.save(); g.globalAlpha = FADE; g.drawImage(pic, ctx.PAGE.left, ctx.PAGE.top); g.restore();
   },
 };

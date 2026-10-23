@@ -3,7 +3,7 @@
 // treat it as a crit": a bullet is a headshot with the chance the headshot items use.
 const { Ability } = require('./../ability');
 const { MELEE } = require('./../engine');
-const { HEADSHOT_CHANCE } = require('./../items');
+const { headshotChance } = require('./../engine');
 
 const find = (unit, Cls) => unit.abilities.find((a) => a instanceof Cls);
 
@@ -70,7 +70,7 @@ class Crackshot extends Ability {
     const npc = p.target.team !== 'hero';
     const cut = this.value(npc ? 'AbilityCooldownPerHeadshotNPC' : 'AbilityCooldownPerHeadshot'); // negative seconds
     const ready = this.ready();
-    if ((!ready && !cut) || !(fight.rng() < HEADSHOT_CHANCE)) return;
+    if ((!ready && !cut) || !(fight.rng() < headshotChance(this.unit))) return;
     if (!ready) { this.cdLeft = Math.max(0, this.cdLeft + cut); return; }
     this.use();
     if (npc) this.cdLeft *= 1 - this.data.CrackshotNPCCDReduction / 100;

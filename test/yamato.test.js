@@ -10,6 +10,7 @@ const { games, startGame, play, versus, winnings, staked, timeoutView } = yamato
 const souls = async (id) => (await getUser(id)).souls;
 const idOf = (message) => message.components[0].components[0].data.custom_id.split(':')[1];
 const text = (message) => message.embeds[0].toJSON().description;
+const fields = (message) => Object.fromEntries(message.embeds[0].toJSON().fields.map((f) => [f.name, f.value]));
 const buttons = (message) => message.components.flatMap((r) => r.components.map((b) => b.data.custom_id.split(':').slice(2).join(':')));
 const rich = async (...ids) => { for (const id of ids) await changeSouls(id, 1000); };
 
@@ -32,6 +33,8 @@ test('against Yamato: bet taken, win pays 1.85x, tie refunds, loss pays nothing,
     const start = await startGame(user, 'Solo', 100);
     assert.strictEqual(await souls(user.id), before - 100);
     assert.deepStrictEqual(buttons(start), ['power', 'flying', 'crimson']);
+    assert.ok(start.components[0].components.every((b) => !b.data.label && b.data.emoji)); // emoji only: one row on a phone
+    assert.deepStrictEqual(Object.keys(fields(start)), ['Win Pays', 'Draw', 'Bet']);
     const id = idOf(start);
     const { yamato: his } = await games().get(id);
     assert.ok((await play(id, 'someone-else', ['power'])).error);
@@ -41,7 +44,7 @@ test('against Yamato: bet taken, win pays 1.85x, tie refunds, loss pays nothing,
     seen.add(outcome);
     assert.strictEqual(await souls(user.id), before - 100 + (outcome > 0 ? 185 : outcome === 0 ? 100 : 0));
     assert.strictEqual(embed.thumbnail.url, `attachment://yamato_${outcome > 0 ? 'injured' : outcome === 0 ? 'portrait' : 'gloat'}.png`);
-    assert.deepStrictEqual(embed.fields.map((f) => f.name), ['Bet', 'Won', 'Balance']);
+    assert.deepStrictEqual(embed.fields.map((f) => f.name), ['Bet', outcome < 0 ? 'Lost' : 'Won', 'New Balance']);
     assert.strictEqual(await play(id, user.id, ['flying']), null); // double click does nothing
     assert.strictEqual(await games().get(id), null);
   }
@@ -78,13 +81,14 @@ test('duel: accept takes the second bet, picks are secret, the winner takes the 
   assert.ok((await play(id, 'third', ['power'])).error);
   const first = await play(id, a.id, ['power']);
   assert.match(first.private, /Power Slash/);
-  assert.match(text(first.update), /A:\*\* ready/);
-  assert.match(text(first.update), /B:\*\* choosing/);
-  assert.ok(!text(first.update).includes('Power')); // nobody sees the pick
+  assert.strictEqual(fields(first.update).A, 'Ready');
+  assert.strictEqual(fields(first.update).B, 'Choosing...');
+  assert.ok(!JSON.stringify(first.update.embeds[0].toJSON().fields).includes('Power')); // nobody sees the pick
   assert.ok((await play(id, a.id, ['flying'])).error); // no changing it
 
   const result = await play(id, b.id, ['flying']); // Power beats Flying: A wins
-  assert.match(text(result), new RegExp(`<@${a.id}> wins`));
+  assert.match(text(result), new RegExp(`<@${a.id}>'s .*Power Slash.* beats <@${b.id}>'s .*Flying Strike`));
+  assert.strictEqual(fields(result).Winner, `<@${a.id}>`);
   assert.strictEqual(await souls(a.id), 1200);
   assert.strictEqual(await souls(b.id), 800);
   assert.strictEqual(result.components[0].components[0].data.custom_id, `${yamato.AGAIN_ID}:200:${a.id}:${b.id}`);
@@ -92,8 +96,8 @@ test('duel: accept takes the second bet, picks are secret, the winner takes the 
 });
 
 test('duel: a tie gives both bets back', async () => {
-  const a = { id: 'duel-3' };
-  const b = { id: 'duel-4' };
+  const a = { id: 'duel-3', username: 'duel-3' };
+  const b = { id: 'duel-4', username: 'duel-4' };
   await rich(a.id, b.id);
   const id = idOf(await startGame(a, 'A', 100, b));
   await play(id, b.id, ['accept']);
@@ -105,8 +109,8 @@ test('duel: a tie gives both bets back', async () => {
 });
 
 test('duel: declining refunds the challenger; a broke opponent cannot accept', async () => {
-  const a = { id: 'duel-5' };
-  const b = { id: 'duel-6' };
+  const a = { id: 'duel-5', username: 'duel-5' };
+  const b = { id: 'duel-6', username: 'duel-6' };
   await rich(a.id);
   const id = idOf(await startGame(a, 'A', 300, b));
   assert.match((await play(id, b.id, ['accept'])).error, /don't have/);
@@ -119,8 +123,8 @@ test('duel: declining refunds the challenger; a broke opponent cannot accept', a
 
 test('duel: no answer for the time limit refunds everyone who staked', async () => {
   const now = Date.now() + TIME_LIMIT_MINUTES * 60_000 + 1000;
-  const a = { id: 'duel-7' };
-  const b = { id: 'duel-8' };
+  const a = { id: 'duel-7', username: 'duel-7' };
+  const b = { id: 'duel-8', username: 'duel-8' };
   await rich(a.id, b.id);
   const invited = idOf(await startGame(a, 'A', 100, b)); // never accepted
   const picking = idOf(await startGame(a, 'A', 100, b));

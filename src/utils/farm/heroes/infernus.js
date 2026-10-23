@@ -3,7 +3,8 @@
 // (enemies here stand still). A bullet is a headshot with the chance the headshot items use (his "treat it as a crit" call for Holliday).
 const { Ability } = require('./../ability');
 const { DT, MELEE, LIFESTEAL_VS_NPC } = require('./../engine');
-const { HEADSHOT_CHANCE, isBoss } = require('./../items');
+const { isBoss } = require('./../items');
+const { headshotChance } = require('./../engine');
 
 // 1. Napalm: spirit damage and a slow on the enemies in reach, and a coat of napalm: they take more damage for a while.
 // T1: a second charge. T2: lifesteal against the napalmed. T3: even more damage taken, and they heal less.
@@ -81,7 +82,7 @@ class Afterburn extends Ability {
   on(event, fight, p) {
     if (p.source !== this.unit) return;
     if (event === 'bulletHit') {
-      const head = fight.rng() < HEADSHOT_CHANCE;
+      const head = fight.rng() < headshotChance(this.unit);
       this.struck(fight, p.target, head ? this.data.CritBuildup : this.data.BuildUpBulletPercentPerHit, head ? this.data.RefillDurationCrit : this.data.RefillDuration);
     } else if (event === 'melee') this.struck(fight, p.target, MELEE_BUILD, 0);
     else if (event === 'damage' && p.opts.ability && p.opts.ability !== this) { // one of his abilities: the burn is back at its base time

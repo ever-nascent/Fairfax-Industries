@@ -10,6 +10,7 @@ const silver = require('../../utils/silver');
 const rem = require('../../utils/rem');
 const pocket = require('../../utils/pocket');
 const paige = require('../../utils/paige');
+const abrams = require('../../utils/abrams');
 
 // slow: the first picture (shuffle GIF, clock, fuse GIF) takes a moment to draw.
 module.exports = betCommand('mini-game', 'Bet Souls on one of the mini-games', {
@@ -24,4 +25,5 @@ module.exports = betCommand('mini-game', 'Bet Souls on one of the mini-games', {
   'remling-race': { label: 'Remling Race', game: rem },
   'deal-or-no-deal': { label: 'Deal or No Deal', game: pocket },
   'dont-wake-the-bookwyrm': { label: "Don't Wake the Bookwyrm", game: paige, slow: true },
+  'abrams-interrogation': { label: "Abrams' Interrogation", game: abrams, slow: true },
 });

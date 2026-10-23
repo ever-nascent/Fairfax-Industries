@@ -1,7 +1,7 @@
 // Run: node --test
 const test = require('node:test');
 const assert = require('node:assert');
-const { Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC } = require('../src/utils/farm/engine');
+const { Fight, enemy, HEAL_RATE, HEAL_POOL, BULLET_LIFESTEAL_VS_NPC, SPIRIT_LIFESTEAL_VS_NPC } = require('../src/utils/farm/engine');
 const { buildHero, heroNames, implemented } = require('../src/utils/farm/hero');
 const { heroStats, HEROES, ITEMS, innateStats, ITEM_STATS } = require('../src/utils/farm/stats');
 
@@ -54,7 +54,7 @@ test('resists, evasion and lifesteal go through Fight.damage', () => {
   haze.health = 100;
   haze.stats.lifesteal = 0.5;
   f.damage(haze, foe, 100, 'bullet');
-  close(haze.health, 100 + 50 * 0.5 * LIFESTEAL_VS_NPC); // 50 dealt, 50% lifesteal, weaker against NPCs
+  close(haze.health, 100 + 50 * 0.5 * BULLET_LIFESTEAL_VS_NPC); // 50 dealt, 50% lifesteal, weaker against NPCs
 });
 
 test('healing is capped: a pool that refills at a share of max health per second, so heals cannot stack into an unkillable hero', () => {
@@ -550,6 +550,8 @@ test('shotguns: every pellet lands up close, about 70% of them from 15 m on; a h
   close(shoot('Calico', 10), 0.85, 0.03);
   close(shoot('Drifter', 15), 1, 0.001);
   close(shoot('Haze', 15), 1, 0.001);
+  // Precision (his call, Oct 22): every point above the base 25 adds a percentage point to the far hit chance, up to all of them
+  assert.deepStrictEqual([pelletChance(15, 25), pelletChance(15, 35), pelletChance(15, 80), pelletChance(10, 35)].map((x) => +x.toFixed(2)), [0.7, 0.8, 1, 0.95]);
 });
 
 test('Dynamo: each ability does its job', () => {
@@ -2126,7 +2128,7 @@ test('Celeste: each ability does its job', () => {
   const quiet = (hero, ...slots) => { hero.weapon.reloadLeft = 1e9; hero.meleeAt = Infinity; hero.stamina = 0; hero.stats.stamina = 0; slots.forEach((s) => { hero.abilities[s - 1].cdLeft = 1e9; }); return hero; };
   const dummy = () => enemy('Dummy', { maxHealth: 1e5, dps: 0, distance: 10 });
 
-  // Light Eater: a 40 damage flare, then +15 spirit damage a bullet on the marked enemy and 18% spirit lifesteal (half strength from an NPC)
+  // Light Eater: a 40 damage flare, then +15 spirit damage a bullet on the marked enemy and 18% spirit lifesteal (weaker from an NPC)
   const l = quiet(buildHero('Celeste', { unlocked: 1 }));
   l.stats.healthRegen = 0;
   l.health = 300;
@@ -2134,7 +2136,7 @@ test('Celeste: each ability does its job', () => {
   const fl = new Fight({ heroes: [l], enemies: [d], rng: () => 0.99 });
   fl.run(0.6);
   close(1e5 - d.health, 40);
-  close(l.health, 300 + 40 * 0.18 * LIFESTEAL_VS_NPC);
+  close(l.health, 300 + 40 * 0.18 * SPIRIT_LIFESTEAL_VS_NPC);
   assert.ok(d.has('lightEater'));
   l.weapon.reloadLeft = 0;
   const before = d.health;
@@ -2353,7 +2355,7 @@ test('farm attempt: a win pays, a loss pays nothing and leaves the target whole'
 const seeded = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
 
 test('buffs: the wiki drop rates add up, each type is level 1, and they change the stat sheet', () => {
-  assert.strictEqual(Object.values(BUFFS).reduce((s, b) => s + b.odds, 0), 100);
+  assert.strictEqual(Object.values(BUFFS).reduce((s, b) => s + b.odds, 0), 110, "the wiki's ten add to 100, Precision (his) 10 more");
   assert.strictEqual(BUFFS.maxHealth.odds, 20);
   assert.strictEqual(buffText('weaponDamage'), '+3% Weapon Damage');
   assert.strictEqual(buffText('maxHealth', 2), '+30 Max Health');
@@ -2364,6 +2366,18 @@ test('buffs: the wiki drop rates add up, each type is level 1, and they change t
   close(buffed.fireRate, base.fireRate * 1.03);
   close(buffed.bulletResist, 0.02);
   assert.strictEqual(buildHero('Haze', { buffs: { maxHealth: 1 } }).stats.maxHealth, base.maxHealth + 15);
+});
+
+test('Precision: 25 flat points to start, a permanent buff adds 1, and a headshot chance is the points in percent', () => {
+  const { headshotChance } = require('../src/utils/farm/engine');
+  const base = buildHero('Haze');
+  assert.strictEqual(base.stats.precision, 25);
+  assert.strictEqual(headshotChance(base), 0.25);
+  const buffed = buildHero('Haze', { buffs: { precision: 15 } });
+  assert.strictEqual(buffed.stats.precision, 40);
+  assert.strictEqual(headshotChance(buffed), 0.4);
+  assert.strictEqual(buffText('precision', 3), '+3 Precision');
+  assert.strictEqual(headshotChance({ stat: () => 250 }), 1, 'never above every bullet');
 });
 
 test("buffs rotate daily: the same day gives the same buffs, other days differ, and drops come from today's buffs", () => {

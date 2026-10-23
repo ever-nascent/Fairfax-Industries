@@ -4,7 +4,7 @@
 // with the headshot items' chance; hero-only abilities work on any enemy.
 const { Ability } = require('./../ability');
 const { DT } = require('./../engine');
-const { HEADSHOT_CHANCE } = require('./../items');
+const { headshotChance } = require('./../engine');
 
 // 1. Card Trick: cards are not on a cooldown: hitting with the gun (or a heavy melee) draws them, slower against NPCs (the wiki). A card thrown
 // at the front enemy deals spirit damage around it and does what its suit says: Spade more damage, Diamond less bullet and spirit resist,
@@ -50,7 +50,7 @@ class CardTrick extends Ability {
   on(event, fight, p) {
     if (p.source !== this.unit || !(event === 'bulletHit' || event === 'melee') || p.opts?.split) return;
     const d = this.data;
-    const per = event === 'melee' ? d.CardResourcePerHeavyMelee : fight.rng() < HEADSHOT_CHANCE ? d.CardResourcePerBulletCrit : d.CardResourcePerBulletHit;
+    const per = event === 'melee' ? d.CardResourcePerHeavyMelee : fight.rng() < headshotChance(this.unit) ? d.CardResourcePerBulletCrit : d.CardResourcePerBulletHit;
     this.drawn += per * (d.CardResourceGenPctScale.Value / 100) * (1 + this.unit.stat('cdr')) * (p.target.team === 'hero' ? 1 : d.NonPlayerCardResourceScale);
     while (this.drawn >= 100 && this.charges < this.maxCharges) { this.drawn -= 100; this.charges += 1; }
     if (this.charges >= this.maxCharges) this.drawn = Math.min(this.drawn, 99);

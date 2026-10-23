@@ -9,7 +9,7 @@ const { getHideout, HIDEOUT_PRICE, HIDEOUT_LEVEL } = require('./hideout');
 const { renderRankCard, CARD_COLOR, cardColor } = require('./rankCard');
 const { renderShopBanner, renderItemPage } = require('./shopBanner');
 const { HEROES, getHero, heroArt, heroEmoji } = require('./heroes');
-const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
+const { fmt, soulsIcon, soulsText, boldSouls, rejuvIcon } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS } = require('./art');
 
@@ -319,10 +319,10 @@ const receipts = {
     return `A Soul Boost costs ${boldSouls(BOOST_PRICE)}, and you don't have that much.`;
   },
   rejuv(result) {
-    if (result.ok) return `Rejuv bought for ${boldSouls(REJUV_PRICE)}. You're carrying ${result.user.rejuvs} / ${REJUV_MAX}.`;
+    if (result.ok) return `${rejuvIcon()}Rejuv bought for ${boldSouls(REJUV_PRICE)}. You're carrying ${result.user.rejuvs} / ${REJUV_MAX}.`;
     return result.reason === 'full'
-      ? `You're already carrying the max (${REJUV_MAX} Rejuvs). Use one first.`
-      : `A Rejuv costs ${boldSouls(REJUV_PRICE)}, and you don't have that much.`;
+      ? `You're already carrying the max (${REJUV_MAX} ${rejuvIcon()}Rejuvs). Use one first.`
+      : `A ${rejuvIcon()}Rejuv costs ${boldSouls(REJUV_PRICE)}, and you don't have that much.`;
   },
   hideout(result, record) {
     if (!result) return `Your Hideout is ready${record?.textId ? `: <#${record.textId}>. The control panel is pinned there` : ''}.`;

@@ -62,17 +62,21 @@ class Ability {
 
   // The spirit power this ability scales with: the hero's, temporary spirit (Infuser ...), imbued spirit and, for a charged ability, charged spirit.
   spirit(im = this.imbued()) {
-    return this.unit.stats.spirit + this.unit.mod('spirit') + (im.spirit ?? 0) + (this.charged ? this.unit.stat('chargedSpirit') : 0);
+    return this.unit.stats.spirit + (this.unit.mod('spirit') + (im.spirit ?? 0) + (this.charged ? this.unit.stat('chargedSpirit') : 0)) * (this.unit.stats.spiritMult ?? 1); // Boundless Spirit's % takes in every source (the wiki)
   }
 
   get cooldown() { return this.value('AbilityCooldown'); }
   get castDelay() { return this.value('AbilityCastDelay'); }
 
   // ---- charges (Extra Charge, Rapid Recharge, Omnicharge Signet; Haze's Smoke Bomb tier 2) ----
-  get charged() { return this.value('AbilityCharges') >= 1; } // the wiki gives it charges (some abilities have 1)
+  // The wiki gives it charges (some abilities have 1), or Omnicharge Signet does: then it counts as charged for Extra Charge, Rapid Recharge and the
+  // charged-ability bonuses too (the wiki).
+  get charged() { return this.value('AbilityCharges') >= 1 || (this.imbued().chargesNonCharge ?? 0) > 0; }
   get maxCharges() {
     const im = this.imbued();
-    return this.charged ? Math.round(this.value('AbilityCharges') + this.unit.stat('bonusCharges') + (im.charges ?? 0)) : 1 + (im.chargesNonCharge ?? 0);
+    if (!this.charged) return 1;
+    const own = this.value('AbilityCharges') >= 1 ? this.value('AbilityCharges') + (im.charges ?? 0) : 1 + im.chargesNonCharge;
+    return Math.round(own + this.unit.stat('bonusCharges'));
   }
   get charges() { return (this._charges ??= this.maxCharges); }
   set charges(n) { this._charges = Math.max(0, Math.min(this.maxCharges, n)); }

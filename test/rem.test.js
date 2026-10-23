@@ -7,7 +7,6 @@ const { changeSouls, getUser } = require('../src/utils/xp');
 const rem = require('../src/utils/rem');
 
 const text = (payload) => payload.embeds[0].toJSON().description;
-const button = (payload, i) => payload.components[0].components[i].data;
 const ODDS = [2.63, 3.65, 4.75, 8.63, 13.57];
 
 test('odds: 95% / chance, rounded down', () => {
@@ -48,14 +47,15 @@ test('a game: pick once, only the owner plays, a win pays the odds', async () =>
   const race = { odds: ODDS, winner: 2, frames: [[0, 0, 0, 0, 0], [1, 0, 2, 1, 0], [1, 1, 10, 2, 1]] };
   const start = await rem.startGame(user, 'Tester', 100, race);
   assert.strictEqual((await getUser(user.id)).souls, 900);
-  assert.strictEqual(start.components[0].components.length, 5);
-  assert.strictEqual(button(start, 2).label, '4.75×');
-  const id = button(start, 0).custom_id.split(':')[1];
+  const menu = start.components[0].components[0].toJSON(); // one dropdown, not five buttons
+  assert.strictEqual(menu.options.length, 5);
+  assert.strictEqual(menu.options[2].label, 'Green (4.75×)');
+  const id = menu.custom_id.split(':')[1];
 
   assert.ok((await rem.pick(id, 'someone-else', 2)).error);
   assert.strictEqual(await rem.pick(id, user.id, 9), null); // no such lane
   const racing = await rem.pick(id, user.id, 2);
-  assert.match(text(racing), /backs .* \*\*Green\*\* .* at \*\*4\.75×\*\*/);
+  assert.match(text(racing), /You backed .* \*\*Green\*\* at \*\*4\.75×\*\*/);
   assert.strictEqual(racing.components.length, 0);
   assert.strictEqual(await rem.pick(id, user.id, 1), null); // already picked
 
@@ -65,7 +65,7 @@ test('a game: pick once, only the owner plays, a win pays the odds', async () =>
   assert.strictEqual(edits[0].files, undefined); // the pictures stay from the first one
   const end = edits[2];
   assert.match(text(end), /wins the race/);
-  assert.match(text(end), /You win/);
+  assert.match(text(end), /wins the race! You backed it at 4\.75×\.\*\*/);
   assert.match(end.embeds[0].toJSON().thumbnail.url, /_injured\.png$/);
   assert.strictEqual((await getUser(user.id)).souls, 900 + 475);
   assert.strictEqual(end.components[0].components[0].data.custom_id, `${rem.AGAIN_ID}:100:${user.id}`);
@@ -79,13 +79,24 @@ test('a wrong pick loses the bet', async () => {
   await changeSouls(user.id, 100);
   const race = { odds: ODDS, winner: 0, frames: [[0, 0, 0, 0, 0], [10, 3, 2, 1, 0]] };
   const start = await rem.startGame(user, 'Tester', 100, race);
-  const id = button(start, 0).custom_id.split(':')[1];
+  const id = start.components[0].components[0].toJSON().custom_id.split(':')[1];
   await rem.pick(id, user.id, 3);
   const edits = [];
   await rem.run(id, async (payload) => edits.push(payload), 0);
   const end = edits[1];
-  assert.match(text(end), /You lose/);
+  assert.match(text(end), /wins the race. You backed .* at/);
   assert.match(end.embeds[0].toJSON().thumbnail.url, /_gloat\.png$/);
   assert.strictEqual((await getUser(user.id)).souls, 0);
   assert.strictEqual(await rem.games().get(id), null);
+});
+
+test('the Remling dropdown reaches the game route, its value as the lane', async () => {
+  const routes = require('../src/components/games');
+  const select = { isButton: () => false, isStringSelectMenu: () => true, customId: `${rem.BUTTON_ID}:abc`, values: ['2'] };
+  const route = routes.find((r) => r.matches(select));
+  assert.ok(route, 'a dropdown with the game prefix is routed');
+  assert.strictEqual(route.label, 'Game button');
+  const replies = [];
+  await route.execute({ ...select, user: { id: 'nobody' }, deferUpdate: async () => replies.push('stale') });
+  assert.deepStrictEqual(replies, ['stale']); // no such game: ignored, not an error
 });

@@ -141,11 +141,11 @@ test('imbues: only the chosen ability gets them (cooldown, range, spirit, charge
   assert.ok(surge.abilities[0].value('Damage') > buildHero('Haze').abilities[0].value('Damage'), 'Surge of Power: imbued spirit power');
   const omni = buildHero('Haze', { items: ['Omnicharge Signet'], imbues: { 'Omnicharge Signet': 1 } });
   assert.strictEqual(omni.abilities[0].maxCharges, 3, 'Omnicharge: +2 charges on an ability without them');
-  const echo = setup(['Echo Shard'], { imbues: { 'Echo Shard': 4 } });
-  echo.hero.abilities[3].cdLeft = 30;
+  const echo = setup(['Echo Shard'], { imbues: { 'Echo Shard': 2 } });
+  echo.hero.abilities[1].cdLeft = 30;
   assert.ok(echo.hero.items[0].want(echo.fight));
   echo.hero.items[0].cast(echo.fight);
-  assert.strictEqual(echo.hero.abilities[3].cdLeft, 0);
+  assert.strictEqual(echo.hero.abilities[1].cdLeft, 0);
 });
 
 test('imbued procs: Frostbite Charm freezes on the imbued ability\'s hit, Mystic Burst adds damage to a big ability hit', () => {
@@ -320,7 +320,7 @@ test('corruption: the card gains its corrupted bonuses, the hero carries one dra
   assert.strictEqual(brokerNext(Date.UTC(2026, 9, 3, 4, 0)), Date.UTC(2026, 9, 3, 6, 0));
   assert.ok(brokerNext(0) === 0 && hour > 0);
   assert.strictEqual(sellPrice(hp, { name: 'Hollow Point' }), hp.Cost, 'half of item + corruption');
-  assert.ok(ITEM_POOL.length === 155);
+  assert.ok(ITEM_POOL.length === 156); // every shop item (Silencer back Oct 22)
 });
 
 test('corrupting: only while the Broker is open, one per hero, costs the price again, nothing taken when refused; its components can\'t be upgraded away', async () => {

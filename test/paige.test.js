@@ -7,7 +7,7 @@ const { getStore } = require('../src/storage');
 const { getUser } = require('../src/utils/xp');
 const { expireGames } = require('../src/utils/casino');
 const paige = require('../src/utils/paige');
-const { renderBook, layout } = require('../src/utils/paigeBook');
+const { renderBook, renderBookPng, layout } = require('../src/utils/paigeBook');
 const { findComponentRoute } = require('../src/components');
 const { simulate } = require('../tools/hangman-rtp');
 
@@ -19,8 +19,10 @@ const souls = async (id) => (await getUser(id)).souls;
 const fresh = (word = 'MYSTIC BURST', extra = {}) => ({ userId: 'u', name: 'U', bet: BET, category: 'Items', word, hits: [], wrong: [], done: false, won: false, version: 0, ...extra });
 const idOf = (payload) => payload.components[0].components[0].data.custom_id.split(':')[1];
 const text = (payload) => payload.embeds[0].toJSON().description;
+const field = (payload, name) => payload.embeds[0].toJSON().fields.find((f) => f.name === name)?.value;
 const optionsOf = (payload, row) => payload.components[row].components[0].options.map((o) => o.data.value);
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+const GIF = Buffer.from('GIF89a');
 
 test('the word chapters: every hero, ability and item, in capitals', () => {
   const pool = paige.wordPool();
@@ -99,8 +101,10 @@ test('a game: bet taken, two dropdowns and Solve It, only the player plays, a wi
   assert.deepStrictEqual(optionsOf(start, 0), [...'ABCDEFGHIJKLM'].map((l) => l), 'A to M');
   assert.deepStrictEqual(optionsOf(start, 1), [...'NOPQRSTUVWXYZ']);
   assert.match(start.components[2].components[0].data.custom_id, /^hangman_solve:/);
-  assert.match(text(start), /Items\*\* chapter/);
-  assert.match(text(start), /Solving now pays .*1,550/);
+  assert.match(text(start), /Pick a letter below, or press \*\*Solve It\*\*/);
+  assert.deepStrictEqual(start.embeds[0].toJSON().fields.map((f) => f.name), ['Guesses Left', 'Solving Pays', 'Bet']); // no Chapter field: the book names it (his call Oct 22)
+  assert.strictEqual(field(start, 'Guesses Left'), '6 of 6');
+  assert.match(field(start, 'Solving Pays'), /1,550/);
   assert.ok(start.files.some((f) => f.name.startsWith('book_')), 'the book picture is attached');
   assert.ok(!JSON.stringify(start).includes('MYSTIC'), 'the word is never in the message');
 
@@ -111,12 +115,16 @@ test('a game: bet taken, two dropdowns and Solve It, only the player plays, a wi
   assert.strictEqual(await paige.guess(id, user.id, 'M'), null, 'the same letter twice is a stale click');
   const miss = await paige.guess(id, user.id, 'Z');
   assert.match(text(miss), /No \*\*Z\*\* in this story/);
-  assert.match(text(miss), /\*\*5\*\* wrong guesses left. Solving now pays .*1,350/);
+  assert.strictEqual(field(miss, 'Guesses Left'), '5 of 6');
+  assert.match(field(miss, 'Solving Pays'), /1,350/);
 
   assert.match((await paige.solveError(id, 'someone-else')), /Tester's story/);
   assert.strictEqual(await paige.solveError(id, user.id), null);
   const won = await paige.solve(id, user.id, 'Mystic Burst');
-  assert.match(text(won), /solved it: \*\*MYSTIC BURST\*\*/);
+  assert.match(text(won), /^You solved it!\nThe word was \*\*MYSTIC BURST\*\*$/m); // a win: two lines, only the word in bold (his call, Oct 22)
+  assert.match(field(won, 'Bet'), /^.*1,000 Souls$/);
+  assert.match(field(won, 'Won'), /1,350 Souls/);
+  assert.match(field(won, 'New Balance'), /100,350 Souls/);
   assert.strictEqual(await souls(user.id), START - BET + winnings(BET, 1), 'one wrong guess: 1.35x');
   assert.deepStrictEqual(await paige.games().all(), {});
   assert.match(won.components[0].components[0].data.custom_id, /^hangman_again:1000:bw-win/);
@@ -130,8 +138,9 @@ test('a game lost on the 6th wrong guess: the bet stays gone, the word is shown'
   const id = idOf(await paige.startGame(user, 'Tester', BET, { category: 'Heroes', word: 'HAZE' }));
   let last;
   for (const l of 'BCDFGJ') last = await paige.guess(id, user.id, l);
-  assert.match(text(last), /Bookwyrm woke up/);
-  assert.match(text(last), /\*\*HAZE\*\*/);
+  assert.match(text(last), /\*\*The Bookwyrm awakens! The word was HAZE\.\*\*/);
+  assert.match(field(last, 'Lost'), /1,000 Souls/);
+  assert.match(field(last, 'New Balance'), /99,000 Souls/);
   assert.strictEqual(await souls(user.id), START - BET);
   assert.deepStrictEqual(await paige.games().all(), {});
 });
@@ -168,7 +177,7 @@ test('time runs out: nothing guessed gives the bet back, a story half read is lo
   const [lost] = await sweep();
   assert.strictEqual(await souls(walked.id), START - BET, 'no refund');
   assert.match(text(lost), /^\*\*Time ran out, so the game was finished\.\*\*/);
-  assert.match(text(lost), /story was left unfinished/);
+  assert.match(text(lost), /left the story unfinished\. The word was MYSTIC BURST/);
 });
 
 test('the dropdowns, Solve It and its pop-up are routed; the pop-up asks for one answer', () => {
@@ -182,7 +191,8 @@ test('the dropdowns, Solve It and its pop-up are routed; the pop-up asks for one
   assert.strictEqual(modal.components[0].components[0].custom_id, 'answer');
 });
 
-test('the picture: every name in the game fits the page (3 lines at most) and every state draws a PNG', async () => {
+const gif0 = (buffer) => buffer.subarray(0, 1000).toString('latin1'); // past the 768-byte colour table
+test('the picture: every name in the game fits the page (3 lines at most) and every state draws an animated GIF', async () => {
   const avail = 306; // the right page's width between its margins
   for (const word of Object.values(paige.wordPool()).flat()) {
     const fit = layout(word, avail);
@@ -192,8 +202,12 @@ test('the picture: every name in the game fits the page (3 lines at most) and ev
   }
   const longest = Object.values(paige.wordPool()).flat().sort((a, b) => b.length - a.length)[0];
   for (let wrong = 0; wrong <= 6; wrong++) {
-    const png = await renderBook({ word: longest, hits: ['E'], wrong: [...'AOLNDW'].slice(0, wrong), category: 'Items', result: wrong === 6 ? 'lost' : null });
-    assert.ok(png.subarray(0, 4).equals(PNG), `${wrong} wrong`);
+    const gif = await renderBook({ word: longest, hits: ['E'], wrong: [...'AOLNDW'].slice(0, wrong), category: 'Items', result: wrong === 6 ? 'lost' : null });
+    assert.ok(gif.subarray(0, 6).equals(GIF), `${wrong} wrong`);
+    assert.ok(gif.length < 2_000_000, `${wrong} wrong: ${gif.length} bytes`); // Discord shows an embed picture up to 8 MB; this one should stay small
   }
-  assert.ok((await renderBook({ word: 'HAZE', hits: [], wrong: ['?'], category: 'Heroes', result: 'won' })).subarray(0, 4).equals(PNG));
+  assert.ok((await renderBook({ word: 'HAZE', hits: [], wrong: ['?'], category: 'Heroes', result: 'won' })).subarray(0, 6).equals(GIF));
+  assert.ok((await renderBookPng({ word: 'HAZE', hits: [], wrong: [], category: 'Heroes' })).subarray(0, 4).equals(PNG), 'the still picture');
+  // it loops forever and the frames differ (the fireflies move): the file says how many times to repeat (the Netscape extension, 0 = forever)
+  assert.ok(gif0(await renderBook({ word: 'HAZE', hits: [], wrong: [], category: 'Heroes' })).includes('NETSCAPE2.0'));
 });

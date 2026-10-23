@@ -12,6 +12,7 @@ const yamato = require('../utils/yamato');
 const silver = require('../utils/silver');
 const rem = require('../utils/rem');
 const paige = require('../utils/paige');
+const abrams = require('../utils/abrams');
 
 module.exports = [
   // Room 1-3 (pick), then Stay / Switch
@@ -33,9 +34,11 @@ module.exports = [
   // Accept / Decline (a challenge), then Power Slash / Flying Strike / Crimson Slash
   ...gameButtons('duel-of-stances', yamato, { play: yamato.play }),
   // Accept / Decline (a challenge), then Shoot (the other player) / Shoot Yourself
-  ...gameButtons('shotgun-roulette', silver, { play: silver.move }),
+  ...gameButtons('shotgun-roulette', silver, { play: silver.move, menu: true }),
   // Remling 1-5
-  ...gameButtons('remling-race', rem, { play: (id, userId, [lane]) => rem.pick(id, userId, Number(lane)) }),
+  ...gameButtons('remling-race', rem, { play: (id, userId, [lane]) => rem.pick(id, userId, Number(lane)), menu: true }), // a dropdown of the 5 Remlings
   // Play Again (the letter dropdowns, Solve It and its pop-up are in components/paige.js)
   ...gameButtons('dont-wake-the-bookwyrm', paige, { play: () => null, slow: true }),
+  // Accept / Decline (a challenge), the secret-hero and question dropdowns, Accuse... / Back, the accusation dropdowns
+  ...gameButtons('abrams-interrogation', abrams, { play: abrams.play, slow: true, menu: true }),
 ];
