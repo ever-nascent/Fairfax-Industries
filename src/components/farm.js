@@ -1,7 +1,7 @@
 const { setTimeout: sleep } = require('node:timers/promises');
 const { MessageFlags } = require('discord.js');
 const { getFarmUser, chooseHero, play, upgradeAbility, buyItem, sellItem, unlockHero, switchHero, corruptItem, setImbue, hatchEgg, fightRival, walkAway, holdOffer } = require('../utils/farm/play');
-const { drawbackText } = require('../utils/farm/stats');
+const { drawbackLine } = require('../utils/farm/corruption');
 const { buffText } = require('../utils/farm/buffs');
 const { fmt } = require('../utils/format');
 const { DUEL_ID, WALK_ID, withRival, duelView, duelResultView, HERO_ID, PICK_ID, TARGET_ID, SEND_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, titleCase, timeLeft, pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, notReady } = require('../utils/farm/views');
@@ -155,7 +155,7 @@ module.exports = [
     execute: (interaction) => heroAction(interaction, async () => {
       const name = interaction.values[0];
       const result = await corruptItem(interaction.user.id, name);
-      if (result.ok) return titleCase(`Corrupted ${name} for ${fmt(result.paid)} souls. Its drawback: ${drawbackText(result)}.`);
+      if (result.ok) return titleCase(`Corrupted ${name} for ${fmt(result.paid)} souls. Its drawback: ${drawbackLine(result)}. Its bonuses are on the Hero screen.`);
       if (result.error === 'closed') return titleCase(`The Broker is closed. He opens in ${timeLeft(result.opens - Date.now())}.`);
       return { souls: "Your hero can't afford that.", one: titleCase('Your hero already has a corrupted item.'), missing: 'You do not have that item.', unknown: "That item can't be corrupted." }[result.error];
     }, 'shop:broker'),

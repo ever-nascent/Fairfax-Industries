@@ -30,9 +30,9 @@ const LABELS = {
 };
 const GAMES = {
   doorman: 'Guess the Door', bj: 'Blackjack', hat: 'Rabbit in the Hat', clock: 'Borrowed Time', mines: "Bebop's Bombs", keg: 'Powder Keg',
-  duel: 'Duel of Stances', roulette: 'Shotgun Roulette', remling: 'Remling Race', suitcase: 'Deal or No Deal',
+  duel: 'Duel of Stances', roulette: 'Shotgun Roulette', remling: 'Remling Race', suitcase: 'Deal or No Deal', case: "Abrams' Interrogation",
 };
-const label = (reason) => (reason.startsWith('game:') ? GAMES[reason.slice(5)] ?? reason.slice(5) : LABELS[reason] ?? reason);
+const label = (reason) => (reason === 'shop:rejuv' ? `${require('./format').rejuvIcon()}Rejuv` : reason.startsWith('game:') ? GAMES[reason.slice(5)] ?? reason.slice(5) : LABELS[reason] ?? reason);
 
 // Adds a line. `meta`: a reason string, or { reason, with, hero } (`with` = the other member, for a duel's pot; `hero` = a farm hero's own souls).
 // Never throws: a full disk must not undo a purchase.

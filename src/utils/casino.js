@@ -62,13 +62,15 @@ const mention = (id) => `<@${id}>`;
 const pot = (game) => game.bet * 2;
 const versusLine = (game) => `${mention(game.userId)} vs ${mention(game.opponentId)}, ${boldSouls(game.bet)} each.`;
 
-const resultFields = (bet, won, balance) => [['Bet', bet], ['Won', won], ['Balance', balance]];
+// The money row of a finished game (the template, his calls Oct 22): Bet / Won (Lost: the bet, when nothing came back) /
+// New Balance, the new balance as a plain number.
+const resultFields = (bet, won, balance) => [['Bet', bet], won ? ['Won', won] : ['Lost', bet], ['New Balance', balance]];
 const playAgainButton = (againId, bet, userId) => [`${againId}:${bet}:${userId}`, `Play Again (${fmt(bet)})`, ButtonStyle.Success];
 
 // A game message. host: { color, name, icon (ability icon file, top left), art (folder with the host's
 // portrait.png / gloat.png / injured.png), prefix (their attachment names) }.
 // image: { name, data } (a new name each step, so Discord doesn't reuse the old picture), optional;
-// fields: [[label, souls]]; footer: shown as given (footers can't be italic).
+// fields: [[label, souls]] (a text instead of a number is shown as it is); footer: shown as given (footers can't be italic).
 // buttons: one row of [customId, label, style, { emoji, disabled }?] (label may be null when there's an emoji),
 // or rows: several such rows (up to 5), each either that list or a finished ActionRowBuilder (the Bookwyrm game's dropdowns).
 // Optional: title, color (instead of the host's), rows: [] for no buttons.
@@ -82,7 +84,7 @@ function gameMessage(host, { lines, image, buttons, rows = [buttons], fields, fo
     .setDescription(lines.join('\n'));
   if (title) embed.setTitle(title);
   if (image) embed.setImage(`attachment://${image.name}`);
-  if (fields) embed.addFields(fields.map(([name, souls]) => ({ name, value: soulsText(souls), inline: true })));
+  if (fields) embed.addFields(fields.map(([name, value]) => ({ name, value: typeof value === 'number' ? soulsText(value) : value, inline: true })));
   if (footer) embed.setFooter({ text: footer });
   const button = ([customId, label, style, { emoji, disabled } = {}]) => {
     const b = new ButtonBuilder().setCustomId(customId).setStyle(style).setDisabled(Boolean(disabled));
@@ -172,15 +174,17 @@ function betCommand(name, description, games) {
 // A game's button routes (see components/index.js). Game buttons are '<buttonId>:<game id>:<args...>';
 // play(id, userId, args) returns a message payload, { error } (only the clicker sees it) or null (a stale
 // click, ignored). Play Again is '<againId>:<bet>:<player id>' and only that player can press it.
-function gameButtons(name, game, { play, slow = false }) {
+// menu: the game also has a dropdown with its BUTTON_ID prefix (Remling Race); its picked value comes last in args.
+function gameButtons(name, game, { play, slow = false, menu = false }) {
   const pressed = (prefix) => (interaction) => interaction.isButton() && interaction.customId.startsWith(`${prefix}:`);
   return [
     {
       name,
       label: 'Game button',
-      matches: pressed(game.BUTTON_ID),
+      matches: (interaction) => (pressed(game.BUTTON_ID)(interaction) || (menu && interaction.isStringSelectMenu?.() && interaction.customId.startsWith(`${game.BUTTON_ID}:`))),
       async execute(interaction) {
-        const [, id, ...args] = interaction.customId.split(':');
+        const [, id, ...rest] = interaction.customId.split(':');
+        const args = menu && interaction.isStringSelectMenu?.() ? [...rest, ...interaction.values] : rest;
         const result = await play(id, interaction.user.id, args);
         if (!result) return interaction.deferUpdate();
         if (result.error) return interaction.reply({ content: result.error, flags: MessageFlags.Ephemeral });

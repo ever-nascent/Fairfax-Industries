@@ -7,7 +7,7 @@
 //   earned: souls its trips have paid (hero level, levels.js), tiers: { <ability slot>: tier 0-3 },
 //   items: { weapon | vitality | spirit: [item names] }, legendary, corrupted: { name, drawback, amount } (its one corrupted item, stats.js),
 //   imbues: { <item name>: ability slot }, egg: souls its Golden Goose Egg has grown (wiki souls), giftTime: fight seconds towards the next
-//   Eternal Gift buff, gifts: { <buff key>: count } (Eternal Gift's permanent buffs),
+//   Eternal Gift buff, gifts: { <buff key>: count } (Eternal Gift's permanent buffs), kept: { <item>: stacks } (Glass Cannon's and Trophy Collector's kill stacks, kept until the hero dies),
 //   cooldowns: { <target | '<guardian | walker | waves>:<lane>' | 'siege' | 'roam'>: ms timestamp it is ready again },
 //   down: { '<guardian | walker>:<lane>': ms timestamp until which it stays beaten } (the lanes, below), clears: { <target>: times cleared },
 //   rejuvs, buffs: { <buff key>: how many it holds } (permanent, from roaming; buffs.js), bridge: [bridge buff keys held for its next fight] } }.
@@ -24,7 +24,7 @@ const { roam, COOLDOWN: ROAM_COOLDOWN } = require('./roam');
 const { progress, pointsSpent, campMultiplier, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, rollLegendary, waitingLegendary, SLOT_OF, ITEM_POOL, itemsOf, sellPrice,
   brokerOpen, brokerNext, corruptible, corruptPrice, rollDrawback } = require('./levels');
 const { itemByName, effectValue } = require('./stats');
-const { IMBUES } = require('./items');
+const { IMBUES, NO_ULT_IMBUE, keptAfter } = require('./items');
 const { rollAnyBuff } = require('./buffs');
 const { PAYOUT_SCALE } = require('./targets');
 const { rollRival, rivalKit, duel, ENCOUNTER_CHANCE } = require('./encounter');
@@ -40,7 +40,7 @@ const blankRecord = () => ({ hero: null, heroes: {}, tokens: 0, siegeTokens: [] 
 // One hero's saved part -> the working copy, and back (empty parts are left out of the file).
 const heroPart = (mine = {}) => ({
   souls: mine.souls ?? 0, earned: mine.earned ?? 0, tiers: { ...mine.tiers }, items: itemsOf(mine.items), legendary: mine.legendary ?? null, corrupted: mine.corrupted ?? null,
-  imbues: { ...mine.imbues }, egg: mine.egg ?? 0, giftTime: mine.giftTime ?? 0, gifts: { ...mine.gifts },
+  imbues: { ...mine.imbues }, egg: mine.egg ?? 0, giftTime: mine.giftTime ?? 0, gifts: { ...mine.gifts }, kept: { ...(mine.glass ? { 'Glass Cannon': mine.glass } : {}), ...mine.kept }, // (`glass`: Glass Cannon's alone, Oct 22)
   cooldowns: { ...mine.cooldowns }, down: { ...mine.down }, clears: { ...mine.clears }, rejuvs: mine.rejuvs ?? 0, buffs: { ...mine.buffs }, bridge: [...(mine.bridge ?? [])],
 });
 const HERO_KEYS = Object.keys(heroPart());
@@ -166,13 +166,13 @@ const hauntFile = (family, size) => path.join(ASSETS, 'farm', 'haunts', `${famil
 // `cleared` is how many waves were beaten and every one of them pays. Returns the run:
 //   { key, siege, hero, won, timedOut, cleared (stages beaten), stageNames, seconds, souls, rejuvsUsed, rejuvsEarned,
 //     family: { key, name, size } | null (camps), frames (snapshots to replay), log: [[seconds, text]] }
-function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, clears = 0, family: wanted, walkersDown: fallen = 0 } = {}) {
+function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, kept = {}, clears = 0, family: wanted, walkersDown: fallen = 0 } = {}) {
   const rnd = (n) => Math.floor(rng() * n);
   const isSiege = requested === 'siege';
   const isWaves = requested === 'waves';
   const key = requested;
   const target = isSiege || isWaves ? null : TARGETS[key];
-  const hero = buildHero(heroName, { buffs, bridge, boons, items, tiers, unlocked, corrupted, imbues, copies });
+  const hero = buildHero(heroName, { buffs, bridge, boons, items, tiers, unlocked, corrupted, imbues, copies, kept });
   hero.rejuvs = isSiege ? rejuvs : 0; // Rejuvs are for the siege (his design); the Mid-Boss gives them, never takes them
   const size = CAMP_SIZE[key];
   // a camp's family: the one its details screen showed (`wanted`), else a random one of its size
@@ -230,7 +230,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
   const total = isWaves ? 0 : isSiege ? SIEGE.stages.reduce((s, st) => s + st.souls, 0) : target.souls;
   if (isWaves) {
     return { key, waves: true, siege: false, hero: heroName, won: out.stage > 0, timedOut: out.timedOut, cleared: out.stage, stageNames: stages.map((s) => s.name), seconds: out.time,
-      souls: wavesPay(out.stage) + payout(out.bonusSouls), itemSouls: payout(out.bonusSouls), kills: killed(out.stage), rejuvsUsed: 0, rejuvsEarned: 0, family: null, frames: downsample(frames, MAX_FRAMES), log };
+      souls: wavesPay(out.stage) + payout(out.bonusSouls), itemSouls: payout(out.bonusSouls), kills: killed(out.stage), rejuvsUsed: 0, rejuvsEarned: 0, family: null, kept: keptAfter(hero), frames: downsample(frames, MAX_FRAMES), log };
   }
   return {
     key, siege: isSiege, hero: heroName, won: out.won, timedOut: out.timedOut,
@@ -239,7 +239,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     souls: out.won ? Math.round(payout(total) * (family ? campMultiplier(boons) : 1) * clearSouls(clears)) + payout(out.bonusSouls) : 0, // camps pay more as the hero levels, every target as it grows
     itemSouls: out.won ? payout(out.bonusSouls) : 0, // what souls items (Trophy Collector, Cultist Sacrifice) added
     rejuvsUsed: isSiege ? rejuvs - hero.rejuvs : 0, rejuvsEarned: out.won && target ? target.rejuv || 0 : 0,
-    family: family ? { key: family, name: familyName(family), size } : null,
+    family: family ? { key: family, name: familyName(family), size } : null, kept: keptAfter(hero),
     frames: downsample(frames, MAX_FRAMES), log,
   };
 }
@@ -259,6 +259,7 @@ const fightKit = (r) => ({
   boons: progress(r.earned).level, unlocked: progress(r.earned).unlocks, points: progress(r.earned).points, tiers: r.tiers, items: Object.values(r.items).flat(), corrupted: r.corrupted ?? null, imbues: r.imbues ?? {},
   buffs: Object.entries(r.gifts ?? {}).reduce((all, [k, n]) => ({ ...all, [k]: (all[k] ?? 0) + n }), { ...r.buffs }),
   copies: roster().filter((n) => n !== r.hero && !!r.heroes?.[n]), // Sinclair copies the ultimate of one of the member's other unlocked heroes (his call, Oct 5)
+  kept: { ...r.kept }, // Glass Cannon's and Trophy Collector's kill stacks (his calls, Oct 22: kept until the hero dies)
 });
 
 async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
@@ -286,11 +287,12 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
     const run = simulate(claim.hero, key, { rng, family, rejuvs: claim.rejuvs, bridge: claim.bridge, ...claim.kit });
     if (PER_LANE.has(key)) run.lane = lane;
     if (run.waves) { // a wave run: no clears, nothing goes down; the member's furthest run is kept (his call, Oct 11: the member's, not the hero's)
-      paid(run.souls, await settle((h, r) => { h.earned += run.souls; h.souls += run.souls; run.best = r.bestWave = Math.max(r.bestWave ?? 0, run.cleared); run.legendary = dropLegendary(h, run.kills, rng); afterFight(h, run, rng); run.rival = meet(userId, r, run, rng, now); }));
+      paid(run.souls, await settle((h, r) => { Object.assign(h.kept, run.kept); h.earned += run.souls; h.souls += run.souls; run.best = r.bestWave = Math.max(r.bestWave ?? 0, run.cleared); run.legendary = dropLegendary(h, run.kills, rng); afterFight(h, run, rng); run.rival = meet(userId, r, run, rng, now); }));
       return { run };
     }
     paid(run.souls, await settle((h, r) => {
       h.earned += run.souls; h.souls += run.souls; run.legendary = dropLegendary(h, run.kills, rng); afterFight(h, run, rng);
+      Object.assign(h.kept, run.kept);
       if (run.won && LANED.has(key)) h.down[slot] = now + cooldownSeconds(slot) * 1000;
       h.clears[key] = Math.max(0, Math.min(CLEAR_CAP, (h.clears[key] ?? 0) + (run.won ? 1 : -1)));
       h.rejuvs = Math.max(0, Math.min(MAX_REJUVS, h.rejuvs - run.rejuvsUsed + run.rejuvsEarned));
@@ -350,7 +352,7 @@ async function fightRival(userId, rival, { rng = Math.random, now = Date.now() }
   if (hasHero(r, rival)) return { error: 'owned' }; // unlocked meanwhile (a token)
   const kit = fightKit(r);
   const run = duel(r.hero, kit, rival, rivalKit(kit, rng), { rng, rejuvs: r.rejuvs });
-  if (run.won || run.rejuvsUsed) await updateHero(userId, r.hero, (h, rec) => { h.rejuvs = Math.max(0, h.rejuvs - run.rejuvsUsed); if (run.won && !hasHero(rec, rival)) rec.heroes[rival] = { earned: 0, tiers: {}, items: {} }; }); // the Rejuvs of the hero that duelled
+  if (run.won || run.rejuvsUsed || Object.keys(run.kept).length) await updateHero(userId, r.hero, (h, rec) => { Object.assign(h.kept, run.kept); h.rejuvs = Math.max(0, h.rejuvs - run.rejuvsUsed); if (run.won && !hasHero(rec, rival)) rec.heroes[rival] = { earned: 0, tiers: {}, items: {} }; }); // the Rejuvs of the hero that duelled
   return { run };
 }
 
@@ -440,6 +442,7 @@ async function sellItem(userId, name) {
     const refund = sellPrice(card, r.corrupted);
     if (r.corrupted?.name === name) r.corrupted = null;
     if (name === EGG.Name) r.egg = 0; // an unhatched egg's growth goes with it
+    delete r.kept[name]; // and Glass Cannon's / Trophy Collector's kill stacks
     delete r.imbues[name];
     r.items[slot] = r.items[slot].filter((n) => n !== name);
     r.souls += refund;
@@ -481,7 +484,7 @@ async function corruptItem(userId, name, { now = Date.now(), rng = Math.random }
 const setImbue = (userId, name, slot) => updateFarmUser(userId, (r) => {
   if (!r.hero) return { error: 'no-hero' };
   if (!IMBUES.includes(name) || !Object.values(r.items).flat().includes(name)) return { error: 'missing' };
-  if (!(slot >= 1 && slot <= 4)) return { error: 'slot' };
+  if (!(slot >= 1 && slot <= (NO_ULT_IMBUE.has(name) ? 3 : 4))) return { error: 'slot' }; // Echo Shard, Omnicharge Signet: non-ultimates only (the wiki)
   r.imbues[name] = slot;
   return { ok: true };
 });

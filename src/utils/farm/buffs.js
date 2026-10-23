@@ -3,7 +3,7 @@
 // The wiki's three levels depend on match minute (L1 at 0 min, L2 after 10, L3 after 30); there is no match clock here, so every
 // buff is level 1 for now. ponytail: placeholder, he hasn't said how levels should work.
 //   amount  what one buff gives, in the wiki's units (percent, or flat for Max Health / Spirit Power / Move Speed)
-//   odds    the wiki's drop rate out of 100 (Health 20, Move Speed and Ability Range 5, the rest 10)
+//   odds    the wiki's drop rate out of 100 (Health 20, Move Speed and Ability Range 5, the rest 10); Precision (his, Oct 22) is 10 on top, so they add to 110 and a drop is weighted by them
 //   apply   how a total of those units changes the stat sheet
 // Resists multiply, they don't add (his call, Oct 2, like the game): 30% and 30% make 51%, so stacking them is worth less each time.
 const stackResist = (resist, more) => 1 - (1 - resist) * (1 - more);
@@ -18,6 +18,7 @@ const BUFFS = {
   spiritResist: { name: 'Spirit Resist', odds: 10, amount: 0.5, unit: '%', apply: (s, v) => { s.spiritResist = stackResist(s.spiritResist, v / 100); } },
   moveSpeed: { name: 'Move Speed', odds: 5, amount: 0.1, unit: ' m/s', apply: (s, v) => { s.moveSpeed += v; } },
   abilityRange: { name: 'Ability Range', odds: 5, amount: 0.25, unit: '%', apply: (s, v) => { s.rangeMult += v / 100; } },
+  precision: { name: 'Precision', odds: 10, amount: 1, unit: '', apply: (s, v) => { s.precision += v; } }, // his call, Oct 22 (not one of the wiki's ten)
 };
 
 // "+3% Weapon Damage" for `count` buffs of `key` (one buff: count 1).
@@ -31,7 +32,7 @@ function applyBuffs(stats, buffs = {}) {
   for (const [key, count] of Object.entries(buffs)) BUFFS[key]?.apply(stats, BUFFS[key].amount * count);
 }
 
-// The buffs on the map today (his idea: they rotate every day). A UTC date picks DAILY_BUFFS of the 10 types, the same for everyone.
+// The buffs on the map today (his idea: they rotate every day). A UTC date picks DAILY_BUFFS of the 11 types, the same for everyone.
 // ponytail: how many are on the map, and whether the rotation should work differently, are placeholders.
 const DAILY_BUFFS = 4;
 function dailyBuffs(day) {
@@ -50,7 +51,7 @@ function pickBuff(pool, rng = Math.random) {
 }
 // One buff drop from today's buffs (a roam).
 const rollBuff = (day, rng = Math.random) => pickBuff(dailyBuffs(day), rng);
-// One of all ten (Eternal Gift, a hatched Golden Goose Egg: their own tables are these, with the same odds).
+// One of all eleven (Eternal Gift, a hatched Golden Goose Egg: their own tables are these, with the same odds).
 const rollAnyBuff = (rng = Math.random) => pickBuff(Object.keys(BUFFS), rng);
 
 // Bridge buffs (the wiki's "Powerups"): temporary, four types, one on the map each UTC hour (the same for everyone). A roam may find the

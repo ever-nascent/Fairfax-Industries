@@ -6,7 +6,7 @@ const { expireGames, TIME_LIMIT_MINUTES } = require('../src/utils/casino');
 const { changeSouls, getUser } = require('../src/utils/xp');
 const silver = require('../src/utils/silver');
 
-const { games, startGame, move, fire, play, loadShells, count, winnings, SILVER } = silver;
+const { games, startGame, move, fire, play, useItem, decide, liveChance, shown, deal, loadShells, count, winnings, SILVER, MAX_ITEMS } = silver;
 const souls = async (id) => (await getUser(id)).souls;
 const idOf = (m) => m.components[0].components[0].data.custom_id.split(':')[1];
 const base = (shells, turn = 'a') => ({ players: ['a', 'b'], charges: { a: 3, b: 3 }, shells, turn, log: [], name: 'A', opponentName: 'B', userId: 'a', opponentId: 'b' });
@@ -36,9 +36,70 @@ test('shots: live hurts, blank on self keeps the turn, blank on the other passes
   assert.strictEqual(g.winner, 'a');
 });
 
-test('Silver: shoots herself only when no live shell is left', () => {
-  assert.strictEqual(silver.silverShoots(base(['blank', 'blank'])), true);
-  assert.strictEqual(silver.silverShoots(base(['blank', 'blank', 'live'])), false);
+test('Silver without items: shoots herself only on a sure blank, else shoots you', () => {
+  assert.deepStrictEqual(decide(base(['blank', 'blank']), 'a'), { shoot: true });
+  assert.deepStrictEqual(decide(base(['blank', 'blank', 'live']), 'a'), { shoot: false });
+});
+
+const withItems = (shells, items, extra = {}) => ({ ...base(shells), items: { a: items, b: [] }, known: {}, ...extra });
+
+test('items: each does what it says and the turn stays', () => {
+  let r = useItem(withItems(['live', 'blank'], ['glass']), 'glass');
+  assert.match(r.secret, /Live/);
+  assert.strictEqual(r.game.known.a, 'live');
+  assert.strictEqual(r.game.turn, 'a');
+  assert.deepStrictEqual(r.game.items.a, []);
+  assert.strictEqual(liveChance(r.game, 'a'), 1);
+  assert.strictEqual(liveChance(r.game, 'b'), 0.5); // only the user saw it
+
+  r = useItem(withItems(['live', 'blank', 'live'], ['beer']), 'beer');
+  assert.deepStrictEqual(r.game.shells, ['blank', 'live']);
+  assert.match(r.game.log[0], /Racked Out A .* Live Shell/);
+  r = useItem(withItems(['blank'], ['beer']), 'beer'); // the last shell: a reload, items dealt
+  assert.ok(r.game.shells.length >= 2 && r.game.items.a.length === 2 && r.game.items.b.length === 2);
+
+  r = useItem(withItems(['live', 'blank'], ['saw', 'saw']), 'saw');
+  assert.ok(useItem(r.game, 'saw').error); // already sawed off
+  let g = fire(r.game, false);
+  assert.strictEqual(g.charges.b, 1);
+  assert.strictEqual(g.saw, false);
+
+  r = useItem(withItems(['blank', 'live', 'live'], ['cuffs', 'cuffs']), 'cuffs');
+  g = fire(r.game, false); // blank on b: b is cuffed, so the turn comes back
+  assert.strictEqual(g.turn, 'a');
+  assert.strictEqual(g.event.skipped, 'b');
+  assert.ok(useItem(g, 'cuffs').error); // b just skipped: not again yet
+  g = fire(g, false); // live on b, the turn passes now
+  assert.strictEqual(g.turn, 'b');
+
+  r = useItem(withItems(['live'], ['smokes']), 'smokes');
+  assert.ok(r.error); // full charges
+  r = useItem({ ...withItems(['live'], ['smokes']), charges: { a: 1, b: 3 } }, 'smokes');
+  assert.strictEqual(r.game.charges.a, 2);
+
+  r = useItem(withItems(['blank', 'live', 'live'], ['inverter']), 'inverter');
+  assert.deepStrictEqual(r.game.shells, ['live', 'live', 'live']);
+  assert.deepStrictEqual(shown(r.game), { live: 2, blank: 1 }); // the flip doesn't show in the counts
+  assert.ok(Math.abs(liveChance(r.game, 'b') - 1 / 3) < 1e-9); // 2 of 3 were live as loaded, flipped: 1 in 3
+
+  assert.ok(useItem(withItems(['live'], []), 'glass').error);
+});
+
+test('items: a load deals 2 each, never more than the cap', () => {
+  const players = ['a', 'b'];
+  assert.strictEqual(deal({ players }).a.length, 2);
+  assert.strictEqual(deal({ players, items: { a: Array(7).fill('beer'), b: [] } }).a.length, MAX_ITEMS);
+});
+
+test('Silver with items: heals, peeks, flips a blank, saws a likely live, cuffs before shooting', () => {
+  const at = (shells, items, extra = {}) => decide(withItems(shells, items, extra), 'a');
+  assert.deepStrictEqual(at(['live', 'blank'], ['smokes'], { charges: { a: 2, b: 3 } }), { item: 'smokes' });
+  assert.deepStrictEqual(at(['live', 'blank'], ['glass']), { item: 'glass' });
+  assert.deepStrictEqual(at(['blank', 'blank'], ['inverter']), { item: 'inverter' });
+  assert.deepStrictEqual(at(['live', 'blank'], ['saw'], { known: { a: 'live' } }), { item: 'saw' });
+  assert.deepStrictEqual(at(['live', 'blank'], ['cuffs'], { known: { a: 'live' } }), { item: 'cuffs' });
+  assert.deepStrictEqual(at(['live', 'blank'], [], { known: { a: 'live' } }), { shoot: false });
+  assert.deepStrictEqual(at(['live', 'blank'], [], { known: { a: 'blank' } }), { shoot: true });
 });
 
 test('play: Silver answers automatically and hands the turn back', () => {
@@ -47,17 +108,43 @@ test('play: Silver answers automatically and hands the turn back', () => {
   assert.ok(g.log.length >= 2);
 });
 
-test('fairness: mirroring Silver wins 45-60% of the time, always shooting her is no better (1.85x pays about 95% back)', () => {
-  for (const strategy of [(c) => c.live === 0, () => false]) {
+test("fairness: playing by Silver's own rules wins 45-60%, ignoring the items far less", () => {
+  const rate = (strategy, N = 8000) => {
     let wins = 0;
-    const N = 10000;
     for (let i = 0; i < N; i++) {
-      let g = { ...base(loadShells()), players: ['a', SILVER], charges: { a: 3, [SILVER]: 3 }, opponentId: null, opponentName: 'Silver' };
-      while (!g.winner) g = play(g, strategy(count(g.shells)));
+      const players = ['a', SILVER];
+      let g = { ...base(loadShells()), players, charges: { a: 3, [SILVER]: 3 }, opponentId: null, opponentName: 'Silver', items: deal({ players }), known: {} };
+      while (!g.winner) {
+        const d = strategy(g);
+        g = d.item ? { ...useItem(g, d.item).game, acted: true } : play(g, d.shoot);
+      }
       if (g.winner === 'a') wins++;
     }
-    assert.ok(wins / N > 0.45 && wins / N < 0.6, `win rate ${wins / N}`);
-  }
+    return wins / N;
+  };
+  const mirror = rate((g) => decide(g, 'a'));
+  assert.ok(mirror > 0.45 && mirror < 0.6, `win rate ${mirror}`);
+  assert.ok(rate(() => ({ shoot: false })) < mirror, 'always shooting her should do worse');
+});
+
+test('the dropdown: an item through move, the Glass answers privately, the turn stays', async () => {
+  const user = { id: 'rou-items' };
+  await changeSouls(user.id, 1000);
+  const start = await startGame(user, 'Items', 100);
+  const id = idOf(start);
+  assert.strictEqual(start.components[0].components[0].data.custom_id, `roulette:${id}:item`);
+  await games().update(id, (g) => ({ ...g, shells: ['live', 'blank'], items: { [user.id]: ['glass', 'cuffs'], [SILVER]: [] } }));
+  assert.ok((await move(id, 'someone', ['item', 'glass'])).error);
+  const peek = await move(id, user.id, ['item', 'glass']);
+  assert.match(peek.private, /Live/);
+  assert.ok(peek.update.embeds[0].toJSON().description.includes('Magnifying Glass'));
+  const g = await games().get(id);
+  assert.strictEqual(g.turn, user.id);
+  assert.deepStrictEqual(g.items[user.id], ['cuffs']);
+  assert.ok((await move(id, user.id, ['item', 'glass'])).error); // used up
+  const cuffed = await move(id, user.id, ['item', 'cuffs']);
+  assert.ok(cuffed.embeds[0].toJSON().description.includes('Handcuffs'));
+  await games().delete(id);
 });
 
 test('against Silver: bet taken, only the player shoots, win pays 1.85x, loss pays nothing', async () => {

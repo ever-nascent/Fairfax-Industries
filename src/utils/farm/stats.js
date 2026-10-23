@@ -5,6 +5,7 @@
 const path = require('node:path');
 const { ASSETS } = require('../art');
 const { applyBuffs, BRIDGE, stackResist } = require('./buffs');
+const { PRECISION } = require('./engine');
 
 const load = (name) => require(path.join(ASSETS, 'farm', `${name}.json`));
 const HEROES = load('heroes');
@@ -30,21 +31,23 @@ const ITEM_STATS = {
   TechPower: (s, v) => { s.spirit += v; },
   SpiritPower: (s, v) => { s.spirit += v; },
   SpiritPowerInnate: (s, v) => { s.spirit += v; },
-  BulletLifestealPercent: (s, v) => { s.lifesteal += v / 100; },
+  BulletLifestealPercent: (s, v) => { s.lifesteal = stackResist(s.lifesteal, v / 100); }, // lifesteal stacks multiplicatively (the wiki), like resists
   CooldownReduction: (s, v) => { s.cdr += v / 100; },
   ItemCooldownReduction: (s, v) => { s.itemCdr += v / 100; },
   UltimateCooldownReduction: (s, v) => { s.ultCdr += v / 100; },
   BonusAbilityDurationPercent: (s, v) => { s.durationMult += v / 100; },
   OutOfCombatHealthRegen: (s, v) => { s.oocRegen += v; }, // per second, after a few seconds without taking damage
-  AbilityLifestealPercentHero: (s, v) => { s.spiritLifesteal += v / 100; }, // heal from the damage its abilities and items deal
-  AbilityLifestealPercentHeroPassive: (s, v) => { s.spiritLifesteal += v / 100; },
+  AbilityLifestealPercentHero: (s, v) => { s.spiritLifesteal = stackResist(s.spiritLifesteal, v / 100); }, // heal from the damage its abilities and items deal
+  AbilityLifestealPercentHeroPassive: (s, v) => { s.spiritLifesteal = stackResist(s.spiritLifesteal, v / 100); },
   TechPowerPercent: (s, v) => { s.spiritMult += v / 100; }, // % more spirit power
   MaxHealthLossPercent: (s, v) => { s.healthMult += v / 100; }, // Glass Cannon: -13
-  NonPlayerBonusWeaponPower: (s, v) => { s.weaponDamageMult += v / 100; }, // every enemy on a farm is an NPC
-  NonPlayerBulletResist: (s, v) => { s.bulletResist = stackResist(s.bulletResist, v / 100); },
+  // every farm enemy is an NPC; a rival hero is not, so a duel takes these back off (engine.js shotDamage / damage; npcWeapon, npcBulletResist)
+  NonPlayerBonusWeaponPower: (s, v) => { s.weaponDamageMult += v / 100; s.npcWeapon += v / 100; },
+  NonPlayerBulletResist: (s, v) => { s.bulletResist = stackResist(s.bulletResist, v / 100); s.npcBulletResist = stackResist(s.npcBulletResist, v / 100); },
   BonusMoveSpeed: (s, v) => { s.moveSpeed += v; }, // m/s: the chance to dodge a blast (engine.js DODGE)
   BonusSprintSpeed: (s, v) => { s.moveSpeed += v; }, // getting out of the way is a sprint
   TechRangeMultiplier: (s, v) => { s.rangeMult += v / 100; }, // ability range: how far area abilities and items reach (engine.js near)
+  SlowResistancePercent: (s, v) => { s.slowResist = stackResist(s.slowResist, v / 100); }, // a slow on the hero is that much weaker (engine.js slowed)
   StatusResistancePercent: (s, v) => { s.statusResist = stackResist(s.statusResist, v / 100); }, // debuff resist: shortens an enemy blast's curse
   InnateStatusResistancePercent: (s, v) => { s.statusResist = stackResist(s.statusResist, v / 100); },
   HealAmpCastPercent: (s, v) => { s.healAmp += v / 100; },
@@ -64,7 +67,7 @@ const ITEM_STATS = {
 const PASSIVE_STATS = {
   'Superior Cooldown': ['CooldownReduction'], 'Transcendent Cooldown': ['CooldownReduction', 'ItemCooldownReduction'],
   'Greater Expansion': ['TechRangeMultiplier'], 'Superior Duration': ['BonusAbilityDurationPercent'],
-  'Debuff Reducer': ['StatusResistancePercent'], 'Healing Booster': ['HealAmpCastPercent'], 'Heroic Aura': ['BulletResist'],
+  'Debuff Reducer': ['StatusResistancePercent'], 'Enduring Speed': ['SlowResistancePercent'], 'Healing Booster': ['HealAmpCastPercent'], 'Heroic Aura': ['BulletResist'],
   Witchmail: ['CooldownReduction'], 'Mystic Conduit': ['TechRangeMultiplier', 'CooldownReduction'], // Mystic Conduit's aura, at full strength on its holder
 };
 // A number from an item's Passive / Active / other non-innate entries (the effect numbers).
@@ -186,10 +189,14 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
     staminaRegen: 0,
     slideScale: 0,
     attackRange: 0,
+    precision: PRECISION.base, // flat points: headshot chance in %, and above the base, more spread pellets landing (engine.js)
     bonusCharges: 0,
     chargedSpirit: 0,
     chargedCdr: 0,
     chargeGapCut: 0,
+    npcWeapon: 0,
+    slowResist: 0,
+    npcBulletResist: 0,
   };
   const baseHealth = s.maxHealth;
   for (const name of items) {

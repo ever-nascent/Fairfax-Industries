@@ -38,7 +38,7 @@ test('a game: safe picks raise the prize, cash out pays once, only the owner pla
   assert.strictEqual(await bb.move(id, user.id, '5'), null); // already picked
   await bb.move(id, user.id, '6');
   const cash = await bb.move(id, user.id, 'cash');
-  assert.match(cash.embeds[0].toJSON().description, /You win/);
+  assert.match(cash.embeds[0].toJSON().description, /You cashed out after/);
   assert.match(cash.embeds[0].toJSON().thumbnail.url, /_injured\.png$/);
   assert.strictEqual((await getUser(user.id)).souls, 900 + 150);
   assert.strictEqual(await bb.move(id, user.id, 'cash'), null); // double click pays nothing

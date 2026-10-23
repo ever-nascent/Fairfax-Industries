@@ -3,11 +3,11 @@
 const { GIFEncoder, quantize, applyPalette } = require('gifenc');
 
 // frames: [{ rgba (Uint8ClampedArray, width*height*4, or a function that draws it: then only one frame is
-// held at a time), delay (ms) }]. Plays once, then stays on the last frame.
-function encodeGif(frames, width, height) {
+// held at a time), delay (ms) }]. Plays once, then stays on the last frame; { loop: true } plays forever, and { picks } says which frames the
+// palette is made from (default: four spread through the animation; fewer is faster when most frames look alike).
+function encodeGif(frames, width, height, { loop = false, picks = [0, Math.floor(frames.length / 3), Math.floor((frames.length * 2) / 3), frames.length - 1] } = {}) {
   const pixels = (frame) => (typeof frame.rgba === 'function' ? frame.rgba() : frame.rgba);
   // palette from a few frames spread through the animation, so colours that only show up mid-way are in it
-  const picks = [0, Math.floor(frames.length / 3), Math.floor((frames.length * 2) / 3), frames.length - 1];
   const size = width * height * 4;
   const sample = new Uint8ClampedArray(size * picks.length);
   picks.forEach((f, i) => sample.set(pixels(frames[f]), i * size));
@@ -27,7 +27,7 @@ function encodeGif(frames, width, height) {
     gif.writeFrame(index, width, height, {
       palette: f === 0 ? [...palette, [0, 0, 0]] : undefined,
       delay: frame.delay,
-      repeat: -1, // play once
+      repeat: loop ? 0 : -1, // forever, or once
       transparent: f > 0,
       transparentIndex: clear,
       dispose: 1, // keep the previous frame under the transparent pixels

@@ -9,7 +9,10 @@ const REJUV_DELAY = 3; // seconds before a Rejuv revive gets up
 // weaker too. ponytail: 12% / 25% a second and half strength are placeholders, tuned with the enemy damage (targets.js HARDNESS).
 const HEAL_RATE = 0.12;
 const HEAL_POOL = 0.25;
-const LIFESTEAL_VS_NPC = 0.5;
+const LIFESTEAL_VS_NPC = 0.5; // a hero ability's own lifesteal (Silver, Viscous, Mo & Krill, Infernus) off an NPC
+// Bullet and spirit lifesteal (the stats) off a non-hero: the wiki's Lifesteal page (his call, Oct 22)
+const BULLET_LIFESTEAL_VS_NPC = 0.6;
+const SPIRIT_LIFESTEAL_VS_NPC = 0.4;
 const OUT_OF_COMBAT = 5; // seconds without taking damage before out-of-combat regen starts (guess; the wiki doesn't say)
 // Enemies hit once a second (the same damage per second as a steady stream), so items that react to a "hit" have one (Oct 3).
 const ATTACK_EVERY = 1;
@@ -27,7 +30,12 @@ const DUEL = { damage: 0.5, miss: 0.25 };
 // (within `full` metres, e.g. right after a melee hit) every pellet lands; the chance falls to `far` of them landing at `at` metres and beyond.
 // A gun that deals one shot's damage however many pellets hit (Drifter) has nothing to miss. ponytail: the wiki has no spread numbers; his to tune.
 const PELLETS = { full: 5, at: 15, far: 0.7 };
-const pelletChance = (distance) => 1 - (1 - PELLETS.far) * clamp((distance - PELLETS.full) / (PELLETS.at - PELLETS.full), 0, 1);
+// Precision (his call, Oct 22: a flat stat, 25 to start, +1% a point, raised by permanent buffs): a bullet is a headshot with `precision` percent
+// chance, and every point above the base adds a percentage point to a spread pellet landing (never above all of them). ponytail: the base adds
+// nothing to pellets, so shotguns are as accurate as before until something raises it; his to say otherwise.
+const PRECISION = { base: 25 };
+const headshotChance = (unit) => clamp(unit.stat('precision') / 100, 0, 1);
+const pelletChance = (distance, precision = PRECISION.base) => clamp(1 - (1 - PELLETS.far) * clamp((distance - PELLETS.full) / (PELLETS.at - PELLETS.full), 0, 1) + (precision - PRECISION.base) / 100, 0, 1);
 const { stackResist } = require('./buffs');
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const CC_TAGS = ['sleep', 'stun', 'disarm', 'silence', 'immobilize'];
@@ -43,7 +51,7 @@ const SPREAD = 4;
 // ponytail: all three numbers are placeholders.
 const DODGE = { from: 6, per: 0.1, max: 0.6 };
 // A slow on the hero itself (a Haunt's spores, a rival hero's slow; his call, Oct 10): that much less move speed here, and stamina comes back that much slower (move()).
-const slowed = (unit) => clamp(unit.mod('slow'), 0, 0.9);
+const slowed = (unit) => clamp(unit.mod('slow') * (1 - clamp(unit.stat('slowResist'), 0, 1)), 0, 0.9); // slow resist (Enduring Speed, Juggernaut, Fleetfoot) takes its share off
 const dodgeChance = (unit, foe) => clamp(clamp((unit.stat('moveSpeed') * (1 - slowed(unit)) - DODGE.from) * DODGE.per, 0, DODGE.max) + (foe ? foe.mod('slow') : 0), 0, 0.9);
 
 class Unit {
@@ -172,8 +180,10 @@ class Fight {
       amount = hit.amount;
       if (amount <= 0) return 0;
     }
-    if (type === 'bullet' && this.rng() < target.mod('evasion')) return 0;
-    const resist = type === 'true' || type === 'melee' ? 0 : type === 'bullet' ? (opts.ignoreBulletResist ? 0 : stackResist(target.stats.bulletResist, target.mod('bulletResist')))
+    if (type === 'bullet' && !opts.unavoidable && !opts.noEvade && this.rng() < target.mod('evasion')) return 0; // unavoidable (Armor Piercer), noEvade (Lucky Shot's bonus)
+    const npcOnly = source.team === 'hero' ? target.stats.npcBulletResist ?? 0 : 0; // Monster Rounds' "vs. NPCs" resist: taken back out of the stack against a rival hero
+    const bulletResist = npcOnly ? 1 - (1 - target.stats.bulletResist) / (1 - npcOnly) : target.stats.bulletResist;
+    const resist = type === 'true' || type === 'melee' ? 0 : type === 'bullet' ? (opts.ignoreBulletResist ? 0 : stackResist(bulletResist, target.mod('bulletResist')))
       : opts.ignoreSpiritResist ? 0 : stackResist(target.stats.spiritResist, target.mod('spiritResist')); // temporary resists and shreds multiply with the unit's own too
     let incoming = amount * Math.max(0, 1 + (source.stats.damageDealt ?? 0) + source.mod('damageDealt')) * (1 - clamp(resist, -1, 0.9)) * Math.max(0, 1 + target.mod('damageTaken'));
     if (type === 'bullet') incoming *= Math.max(0, 1 + target.mod('bulletTaken')); // Metal Skin
@@ -184,7 +194,7 @@ class Fight {
     }
     const eased = amount > 0 ? Math.min(1, incoming / amount) : 1; // what the target's resists left of the hit
     for (const s of target.statuses) { // barriers soak damage first
-      if (!(s.barrier > 0) || incoming <= 0) continue;
+      if (!(s.barrier > 0) || incoming <= 0 || opts.unavoidable) continue; // an Armor Piercer bullet goes through barriers (the wiki)
       const worth = s.raw ? eased : 1; // a raw barrier gets nothing from its owner's resists: it pays for the hit as it was sent (Rat King's Royal Pestments, the wiki)
       const soaked = Math.min(s.barrier * worth, incoming);
       s.barrier -= soaked / worth;
@@ -197,8 +207,15 @@ class Fight {
     if (!target.alive && target.rejuvs > 0) this.rejuvenate(target);
     this.dealt.set(source, (this.dealt.get(source) || 0) + dealt);
     // lifestealOn / spiritLifestealOn: lifesteal against this one target (Apollo's Riposte, Celeste's Light Eater)
-    if (type === 'bullet' || type === 'melee') { const steal = (type === 'bullet' ? source.stat('lifesteal') : 0) + target.mod('lifestealOn'); if (steal > 0) this.heal(source, dealt * steal * LIFESTEAL_VS_NPC, 'lifesteal'); }
-    else if (type === 'spirit') { const steal = source.stat('spiritLifesteal') + target.mod('spiritLifestealOn'); if (steal > 0) this.heal(source, dealt * steal * LIFESTEAL_VS_NPC, 'lifesteal'); }
+    const hero = target.team === 'hero'; // full strength off a rival hero
+    if (type === 'bullet' || type === 'melee') { const steal = (type === 'bullet' ? source.stat('lifesteal') : 0) + target.mod('lifestealOn'); if (steal > 0) this.heal(source, dealt * steal * (hero ? 1 : BULLET_LIFESTEAL_VS_NPC), 'lifesteal'); }
+    else if (type === 'spirit') { const steal = source.stat('spiritLifesteal') + target.mod('spiritLifestealOn'); if (steal > 0) this.heal(source, dealt * steal * (hero ? 1 : SPIRIT_LIFESTEAL_VS_NPC), 'lifesteal'); }
+    // The siege's own sustain (targets.js siegeSustain): it heals for a share of every hit that lands, blasts too (the hero's heal cuts
+    // shrink it through heal()'s healAmp), and each hit cuts the hero's healing for a few seconds (a debuff: resist shortens it, a cleanse ends it).
+    if (source.team === 'enemy' && dealt > 0) {
+      if (source.stats.drain > 0 && source.alive) this.heal(source, dealt * source.stats.drain, 'lifesteal');
+      if (source.stats.antiHeal && target.team === 'hero' && target.alive) this.debuff(target, { id: 'antiheal', duration: source.stats.antiHeal.seconds, mods: { healAmp: -source.stats.antiHeal.cut } });
+    }
     for (const s of target.statuses) { // sleepers wake a moment after being hurt
       if (s.wakeOnDamage !== undefined && !opts.noWake) s.until = Math.min(s.until, this.time + s.wakeOnDamage);
     }
@@ -234,7 +251,8 @@ class Fight {
   // cut: Toxic Bullets, Nullification Burst) scales it. Returns what was healed.
   heal(unit, amount, kind = 'cast') {
     if (!unit.alive || !(amount > 0)) return 0;
-    amount *= Math.max(0, 1 + unit.stat('healAmp'));
+    const amp = unit.stat('healAmp');
+    amount *= Math.max(0, 1 + (kind === 'constant' ? Math.min(0, amp) : amp)); // 'constant' regen (the sheet's): healing cuts hit it, Healing Booster doesn't (the wiki)
     if (unit.team === 'hero') { amount = Math.min(amount, unit.healPool); unit.healPool -= amount; }
     amount = Math.min(amount, unit.stats.maxHealth - unit.health);
     unit.health += amount;
@@ -257,7 +275,8 @@ class Fight {
     const scale = d <= f.start * far ? f.startScale
       : d >= f.end * far ? f.endScale : f.startScale + (f.endScale - f.startScale) * ((d - f.start * far) / ((f.end - f.start) * far));
     const itemBonus = hero.items.reduce((sum, it) => sum + it.weaponBonus(this, target), 0); // distance, target health, build-up ... bonuses
-    return (s.bulletDamage + hero.mod('bulletDamage')) * s.pellets * (s.weaponDamageMult + hero.mod('weaponDamage') + itemBonus) * scale;
+    const npcOnly = target.team === 'hero' ? s.npcWeapon ?? 0 : 0; // Monster Rounds' "vs. NPCs" damage does nothing to a rival hero
+    return (s.bulletDamage + hero.mod('bulletDamage')) * s.pellets * (s.weaponDamageMult - npcOnly + hero.mod('weaponDamage') + itemBonus) * scale;
   }
 
   fireWeapon(hero, target) {
@@ -277,13 +296,13 @@ class Fight {
       const opts = target.team === 'hero' ? { attack: true } : {}; // a shot at a hero is an attack it may parry or soften (a duel)
       const pellets = hero.stats.pellets;
       if (pellets > 1) { // a shotgun: how many of its pellets land
-        const miss = 1 - pelletChance(this.distance(hero, target));
+        const miss = 1 - pelletChance(this.distance(hero, target), hero.stat('precision'));
         let landed = Math.min(pellets, hero.stats.surePellets ?? 0); // pellets that can't miss (Rat King: one of his two, the wiki)
         for (let i = landed; i < pellets; i++) if (!(this.rng() < miss)) landed++;
         if (!landed) continue;
         opts.landed = landed / pellets; // build-up items scale with it (items.js)
       }
-      for (const it of hero.items) Object.assign(opts, it.shotOpts(this, target));
+      for (const it of hero.items) for (const [k, v] of Object.entries(it.shotOpts(this, target))) opts[k] ||= v; // one item's "no" never undoes another's "yes"
       this.damage(hero, target, this.shotDamage(hero, target) * (opts.landed ?? 1), 'bullet', opts);
     }
     if (w.clip <= 0 && !infinite) this.reload(hero);
@@ -357,8 +376,8 @@ class Fight {
     for (const u of units) u.statuses = u.statuses.filter((s) => s.until > this.time);
     for (const u of units.filter((u) => u.alive)) {
       if (u.team === 'hero') u.healPool = Math.min(u.stats.maxHealth * HEAL_POOL, u.healPool + u.stats.maxHealth * HEAL_RATE * DT);
-      this.heal(u, (u.stats.healthRegen || 0) * DT, 'regen');
-      if (u.stats.oocRegen && this.time - u.lastHit > OUT_OF_COMBAT) this.heal(u, u.stats.oocRegen * DT, 'regen');
+      this.heal(u, (u.stats.healthRegen || 0) * DT, 'constant');
+      if (u.stats.oocRegen && this.time - u.lastHit > OUT_OF_COMBAT) this.heal(u, u.stats.oocRegen * DT, 'constant');
       for (const st of u.statuses) if (st.regen) this.heal(u, st.regen * DT, 'regen'); // heals over time (Healing Nova, Mystic Regeneration ...)
       for (const st of u.statuses) { // damage over time carried by a status (a Haunt's fire, spores or puddle on the hero): gone with the status
         if (!st.dot || this.time + 1e-9 < st.dot.next || !u.alive) continue;
@@ -383,7 +402,7 @@ class Fight {
       if (target && view.wantMelee(hero, target)) view.melee(hero, target);
       if (target && hero.alive && !hero.has('disarm')) view.fireWeapon(hero, target);
       if (!hero.has('silence')) for (const a of [...hero.abilities].reverse()) if (a.ready() && a.want(view)) view.cast(a);
-      for (const it of hero.items) if (it.active && it.ready() && it.want(view)) view.useItem(it);
+      if (!hero.has('noItems')) for (const it of hero.items) if (it.active && it.ready() && it.want(view)) view.useItem(it); // noItems: Cursed Relic
     }
     for (const enemy of this.enemies.filter((e) => e.team === 'enemy' && e.alive && !e.has('sleep') && !e.has('stun') && !e.has('blind'))) { // blind: it can't see anyone to attack (Drifter's Eternal Night; not a stun, so a boss doesn't shrug it off)
       const target = this.heroes.find((h) => h.alive && h.targetable);
@@ -447,4 +466,4 @@ class Fight {
 const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', blast = null, souls = 0 } = {}) =>
   new Unit({ name, team: 'enemy', stats: { maxHealth, dps, dpsMaxHealthPct, damageType, blast: blast && { ...blast }, bulletResist, spiritResist, distance, healthRegen, lifesteal: 0, souls } });
 
-module.exports = { PELLETS, pelletChance, DUEL, DT, Unit, Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC, SPREAD, DODGE, dodgeChance, MELEE, HELPLESS };
+module.exports = { PELLETS, PRECISION, headshotChance, pelletChance, DUEL, DT, Unit, Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC, BULLET_LIFESTEAL_VS_NPC, SPIRIT_LIFESTEAL_VS_NPC, SPREAD, DODGE, dodgeChance, MELEE, HELPLESS };

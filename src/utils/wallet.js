@@ -3,7 +3,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { triviaOdds, REJUV_MAX, URN_MAX_DAYS } = require('./xp');
 const { label } = require('./soulsLedger');
-const { fmt, soulsText } = require('./format');
+const { fmt, soulsText, rejuvIcon } = require('./format');
 const { CARD_COLOR } = require('./rankCard');
 const { HEROES, heroArt } = require('./heroes');
 const { progress } = require('./farm/levels');
@@ -28,7 +28,7 @@ function walletEmbed(member, user, recent, now = new Date()) {
     .setDescription(soulsText(user.souls))
     .addFields(
       { name: 'Soul Boost', value: user.boostUntil > now.getTime() ? `Ends ${stamp(user.boostUntil)}` : 'Not active', inline: true },
-      { name: 'Rejuvs', value: `${user.rejuvs} / ${REJUV_MAX}`, inline: true },
+      { name: 'Rejuvs', value: `${rejuvIcon()}${user.rejuvs} / ${REJUV_MAX}`, inline: true },
       { name: 'Soul Urn', value: `${urn}\nStreak bonus maxes at ${URN_MAX_DAYS} days`, inline: false },
       { name: 'Trivia Today', value: left > 0 ? `${left} paid answers left` : 'No paid answers left until midnight UTC', inline: false },
     );
@@ -49,7 +49,7 @@ async function heroWalletView(member, record, hero, recent) {
     .setDescription(soulsText(h.souls))
     .addFields(
       { name: 'Level', value: `${progress(h.earned).level}`, inline: true },
-      { name: 'Rejuvs', value: `${h.rejuvs} / ${MAX_REJUVS}`, inline: true },
+      { name: 'Rejuvs', value: `${rejuvIcon()}${h.rejuvs} / ${MAX_REJUVS}`, inline: true },
       { name: 'Permanent Buffs', value: Object.keys(buffs).length ? Object.entries(buffs).map(([k, n]) => buffText(k, n)).join('\n') : 'None yet', inline: false },
     )
     .setFooter({ text: hero === record.hero ? 'Your current hero.' : `Switch to ${hero} on /base to spend these.` });

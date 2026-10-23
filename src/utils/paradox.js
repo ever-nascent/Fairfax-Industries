@@ -7,10 +7,10 @@ const { ButtonStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { getStore } = require('../storage');
 const { encodeGif } = require('./gif');
-const { fmt, soulsText, boldSouls } = require('./format');
+const { fmt } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, halftone, grain, grainAndVignette } = require('./art');
-const { staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { GREEN: WIN_COLOR, RED: LOSE_COLOR, staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'paradox'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xc24fa0, name: 'Borrowed Time', icon: path.join(ART, 'pulse_grenade.png'), art: ART, prefix: 'paradox' }; // magenta; Pulse Grenade
@@ -327,15 +327,14 @@ async function view(id, game) {
   const [, right, call] = game.history[game.history.length - 1];
   const cashedOut = game.done && !game.lost;
 
+  // The template every game follows (his pick Oct 22): one plain line and the state in fields while playing; one bold line,
+  // the money in fields and green / red once it's over. The line never repeats a field.
+  let color;
   if (!game.done) {
-    if (game.history.length === 1) lines.push(`${game.name} borrowed ${boldSouls(game.bet)} of time.`);
-    else if (right === null) lines.push(`Free spin: the hand went to ${now}.`);
-    else lines.push(`Called it! The hand went to ${now}. Prize: ${boldSouls(game.prize)}.`);
-    lines.push(
-      game.hour === 1 || game.hour === 12
-        ? `**It's ${now}: the next hour can only go one way. Spin again for free.**`
-        : `**It's ${now}. Is the next hour higher or lower?**`,
-    );
+    const oneWay = game.hour === 1 || game.hour === 12;
+    const lead = game.history.length === 1 ? '' : right === null ? 'Free spin. ' : 'Called it! ';
+    lines.push(oneWay ? `${lead}The hand can only go one way from here. Spin again for free.` : `${lead}Higher or lower?`);
+    fields = [['Hour', now], ['Prize', game.prize > game.bet ? game.prize : 'None yet'], ['Bet', game.bet]];
     buttons = moves(game).map((m) => {
       if (m === 'cash') return [m, `Cash Out (${fmt(game.prize)})`, ButtonStyle.Success];
       if (m === 'spin') return [m, 'Spin Again', ButtonStyle.Primary];
@@ -345,19 +344,16 @@ async function view(id, game) {
     footer = `"${pickRandom(PLAY_LINES)}"`;
   } else {
     const won = game.lost ? 0 : game.prize;
-    if (game.lost) {
-      lines.push(`You called ${call}. The hand went to ${now}.`, `**Time's up. You lose ${soulsText(game.bet)}.**`);
-    } else {
-      lines.push(`You cashed out at ${now}.`, `**You win ${soulsText(won)}.**`);
-    }
+    lines.push(game.lost ? `**Time's up. You called ${call}, and the hand went to ${now}.**` : `**You cashed out at ${now}.**`);
     fields = resultFields(game.bet, won, game.balance);
     footer = `"${pickRandom(game.lost ? LOSE_LINES : WIN_LINES)}"`;
     mood = game.lost ? 'gloat' : 'injured'; // she gloats when you lose, she's hurt when you win
+    color = game.lost ? LOSE_COLOR : WIN_COLOR;
     buttons = [playAgainButton(AGAIN_ID, game.bet, game.userId)];
   }
 
   const image = { name: file, data: await renderClock(game, cashedOut ? null : from) };
-  return gameMessage(HOST, { lines, image, buttons, fields, footer, mood });
+  return gameMessage(HOST, { lines, image, buttons, fields, footer, mood, ...(color && { color }) });
 }
 
 // Takes the bet and spins the first hour. Returns a message payload, or { error }.

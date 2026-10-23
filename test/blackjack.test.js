@@ -102,6 +102,8 @@ test('a full game with souls: bets, double, double clicks, only the owner plays'
   const embed = result.embeds[0].toJSON();
   assert.strictEqual(embed.thumbnail.url, 'attachment://wraith_injured.png'); // you won, she's hurt
   assert.ok(bj.WIN_LINES.includes(embed.footer.text.slice(1, -1)));
+  assert.deepStrictEqual(embed.fields.map((f) => f.name), ['You', 'Wraith', 'Bet', 'Won', 'New Balance']); // the template
+  assert.strictEqual(embed.fields[1].value, '**Bust**'); // no number on a bust
   assert.strictEqual((await getUser(user.id)).souls, 900 - 100 + 400); // doubled to 200, 21 beats her bust, paid 400
   assert.strictEqual(await bj.games().get(id), null);
 });

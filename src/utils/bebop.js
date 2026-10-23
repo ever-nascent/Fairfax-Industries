@@ -5,10 +5,10 @@ const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { getStore } = require('../storage');
 const { findEmoji } = require('./guild');
-const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
+const { fmt, soulsIcon } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS } = require('./art');
-const { staked, plainTimeout, resultFields, playAgainButton, gameMessage, forGame } = require('./casino');
+const { GREEN, RED, staked, plainTimeout, resultFields, playAgainButton, gameMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'bebop'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xd9822b, name: "Bebop's Bombs", icon: path.join(ART, 'sticky_bomb.png'), art: ART, prefix: 'bebop' }; // copper; Sticky Bomb
@@ -125,35 +125,36 @@ function board(id, game) {
   return rows;
 }
 
+// The template every game follows (his pick Oct 22): one plain line and the state in fields while playing (Bet last); one
+// bold line, the money in fields and green / red once it's over.
 function view(id, game) {
   const safe = game.picked.length;
   const prize = prizeFor(game.bet, safe);
   const rows = board(id, game);
   if (!game.done) {
-    const lines = safe
-      ? [`Safe! **${safe}** tile${safe === 1 ? '' : 's'} cleared.`, '**Keep going, or cash out?**']
-      : [`<@${game.userId}> bet ${boldSouls(game.bet)}`, `Bebop hid **${BOMBS} Sticky Bombs** under **${TILES}** tiles!`];
-    const fields = [['Bet', game.bet], ...(safe ? [['Prize', prize]] : []), ['Next Tile', prizeFor(game.bet, safe + 1)]];
+    const lines = [safe ? `Safe! ${safe} tile${safe === 1 ? '' : 's'} cleared. Keep going, or cash out?` : `Bebop hid ${BOMBS} Sticky Bombs under ${TILES} tiles. Pick one.`];
+    const fields = [['Prize', safe ? prize : 'None yet'], ['Next Tile', prizeFor(game.bet, safe + 1)], ['Bet', game.bet]];
     rows.push([[`${BUTTON_ID}:${id}:cash`, safe ? `Cash Out (${fmt(prize)})` : 'Cash Out', ButtonStyle.Success, { disabled: !safe }]]);
     return gameMessage(HOST, { lines, rows, fields, footer: `"${pickRandom(safe ? SAFE_LINES : START_LINES)}"` });
   }
   rows.push([playAgainButton(AGAIN_ID, game.bet, game.userId)]);
   if (game.lost) {
     return gameMessage(HOST, {
-      lines: ['**Boom!** That tile was a Sticky Bomb.', `**You lose ${soulsText(game.bet)}.**`],
+      lines: ['**Boom! That tile was a Sticky Bomb.**'],
       rows,
       fields: resultFields(game.bet, 0, game.balance),
       footer: `"${pickRandom(LOSE_LINES)}"`,
       mood: 'gloat', // he gloats when you lose, he's hurt when you win
+      color: RED,
     });
   }
-  const how = safe === TILES - BOMBS ? 'You cleared the whole board!' : `You cashed out after ${safe} safe tile${safe === 1 ? '' : 's'}.`;
   return gameMessage(HOST, {
-    lines: [how, `**You win ${soulsText(prize)}.**`],
+    lines: [safe === TILES - BOMBS ? '**You cleared the whole board!**' : `**You cashed out after ${safe} safe tile${safe === 1 ? '' : 's'}.**`],
     rows,
     fields: resultFields(game.bet, prize, game.balance),
     footer: `"${pickRandom(WIN_LINES)}"`,
     mood: 'injured',
+    color: GREEN,
   });
 }
 

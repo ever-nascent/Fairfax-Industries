@@ -5,10 +5,10 @@ const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { getStore } = require('../storage');
-const { fmt, soulsIcon, soulsText, boldSouls } = require('./format');
+const { fmt, soulsIcon } = require('./format');
 const { pickRandom, shortId } = require('./random');
 const { ASSETS, loadSouls, seeded, halftone, grain, grainAndVignette } = require('./art');
-const { resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { GREEN: WIN_COLOR, RED: LOSE_COLOR, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'wraith'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0xc2408f, name: "Wraith's Table", icon: path.join(ART, 'card_trick.png'), art: ART, prefix: 'wraith' }; // magenta; Card Trick
@@ -56,8 +56,6 @@ const games = () => getStore('blackjackGames');
 const SUITS = { H: 'heart', S: 'spade', C: 'club', D: 'diamond' };
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 const rankOf = (card) => card.slice(0, -1);
-const RANK_NAMES = { A: 'an Ace', J: 'a Jack', Q: 'a Queen', K: 'a King', 8: 'an 8' };
-const cardName = (card) => (card === 'JK' ? 'the Joker' : RANK_NAMES[rankOf(card)] ?? `a ${rankOf(card)}`);
 
 function newDeck(randomInt = crypto.randomInt) {
   const deck = ['JK'];
@@ -436,8 +434,13 @@ function plate(g, cx, y, text, color) {
   g.fillText(text, cx, y + 6);
 }
 
-// The bet: a stack of magenta chips, the top one stamped with the souls icon.
-function chips(g, cx, y, bet) {
+// The bet: a stack of magenta chips, the top one stamped with the souls icon, and the souls number a
+// fixed gap to its right; the two are centred together on `center`, so a long bet grows both ways.
+function chips(g, center, y, bet) {
+  const text = fmt(bet);
+  g.font = '16px Retail';
+  const m = g.measureText(text);
+  const cx = center - (48 + 10 + m.width) / 2 + 24;
   for (let k = 0; k < 4; k++) {
     const cy = y - k * 6;
     g.fillStyle = '#5a0f3a';
@@ -460,16 +463,16 @@ function chips(g, cx, y, bet) {
   g.shadowColor = 'rgba(0,0,0,0.9)';
   g.shadowBlur = 4;
   g.fillStyle = GREEN;
-  g.font = '16px Retail';
-  g.textAlign = 'center';
-  g.fillText(fmt(bet), cx + 46, y + 2);
+  g.textAlign = 'left';
+  // The stack runs from y - 28 (top chip) to y + 13 (bottom chip's edge): centre the digits on y - 7.5.
+  g.fillText(text, cx + 34, y - 7.5 + m.actualBoundingBoxAscent / 2);
   g.shadowBlur = 0;
 }
 
 // The label and colour of a hand's total pill.
 function handPill(hand, playing) {
   const total = score(hand.cards);
-  const text = { joker: 'JOKER', blackjack: 'BLACKJACK', bust: `BUST ${total}` }[hand.result] ?? String(total);
+  const text = { joker: 'JOKER', blackjack: 'BLACKJACK', bust: 'BUST' }[hand.result] ?? String(total); // no number on a bust (his call Oct 22)
   if (!hand.result) return [text, GOLD];
   if (playing) return [text, GOLD];
   return [text, { win: GREEN, joker: GREEN, blackjack: GREEN, push: LAV }[hand.result] ?? RED];
@@ -480,7 +483,7 @@ function dealerPill(game) {
   if (game.dealerJoker) return 'JOKER';
   if (isBlackjack(game.dealer)) return 'BLACKJACK';
   const d = score(game.dealer);
-  return d > 21 ? `BUST ${d}` : String(d);
+  return d > 21 ? 'BUST' : String(d);
 }
 
 async function renderTable(game, name) {
@@ -521,16 +524,19 @@ async function renderTable(game, name) {
 // ---- messages ----------------------------------------------------------------------------------
 
 const MOVE_LABELS = { hit: 'Hit', stand: 'Stand', double: 'Double Down', split: 'Split' };
-const HAND_TEXT = {
-  win: (p) => `You win with ${p}`,
-  joker: () => 'You drew the Joker',
-  blackjack: () => 'Blackjack',
-  push: (p) => `Push at ${p}`,
-  lose: (p) => `Wraith beats your ${p}`,
-  bust: (p) => `Bust with ${p}`,
-};
+const listOr = (words) => (words.length > 1 ? `${words.slice(0, -1).join(', ')} or ${words.at(-1)}` : words[0]);
+// A hand's score for the fields: no number on a bust (his call Oct 22), the Joker and a blackjack by name.
+const handScore = (hand) => ({ joker: 'Joker', blackjack: 'Blackjack', bust: 'Bust' })[hand.result] ?? String(score(hand.cards));
+function wraithScore(game) {
+  if (!game.reveal) return `**${score([game.dealer[0]])}** + ?`;
+  if (game.dealerJoker) return '**Joker**';
+  if (isBlackjack(game.dealer)) return '**Blackjack**';
+  const d = score(game.dealer);
+  return d > 21 ? '**Bust**' : `**${d}**`;
+}
 
-// The game is Wraith's, not the Shopkeeper's.
+// The game is Wraith's, not the Shopkeeper's. The template every game follows (his pick Oct 22, "Template C"): one line,
+// then the score in fields (You / Wraith / Bet), the money under it once it's over (Won / New Balance), green or red at the end.
 async function view(id, game, name) {
   const file = `table_${id}_${game.version}_${Date.now()}.png`; // new name each step so Discord doesn't reuse the old image
   const staked = game.hands.reduce((sum, h) => sum + h.bet, 0);
@@ -538,20 +544,19 @@ async function view(id, game, name) {
   const net = paid - staked;
   // her face once the hand is over: she gloats when you lose, she's hurt when you win
   const mood = !game.done || net === 0 ? 'portrait' : net > 0 ? 'injured' : 'gloat';
-  const lines = [];
+  const split = game.hands.length > 1;
+  const scores = split
+    ? game.hands.map((h, i) => [`Hand ${i + 1}`, `**${handScore(h)}**`])
+    : [['You', `**${handScore(game.hands[0])}**`]];
+  const fields = [...scores, ['Wraith', wraithScore(game)], ['Bet', staked]];
+  let lines;
   let buttons;
-  let footer = null;
-  let fields = null;
+  let footer;
+  let color;
 
   if (!game.done) {
-    const hand = game.hands[game.active];
-    const shows = `Wraith shows ${cardName(game.dealer[0])}.`;
-    lines.push(`${name} is playing for ${boldSouls(staked)}.`);
-    lines.push(
-      game.hands.length > 1
-        ? `**Hand ${game.active + 1} of 2: you have ${score(hand.cards)}. ${shows}**`
-        : `**You have ${score(hand.cards)}. ${shows}**`,
-    );
+    const prompt = `${listOr(moves(game).map((m) => MOVE_LABELS[m].toLowerCase()))}?`;
+    lines = [split ? `Hand ${game.active + 1}: ${prompt}` : prompt[0].toUpperCase() + prompt.slice(1)];
     buttons = moves(game).map((m) => {
       const cost = extraCost(game, m);
       const label = cost ? `${MOVE_LABELS[m]} (${fmt(cost)})` : MOVE_LABELS[m];
@@ -559,27 +564,23 @@ async function view(id, game, name) {
     });
     footer = `"${pickRandom(PLAY_LINES)}"`;
   } else {
-    if (game.dealerJoker) lines.push('Wraith drew the Joker!');
-    else if (game.hands.some((h) => ['win', 'push', 'lose'].includes(h.result))) {
-      const d = score(game.dealer);
-      lines.push(isBlackjack(game.dealer) ? 'Wraith has blackjack.' : d > 21 ? `Wraith busts with ${d}.` : `Wraith has ${d}.`);
-    }
-    const handLines = game.hands.map((h) => HAND_TEXT[h.result](score(h.cards)));
-    lines.push(game.hands.length > 1 ? handLines.map((t, i) => `Hand ${i + 1}: ${t}`).join('  ·  ') : `${handLines[0]}.`);
-    lines.push(
-      net > 0
-        ? `**You win ${soulsText(paid)}.**`
-        : net < 0
-          ? `**You lose ${soulsText(staked - paid)}.**`
-          : '**Your bet comes back.**',
-    );
+    const hands = split ? 'hands' : 'hand';
+    const line = game.dealerJoker
+      ? 'Wraith drew the Joker.'
+      : !split && game.hands[0].result === 'joker'
+        ? 'You drew the Joker.'
+        : !split && game.hands[0].result === 'blackjack'
+          ? 'Blackjack!'
+          : net > 0 ? `You win the ${hands}.` : net < 0 ? `Wraith takes the ${hands}.` : 'Push. Your bet comes back.';
+    lines = [`**${line}**`];
+    fields.push(...resultFields(staked, paid, game.balance).slice(1)); // Won, New Balance (Bet is already there)
     footer = `"${pickRandom(net > 0 ? WIN_LINES : net < 0 ? LOSE_LINES : PUSH_LINES)}"`;
-    fields = resultFields(staked, paid, game.balance);
     buttons = [playAgainButton(AGAIN_ID, game.startBet, game.userId)];
+    color = net > 0 ? WIN_COLOR : net < 0 ? LOSE_COLOR : undefined;
   }
 
   const image = { name: file, data: await renderTable(game, name) };
-  return gameMessage(HOST, { lines, image, buttons, fields, footer, mood });
+  return gameMessage(HOST, { lines, image, buttons, fields, footer, mood, ...(color && { color }) });
 }
 
 // Pays out a finished game, forgets it, and returns the result message.

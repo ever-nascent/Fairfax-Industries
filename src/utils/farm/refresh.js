@@ -88,8 +88,9 @@ async function legendaries() {
       Activation: i.is_active_item ? 'Active' : 'Passive', Components: null, StreetBrawl: true };
     (i.tooltip_sections ?? []).forEach((sec, n) => {
       const keys = sec.section_attributes.flatMap((a) => [...(a.properties ?? []), ...(a.elevated_properties ?? []), ...(a.important_properties ?? [])]);
+      const scale = (k) => { const f = i.properties[k]?.scale_function; return f?.specific_stat_scale_type === 'ETechPower' && f.stat_scale ? { Scale: { Value: f.stat_scale, Type: 'spirit' } } : {}; }; // x spirit power (Nullification Burst, Prism Blast, Shadow Strike)
       const lines = [...new Set(keys)].map((k) => ({ Key: k, Value: num(i.properties[k]), Label: i.properties[k]?.label ?? k, // the game's own label, sign and unit (shown on a drop)
-        Prefix: i.properties[k]?.prefix ?? '', Postfix: i.properties[k]?.postfix ?? '' })).filter((l) => l.Value !== null);
+        Prefix: i.properties[k]?.prefix ?? '', Postfix: i.properties[k]?.postfix ?? '', ...scale(k) })).filter((l) => l.Value !== null);
       card[`Info${n + 1}`] = { Type: type(i, sec), DescKey: null, Cooldown: num(i.properties.AbilityCooldown), ChargeUp: null, Main: lines, Alt: [] };
     });
     return [i.class_name, card];

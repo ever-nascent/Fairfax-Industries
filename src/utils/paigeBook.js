@@ -3,13 +3,32 @@
 // (Heroes / Abilities / Items), the word as blanks and the wrong letters as ink blots. Satin bookmark, leather cover, candlelight: all drawn here.
 // Everything that never changes (desk, cover, pages, ribbon) is drawn once and copied. Look: server-plan.md ("Games").
 const path = require('node:path');
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const { ASSETS, loadSouls, seeded } = require('./art');
 const wyrm = require('./paigeWyrm');
+const { drawBorder, damask } = require('./paigeOrnament');
+const { encodeGif } = require('./gif');
 
-const SERIF = "'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif"; // Windows ships Palatino; elsewhere the next one that exists
+// The lettering (his ask Oct 21: "make the text fancier"), open-licence fonts kept in assets/fonts (SIL OFL, see assets/CREDITS.txt) so it looks the
+// same on any machine: Pinyon Script for headings and the ending (copperplate), Cinzel Decorative for the chapter's capital and the word (storybook
+// capitals), IM Fell for the small captions (antique book type).
+const fonts = path.join(ASSETS, 'fonts');
+for (const [file, name] of [['PinyonScript-Regular.ttf', 'Pinyon Script'], ['CinzelDecorative-Bold.ttf', 'Cinzel Decorative'], ['CinzelDecorative-Regular.ttf', 'Cinzel Decorative Regular'], ['IMFeENit28P.ttf', 'IM Fell Italic'], ['IMFeENrm28P.ttf', 'IM Fell']]) GlobalFonts.registerFromPath(path.join(fonts, file), name);
+const SCRIPT = "'Pinyon Script', 'Palatino Linotype', Georgia, serif";
+const CAPS = "'Cinzel Decorative', 'Palatino Linotype', Georgia, serif";
+const CAPS_LIGHT = "'Cinzel Decorative Regular', 'Palatino Linotype', Georgia, serif";
+const BOOK_ITALIC = "'IM Fell Italic', 'Palatino Linotype', Georgia, serif";
+const BOOK_ROMAN = "'IM Fell', 'Palatino Linotype', Georgia, serif";
+const FIGURES = "'Times New Roman', 'DejaVu Serif', serif"; // lining digits: the book type's 1 looks like a small I
+const SERIF = BOOK_ROMAN; // what the Bookwyrm drawing's z's use
+// The size (down from `size`) at which `text` in `family` is no wider than `max`.
+function fitSize(g, text, family, size, max) {
+  for (; size > 14; size--) { g.font = `${size}px ${family}`; if (g.measureText(text).width <= max) break; }
+  return size;
+}
 const INK = '#2a1a10';
 const RED_INK = '#9e2418';
+const BLOT = 'rgba(82,56,38,0.84)';
 const GOLD = '#d8b25a';
 const W = 1000, H = 560;
 const MAX_WRONG = 6;
@@ -35,7 +54,7 @@ function tint(img, color) {
 
 // ---- the parts that never change -----------------------------------------------------------------------------------
 
-function desk(g) { // dark wood, a candle's warm light from the top left, a few of Paige's green sparks
+function desk(g) { // dark wood, a candle's warm light from the top left (Paige's green sparks are animated: fireflies())
   g.fillStyle = '#1a110b'; g.fillRect(0, 0, W, H);
   const rnd = seeded(5);
   for (let y = 0; y < H; y += 3) {
@@ -48,12 +67,6 @@ function desk(g) { // dark wood, a candle's warm light from the top left, a few 
   const light = g.createRadialGradient(W * 0.25, -40, 20, W * 0.35, H * 0.3, W * 0.9);
   light.addColorStop(0, 'rgba(255,190,110,0.35)'); light.addColorStop(1, 'rgba(0,0,0,0.55)');
   g.fillStyle = light; g.fillRect(0, 0, W, H);
-  for (let i = 0; i < 40; i++) {
-    const x = rnd() * W, y = rnd() * H, r = 1 + rnd() * 2.5;
-    const s = g.createRadialGradient(x, y, 0, x, y, r * 4);
-    s.addColorStop(0, 'rgba(140,255,170,0.9)'); s.addColorStop(1, 'rgba(140,255,170,0)');
-    g.fillStyle = s; g.beginPath(); g.arc(x, y, r * 4, 0, 7); g.fill();
-  }
 }
 
 function pageShape(g, side, inset = 0) { // a page's outline: top and bottom edges dip into the spine
@@ -68,19 +81,85 @@ function pageShape(g, side, inset = 0) { // a page's outline: top and bottom edg
   g.closePath();
 }
 
-function cover(g) { // the leather cover round the pages, with gold tooling and corners
-  const box = [B.left - 26, B.top - 22, B.right - B.left + 52, B.bottom - B.top + 56];
+function cover(g) { // the leather cover round the pages: pebbled and worn, a damask pressed into it, gold tooling, metal corners (his ask Oct 21: texture)
+  const box = [B.left - 31, B.top - 27, B.right - B.left + 62, B.bottom - B.top + 66];
+  const [bx, by, bw, bh] = box;
   g.save(); g.shadowColor = 'rgba(0,0,0,0.7)'; g.shadowBlur = 40; g.shadowOffsetY = 18;
   g.fillStyle = '#4a1712'; g.beginPath(); g.roundRect(...box, 18); g.fill(); g.restore();
+  g.fillStyle = '#240705'; g.beginPath(); g.roundRect(bx, by + 9, bw, bh, 18); g.fill(); // the thickness of the board: the underside shows below the leather
+  g.fillStyle = '#3a0e09'; g.beginPath(); g.roundRect(bx, by + 4, bw, bh, 18); g.fill();
   const leather = g.createLinearGradient(0, B.top, 0, B.bottom);
-  leather.addColorStop(0, '#7a2419'); leather.addColorStop(1, '#4f140e');
+  leather.addColorStop(0, '#6c1d13'); leather.addColorStop(1, '#42100a');
   g.fillStyle = leather; g.beginPath(); g.roundRect(...box, 18); g.fill();
-  g.strokeStyle = GOLD; g.globalAlpha = 0.75; g.lineWidth = 2; g.setLineDash([2, 5]);
-  g.beginPath(); g.roundRect(B.left - 17, B.top - 13, B.right - B.left + 34, B.bottom - B.top + 38, 12); g.stroke();
-  g.setLineDash([]); g.globalAlpha = 1;
-  for (const [x, y, sx, sy] of [[B.left - 26, B.top - 22, 1, 1], [B.right + 26, B.top - 22, -1, 1], [B.left - 26, B.bottom + 34, 1, -1], [B.right + 26, B.bottom + 34, -1, -1]]) {
-    g.fillStyle = GOLD; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 34 * sx, y); g.quadraticCurveTo(x + 12 * sx, y + 12 * sy, x, y + 34 * sy); g.closePath(); g.fill();
-    g.fillStyle = '#8a6a2a'; g.beginPath(); g.arc(x + 10 * sx, y + 10 * sy, 3, 0, 7); g.fill();
+
+  g.save(); g.beginPath(); g.roundRect(...box, 18); g.clip();
+  damask(g, bx, by, bx + bw, by + bh);
+  const rnd = seeded(61);
+  for (let i = 0; i < 9000; i++) { // pebbled grain: tiny dents, each with a lit lip
+    const x = bx + rnd() * bw, y = by + rnd() * bh, r = 0.5 + rnd() * 1.1;
+    g.fillStyle = 'rgba(20,0,0,0.14)'; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+    g.fillStyle = 'rgba(255,150,130,0.06)'; g.beginPath(); g.arc(x - 0.8, y - 0.8, r * 0.8, 0, 7); g.fill();
+  }
+  g.lineCap = 'round'; g.lineWidth = 0.8;
+  for (let i = 0; i < 44; i++) { // scuffs and scratches
+    const x = bx + rnd() * bw, y = by + rnd() * bh, len = 8 + rnd() * 26, a = rnd() * Math.PI;
+    g.strokeStyle = `rgba(255,195,165,${0.06 + rnd() * 0.08})`;
+    g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a) * len * 0.5 + 3, y + Math.sin(a) * len * 0.5 - 3, x + Math.cos(a) * len, y + Math.sin(a) * len); g.stroke();
+  }
+  const sheen = g.createRadialGradient(W * 0.25, by, 20, W * 0.25, by, 520); // the candle, catching the leather
+  sheen.addColorStop(0, 'rgba(255,170,140,0.1)'); sheen.addColorStop(1, 'rgba(255,170,140,0)');
+  g.fillStyle = sheen; g.fillRect(bx, by, bw, bh);
+  g.lineWidth = 4; g.strokeStyle = 'rgba(196,104,80,0.17)'; g.beginPath(); g.roundRect(bx + 2.5, by + 2.5, bw - 5, bh - 5, 16); g.stroke(); // the rubbed edge
+  for (const [x, y] of [[bx, by], [bx + bw, by], [bx, by + bh], [bx + bw, by + bh]]) { // rubbed through at the corners
+    const worn = g.createRadialGradient(x, y, 0, x, y, 46); worn.addColorStop(0, 'rgba(190,110,84,0.2)'); worn.addColorStop(1, 'rgba(190,110,84,0)');
+    g.fillStyle = worn; g.fillRect(x - 46, y - 46, 92, 92);
+  }
+  g.restore();
+
+  // the spine: a raised band down the middle of the cover (only its ends show, above and below the pages), grooves on either side of it, gold
+  // lines and a diamond on it, like the hinge of a bound book (his note Oct 21: the middle had nothing to say it was a cover)
+  const sx = B.spine;
+  const band = g.createLinearGradient(sx - 17, 0, sx + 17, 0);
+  band.addColorStop(0, 'rgba(10,0,0,0.55)'); band.addColorStop(0.18, 'rgba(255,150,125,0.12)'); band.addColorStop(0.5, 'rgba(255,175,145,0.3)'); band.addColorStop(0.82, 'rgba(255,150,125,0.12)'); band.addColorStop(1, 'rgba(10,0,0,0.55)');
+  g.save(); g.beginPath(); g.roundRect(...box, 18); g.clip();
+  g.fillStyle = band; g.fillRect(sx - 17, by, 34, bh);
+  g.strokeStyle = 'rgba(10,0,0,0.5)'; g.lineWidth = 1.4; for (const dx of [-19, 19]) { g.beginPath(); g.moveTo(sx + dx, by); g.lineTo(sx + dx, by + bh); g.stroke(); }
+  g.strokeStyle = GOLD; g.lineWidth = 1.7; for (const dx of [-13, 13]) { g.beginPath(); g.moveTo(sx + dx, by + 12); g.lineTo(sx + dx, by + bh - 12); g.stroke(); }
+  g.fillStyle = GOLD;
+  for (const y of [by + 22, by + bh - 22]) { g.beginPath(); g.moveTo(sx, y - 7); g.lineTo(sx + 5, y); g.lineTo(sx, y + 7); g.lineTo(sx - 5, y); g.closePath(); g.fill(); }
+  g.restore();
+  // headbands: the little striped cloth at the top and bottom of the spine, where the pages are sewn in
+  for (const y of [B.top + B.dip - 9, B.bottom + B.dip * 0.6 + 1]) {
+    for (let i = 0; i < 9; i++) { g.fillStyle = i % 2 ? '#c99a38' : '#e8e0c8'; g.fillRect(sx - 13.5 + i * 3, y, 3, 8); }
+    g.fillStyle = 'rgba(0,0,0,0.3)'; g.fillRect(sx - 13.5, y + 5.5, 27, 2.5);
+  }
+  // a bevelled lip round the edge of the board: lit at the top left, in shadow at the bottom right
+  const lip = g.createLinearGradient(bx, by, bx + bw, by + bh);
+  lip.addColorStop(0, 'rgba(255,190,160,0.55)'); lip.addColorStop(0.5, 'rgba(255,150,120,0.08)'); lip.addColorStop(1, 'rgba(0,0,0,0.6)');
+  g.strokeStyle = lip; g.lineWidth = 2.2; g.beginPath(); g.roundRect(bx + 1, by + 1, bw - 2, bh - 2, 17); g.stroke();
+
+  // the gold tooling: a heavy line and a fine one inside it, a dot between the two every few pixels
+  g.strokeStyle = GOLD; g.globalAlpha = 0.9; g.lineWidth = 2; g.beginPath(); g.roundRect(bx + 6, by + 6, bw - 12, bh - 12, 13); g.stroke();
+  g.globalAlpha = 0.65; g.lineWidth = 0.9; g.beginPath(); g.roundRect(bx + 11, by + 11, bw - 22, bh - 22, 9); g.stroke();
+  g.globalAlpha = 1;
+  g.fillStyle = 'rgba(30,5,2,0.35)'; g.beginPath(); g.roundRect(bx + 8, by + 8, bw - 16, bh - 16, 12); g.lineWidth = 1; g.strokeStyle = 'rgba(30,5,2,0.35)'; g.stroke(); // the groove under the gold
+
+  // metal corner caps: gold, shaded, with an engraved line and a rivet
+  for (const [x, y, sx, sy] of [[bx, by, 1, 1], [bx + bw, by, -1, 1], [bx, by + bh, 1, -1], [bx + bw, by + bh, -1, -1]]) {
+    if (sy < 0) { // at the bottom the cap wraps down over the board's thickness, so no red shows under the gold (his note Oct 21)
+      const edge = g.createLinearGradient(0, y, 0, y + 9);
+      edge.addColorStop(0, '#a87a2c'); edge.addColorStop(1, '#5e4012');
+      g.beginPath(); g.rect(Math.min(x, x + 36 * sx), y - 1, 36, 10);
+      g.fillStyle = edge; g.fill(); g.strokeStyle = 'rgba(70,40,8,0.7)'; g.lineWidth = 1; g.stroke();
+    }
+    const cap = g.createLinearGradient(x, y, x + 34 * sx, y + 34 * sy);
+    cap.addColorStop(0, '#f1d27c'); cap.addColorStop(0.55, '#c99a38'); cap.addColorStop(1, '#8c6420');
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + 36 * sx, y); g.quadraticCurveTo(x + 13 * sx, y + 13 * sy, x, y + 36 * sy); g.closePath();
+    g.fillStyle = cap; g.fill(); g.strokeStyle = 'rgba(70,40,8,0.7)'; g.lineWidth = 1; g.stroke();
+    g.beginPath(); g.moveTo(x + 4 * sx, y + 26 * sy); g.quadraticCurveTo(x + 11 * sx, y + 11 * sy, x + 26 * sx, y + 4 * sy); g.strokeStyle = 'rgba(80,50,10,0.55)'; g.lineWidth = 1; g.stroke(); // engraved
+    const rivet = g.createRadialGradient(x + 9 * sx - 1, y + 9 * sy - 1, 0.5, x + 9 * sx, y + 9 * sy, 3.6);
+    rivet.addColorStop(0, '#fff2c4'); rivet.addColorStop(1, '#8a6420');
+    g.fillStyle = rivet; g.beginPath(); g.arc(x + 9 * sx, y + 9 * sy, 3.4, 0, 7); g.fill();
   }
 }
 
@@ -111,17 +190,8 @@ function pages(g) { // the page block's thickness, the paper, its fibres and age
   g.restore();
 }
 
-function frames(g) { // an ink frame inside each page with little flourishes at the corners
-  g.strokeStyle = 'rgba(110,70,30,0.55)'; g.lineWidth = 1.5;
-  for (const [x0, x1] of [[B.left + 34, B.spine - 30], [B.spine + 30, B.right - 34]]) {
-    const y0 = B.top + 34, y1 = B.bottom - 22;
-    g.strokeRect(x0, y0, x1 - x0, y1 - y0);
-    g.strokeRect(x0 + 5, y0 + 5, x1 - x0 - 10, y1 - y0 - 10);
-    for (const [x, y, sx, sy] of [[x0, y0, 1, 1], [x1, y0, -1, 1], [x0, y1, 1, -1], [x1, y1, -1, -1]]) {
-      g.beginPath(); g.moveTo(x + 5 * sx, y + 22 * sy); g.bezierCurveTo(x + 18 * sx, y + 18 * sy, x + 18 * sx, y + 18 * sy, x + 22 * sx, y + 5 * sy); g.stroke();
-      g.fillStyle = 'rgba(110,70,30,0.6)'; g.beginPath(); g.arc(x + 13 * sx, y + 13 * sy, 2.5, 0, 7); g.fill();
-    }
-  }
+function frames(g) { // the scrolled border round each page (paigeOrnament.js)
+  for (const [x0, x1] of [[B.left + 28, B.spine - 28], [B.spine + 28, B.right - 28]]) drawBorder(g, x0, B.top + 18, x1, B.bottom - 10);
 }
 
 // A satin bookmark: it comes out of the spine at the top, drapes down the right page in loose S-curves (twisting as it goes: narrow where it
@@ -185,40 +255,41 @@ const LEFT_CX = (B.left + B.spine) / 2 + 6;
 function leftPage(g, { wrong, loaded, over }) {
   const woke = wrong >= MAX_WRONG;
   g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-  g.font = `italic 24px ${SERIF}`; g.fillStyle = woke ? RED_INK : INK;
-  g.fillText(woke ? 'The Bookwyrm Wakes' : "Don't Wake the Bookwyrm", LEFT_CX, B.top + 74);
-  g.strokeStyle = 'rgba(110,70,30,0.6)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(LEFT_CX - 90, B.top + 86); g.lineTo(LEFT_CX + 90, B.top + 86); g.stroke();
-  const size = 240;
-  wyrm.draw(g, { art: loaded, cx: LEFT_CX, y: B.top + 100, size, stage: Math.min(3, Math.floor(wrong / 2)), seeded, createCanvas, PAGE, SERIF });
+  const title = woke ? 'The Bookwyrm Awakens' : "Don't Wake the Bookwyrm";
+  g.font = `${fitSize(g, title, SCRIPT, 29, 290)}px ${SCRIPT}`; g.fillStyle = woke ? RED_INK : INK; // script runs wide: it shrinks to fit inside the frame
+  g.fillText(title, LEFT_CX, B.top + 72);
+  g.strokeStyle = 'rgba(110,70,30,0.6)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(LEFT_CX - 90, B.top + 90); g.lineTo(LEFT_CX + 90, B.top + 90); g.stroke();
+  const size = 205; // a smaller drawing (his call Oct 21), centred between the heading and the souls row
+  wyrm.draw(g, { art: loaded, cx: LEFT_CX, y: B.top + 100 + 8, size, stage: Math.min(3, Math.floor(wrong / 2)), seeded, createCanvas, PAGE, SERIF });
   if (over) return; // the stamp takes the souls row's place
   const h = 34, w = (h * loaded.souls.width) / loaded.souls.height;
   const grey = tint(loaded.souls, '#8f7e60');
   const dark = tint(loaded.souls, '#1d4a3c');
   for (let i = 0; i < MAX_WRONG; i++) {
-    const sx = LEFT_CX - 100 + i * 40 - w / 2, sy = B.bottom - 72 - h / 2;
+    const sx = LEFT_CX - 100 + i * 40 - w / 2, sy = B.bottom - 100 - h / 2; // clear of the "guesses left" caption below
     if (i < MAX_WRONG - wrong) { // a dark outline so the mint reads on cream paper
       g.drawImage(dark, sx + 1.5, sy + 1.5, w, h); g.drawImage(dark, sx - 1.5, sy - 1.5, w, h); g.drawImage(loaded.souls, sx, sy, w, h);
     } else { g.globalAlpha = 0.45; g.drawImage(grey, sx, sy, w, h); g.globalAlpha = 1; }
   }
-  g.font = `italic 19px ${SERIF}`; g.fillStyle = 'rgba(42,26,16,0.75)';
+  g.font = `21px ${BOOK_ITALIC}`; g.fillStyle = 'rgba(42,26,16,0.78)';
   g.fillText(`${MAX_WRONG - wrong} wrong ${MAX_WRONG - wrong === 1 ? 'guess' : 'guesses'} left`, LEFT_CX, B.bottom - 40);
 }
 
 // Each wrong letter (a '?' for a wrong solve): its letter knocked out of a spilled-ink blot, cream on dark, with spatter and a drip.
 function blots(g, wrong, cx) {
   g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-  g.font = `italic 20px ${SERIF}`; g.fillStyle = 'rgba(110,70,30,0.9)';
+  g.font = `22px ${BOOK_ITALIC}`; g.fillStyle = 'rgba(110,70,30,0.9)';
   g.fillText('Blotted out', cx, B.bottom - 96);
   const gap = 46, wy = B.bottom - 50, startX = cx - ((wrong.length - 1) * gap) / 2;
   wrong.forEach((ch, i) => {
     const wx = startX + i * gap, rnd = seeded(31 + ch.charCodeAt(0) * 7);
-    g.fillStyle = 'rgba(30,18,10,0.88)';
+    g.fillStyle = BLOT; // the same faded brown as the Bookwyrm's ink (his call Oct 21: not black)
     g.beginPath();
     for (let k = 0; k <= 20; k++) { const a = (k / 20) * Math.PI * 2, r = 17 + rnd() * 6; g.lineTo(wx + Math.cos(a) * r, wy - 12 + Math.sin(a) * r); }
     g.closePath(); g.fill();
     for (let k = 0; k < 4; k++) { g.beginPath(); g.arc(wx + (rnd() - 0.5) * 50, wy - 12 + (rnd() - 0.5) * 44, 1.2 + rnd() * 2.2, 0, 7); g.fill(); }
     g.fillRect(wx + 4 + rnd() * 4, wy, 3, 6 + rnd() * 8);
-    g.font = `bold 26px ${SERIF}`; g.fillStyle = '#f2e5c6'; g.fillText(ch, wx, wy - 2);
+    g.font = `22px ${CAPS}`; g.fillStyle = '#f2e5c6'; g.fillText(ch, wx, wy - 3);
   });
 }
 
@@ -252,17 +323,17 @@ function layout(word, avail) {
 function rightPage(g, { word, hits, wrong, category, over }) {
   const x0 = B.spine + 62, x1 = B.right - 62, cx = (x0 + x1) / 2;
   g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-  g.font = `18px ${SERIF}`; g.fillStyle = 'rgba(110,70,30,0.85)';
+  g.font = `16px ${CAPS_LIGHT}`; g.fillStyle = 'rgba(110,70,30,0.9)';
   g.fillText('— CHAPTER —', cx, B.top + 64);
-  g.font = `bold 44px ${SERIF}`;
+  g.font = `44px ${CAPS}`;
   const first = category[0], capW = g.measureText(first).width;
-  g.font = `italic 30px ${SERIF}`;
+  g.font = `33px ${BOOK_ITALIC}`;
   const rest = category.slice(1), restW = g.measureText(rest).width;
   const startX = cx - (capW + restW + 6) / 2;
   g.fillStyle = '#7a2419'; g.beginPath(); g.roundRect(startX - 8, B.top + 72, capW + 16, 52, 6); g.fill();
   g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
-  g.font = `bold 44px ${SERIF}`; g.fillStyle = GOLD; g.textAlign = 'left'; g.fillText(first, startX, B.top + 114);
-  g.font = `italic 30px ${SERIF}`; g.fillStyle = INK; g.fillText(rest, startX + capW + 12, B.top + 112);
+  g.font = `44px ${CAPS}`; g.fillStyle = g.strokeStyle = GOLD; g.textAlign = 'left'; g.fillText(first, startX, B.top + 114); g.lineWidth = 1.2; g.strokeText(first, startX, B.top + 114);
+  g.font = `33px ${BOOK_ITALIC}`; g.fillStyle = INK; g.fillText(rest, startX + capW + 12, B.top + 112);
 
   const fit = layout(word, x1 - x0);
   const pitch = fit.size + 26, block = (fit.lines.length - 1) * pitch + fit.size;
@@ -279,8 +350,10 @@ function rightPage(g, { word, hits, wrong, category, over }) {
       if (letter ? hits.includes(ch) || over : ch !== ' ') {
         const missed = letter && over && !hits.includes(ch);
         g.save(); g.translate(lx + slot / 2, ly); g.rotate((rnd() - 0.5) * 0.08);
-        g.font = `bold ${Math.round(fit.size * 0.95)}px ${SERIF}`; g.textAlign = 'center'; g.fillStyle = missed ? RED_INK : INK;
-        g.fillText(ch, 0, 0); g.restore();
+        const digit = /[0-9]/.test(ch); // the capitals' 1 looks like an I, and so does the book type's: digits get their own font
+        g.font = digit ? `${Math.round(fit.size * 0.9)}px ${FIGURES}` : `${Math.round(fit.size * 0.84)}px ${CAPS}`; g.textAlign = 'center';
+        g.fillStyle = g.strokeStyle = missed ? RED_INK : INK;
+        g.fillText(ch, 0, 0); g.lineWidth = digit ? 0.8 : 1.1; g.strokeText(ch, 0, 0); g.restore(); // a thin outline, so the fine capitals hold up at Discord's size
       }
     }
     ly += pitch;
@@ -288,31 +361,132 @@ function rightPage(g, { word, hits, wrong, category, over }) {
   blots(g, wrong, cx);
 }
 
-// A stamp across the bottom of the left page once the game is over.
-function stamp(g, won) {
-  g.save(); g.translate(LEFT_CX, B.bottom - 66); g.rotate(-0.06);
-  const color = won ? '#2f8a52' : RED_INK;
-  g.font = `bold italic 40px ${SERIF}`; g.textAlign = 'center'; g.textBaseline = 'middle';
-  const text = won ? 'The End' : 'To Be Continued...';
-  const tw = g.measureText(text).width + 50;
-  g.fillStyle = 'rgba(245,233,204,0.88)'; g.strokeStyle = color; g.lineWidth = 4;
-  g.beginPath(); g.roundRect(-tw / 2, -34, tw, 68, 12); g.fill(); g.stroke();
-  g.lineWidth = 1.5; g.beginPath(); g.roundRect(-tw / 2 + 6, -28, tw - 12, 56, 9); g.stroke();
-  g.fillStyle = color; g.fillText(text, 0, 2);
+// The ending, once the game is over, where the souls row was: a cream ribbon banner with swallow-tailed ends holding "TO BE CONTINUED" or "THE END" in
+// letter-spaced capitals between little diamonds (his pick, Oct 21: the spaced capitals of mock-up 5 on the banner of mock-up 3). The End in green ink, To Be
+// Continued in black. The banner is sized so its tails stay inside the page's border.
+function ending(g, won) {
+  const word = won ? 'THE END' : 'TO BE CONTINUED', color = won ? '#2d6444' : '#1c1009', spacing = 4, cy = B.bottom - 66, h = 36;
+  g.font = `17px ${CAPS}`;
+  const widths = [...word].map((ch) => g.measureText(ch).width), total = widths.reduce((sum, w) => sum + w + spacing, -spacing);
+  const w = total + 62, tail = 22;
+  g.save(); g.shadowColor = 'rgba(60,35,10,0.35)'; g.shadowBlur = 6; g.shadowOffsetY = 3;
+  for (const side of [-1, 1]) { // the swallow-tailed ends, behind the banner
+    const x = LEFT_CX + side * w / 2;
+    g.fillStyle = '#d9c68f'; g.strokeStyle = 'rgba(70,45,20,0.8)'; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(x, cy - h / 2 + 8); g.lineTo(x + side * tail, cy - h / 2 + 8); g.lineTo(x + side * (tail - 8), cy + 6); g.lineTo(x + side * tail, cy + h / 2 + 5); g.lineTo(x, cy + h / 2 + 2); g.closePath(); g.fill(); g.stroke();
+  }
+  g.fillStyle = '#f1e3bd'; g.strokeStyle = 'rgba(70,45,20,0.85)'; g.lineWidth = 1.4;
+  g.beginPath(); g.moveTo(LEFT_CX - w / 2, cy - h / 2); g.quadraticCurveTo(LEFT_CX, cy - h / 2 - 7, LEFT_CX + w / 2, cy - h / 2);
+  g.lineTo(LEFT_CX + w / 2, cy + h / 2); g.quadraticCurveTo(LEFT_CX, cy + h / 2 - 7, LEFT_CX - w / 2, cy + h / 2); g.closePath(); g.fill(); g.stroke();
   g.restore();
+  g.strokeStyle = 'rgba(70,45,20,0.35)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(LEFT_CX - w / 2 + 8, cy - h / 2 + 5); g.quadraticCurveTo(LEFT_CX, cy - h / 2 - 1, LEFT_CX + w / 2 - 8, cy - h / 2 + 5); g.stroke(); // a fine line inside the top edge
+  g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.font = `17px ${CAPS}`; g.fillStyle = g.strokeStyle = color; g.lineWidth = 0.6;
+  let x = LEFT_CX - total / 2; const y = cy + 5.5;
+  [...word].forEach((ch, i) => { g.fillText(ch, x, y); g.strokeText(ch, x, y); x += widths[i] + spacing; });
+  for (const side of [-1, 1]) { // a diamond either side of the words
+    const dx = LEFT_CX + side * (total / 2 + 14);
+    g.beginPath(); g.moveTo(dx, cy - 5); g.lineTo(dx + 3.6, cy); g.lineTo(dx, cy + 5); g.lineTo(dx - 3.6, cy); g.closePath(); g.fill();
+  }
 }
 
-// The picture for a game: { word, hits: the right letters found, wrong: [the wrong letters, '?' for a wrong solve], category, result: null | 'won' | 'lost' }.
-// Returns a PNG buffer.
-async function renderBook({ word, hits, wrong, category, result = null }) {
+// ---- the fireflies --------------------------------------------------------------------------------------------------------------
+// Paige's green sparks: dots of light that drift and twinkle over the desk and the leather cover, behind the pages (never over the text). Every
+// one moves in whole loops, so the animation joins up with itself. Each frame is the book plus where the fireflies are at that moment.
+const FRAMES = 20;
+const FRAME_MS = 120; // the loop takes 2.4 s: slow, gentle drifting (his call Oct 21: fewer, and slower)
+const FLIES = 14;
+
+let fliesData; // { flies: [{ x, y, ax, ay, kx, ky, px, py, size, kb, pb, hot }], hidden: a canvas that is opaque where the pages and bookmark cover the desk }
+function fireflies() {
+  if (fliesData) return fliesData;
+  const hidden = createCanvas(W, H);
+  const g = hidden.getContext('2d');
+  g.fillStyle = '#000';
+  for (const side of ['left', 'right']) {
+    for (let i = 7; i >= 0; i--) { g.save(); g.translate(side === 'left' ? -i * 1.2 : i * 1.2, i * 1.6); pageShape(g, side); g.fill(); g.restore(); }
+  }
+  ribbon(g); // the bookmark lies over the page and its tail over the cover: both hide a firefly behind them
+  const mask = g.getImageData(0, 0, W, H).data;
+  const rnd = seeded(808);
+  const flies = [];
+  while (flies.length < FLIES) {
+    const x = rnd() * W, y = rnd() * H;
+    if (mask[(Math.floor(y) * W + Math.floor(x)) * 4 + 3] > 0) continue; // starts where the desk or cover shows
+    flies.push({
+      x, y, ax: 5 + rnd() * 9, ay: 5 + rnd() * 9, kx: 1, ky: 1, px: rnd(), py: rnd(), // one slow circuit per loop
+      size: 1.6 + rnd() * 2.6, kb: 1 + Math.floor(rnd() * 2), pb: rnd(), hot: rnd() < 0.25, // a few burn brighter and whiter
+    });
+  }
+  fliesData = { flies, hidden };
+  return fliesData;
+}
+
+// The fireflies at moment t (0-1 round the loop) as a transparent layer, pages cut out.
+function firefliesAt(t) {
+  const { flies, hidden } = fireflies();
+  const layer = createCanvas(W, H);
+  const g = layer.getContext('2d');
+  g.globalCompositeOperation = 'lighter';
+  for (const fly of flies) {
+    const x = fly.x + fly.ax * Math.sin(2 * Math.PI * (t * fly.kx + fly.px)), y = fly.y + fly.ay * Math.sin(2 * Math.PI * (t * fly.ky + fly.py));
+    const glow = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(2 * Math.PI * (t * fly.kb + fly.pb))); // twinkles between a faint ember and full light
+    const r = fly.size * (3.2 + 1.6 * glow);
+    const halo = g.createRadialGradient(x, y, 0, x, y, r);
+    halo.addColorStop(0, `rgba(${fly.hot ? '215,255,225' : '150,255,180'},${0.95 * glow})`);
+    halo.addColorStop(0.35, `rgba(90,235,140,${0.45 * glow})`);
+    halo.addColorStop(1, 'rgba(70,220,120,0)');
+    g.fillStyle = halo; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+  }
+  g.globalCompositeOperation = 'destination-out'; // behind the pages
+  g.drawImage(hidden, 0, 0);
+  return layer;
+}
+
+// A fixed pattern of small noise added to every frame before it is reduced to a GIF's 255 colours: it breaks up the banding in the candlelight
+// and the leather the way dithering would, and being the same in every frame it adds nothing that moves.
+let noise;
+const grainOf = () => {
+  if (!noise) { const rnd = seeded(404); noise = new Int8Array(W * H); for (let i = 0; i < noise.length; i++) noise[i] = Math.round((rnd() - 0.5) * 5); }
+  return noise;
+};
+
+// The still book (no fireflies), as a canvas.
+async function drawBook({ word, hits, wrong, category, result = null, noEnding = false }) { // noEnding: previews of other endings
   const loaded = await loadArt();
   const c = createCanvas(W, H);
   const g = c.getContext('2d');
   g.drawImage(backdrop(), 0, 0);
   leftPage(g, { wrong: wrong.length, loaded, over: !!result });
   rightPage(g, { word, hits, wrong, category, over: !!result });
-  if (result) stamp(g, result === 'won');
-  return c.toBuffer('image/png');
+  if (result && !noEnding) ending(g, result === 'won');
+  return c;
 }
 
-module.exports = { renderBook, layout, MAX_WRONG };
+// The picture for a game: { word, hits: the right letters found, wrong: [the wrong letters, '?' for a wrong solve], category, result: null | 'won' | 'lost' }.
+// Returns a GIF buffer (the fireflies shimmer and drift, round and round).
+async function renderBook(game) {
+  const book = await drawBook(game);
+  const grain = grainOf();
+  const frames = Array.from({ length: FRAMES }, (_, f) => ({
+    delay: FRAME_MS,
+    rgba() {
+      const c = createCanvas(W, H);
+      const g = c.getContext('2d');
+      g.drawImage(book, 0, 0);
+      g.globalCompositeOperation = 'lighter';
+      g.drawImage(firefliesAt(f / FRAMES), 0, 0);
+      const image = g.getImageData(0, 0, W, H);
+      const d = image.data;
+      for (let i = 0, p = 0; i < d.length; i += 4, p++) { const n = grain[p]; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+      return image.data;
+    },
+  }));
+  return encodeGif(frames, W, H, { loop: true, picks: [0, Math.floor(FRAMES / 2)] });
+}
+
+// The still picture as a PNG (previews and tests).
+async function renderBookPng(game) {
+  return (await drawBook(game)).toBuffer('image/png');
+}
+
+module.exports = { renderBook, renderBookPng, layout, MAX_WRONG };

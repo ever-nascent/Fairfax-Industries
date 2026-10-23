@@ -96,6 +96,16 @@ const CLEAR_CAP = 10;
 const GROWTH = { 'small-camp': 0.03, 'medium-camp': 0.02, 'large-camp': 0.02, guardian: 0.02, walker: 0.03, 'mid-boss': 0.04, siege: 0.04 };
 const CLEAR_RESIST = 0.003;
 const CLEAR_SOULS = 0.05;
+// The siege's sustain (his call, Oct 22): every Base Guardian, Shrine and Patron heals for a share of the damage it deals (`drain`), and each of
+// its hits cuts the hero's healing for a moment (`antiHeal`: lifesteal, regen and heal items). Both grow with every siege win, up to CLEAR_CAP wins:
+// 15% lifesteal +2% a win (35% at 10), 25% heal cut +3% a win (55% at 10). Engine side: engine.js damage().
+const SIEGE_DRAIN = { base: 0.15, perClear: 0.02 };
+const SIEGE_ANTIHEAL = { base: 0.25, perClear: 0.03, seconds: 3 };
+const siegeSustain = (e, n = 0) => {
+  e.stats.drain = SIEGE_DRAIN.base + SIEGE_DRAIN.perClear * clearsOf(n);
+  e.stats.antiHeal = { cut: Math.min(1, SIEGE_ANTIHEAL.base + SIEGE_ANTIHEAL.perClear * clearsOf(n)), seconds: SIEGE_ANTIHEAL.seconds };
+  return e;
+};
 const clearsOf = (n = 0) => Math.min(CLEAR_CAP, Math.max(0, n || 0));
 const clearPower = (n, key) => 1 + (GROWTH[key] ?? 0.05) * clearsOf(n); // health, damage, regen
 const clearSouls = (n) => 1 + CLEAR_SOULS * clearsOf(n);
@@ -107,6 +117,7 @@ function strengthen(e, n, key) {
   e.stats.healthRegen *= k;
   e.stats.bulletResist = Math.min(0.9, e.stats.bulletResist + CLEAR_RESIST * clearsOf(n));
   e.stats.spiritResist = Math.min(0.9, e.stats.spiritResist + CLEAR_RESIST * clearsOf(n));
+  if (key === 'siege') siegeSustain(e, n); // its lifesteal and heal cut grow too
   return e;
 }
 const scaled = (factor, make) => () => make().map((e) => {
@@ -200,7 +211,8 @@ const SIEGE = {
 
 for (const stage of SIEGE.stages) {
   stage.icon = path.join(ICONS, `${stage.icon}.png`);
-  stage.enemies = scaled(HARDNESS.siege, stage.enemies);
+  const make = scaled(HARDNESS.siege, stage.enemies);
+  stage.enemies = () => make().map((e) => siegeSustain(e)); // lifesteal and heal cut from the first try (strengthen() grows them with wins)
   stage.souls *= HARD_PAY;
 }
 
@@ -247,4 +259,4 @@ function siege(hero, { maxSecondsPerStage = 900, rng, rejuvs = 0 } = {}) {
   return { won: out.won, stage: out.stage, stageName: out.won ? null : SIEGE.stages[out.stage].name, souls, rejuvsLeft: hero.rejuvs };
 }
 
-module.exports = { WAVES, WAVE, wavePay, wavesPay, LANES, LANED, WALKER_STEP, CLEAR_CAP, GROWTH, clearsOf, clearPower, clearSouls, strengthen, TARGETS, SIEGE, HARDNESS, PAYOUT_SCALE, payout, runStages, attempt, siege };
+module.exports = { SIEGE_DRAIN, SIEGE_ANTIHEAL, WAVES, WAVE, wavePay, wavesPay, LANES, LANED, WALKER_STEP, CLEAR_CAP, GROWTH, clearsOf, clearPower, clearSouls, strengthen, TARGETS, SIEGE, HARDNESS, PAYOUT_SCALE, payout, runStages, attempt, siege };

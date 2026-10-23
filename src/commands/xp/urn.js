@@ -2,7 +2,7 @@ const path = require('node:path');
 const { SlashCommandBuilder, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags } = require('discord.js');
 const { claimUrn, URN_MAX_DAYS } = require('../../utils/xp');
 const { heroEmoji } = require('../../utils/heroes');
-const { soulsText, boldSouls } = require('../../utils/format');
+const { soulsText, boldSouls, rejuvIcon } = require('../../utils/format');
 const { pickRandom } = require('../../utils/random');
 const { ASSETS } = require('../../utils/art');
 const { streakBar } = require('../../utils/trivia'); // the same bar as /trivia
@@ -59,7 +59,7 @@ function rejuvMessage(member, user, now = new Date()) {
   const emoji = heroEmoji(member.guild, 'rejuv');
   const embed = urnEmbed()
     .setThumbnail('attachment://soul_urn_render.png')
-    .setDescription(`${member}, your **Streak** broke!\n\nUse a Rejuv to save it, or start over and keep your Rejuv.`)
+    .setDescription(`${member}, your **Streak** broke!\n\nUse a ${rejuvIcon()}Rejuv to save it, or start over and keep your ${rejuvIcon()}Rejuv.`)
     .addFields(
       { name: 'Streak', value: days(user.urnStreak), inline: true },
       { name: 'Missed', value: days(missed), inline: true },

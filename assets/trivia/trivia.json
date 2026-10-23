@@ -16709,7 +16709,7 @@
    "Souls are lying over there.",
    "Someone dropped some souls.",
    "Oh I'm gonna make good use of this...",
-   "Cant believe someone threw this out...",
+   "Can't believe someone threw this out...",
    "If they wanna leave it behind, that's on them.",
    "I'm taking whats owed to me.",
    "Who cares, we took down the objective.",
@@ -22160,6 +22160,11 @@
    "What a mix of dangerous and cuddly.",
    "Who can do better furs than me?",
    "First you're scared of the claws, then you see the gun.",
+   "That bag really pulls the gaze.",
+   "You can feel her judging you, can't you?",
+   "Good, good... I made her look more professional than murderous.",
+   "I'd probably trust that face to attend to me.",
+   "Her gaze makes me want to stand up straight.",
    "Not sure I ever painted a bibliomancer before.",
    "Yes, the books kind of function as their own characters.",
    "Did her a favor and toned her anxiety way down.",
@@ -22315,7 +22320,7 @@
    "Glad I took a mandatory self-defense class.",
    "I should get those souls.",
    "Anyone picking up those souls?",
-   "Who leaves souls just lyin' around?",
+   "I'm a broke student, I'll take what I can get.",
    "This should cover some student debt.",
    "Art supplies aren't cheap.",
    "This should help with rent.",
@@ -22462,7 +22467,96 @@
    "She's a little crazy. Maybe that... bought some respect with her?",
    "Don't fall for Lady Geist's tricks.",
    "Don't get close to Lady Geist!",
-   "Lady Geist is looking to swap."
+   "Lady Geist is looking to swap.",
+   "Some people never grow up.",
+   "Oh my God, I stopped Lash.",
+   "God, my parents would love her...",
+   "Fairfax Industries can go to hell!",
+   "Get outta my way, McGinnis.",
+   "You should quit your day job!",
+   "How many of these turrets does she have?!",
+   "I'm getting real sick of these turrets.",
+   "Keep putting 'em up, McGinnis. I'll keep tearing 'em down!",
+   "Now's... probably not the best time to talk about collabs, is it?",
+   "I'm not here to get fed on!",
+   "I got no problem with you, Mina, but I'm not letting you get in my way.",
+   "That girl really knows how to pull off a parasol.",
+   "I hope you weren't the Djinn's best chance at a home.",
+   "Stop being a yes-man, Mirage!",
+   "You picked a bad time to visit New York.",
+   "That guy really had a stick up his ass.",
+   "Almost got my arms ripped off by a mole man!",
+   "That was one big-ass mole!",
+   "Kind of enjoyed smacking the judgment off her face.",
+   "She had it out for me. I could tell.",
+   "Glad my parents never heard of her.",
+   "I don't even wanna know what's in that bag.",
+   "She's like me... if I was white, and more neurotic.",
+   "Dude... family's not worth it. Trust me.",
+   "You seem cool. Sorry we couldn't work together.",
+   "I took out the bibliomancer!",
+   "Maybe after this, my art will be worth stealing.",
+   "Man... never meet your heroes.",
+   "She was more slippery than I thought.",
+   "Oh my god. I killed Paradox.",
+   "That wasn't gonna stop me, Paradox.",
+   "Okay... that was a little disorienting...",
+   "Someone's feeling sorry for themselves.",
+   "And I thought I was moody.",
+   "I'm not impressed, Pocket!",
+   "Good luck with Long Island!",
+   "I think he's more of a criminal than a king.",
+   "I used to think rats were cute...",
+   "He had no business being here.",
+   "You're a murderer, Seven!",
+   "I'm lucky to still be standing...",
+   "I thought he was gonna kill me.",
+   "I don't want him anywhere near a wish.",
+   "I guess redemption is overrated.",
+   "He was about to stab the shit outta me.",
+   "The Baxter Society is really sending mixed messages here.",
+   "I'm not letting you maul me!",
+   "Jesus, that lady was scary...",
+   "You think I'm going to just stand here and let you rip out my throat?",
+   "I hope she doesn't track me down later...",
+   "Glad I'm walking away from that fight...",
+   "Shouldn't you be on stage somewhere?",
+   "Thank God they didn't have kids...",
+   "Stop bickering and get out of my way!",
+   "I never want to see a rabbit ever again!",
+   "Just because you've lived longer doesn't mean you know better.",
+   "I stopped the chess player.",
+   "Pick on someone your own age!",
+   "I'm not a piece you can just push around.",
+   "I'm in way over my head, aren't I?",
+   "Just another one of many reasons I don't do organized religion.",
+   "You should be hunting monsters, not art students!",
+   "He was my favorite life drawing model, too...",
+   "Life sucks sometimes, Victor. Don't know what to tell you.",
+   "I can't be too mad at her. I'd hate the Hathornes too if I were her.",
+   "Go back to the Ren Faire, Vindicta!",
+   "Just doing what I need to do.",
+   "This is between you and Hathorne, not me.",
+   "The skies just got a little safer.",
+   "Every time I think this city can't get weirder...",
+   "God, I wanna paint with the goo...",
+   "Good luck, Viscous. You need it.",
+   "That lady has some serious problems!",
+   "New life goal: don't be her.",
+   "Vyper, stop trying to be the cool aunt.",
+   "She's like a frat party turned into a person.",
+   "Live for yourself, Warden.",
+   "I bet his parents made him pick up an instrument too...",
+   "Warden's making his move!",
+   "Wraith isn't gonna forget that.",
+   "You bet on the wrong team.",
+   "She seemed scary... but I liked her confidence.",
+   "Our odds just got better!",
+   "I pissed off the Seventh Moon... I might have to change my wish.",
+   "Oh my God, she's gonna find me after the ritual and she's gonna cut off my hands!",
+   "She wouldn't have hesitated to kill me first.",
+   "That lady's a goddamn psychopath!",
+   "I doubt she's here for anything good..."
   ],
   "abilities": [
    {
@@ -22628,6 +22722,174 @@
      "Looks like I'm not getting into any galleries she donated to.",
      "I took out Lady Geist!.. Oh, God, I took out Lady Geist!",
      "She's a little crazy. Maybe that... bought some respect with her?"
+    ],
+    "Lash": [
+     "Meathead jock!",
+     "Some people never grow up.",
+     "Lash, you're a dick!",
+     "I hate guys like him...",
+     "Oh, that felt good."
+    ],
+    "McGinnis": [
+     "God, my parents would love her...",
+     "Fairfax Industries can go to hell!",
+     "I took out McGinnis.",
+     "Get outta my way, McGinnis.",
+     "You should quit your day job!"
+    ],
+    "Mina": [
+     "Now's... probably not the best time to talk about collabs, is it?",
+     "Stopped Mina!",
+     "I'm not here to get fed on!",
+     "I got no problem with you, Mina, but I'm not letting you get in my way.",
+     "That girl really knows how to pull off a parasol."
+    ],
+    "Mirage": [
+     "I hope you weren't the Djinn's best chance at a home.",
+     "Stop being a yes-man, Mirage!",
+     "You picked a bad time to visit New York.",
+     "That guy really had a stick up his ass.",
+     "Took out Mirage!"
+    ],
+    "Mo & Krill": [
+     "Almost got my arms ripped off by a mole man!",
+     "That was one big-ass mole!",
+     "I took out Mo and Krill!",
+     "I'm not really a hugger.",
+     "Those two were tough."
+    ],
+    "Nurse Harrow": [
+     "Kind of enjoyed smacking the judgment off her face.",
+     "She had it out for me. I could tell.",
+     "Glad my parents never heard of her.",
+     "Took out their nurse.",
+     "I don't even wanna know what's in that bag."
+    ],
+    "Paige": [
+     "She's like me... if I was white, and more neurotic.",
+     "Dude... family's not worth it. Trust me.",
+     "You seem cool. Sorry we couldn't work together.",
+     "She was a good person...",
+     "I took out the bibliomancer!"
+    ],
+    "Paradox": [
+     "Maybe after this, my art will be worth stealing.",
+     "Man... never meet your heroes.",
+     "Leave me alone, Paradox!",
+     "She was more slippery than I thought.",
+     "God, she's so cool..."
+    ],
+    "Pocket": [
+     "I took out Pocket!",
+     "They look familiar...",
+     "Someone's feeling sorry for themselves.",
+     "And I thought I was moody.",
+     "I'm not impressed, Pocket!"
+    ],
+    "Rat King": [
+     "Good luck with Long Island!",
+     "I killed the rat king!",
+     "\"King\" my ass.",
+     "I think he's more of a criminal than a king.",
+     "I used to think rats were cute..."
+    ],
+    "Rem": [
+     "Sorry, little guy...",
+     "He was so cute too.",
+     "I handled Rem.",
+     "He had no business being here.",
+     "Rem, go home already!"
+    ],
+    "Seven": [
+     "He deserved that.",
+     "You're a murderer, Seven!",
+     "I'm lucky to still be standing...",
+     "I thought he was gonna kill me.",
+     "I don't want him anywhere near a wish."
+    ],
+    "Shiv": [
+     "I guess redemption is overrated.",
+     "Took down Shiv!",
+     "He was about to stab the shit outta me.",
+     "Glad I got him first.",
+     "The Baxter Society is really sending mixed messages here."
+    ],
+    "Silver": [
+     "I'm not letting you maul me!",
+     "Jesus, that lady was scary...",
+     "You think I'm going to just stand here and let you rip out my throat?",
+     "I hope she doesn't track me down later...",
+     "Glad I'm walking away from that fight..."
+    ],
+    "Sinclair": [
+     "Shouldn't you be on stage somewhere?",
+     "Thank God they didn't have kids...",
+     "Stop bickering and get out of my way!",
+     "Sinclair's done.",
+     "I never want to see a rabbit ever again!"
+    ],
+    "Solomon": [
+     "Sorry, pops.",
+     "Just because you've lived longer doesn't mean you know better.",
+     "I stopped the chess player.",
+     "Pick on someone your own age!",
+     "I'm not a piece you can just push around."
+    ],
+    "Venator": [
+     "Leave me alone, Venator!",
+     "I'm in way over my head, aren't I?",
+     "I took down the Venator!",
+     "Just another one of many reasons I don't do organized religion.",
+     "You should be hunting monsters, not art students!"
+    ],
+    "Victor": [
+     "He was my favorite life drawing model, too...",
+     "I'm so sorry, Victor.",
+     "No hard feelings, Victor",
+     "Took out the sad boy.",
+     "Life sucks sometimes, Victor. Don't know what to tell you."
+    ],
+    "Vindicta": [
+     "I can't be too mad at her. I'd hate the Hathornes too if I were her.",
+     "Stopped their sniper!",
+     "Go back to the Ren Faire, Vindicta!",
+     "Just doing what I need to do.",
+     "This is between you and Hathorne, not me."
+    ],
+    "Viscous": [
+     "Sorry, Green!",
+     "He seemed nice.",
+     "Every time I think this city can't get weirder...",
+     "God, I wanna paint with the goo...",
+     "Good luck, Viscous. You need it."
+    ],
+    "Vyper": [
+     "That lady has some serious problems!",
+     "New life goal: don't be her.",
+     "Vyper, stop trying to be the cool aunt.",
+     "Took down Vyper!",
+     "She's like a frat party turned into a person."
+    ],
+    "Warden": [
+     "Wow, he was intense!",
+     "I never wanna be him.",
+     "Live for yourself, Warden.",
+     "Took down Warden!",
+     "I bet his parents made him pick up an instrument too..."
+    ],
+    "Wraith": [
+     "Wraith isn't gonna forget that.",
+     "You bet on the wrong team.",
+     "She seemed scary... but I liked her confidence.",
+     "Our odds just got better!",
+     "Took out the gambler!"
+    ],
+    "Yamato": [
+     "I pissed off the Seventh Moon... I might have to change my wish.",
+     "Oh my God, she's gonna find me after the ritual and she's gonna cut off my hands!",
+     "She wouldn't have hesitated to kill me first.",
+     "That lady's a goddamn psychopath!",
+     "I doubt she's here for anything good..."
     ]
    }
   }

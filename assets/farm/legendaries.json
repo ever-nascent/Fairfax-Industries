@@ -360,7 +360,11 @@
      "Value": 250,
      "Label": "Damage",
      "Prefix": "",
-     "Postfix": ""
+     "Postfix": "",
+     "Scale": {
+      "Value": 0.465,
+      "Type": "spirit"
+     }
     }
    ],
    "Alt": []
@@ -880,7 +884,11 @@
      "Value": 270,
      "Label": "Damage Per Second",
      "Prefix": "",
-     "Postfix": ""
+     "Postfix": "",
+     "Scale": {
+      "Value": 1.75,
+      "Type": "spirit"
+     }
     },
     {
      "Key": "AbilityDuration",
@@ -1068,7 +1076,11 @@
      "Value": 125,
      "Label": "Damage Per Second",
      "Prefix": "",
-     "Postfix": ""
+     "Postfix": "",
+     "Scale": {
+      "Value": 0.4,
+      "Type": "spirit"
+     }
     },
     {
      "Key": "AbilityDuration",

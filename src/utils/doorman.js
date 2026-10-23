@@ -5,10 +5,9 @@ const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { getStore } = require('../storage');
-const { soulsText, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS, loadSouls, seeded, halftone, grain, grainAndVignette } = require('./art');
-const { staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { GREEN, RED, staked, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'doorman'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x8c1d24, name: 'The Baroness Hotel', icon: path.join(ART, 'hotel_guest.png'), art: ART, prefix: 'doorman' }; // burgundy; his ult icon
@@ -339,7 +338,8 @@ async function startGame(user, name, bet) {
   return view({
     id,
     rooms: ROOMS.map(() => ({})),
-    lines: [`${name} booked a room for ${boldSouls(bet)}.`, '**One of these rooms contain the Souls.**', '**Go on and pick a door.**'],
+    lines: ['Pick a door. One room holds the Souls.'],
+    fields: [['Win Pays', winnings(bet)], ['Bet', bet]],
     buttons: ROOMS.map((n, i) => [`${BUTTON_ID}:${id}:pick:${i}`, `Room ${n}`, ButtonStyle.Secondary]),
     footer: `"${pickRandom(START_LINES)}"`,
   });
@@ -351,11 +351,8 @@ function pickView(id, game) {
   return view({
     id,
     rooms: ROOMS.map((_, i) => ({ open: i === game.opened, mine: i === game.pick })),
-    lines: [
-      `You picked Room ${ROOMS[game.pick]}.`,
-      `The Doorman opens Room ${ROOMS[game.opened]}: empty.`,
-      `**Stay in ${ROOMS[game.pick]}, or switch to ${ROOMS[other]}?**`,
-    ],
+    lines: ['Stay or Switch?'],
+    fields: [['Your Room', String(ROOMS[game.pick])], ['Opened', `${ROOMS[game.opened]} (Empty)`], ['Bet', game.bet]], // the buttons name the room to switch to
     footer: `"${pickRandom(PICK_LINES)}"`,
     buttons: [
       [`${BUTTON_ID}:${id}:stay`, `Stay (${ROOMS[game.pick]})`, ButtonStyle.Secondary],
@@ -364,17 +361,19 @@ function pickView(id, game) {
   });
 }
 
-// Every door opens.
+// Every door opens. The template every game follows (his pick Oct 22): one bold line, the rooms in fields, the money under
+// them, green or red.
 function resultView(id, game, final, won, balance) {
-  const verb = final === game.pick ? `You stayed in Room ${ROOMS[final]}...` : `You switched to Room ${ROOMS[final]}...`;
-  const outcome = won
-    ? ['The Souls were inside!', `**You win ${soulsText(winnings(game.bet))}.**`]
-    : ['Empty.', `**The Souls were in Room ${ROOMS[game.prize]}.**`];
   return view({
     id,
     rooms: ROOMS.map((_, i) => ({ open: true, prize: i === game.prize, mine: i === final })),
-    lines: [verb, ...outcome],
-    fields: resultFields(game.bet, won ? winnings(game.bet) : 0, balance),
+    lines: [won ? '**The Souls were in your room.**' : `**The Souls were in Room ${ROOMS[game.prize]}.**`],
+    fields: [
+      ['Your Room', `${ROOMS[final]} (${final === game.pick ? 'Stayed' : 'Switched'})`],
+      ['Souls In', String(ROOMS[game.prize])],
+      ...resultFields(game.bet, won ? winnings(game.bet) : 0, balance),
+    ],
+    color: won ? GREEN : RED,
     buttons: [playAgainButton(AGAIN_ID, game.bet, game.userId)],
     footer: `"${pickRandom(won ? WIN_LINES : LOSE_LINES)}"`,
     mood: won ? 'injured' : 'gloat',

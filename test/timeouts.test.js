@@ -39,7 +39,8 @@ test('Blackjack: a timed-out hand stands (16 against 19 loses the bet, no refund
   await bj.startGame(user, 'Tester', BET, deck);
   const [edit] = await timeOut(bj);
   assert.match(text(edit), FINISHED);
-  assert.match(text(edit), /Wraith beats your 16/);
+  assert.match(text(edit), /Wraith takes the hand/);
+  assert.deepStrictEqual(edit.embeds[0].toJSON().fields.slice(0, 2).map((f) => f.value), ['**16**', '**19**']);
   assert.strictEqual(await souls(user.id), START - BET);
 });
 
@@ -56,7 +57,7 @@ test('Guess the Door: before a pick the bet comes back; after the Doorman opens 
   const { prize } = await doorman.games().get(id);
   [edit] = await timeOut(doorman);
   assert.match(text(edit), FINISHED);
-  assert.match(text(edit), /You stayed in Room/);
+  assert.match(edit.embeds[0].toJSON().fields[0].value, /\(Stayed\)/);
   assert.strictEqual(await souls(user.id), START - BET + (prize === 0 ? doorman.winnings(BET) : 0));
 });
 
@@ -108,7 +109,7 @@ test('Shotgun Roulette: once a shot is fired, whoever stalls forfeits (to Silver
   await silver.move(id, a.id, ['other']);
   const [edit] = await timeOut(silver);
   assert.match(text(edit), FINISHED);
-  assert.match(text(edit), /ran out of time/);
+  assert.match(text(edit), /Ran Out Of Time/);
   assert.strictEqual(await souls(a.id), START - BET);
 
   await fund(a.id);

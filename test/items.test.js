@@ -1,7 +1,7 @@
 // Run: node --test
 const test = require('node:test');
 const assert = require('node:assert');
-const { Fight, enemy, LIFESTEAL_VS_NPC } = require('../src/utils/farm/engine');
+const { Fight, enemy, SPIRIT_LIFESTEAL_VS_NPC } = require('../src/utils/farm/engine');
 const { buildHero } = require('../src/utils/farm/hero');
 const { ITEM_POOL } = require('../src/utils/farm/levels');
 const { FX, makeItems } = require('../src/utils/farm/items');
@@ -64,7 +64,7 @@ test('spirit lifesteal heals from ability and item damage, not from bullets', ()
   run(fight, 1);
   const dealt = enemies[0].stats.maxHealth - enemies[0].health;
   assert.ok(dealt > 90, 'Cold Front hit');
-  assert.ok(Math.abs(hero.health - before - dealt * hero.stats.spiritLifesteal * LIFESTEAL_VS_NPC - hero.stats.healthRegen * 1) < 1, `healed ${(hero.health - before).toFixed(1)} of ${dealt.toFixed(1)} damage`);
+  assert.ok(Math.abs(hero.health - before - dealt * hero.stats.spiritLifesteal * SPIRIT_LIFESTEAL_VS_NPC - hero.stats.healthRegen * 1) < 1, `healed ${(hero.health - before).toFixed(1)} of ${dealt.toFixed(1)} damage`);
   assert.ok(hero.stats.spiritLifesteal > 0.12);
 });
 
@@ -156,7 +156,7 @@ test('procs: Mystic Shot adds spirit damage once per cooldown; Ricochet hits the
   run(plain.fight, 7);
   const extra = ms.fight.dealt.get(ms.hero) - plain.fight.dealt.get(plain.hero);
   assert.ok(extra > 35 && extra < 60, `one proc in 7 s: ${extra.toFixed(0)}`);
-  const ric = setup(['Ricochet'], { foes: 3 });
+  const ric = setup(['Ricochet'], { foes: 3, hp: 2000 }); // camp-sized: bullets don't bounce off a boss
   run(ric.fight, 3);
   assert.ok(ric.enemies[1].health < ric.enemies[1].stats.maxHealth && ric.enemies[2].health < ric.enemies[2].stats.maxHealth);
 });
@@ -233,4 +233,44 @@ test('Infinite Rounds (legendary): never reloads', () => {
   };
   assert.ok(reloads([]) > 0);
   assert.strictEqual(reloads(['Infinite Rounds']), 0);
+});
+
+test('"vs. NPCs" items do nothing against a rival hero: Monster Rounds; Restorative Shot heals its hero amount from one', () => {
+  const duel = (items) => {
+    const hero = buildHero('Haze', { items });
+    const rival = buildHero('Abrams', { items });
+    return { hero, rival, fight: new Fight({ heroes: [hero], enemies: [rival], rng: () => 0.5 }) };
+  };
+  const plain = duel([]);
+  const monster = duel(['Monster Rounds']);
+  assert.strictEqual(monster.fight.shotDamage(monster.hero, monster.rival), plain.fight.shotDamage(plain.hero, plain.rival), 'no extra weapon damage on a hero');
+  const npc = setup(['Monster Rounds']);
+  assert.ok(npc.fight.shotDamage(npc.hero, npc.enemies[0]) > setup([]).fight.shotDamage(setup([]).hero, setup([]).enemies[0]), 'extra weapon damage on an NPC');
+  const taken = ({ fight, hero, rival }) => { const before = hero.health; fight.damage(rival, hero, 100, 'bullet'); return before - hero.health; };
+  assert.ok(Math.abs(taken(monster) - taken(plain)) < 1e-9, 'no bullet resist against a hero');
+
+  const shot = duel(['Restorative Shot']);
+  shot.hero.health = 100;
+  shot.fight.emit('bulletHit', { source: shot.hero, target: shot.rival, amount: 1, opts: {} });
+  assert.strictEqual(shot.hero.health, 150);
+});
+
+test('item audit batch 2: Slowing Bullets builds like the wiki table, Stalker procs on a melee, Kinetic Dash rounds refresh instead of adding up', () => {
+  const slow = setup(['Slowing Bullets']);
+  const hit = () => slow.fight.emit('bulletHit', { source: slow.hero, target: slow.enemies[0], amount: 1, dealt: 1, opts: {} });
+  const slowed = () => slow.enemies[0].statuses.some((st) => st.id === 'Slowing Bullets:slow');
+  for (let i = 0; i < 7; i++) hit();
+  assert.ok(!slowed(), 'not after 7 bullets');
+  hit();
+  assert.ok(slowed(), 'Haze: 13.6% a bullet (the wiki), so the 8th bullet slows');
+
+  const stalk = setup(['Stalker'], { distance: 5 });
+  stalk.fight.emit('melee', { source: stalk.hero, target: stalk.enemies[0], amount: 50, dealt: 50 });
+  assert.ok(stalk.enemies[0].statuses.some((st) => st.id === 'Stalker:wound'), 'a melee at close range wounds');
+
+  const dash = setup(['Kinetic Dash']);
+  const clip = dash.hero.weapon.clip;
+  dash.fight.emit('dash', { source: dash.hero });
+  dash.fight.emit('dash', { source: dash.hero });
+  assert.strictEqual(dash.hero.weapon.clip, clip + 6);
 });

@@ -4,7 +4,7 @@ const { EmbedBuilder } = require('discord.js');
 const { getStore } = require('../storage');
 const { SCALE } = require('./economy');
 const { CARD_COLOR } = require('./rankCard');
-const { setSoulsEmoji, soulsText } = require('./format');
+const { setSoulsEmoji, setRejuvEmoji, soulsText } = require('./format');
 const { pickRandom } = require('./random');
 const { findEmoji } = require('./guild');
 const ledger = require('./soulsLedger');
@@ -313,7 +313,9 @@ async function standing(userId, by = 'xp') {
 }
 
 // The server's :souls: emoji, put in front of every soul count (format.js). Found on startup.
+// The :rejuv: emoji too (format.js rejuvIcon): its own try, so a missing one never stops :souls: from loading.
 function loadSoulsEmoji(guild) {
+  try { setRejuvEmoji(findEmoji(guild, 'rejuv').toString()); } catch (e) { console.error('[xp] Rejuv emoji:', e.message); }
   setSoulsEmoji(findEmoji(guild, 'souls').toString());
 }
 

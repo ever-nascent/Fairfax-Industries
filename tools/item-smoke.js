@@ -11,10 +11,11 @@ const { FX } = require('../src/utils/farm/items');
 const seeded = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
 // Fights that give every kind of effect something to work on: a boss that blasts (curse) and mixes damage, casters, gunners, a crowd; the hero
 // starts hurt, at level 20 with every ability at tier 3.
+const cutsHealing = (e) => { e.stats.antiHeal = { seconds: 3, cut: 0.25 }; return e; };
 const SCENES = [
   () => [
     enemy('Boss', { maxHealth: 6000, dps: 25, damageType: 'mixed', blast: { every: 5, damage: 120, maxHealthPct: 0.05, curse: 1.5 }, souls: 50 }),
-    enemy('Caster', { maxHealth: 900, dps: 12, damageType: 'spirit', healthRegen: 8, souls: 30 }),
+    cutsHealing(enemy('Caster', { maxHealth: 900, dps: 12, damageType: 'spirit', healthRegen: 8, souls: 30 })), // its hits cut healing (a debuff to purge: Dispel Magic)
     enemy('Gunner', { maxHealth: 900, dps: 12, souls: 30 }),
   ],
   () => Array.from({ length: 5 }, (_, i) => enemy(`Haunt ${i + 1}`, { maxHealth: 500, dps: 6, distance: 10, souls: 41 })),

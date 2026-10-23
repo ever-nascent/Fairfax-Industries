@@ -5,11 +5,11 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { getStore } = require('../storage');
-const { fmt, soulsText, boldSouls } = require('./format');
+const { fmt, boldSouls } = require('./format');
 const { pickRandom } = require('./random');
 const { ASSETS } = require('./art');
 const { findEmoji } = require('./guild');
-const { GREEN, RED, mention, pot, versusLine, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
+const { GREEN, RED, mention, pot, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'yamato'); // deadlock.wiki, see assets/CREDITS.txt
 const HOST = { color: 0x7b5ea7, name: "Yamato's Dojo", icon: path.join(ART, 'power_slash.png'), art: ART, prefix: 'yamato' };
@@ -30,6 +30,7 @@ const STANCES = {
 };
 const NAMES = { power: 'power_slash', flying: 'flying_strike', crimson: 'crimson_slash' };
 const stanceText = (s) => `${STANCES[s].emoji} **${STANCES[s].label}**`;
+const stanceName = (s) => `${STANCES[s].emoji} ${STANCES[s].label}`; // inside a line that is bold already
 // 1 = a beats b, -1 = b beats a, 0 = same
 const versus = (a, b) => (a === b ? 0 : STANCES[a].beats === b ? 1 : -1);
 
@@ -81,12 +82,17 @@ function loadStanceEmojis(guild) {
 
 // Every view but the invite clears the invite's @mention text.
 const view = (message) => ({ ...gameMessage(HOST, { title: 'Duel of Stances', ...message }), content: '' });
+// Emoji-only, so the three fit one row on a phone (with names they wrapped, his ask Oct 21); the key names them.
 const stanceButtons = (id) =>
-  [Object.entries(STANCES).map(([key, s]) => [`${BUTTON_ID}:${id}:${key}`, s.label, ButtonStyle.Secondary, { emoji: s.emoji }])];
+  [Object.entries(STANCES).map(([key, s]) => [`${BUTTON_ID}:${id}:${key}`, null, ButtonStyle.Secondary, { emoji: s.emoji }])];
+const stanceKey = () => Object.keys(STANCES).map((k) => `${stanceText(k)} beats ${STANCES[STANCES[k].beats].emoji}`);
+const ready = (game, userId) => (game.picks[userId] ? 'Ready' : 'Choosing...');
+const rematchButton = (game) => [`${AGAIN_ID}:${game.bet}:${game.userId}:${game.opponentId}`, `Rematch (${fmt(game.bet)})`, ButtonStyle.Primary];
 
 function inviteView(id, game) {
   const message = view({
-    lines: [versusLine(game), `Pot if accepted: ${boldSouls(pot(game))}`, '', `${mention(game.opponentId)}, you have been challenged.`, '**Accept?**'],
+    lines: [`${mention(game.userId)} challenges ${mention(game.opponentId)}. Accept?`],
+    fields: [['Bet Each', game.bet], ['Pot', pot(game)]],
     footer: '"Draw your blade or walk away. Both are answers."',
     buttons: [[`${BUTTON_ID}:${id}:accept`, 'Accept', ButtonStyle.Success], [`${BUTTON_ID}:${id}:decline`, 'Decline', ButtonStyle.Danger]],
   });
@@ -94,18 +100,10 @@ function inviteView(id, game) {
 }
 
 function pickView(id, game) {
-  const lines = solo(game)
-    ? [`**${game.name}** stakes ${boldSouls(game.bet)} against Yamato.`, `A win pays ${boldSouls(winnings(game.bet))}.`, 'A tie gives your bet back.', '', 'Yamato has already chosen.', '**Pick your stance.**']
-    : [
-        versusLine(game),
-        `Pot: ${boldSouls(pot(game))}`,
-        '',
-        '**Pick your stance.**',
-        "Your opponent can't see it.",
-        `**${game.name}:** ${game.picks[game.userId] ? 'ready' : 'choosing...'}`,
-        `**${game.opponentName}:** ${game.picks[game.opponentId] ? 'ready' : 'choosing...'}`,
-      ];
-  return view({ lines, footer: '"Choose. Hesitation is a stance too, and it always loses."', rows: stanceButtons(id) });
+  const [lines, fields] = solo(game)
+    ? [['Yamato has chosen. Pick your stance.'], [['Win Pays', winnings(game.bet)], ['Draw', 'Bet back'], ['Bet', game.bet]]]
+    : [['Pick your stance. Picks stay secret.'], [[game.name, ready(game, game.userId)], [game.opponentName, ready(game, game.opponentId)], ['Pot', pot(game)]]];
+  return view({ lines: [...lines, '', ...stanceKey()], fields, footer: '"Choose. Hesitation is a stance too, and it always loses."', rows: stanceButtons(id) });
 }
 
 // Takes the bet and opens a new duel. Returns a message payload, or { error } if they can't play.
@@ -121,18 +119,17 @@ async function startGame(user, name, bet, opponent = null) {
   return opponent ? inviteView(id, game) : pickView(id, game);
 }
 
-// Both stances are in (or it's against Yamato): the picks, who won, the pot.
+// Both stances are in (or it's against Yamato): the picks, who won, the pot. The template every game follows (his pick
+// Oct 22): one bold line, the money in fields, green / red.
 function resultView(game, outcome, balance) {
   const [mine, theirs] = solo(game) ? [game.picks[game.userId], game.yamato] : [game.picks[game.userId], game.picks[game.opponentId]];
-  const theirName = game.opponentName;
-  const stances = [`**${game.name}** chose ${stanceText(mine)}`, `**${theirName}** chose ${stanceText(theirs)}`];
-  const beats = outcome === 0 ? null : outcome > 0 ? [mine, theirs] : [theirs, mine];
-  const beatsLine = beats ? `**${STANCES[beats[0]].label}** beats **${STANCES[beats[1]].label}**.` : 'Same stance. The blades meet.';
+  const draw = `Both chose ${stanceName(mine)}. A draw.`;
 
   if (solo(game)) {
     const won = outcome > 0 ? winnings(game.bet) : outcome === 0 ? game.bet : 0;
+    const line = outcome > 0 ? `Your ${stanceName(mine)} beats Yamato's ${stanceName(theirs)}.` : `Yamato's ${stanceName(theirs)} beats your ${stanceName(mine)}.`;
     return view({
-      lines: [...stances, '', beatsLine, ...(outcome === 0 ? ['**A draw.**', `Your ${soulsText(game.bet)} came back.`] : [outcome > 0 ? `**You win ${soulsText(won)}.**` : '**Yamato wins.**'])],
+      lines: [`**${outcome === 0 ? draw : line}**`],
       fields: resultFields(game.bet, won, balance),
       buttons: [playAgainButton(AGAIN_ID, game.bet, game.userId)],
       footer: `"${pickRandom(outcome > 0 ? LOSE_LINES : outcome === 0 ? DRAW_LINES : WIN_LINES)}"`,
@@ -140,13 +137,11 @@ function resultView(game, outcome, balance) {
       color: outcome > 0 ? GREEN : outcome === 0 ? HOST.color : RED,
     });
   }
-  const winner = outcome > 0 ? game.userId : game.opponentId;
+  const [winner, loser] = outcome > 0 ? [game.userId, game.opponentId] : [game.opponentId, game.userId];
   return view({
-    lines: [
-      versusLine(game), '', ...stances, '', beatsLine,
-      ...(outcome === 0 ? ['**A draw.**', `Both get ${boldSouls(game.bet)} back.`] : [`${mention(winner)} wins ${boldSouls(pot(game))}.`]),
-    ],
-    buttons: [[`${AGAIN_ID}:${game.bet}:${game.userId}:${game.opponentId}`, `Rematch (${fmt(game.bet)})`, ButtonStyle.Primary]],
+    lines: [`**${outcome === 0 ? `${draw} Both bets came back.` : `${mention(winner)}'s ${stanceName(game.picks[winner])} beats ${mention(loser)}'s ${stanceName(game.picks[loser])}.`}**`],
+    fields: outcome === 0 ? [['Bet Each', game.bet]] : [['Winner', mention(winner)], ['Pot', pot(game)]],
+    buttons: [rematchButton(game)],
     footer: `"${pickRandom(outcome === 0 ? DRAW_LINES : DUEL_LINES)}"`,
     color: outcome === 0 ? HOST.color : GREEN,
   });
@@ -184,7 +179,7 @@ async function decline(id, userId) {
   if (!game) return null;
   await pay(game.userId, game.bet);
   return view({
-    lines: [`${mention(game.opponentId)} turned down ${mention(game.userId)}'s challenge.`, `${boldSouls(game.bet)} went back to ${mention(game.userId)}.`],
+    lines: [`${mention(game.opponentId)} turned down the challenge. ${mention(game.userId)} got ${boldSouls(game.bet)} back.`],
     footer: '"No shame in walking away. Only in never drawing."',
     rows: [],
   });
@@ -241,8 +236,8 @@ function finishOnTimeout(id, game) {
     pays: [[winner, pot(game), loser]],
     view: () =>
       view({
-        lines: [versusLine(game), '', `${mention(loser)} never drew.`, `${mention(winner)} wins ${boldSouls(pot(game))}.`],
-        buttons: [[`${AGAIN_ID}:${game.bet}:${game.userId}:${game.opponentId}`, `Rematch (${fmt(game.bet)})`, ButtonStyle.Primary]],
+        lines: [`${mention(loser)} never drew. ${mention(winner)} wins ${boldSouls(pot(game))}.`],
+        buttons: [rematchButton(game)],
         footer: `"${pickRandom(TIMEOUT_LINES)}"`,
         mood: 'gloat',
       }),
@@ -255,16 +250,16 @@ async function timeoutView(id, game, balance) {
   }
   if (game.phase === 'invite') {
     return view({
-      lines: [`${mention(game.opponentId)} never answered ${mention(game.userId)}.`, `${boldSouls(game.bet)} went back to ${mention(game.userId)}.`],
+      lines: [`${mention(game.opponentId)} never answered. ${mention(game.userId)} got ${boldSouls(game.bet)} back.`],
       footer: `"${pickRandom(TIMEOUT_LINES)}"`,
       rows: [],
       mood: 'gloat',
     });
   }
   return view({
-    lines: [`${mention(game.userId)} and ${mention(game.opponentId)} never both drew.`, `Both got ${boldSouls(game.bet)} back.`],
+    lines: [`${mention(game.userId)} and ${mention(game.opponentId)} never drew. Both got ${boldSouls(game.bet)} back.`],
     footer: `"${pickRandom(TIMEOUT_LINES)}"`,
-    buttons: [[`${AGAIN_ID}:${game.bet}:${game.userId}:${game.opponentId}`, `Rematch (${fmt(game.bet)})`, ButtonStyle.Primary]],
+    buttons: [rematchButton(game)],
     mood: 'gloat',
   });
 }

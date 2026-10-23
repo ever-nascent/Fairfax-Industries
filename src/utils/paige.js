@@ -6,7 +6,6 @@ const path = require('node:path');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { getStore } = require('../storage');
 const { heroes, items } = require('./trivia');
-const { soulsText, boldSouls } = require('./format');
 const { pickRandom, randomInt } = require('./random');
 const { ASSETS } = require('./art');
 const { renderBook, MAX_WRONG } = require('./paigeBook');
@@ -26,55 +25,63 @@ const { pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged 
 const PAYOUT = [1.55, 1.35, 1.2, 1.1, 1.05, 1.0];
 const winnings = (bet, wrong) => Math.floor(bet * PAYOUT[Math.min(wrong, PAYOUT.length - 1)]);
 
-// Paige: a bookish, gentle librarian who loves a story and is fond of her sleeping Bookwyrm (deadlock.wiki "Paige/Voice lines"). Original lines
-// in that voice; one goes in the footer.
+// Paige: an earnest, nervous bookworm who is thrilled by stories and dragons (deadlock.wiki "Paige/Voice lines", read Oct 21: 277 lines, about 8
+// words each, 46% in the first person, 39% end in "!", 45% use a contraction; she hesitates and apologises ("uh...", "Heh.", "Sorry!"), says
+// "gonna" and "gotta", jokes about her dad's bookstore, Storytime, book club, plot armor, and loves "the part where the dragon eats everyone").
+// Original lines in that voice, short and mostly about herself, not narration; one goes in the footer (footers can't be italic).
 const START_LINES = [
-  "Every story has an ending. Let's make sure yours is a happy one!",
-  "Shh... she's sleeping. Pick your letters softly.",
-  "Oh, I do love a good mystery. Let's turn the first page.",
-  "Careful now. She only sleeps lightly between chapters.",
-  "Once upon a time, someone bet on a dragon's nap. Hmm. That's you.",
+  "Okay, she's asleep. Everybody just... stay quiet, please!",
+  "Who doesn't love a story with a dragon? ...A sleeping dragon. Let's keep it that way.",
+  "Have I got a story for you! Just, uh, don't wake the dragon.",
+  "Pick a letter! Gently. She's a really light sleeper.",
+  "I promised her a nap. Please don't make me a liar!",
+  "This one's one of my favourites. And she bites. Heh.",
 ];
 const HIT_LINES = [
-  "Ooh, a plot twist in your favor!",
-  "That fits the story perfectly!",
-  "Yes! Keep reading, the ending is close.",
-  "Lovely! The words are falling into place.",
-  "A fine guess. Not even a rustle from the Bookwyrm.",
+  "Ooh, that fits! Did you guys see that?",
+  "Okay, okay, this is going good!",
+  "That's the right letter! This is getting exciting!",
+  "Yes! The story's really coming together!",
+  "Perfect! Not even a rustle. I think. Heh.",
+  "I love it when the pieces just click!",
 ];
 const MISS_LINES = [
-  "Oh dear. She stirred. Quietly now.",
-  "That letter isn't in this chapter... shh!",
-  "A bit of ink spilled. Tiptoe!",
-  "Careful, careful. Her eyes twitched.",
-  "Not that one. The pages are rustling...",
+  "Oh no. Oh no, she moved! Was that her wing?",
+  "Uh... that's not in this one. Sorry!",
+  "Shh, shh, shh. Everybody breathe. She's still out.",
+  "Okay, that one made my heart jump. Heh.",
+  "Not that letter! She twitched! I saw it!",
+  "Ugh, I can't look. Is she still asleep?",
 ];
 const LAST_LINES = [
-  "One more wrong turn and she wakes. Take your time.",
-  "Don't breathe. She's nearly awake.",
-  "Her eyes are opening. Choose wisely!",
+  "Okay. Okay okay okay. One more and she's awake. No pressure!",
+  "I really need you to not mess this one up. Sorry! I'm sorry.",
+  "Her eye's open. Her eye is OPEN!",
+  "I gotta be honest, I'm really nervous right now.",
 ];
 const WIN_LINES = [
-  "A perfect ending! I knew you had it in you.",
-  "And they all read happily ever after. Well done!",
-  "The End. What a wonderful chapter!",
-  "You solved the story and spared my Bookwyrm. Splendid!",
+  "You did it! I can't believe we got away with that!",
+  "Plot armor works on dragons too, apparently!",
+  "Happily ever after! I love it when that happens.",
+  "That's how a story's supposed to end! Great job!",
+  "Phew! That was a little too exciting for me. Nice work!",
 ];
 const LOSE_LINES = [
-  "Oh dear. Not every chapter ends well. Shall we turn the page?",
-  "Well, she's awake now. To be continued...",
-  "That's the thing about dragons. They don't stay asleep. Another try?",
-  "Every story has its tragedies. Chin up, the next chapter's yours.",
+  "Oh no. She's awake. I'm, uh, gonna hide behind my book.",
+  "Well. This is the part where the dragon eats everyone. I did warn you!",
+  "Sorry! I really thought we had her. Next chapter?",
+  "To be continued... right? Please say there's a next chapter.",
+  "Okay, I take it back. Maybe book club was safer.",
 ];
 const TIMEOUT_LINES = [
-  "Nobody turned the page, so I closed the book. Souls back.",
-  "She's still sleeping, and so was the game. Souls back.",
-  "You left the book open and wandered off. I tucked her in. Souls back.",
+  "Nobody was turning pages, so I tucked her in. Souls back!",
+  "Uh, hello? Okay, I'll just close the book. Your Souls are back.",
+  "I got a little nervous waiting, so I closed it. Souls back, sorry!",
 ];
 const FORFEIT_LINES = [
-  "You closed the book in the middle of the story. The Bookwyrm kept the Souls.",
-  "Walked off mid-chapter! She woke up lonely. The Souls stay in the book.",
-  "A story left unfinished... The Bookwyrm will keep your Souls for it.",
+  "You left in the middle of the story?! Sorry, the Bookwyrm kept the Souls.",
+  "Aw, you didn't even finish the chapter. She kept your Souls, I'm sorry!",
+  "I think she ate the rest of the story. And your Souls. Sorry!",
 ];
 
 // Games in progress. key: game id
@@ -156,25 +163,26 @@ function controls(id, game) {
 // The game's message. `note`: what the last guess did (shown above the status), `balance`: set once it is over.
 async function view(id, game, note = null) {
   const image = {
-    name: `book_${id}_${game.version}_${Date.now()}.png`,
+    name: `book_${id}_${game.version}_${Date.now()}.gif`,
     data: await renderBook({ word: game.word, hits: game.hits, wrong: game.wrong, category: game.category, result: game.done ? (game.won ? 'won' : 'lost') : null }),
   };
-  const head = `<@${game.userId}> bet ${boldSouls(game.bet)}.`;
+  // The template every game follows (his pick Oct 22): one plain line and the state in fields while playing (Bet last), one
+  // bold line, the money in fields and green / red once it's over.
   if (!game.done) {
     const left = MAX_WRONG - game.wrong.length;
-    const lines = [head, `A word from the **${game.category}** chapter.`];
-    if (!note) lines.push(`**${MAX_WRONG}** wrong guesses and the Bookwyrm wakes.`);
-    lines.push('', ...(note ? [note] : []), `**${left}** wrong ${left === 1 ? 'guess' : 'guesses'} left. Solving now pays ${boldSouls(winnings(game.bet, game.wrong.length))}.`);
-    return gameMessage(HOST, { lines, image, rows: controls(id, game), footer: say(!game.wrong.length && !game.hits.length ? START_LINES : left === 1 ? LAST_LINES : note?.startsWith('No ') ? MISS_LINES : HIT_LINES) });
+    // what just happened (or, on the opening screen, how to play), then the status in fields
+    const lines = [note ?? `Pick a letter below, or press **Solve It**. ${MAX_WRONG} wrong guesses wake the Bookwyrm.`];
+    const fields = [['Guesses Left', `${left} of ${MAX_WRONG}`], ['Solving Pays', winnings(game.bet, game.wrong.length)], ['Bet', game.bet]];
+    return gameMessage(HOST, { lines, image, fields, rows: controls(id, game), footer: say(!game.wrong.length && !game.hits.length ? START_LINES : left === 1 ? LAST_LINES : note?.startsWith('No ') ? MISS_LINES : HIT_LINES) });
   }
   const prize = prizeOf(game);
-  const lines = game.won
-    ? [head, `<@${game.userId}> solved it: **${game.word}**!`, '', `**You win ${soulsText(prize)}.**`]
-    : [head, game.forfeit ? 'The story was left unfinished.' : 'The Bookwyrm woke up!', `The word was **${game.word}**.`, '', `**You lose ${soulsText(game.bet)}.**`];
+  const how = game.won ? 'You solved it!' : game.forfeit ? 'You left the story unfinished.' : 'The Bookwyrm awakens!';
+  const lines = game.won ? [how, `The word was **${game.word}**`] : [`**${how} The word was ${game.word}.**`]; // a win: two lines, only the word in bold (his call, Oct 22)
+  const fields = resultFields(game.bet, prize, game.balance);
   return gameMessage(HOST, {
     lines, image,
     buttons: [playAgainButton(AGAIN_ID, game.bet, game.userId)],
-    fields: resultFields(game.bet, prize, game.balance),
+    fields,
     footer: say(game.won ? WIN_LINES : game.forfeit ? FORFEIT_LINES : LOSE_LINES),
     mood: game.won ? 'gloat' : 'injured', // happy for you when you solve it, hiding behind her book when you lose
     color: game.won ? GREEN : RED,

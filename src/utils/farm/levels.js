@@ -48,8 +48,9 @@ const SLOT_OF = { Weapon: 'weapon', Armor: 'vitality', Tech: 'spirit' }; // the 
 const SELL_BACK = 0.5; // an item sells for half its price, like the game (his call, Oct 2: changing a build costs souls)
 // A corrupted item sells for half of what it cost: its price and the corruption's (his call, Oct 3).
 const sellPrice = (card, corrupted = null) => Math.round(card.Cost * (corrupted?.name === card.Name ? 2 : 1) * SELL_BACK);
-// in the wiki data but taken out of the game's shop (deadlock-api.com, checked Oct 2, 2026); the wiki's Tier 5 items are Street Brawl only, not in its data
-const RETIRED = new Set(['Silencer']);
+// in the wiki data but taken out of the game's shop (deadlock-api.com); the wiki's Tier 5 items are Street Brawl only, not in its data. Silencer was
+// here Oct 2 - Oct 22 (disabled in the game then; back since, his call to sell it again).
+const RETIRED = new Set();
 const POOL = Object.fromEntries(SLOTS.map((slot) => [slot, ITEMS
   .filter((c) => SLOT_OF[c.Slot] === slot && c.Cost > 0 && !RETIRED.has(c.Name))
   .sort((a, b) => a.Tier - b.Tier || a.Cost - b.Cost || a.Name.localeCompare(b.Name))
@@ -93,9 +94,9 @@ function heldIn(name, items) {
 }
 
 // Legendaries (his calls, Oct 2): all 17 of the game's Tier 5 items (Street Brawl's) can drop. Every enemy killed in a fight the hero wins
-// (a wave run: the waves it cleared) has a 0.01% chance; a hero gets at most one, ever, and can't sell it. It takes one of the 12 slots,
-// and with a full build it waits (record `legendary` set but not in `items`) for the next free slot (play.js sellItem).
-const LEGENDARY_CHANCE = 0.0001;
+// (a wave run: the waves it cleared) has a 1% chance (his call, Oct 22; it was 0.01%); a hero gets at most one, ever, and can't sell it.
+// It takes one of the 12 slots, and with a full build it waits (record `legendary` set but not in `items`) for the next free slot (play.js sellItem).
+const LEGENDARY_CHANCE = 0.01;
 const LEGENDARY_NAMES = LEGENDARIES.map((c) => c.Name);
 // The legendary `kills` kills bring (one roll each), or null.
 function rollLegendary(kills, rng = Math.random) {

@@ -26,7 +26,7 @@ const KIND = {
 };
 // Which stats go under which emblem: the first is the big number, the rest are rows of [label on the stat sheet, icon in assets/farm/ui].
 const STATS = {
-  weapon: [['Bullet Damage'], ['Fire Rate', 'stat-fire-rate'], ['Ammo', 'stat-ammo'], ['Lifesteal', 'stat-lifesteal']],
+  weapon: [['Bullet Damage'], ['Fire Rate', 'stat-fire-rate'], ['Ammo', 'stat-ammo'], ['Lifesteal', 'stat-lifesteal'], ['Precision', 'stat-precision']],
   vitality: [['Health'], ['Movement Speed', 'stat-move-speed'], ['Health Regen', 'stat-health-regen'], ['Spirit Armor', 'stat-spirit-resist'], ['Bullet Armor', 'stat-bullet-resist']],
   spirit: [['Spirit Power'], ['Ability Cooldown', 'stat-cooldown'], ['Ability Range', 'stat-range'], ['Ability Duration', 'stat-duration']],
 };

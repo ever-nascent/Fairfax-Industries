@@ -76,3 +76,13 @@ Oct 10, 2026. bag.png is Zechariah's own picture of the in-game Soul Bag with th
 
 Don't Wake the Bookwyrm (assets/paige): Paige's portraits (the chat icon "Paige", "Paige Gloat", "Paige Critical") and the Bookwyrm ability icon from deadlock.wiki
 (https://deadlock.wiki), game art by Valve. icon.png is that icon on a green disc. The book, bookmark and Bookwyrm drawings are drawn by the bot.
+
+Fonts for Don't Wake the Bookwyrm (assets/fonts), all under the SIL Open Font License 1.1 (the licence texts are OFL-<family>.txt beside them): Pinyon Script
+(Pinyon Project Authors), Cinzel Decorative (Natanael Gama) and IM Fell English (Igino Marini), from Google Fonts (https://github.com/google/fonts).
+
+Abrams' Interrogation (assets/abrams): seismic_impact.png is Abrams' Seismic Impact ability icon from deadlock.wiki (https://deadlock.wiki, a copy of
+assets/trivia/abilities/seismic_impact.png); portrait.png (copied to gloat.png and injured.png) is cropped from his full-body render in assets/heroes/full body.
+Game art by Valve. The case board is drawn by the bot from the hero chat icons in assets/heroes.
+
+Corrupted item labels (assets/farm/corrupted.json): stat names, units and base values of every corruptible item, from the deadlock-api.com
+items API (https://api.deadlock-api.com/v1/assets/items/by-type/upgrade, unofficial), downloaded by the bot at startup and refreshed weekly. Deadlock is Valve's.

@@ -1,0 +1,5 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M64 36C48.54 36 36 48.54 36 64C36 79.46 48.54 92 64 92C79.46 92 92 79.46 92 64C92 48.54 79.46 36 64 36ZM64 84C52.95 84 44 75.05 44 64C44 52.95 52.95 44 64 44C75.05 44 84 52.95 84 64C84 75.05 75.05 84 64 84Z" fill="white"/>
+<path d="M60 8H68V32H60V8ZM60 96H68V120H60V96ZM8 60H32V68H8V60ZM96 60H120V68H96V60Z" fill="white"/>
+<circle cx="64" cy="64" r="6" fill="white"/>
+</svg>

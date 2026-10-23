@@ -2,13 +2,12 @@
 // seconds as they run along their lanes (emoji and dashes, no picture). A win pays your bet x that Remling's odds.
 // Rules: server-plan.md ("Games").
 const path = require('node:path');
-const { ButtonStyle } = require('discord.js');
+const { ActionRowBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const { getStore } = require('../storage');
 const { findEmoji } = require('./guild');
-const { soulsText, boldSouls } = require('./format');
 const { pickRandom, shuffle, randomInt } = require('./random');
 const { ASSETS } = require('./art');
-const { staked, plainTimeout, resultFields, playAgainButton, gameMessage, forGame } = require('./casino');
+const { GREEN, RED, staked, plainTimeout, resultFields, playAgainButton, gameMessage, forGame } = require('./casino');
 
 const ART = path.join(ASSETS, 'rem'); // deadlock.wiki (portraits, Lil Helpers icon), Remlings drawn from that icon, see assets/CREDITS.txt
 const HOST = { color: 0x7b6cf6, name: "Rem's Remling Race", icon: path.join(ART, 'lil_helpers.png'), art: ART, prefix: 'rem' }; // Lil Helpers
@@ -18,7 +17,7 @@ const STEP = 3; // a Remling moves 0, 1 or 2 cells a frame
 const TICK_MS = 2000; // the message is edited this often (Discord allows about 5 edits per 5 s per channel)
 const RTP = 95; // percent: a pick pays 95% / its chance to win, the house's small cut
 const SHARES = [36, 26, 20, 11, 7]; // percent chance to win, handed to the 5 Remlings in a random order each race
-const BUTTON_ID = 'remling'; // custom id: remling:<game id>:<lane 0-4>
+const BUTTON_ID = 'remling'; // custom id: remling:<game id> on the dropdown, its value the lane 0-4
 const { pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'remling_again'; // custom id: remling_again:<bet>:<player id>
 
@@ -104,12 +103,19 @@ function makeRace(rnd = randomInt) {
 // "> **1.** - - 🔴 - - - 🏁": the > gives the bar behind the numbers
 const lane = (i, pos, flag = '🏁') => `> **${i + 1}.** ${[...Array(pos).fill('-'), emoji[i], ...Array(FINISH - pos).fill('-'), flag].join(' ')}`;
 const track = (positions, winner) => positions.map((p, i) => lane(i, p, i === winner ? '🏆' : '🏁')).join('\n');
-const backing = (game) => `<@${game.userId}> backs ${emoji[game.pick]} **${NAMES[game.pick]}** with ${boldSouls(game.bet)} at **${game.odds[game.pick]}×**.`;
+const backing = (game) => `You backed ${emoji[game.pick]} **${NAMES[game.pick]}** at **${game.odds[game.pick]}×**.`;
 
+// The template every game follows (his pick Oct 22): one line on top (plain while playing, bold once it's over), the
+// track under it, the money in fields, green / red at the end.
 function startView(id, game) {
   return gameMessage(HOST, {
-    lines: [`<@${game.userId}> bet ${boldSouls(game.bet)}.`, '**Pick your Remling, then watch them go!**', '', track(game.frames[0])],
-    buttons: game.odds.map((o, i) => [`${BUTTON_ID}:${id}:${i}`, `${o}×`, ButtonStyle.Secondary, { emoji: emoji[i] }]),
+    lines: ['Pick your Remling, then watch them go!', '', track(game.frames[0])],
+    fields: [['Bet', game.bet]],
+    // one dropdown, not five buttons: the buttons wrapped onto two rows on a phone (his call Oct 22)
+    rows: [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
+      .setCustomId(`${BUTTON_ID}:${id}`)
+      .setPlaceholder('Pick your Remling...')
+      .addOptions(game.odds.map((o, i) => ({ label: `${NAMES[i]} (${o}×)`, value: String(i), emoji: emoji[i] }))))],
     footer: `"${pickRandom(START_LINES)}"`,
   });
 }
@@ -118,6 +124,7 @@ function startView(id, game) {
 function raceView(game, f, withFiles = false) {
   const { files, ...rest } = gameMessage(HOST, {
     lines: [backing(game), '', track(game.frames[f])],
+    fields: [['Bet', game.bet]],
     rows: [],
     footer: `"${RACE_LINES[f % RACE_LINES.length]}"`,
   });
@@ -127,16 +134,17 @@ function raceView(game, f, withFiles = false) {
 function endView(id, game) {
   const won = game.pick === game.winner;
   const prize = won ? prizeFor(game.bet, game.odds[game.pick]) : 0;
-  const lines = [
-    `${emoji[game.winner]} **${NAMES[game.winner]}** wins the race!`,
-    won ? `**You win ${soulsText(prize)}.**` : `**You lose ${soulsText(game.bet)}.**`,
-  ];
+  const odds = `${game.odds[game.pick]}×`;
+  const line = won
+    ? `**${emoji[game.winner]} ${NAMES[game.winner]} wins the race! You backed it at ${odds}.**`
+    : `**${emoji[game.winner]} ${NAMES[game.winner]} wins the race. You backed ${emoji[game.pick]} ${NAMES[game.pick]} at ${odds}.**`;
   return gameMessage(HOST, {
-    lines: [backing(game), '', track(game.frames[game.frames.length - 1], game.winner), '', ...lines],
+    lines: [line, '', track(game.frames[game.frames.length - 1], game.winner)],
     buttons: [playAgainButton(AGAIN_ID, game.bet, game.userId)],
     fields: resultFields(game.bet, prize, game.balance),
     footer: `"${pickRandom(won ? WIN_LINES : LOSE_LINES)}"`,
     mood: won ? 'injured' : 'gloat', // gloats when you lose, hurt when you win
+    color: won ? GREEN : RED,
   });
 }
 
