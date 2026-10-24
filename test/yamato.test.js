@@ -87,7 +87,7 @@ test('duel: accept takes the second bet, picks are secret, the winner takes the 
   assert.ok((await play(id, a.id, ['flying'])).error); // no changing it
 
   const result = await play(id, b.id, ['flying']); // Power beats Flying: A wins
-  assert.match(text(result), new RegExp(`<@${a.id}>'s .*Power Slash.* beats <@${b.id}>'s .*Flying Strike`));
+  assert.match(text(result), new RegExp(`<@${a.id}>'s .*Power Slash.* Beats <@${b.id}>'s .*Flying Strike`));
   assert.strictEqual(fields(result).Winner, `<@${a.id}>`);
   assert.strictEqual(await souls(a.id), 1200);
   assert.strictEqual(await souls(b.id), 800);

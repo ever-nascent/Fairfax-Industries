@@ -127,11 +127,7 @@ async function download(dir, files, saved = []) {
   return ok;
 }
 
-// rivals/<hero>_gloat.png and <hero>_critical.png: the portraits an encounter's rival shows when it wins and when it is beaten (his OK, Oct 3).
-// The wiki names them "<Hero> Gloat" / "<Hero> Critical", with the odd exception.
-const RIVAL_FILES = { Celeste: { critical: 'Celeste_Critical_Health.png' }, Violet: { gloat: 'Violet_gloat.png', critical: 'Violet_ciritcal.png' } }; // Violet's as the wiki spells them (Oct 20)
-const rivalArt = () => download('rivals', Object.fromEntries(FARM_HEROES.flatMap((name) => [['gloat', 'Gloat'], ['critical', 'Critical']]
-  .map(([key, word]) => [`${name.toLowerCase()}_${key}.png`, RIVAL_FILES[name]?.[key] ?? `${name}_${word}.png`]))));
+// (The rival portraits, rivals/<hero>_gloat.png and _critical.png, are not downloaded here: tools/startup-check.js owns every hero image.)
 
 // A hero's second form (Silver's wolf): the wiki lists it as a hero of its own. Its entry is kept on the hero as `OtherForm`, its abilities with the rest.
 const FORMS = { Silver: 'Silver (Transformed)' };
@@ -227,7 +223,6 @@ async function refresh() {
     tomes++;
   }
   await download('bridge', Object.fromEntries(Object.entries(BRIDGE_ICONS).map(([k, f]) => [`${k}.png`, f])));
-  await rivalArt();
   const haunt = Object.values(HAUNTS).reduce((n, sizes) => n + Object.keys(sizes).length, 0);
   console.log(`\nSaved ${Object.keys(heroes).length}/${FARM_HEROES.length} heroes, ${Object.keys(abilities).length} abilities, ${Object.keys(items).length} items, ${Object.keys(legends).length} legendaries, ${NPC_KEYS.length} farm targets, ${icons}/${Object.keys(ICONS).length} icons, ${haunts}/${haunt} Haunt portraits, ${tomes}/${Object.keys(BUFF_TOMES).length} buff pictures to ${OUT}`);
   const ok = Object.keys(heroes).length === FARM_HEROES.length && Object.keys(legends).length > 0 && icons === Object.keys(ICONS).length && haunts === haunt && tomes === Object.keys(BUFF_TOMES).length;
@@ -235,7 +230,7 @@ async function refresh() {
   return ok;
 }
 
-module.exports = { refresh, addHero, rivalArt, FARM_HEROES, ICONS, HAUNTS, BUFF_TOMES };
+module.exports = { refresh, addHero, FARM_HEROES, ICONS, HAUNTS, BUFF_TOMES };
 
 // exitCode, not process.exit(): exiting with a download still open crashes Node on Windows ("Assertion failed: ... UV_HANDLE_CLOSING", Oct 16)
 if (require.main === module) refresh().then((ok) => { process.exitCode = ok ? 0 : 1; }, (e) => { console.error(`NOTHING WAS SAVED. ${e.message}`); process.exitCode = 1; });

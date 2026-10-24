@@ -40,3 +40,15 @@ test('roleProblem blocks roles the bot cannot give', () => {
   assert.match(rr.roleProblem(role(1, { managed: true }), guild), /bot or integration/);
   assert.match(rr.roleProblem(role(0, { id: 'g' }), guild), /@everyone/);
 });
+
+test('a menu whose emoji was replaced: stale keys found, ids swapped in the roles and the text, order kept', () => {
+  const A = '100000000000000001', B = '100000000000000002', C = '100000000000000003', NEW = '200000000000000002';
+  const menu = { roles: { [A]: 'r1', [B]: 'r2', '🔥': 'r3', [C]: 'r4' } };
+  assert.deepStrictEqual(rr.staleKeys(menu, new Set([A, C])), [B]); // unicode keys are never stale
+  assert.deepStrictEqual(rr.staleKeys(menu, new Set([A, B, C])), []);
+  const text = `> <:haze:${A}> \`-\` <@&r1>\n> <:abrams:${B}> \`-\` <@&r2>`;
+  assert.deepStrictEqual([...rr.emojiNames(text)], [[A, 'haze'], [B, 'abrams']]);
+  const fixed = rr.swapEmojis(menu, text, new Map([[B, NEW]]));
+  assert.deepStrictEqual(Object.entries(fixed.roles), [[A, 'r1'], [NEW, 'r2'], ['🔥', 'r3'], [C, 'r4']]);
+  assert.strictEqual(fixed.text, `> <:haze:${A}> \`-\` <@&r1>\n> <:abrams:${NEW}> \`-\` <@&r2>`);
+});

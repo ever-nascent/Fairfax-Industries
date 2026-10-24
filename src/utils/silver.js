@@ -1,10 +1,9 @@
-// Shotgun Roulette, Silver's game, modelled on Buckshot Roulette: a shotgun with a shown mix of live and blank shells,
-// shoot the other player or yourself, a blank on yourself keeps your turn, empty chamber = reload, last one with
-// charges wins. Every load deals both players items (his picks Oct 22: the Buckshot names, 6 of them, standard emojis).
-// Against Silver (a win pays PAYOUT, she uses her items too) or a member (both stake, winner takes the pot).
-// Rules: server-plan.md ("Games").
+// Shotgun Roulette, Silver's game, modelled on Buckshot Roulette (core loop, no items: removed Oct 22, his call): a shotgun
+// with a shown mix of live and blank shells, shoot the other player or yourself, a blank on yourself keeps your turn,
+// empty chamber = reload, last one with charges wins. Against Silver (a win pays PAYOUT) or a member (both stake, winner
+// takes the pot). Rules: server-plan.md ("Games").
 const path = require('node:path');
-const { ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { ButtonStyle } = require('discord.js');
 const { getStore } = require('../storage');
 const { fmt, boldSouls } = require('./format');
 const { pickRandom, shuffle, randomInt } = require('./random');
@@ -18,25 +17,13 @@ const HOST = { color: 0x9aa5b1, name: "Silver's Shotgun Roulette", icon: path.jo
 const PAYOUT = 1.85;
 const PVP = true; // casino.js: /mini-game accepts an opponent for this game
 const CHARGES = 3;
-const DEAL = 2; // items each player gets every time the shotgun is loaded
-const MAX_ITEMS = 8;
 const SILVER = 'silver'; // her key in `charges` / `turn`
-const BUTTON_ID = 'roulette'; // custom id: roulette:<game id>:<accept|decline|other|self>, the item dropdown roulette:<game id>:item
+const BUTTON_ID = 'roulette'; // custom id: roulette:<game id>:<accept|decline|other|self>
 const { takeBet, pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 const AGAIN_ID = 'roulette_again'; // custom id: roulette_again:<bet>:<player id>[:<other player's id>]
 const winnings = (bet) => Math.floor(bet * PAYOUT);
 
-// The items (Buckshot Roulette's). Every line the game says is in Title Case (his ask Oct 22); her footer lines are speech.
-const ITEMS = {
-  glass: { emoji: '🔍', name: 'Magnifying Glass', does: () => 'See The Next Shell' },
-  beer: { emoji: '🍺', name: 'Beer', does: () => 'Rack Out The Next Shell Without Firing It' },
-  saw: { emoji: '🪚', name: 'Handsaw', does: () => 'Your Next Live Shot Takes 2 Charges' },
-  cuffs: { emoji: '⛓️', name: 'Handcuffs', does: (foe) => `${foe} Skips ${foe === 'Silver' ? 'Her' : 'Their'} Next Turn` },
-  smokes: { emoji: '🚬', name: 'Cigarettes', does: () => 'Get 1 Charge Back' },
-  inverter: { emoji: '🔄', name: 'Inverter', does: () => 'Flip The Next Shell: Live To Blank, Blank To Live' },
-};
-const KEYS = Object.keys(ITEMS);
-
+// Every line the game says is in Title Case (his ask Oct 22); her footer lines are speech.
 // Original lines in Silver's voice: broke, sarcastic, tired, a bounty hunter (deadlock.wiki "Silver/Voice lines").
 // Rougher since Oct 22 (his ask: swear like she does in the game: damn, hell, shit, bastard); none copied from her voice lines.
 const WIN_LINES = [
@@ -76,10 +63,7 @@ const TIMEOUT_LINES = [
 
 // Games in progress, saved so a restart doesn't eat bets. key: game id
 // { userId, name, bet, opponentId (null = Silver), opponentName, phase: 'invite' | 'play', players: [first, second],
-//   charges: { player: n }, shells: [remaining 'live' | 'blank'], turn, log: [what just happened], done, at,
-//   items: { player: [item keys] }, saw (the next shot is sawed off), cuffed / freed (who skips their next turn / just
-//   skipped one and can't be cuffed again yet), flipped (an Inverter flipped the next shell: the shown counts don't
-//   change), known: { player: what they saw the next shell is }, acted (the log is this turn's item uses) }
+//   charges: { player: n }, shells: [remaining 'live' | 'blank'], turn, log: [what just happened], done, at }
 const games = () => getStore('rouletteGames');
 
 const solo = (game) => !game.opponentId;
@@ -88,7 +72,6 @@ const refunds = (game) =>
   !solo(game) && game.phase === 'play' ? [[game.userId, game.bet], [game.opponentId, game.bet]] : [[game.userId, game.bet]];
 const nameOf = (game, id) => (id === game.userId ? game.name : game.opponentName);
 const foeOf = (game, id) => game.players.find((p) => p !== id);
-const itemsOf = (game, id) => game.items?.[id] ?? [];
 
 // emoji: the server's emojis found on startup (loadShellEmojis), a plain one until then.
 const SHELLS = {
@@ -98,8 +81,7 @@ const SHELLS = {
 function loadShellEmojis(guild) {
   for (const shell of Object.values(SHELLS)) shell.emoji = findEmoji(guild, shell.name).toString();
 }
-const shellName = (shell) => `${SHELLS[shell].emoji} ${shell === 'live' ? 'Live' : 'Blank'}`;
-const RELOAD = '*Silver Reloads The Shotgun. 2 Items Each.*';
+const RELOAD = '*Silver Reloads The Shotgun.*';
 
 // ---- rules -------------------------------------------------------------------------------------
 
@@ -110,29 +92,6 @@ function loadShells(rnd = randomInt) {
   return shuffle([...Array(live).fill('live'), ...Array(total - live).fill('blank')], rnd);
 }
 const count = (shells) => ({ live: shells.filter((s) => s === 'live').length, blank: shells.filter((s) => s === 'blank').length });
-const flip = (shell) => (shell === 'live' ? 'blank' : 'live');
-
-// DEAL random items to each player, keeping at most MAX_ITEMS.
-const deal = (game, rnd = randomInt) => Object.fromEntries(game.players.map((p) =>
-  [p, [...itemsOf(game, p), ...Array.from({ length: DEAL }, () => KEYS[rnd(KEYS.length)])].slice(0, MAX_ITEMS)]));
-// A new load: shells and items; what anyone saw is gone.
-const reload = (game, rnd) => ({ shells: loadShells(rnd), items: deal(game, rnd), flipped: false, known: {} });
-
-// The counts the players see: as loaded, so an Inverter's flip doesn't show.
-function shown(game) {
-  const c = count(game.shells);
-  if (game.flipped && game.shells.length) { c[game.shells[0]]--; c[flip(game.shells[0])]++; }
-  return c;
-}
-// The chance the next shell is live, from what `who` knows (what they saw, else the shown counts and any flip).
-function liveChance(game, who) {
-  const seen = game.known?.[who];
-  if (seen) return seen === 'live' ? 1 : 0;
-  const { live, blank } = shown(game);
-  const p = live / (live + blank);
-  return game.flipped ? 1 - p : p;
-}
-const canCuff = (game, who) => !game.cuffed && game.freed !== foeOf(game, who);
 
 // One shot by whoever's turn it is. Returns the new game state (nothing saved) with `event` for the message.
 function fire(game, atSelf, rnd = randomInt) {
@@ -140,107 +99,34 @@ function fire(game, atSelf, rnd = randomInt) {
   const other = foeOf(game, shooter);
   const target = atSelf ? shooter : other;
   const [shell, ...rest] = game.shells;
-  const hit = shell === 'live' ? (game.saw ? 2 : 1) : 0;
-  const charges = { ...game.charges, [target]: Math.max(0, game.charges[target] - hit) };
+  const charges = { ...game.charges, [target]: game.charges[target] - (shell === 'live' ? 1 : 0) };
   const over = charges[target] <= 0;
   const reloaded = !over && rest.length === 0;
-  const keeps = shell === 'blank' && atSelf;
-  const skipped = !keeps && game.cuffed === other; // cuffed: the turn comes straight back
   return {
     ...game,
     charges,
-    ...(reloaded ? reload(game, rnd) : { shells: rest, flipped: false, known: {} }),
-    saw: false,
-    turn: keeps || skipped ? shooter : other,
-    cuffed: skipped ? null : game.cuffed ?? null,
-    freed: skipped ? other : keeps ? game.freed ?? null : null,
+    shells: reloaded ? loadShells(rnd) : rest,
+    turn: shell === 'blank' && atSelf ? shooter : other,
     winner: over ? foeOf(game, target) : null,
-    event: { shooter, target, shell, hit, reloaded, skipped: skipped ? other : null },
+    event: { shooter, target, shell, reloaded },
   };
 }
 
-// The player whose turn it is uses an item. Returns { game, secret } (secret: what only they see) or { error }.
-// The item's line is added to the log.
-function useItem(game, key, rnd = randomInt) {
-  const who = game.turn;
-  const foe = foeOf(game, who);
-  const mine = itemsOf(game, who);
-  if (!mine.includes(key)) return { error: "You Don't Have That Item." };
-  const [next, ...rest] = game.shells;
-  let g = { ...game, items: { ...game.items, [who]: mine.filter((k, i) => i !== mine.indexOf(key)) } };
-  let text, secret = null;
-  if (key === 'glass') {
-    g.known = { ...g.known, [who]: next };
-    secret = `🔍 The Next Shell Is **${shellName(next)}**.`;
-    text = 'Used The 🔍 Magnifying Glass.';
-  } else if (key === 'beer') {
-    g = { ...g, ...(rest.length ? { shells: rest, flipped: false, known: {} } : reload(g, rnd)) };
-    text = `Drank A 🍺 Beer. Racked Out A ${shellName(next)} Shell.`;
-    if (!rest.length) text += `\n${RELOAD}`;
-  } else if (key === 'saw') {
-    if (game.saw) return { error: 'The Barrel Is Already Sawed Off.' };
-    g.saw = true;
-    text = 'Used The 🪚 Handsaw. The Next Live Shell Takes 2 Charges.';
-  } else if (key === 'cuffs') {
-    if (!canCuff(game, who)) return { error: `${nameOf(game, foe)} Can't Be Cuffed Again Yet.` };
-    g.cuffed = foe;
-    text = `Used The ⛓️ Handcuffs. ${nameOf(game, foe)} Skips A Turn.`;
-  } else if (key === 'smokes') {
-    if (game.charges[who] >= CHARGES) return { error: 'You Already Have Every Charge.' };
-    g.charges = { ...game.charges, [who]: game.charges[who] + 1 };
-    text = 'Smoked The 🚬 Cigarettes. +1 Charge.';
-  } else {
-    g.shells = [flip(next), ...rest];
-    g.flipped = !game.flipped;
-    g.known = Object.fromEntries(Object.entries(game.known ?? {}).map(([p, s]) => [p, flip(s)]));
-    text = 'Used The 🔄 Inverter. The Next Shell Is Flipped.';
-  }
-  const [first, ...more] = text.split('\n');
-  g.log = [...(g.log ?? []), `**${nameOf(g, who)}** ${first}`, ...more];
-  return { game: g, secret };
-}
+// Silver only shoots herself when no live shell is left (simulated: any riskier rule can be beaten by always shooting her).
+const silverShoots = (game) => count(game.shells).live === 0;
 
-// What a sensible player does next, from what `who` can know (Silver plays by it; the odds test plays it too).
-// Returns { item } or { shoot: atSelf }. Every item it picks changes what it knows or the game, so it can't loop.
-function decide(game, who) {
-  const has = (k) => itemsOf(game, who).includes(k);
-  const foe = foeOf(game, who);
-  const p = liveChance(game, who);
-  const sure = p === 0 || p === 1;
-  if (has('smokes') && game.charges[who] < CHARGES) return { item: 'smokes' };
-  if (!sure && has('glass')) return { item: 'glass' };
-  if (p < 0.5 && has('inverter')) return { item: 'inverter' }; // a likely blank becomes a likely live
-  if (p === 0) return { shoot: true }; // a sure blank on yourself keeps the turn
-  if (p < 0.5 && has('beer')) return { item: 'beer' };
-  if (has('cuffs') && canCuff(game, who)) return { item: 'cuffs' };
-  if (p >= 0.5 && has('saw') && !game.saw && game.charges[foe] > 1) return { item: 'saw' }; // simulated: beats saving it for a sure live
-  return { shoot: false };
-}
-
-const shotText = (game, { shooter, target, shell, hit }) => {
+const shotText = (game, { shooter, target, shell }) => {
   const who = nameOf(game, shooter) ?? 'Silver';
   const self = shooter === SILVER ? 'Herself' : 'Themselves';
-  const sound = shell === 'live' ? `**BANG.** Live.${hit > 1 ? ' Sawed Off: 2 Charges.' : ''}` : '*Click.* Blank.';
-  return `**${who}** Shot ${target === shooter ? self : nameOf(game, target) ?? 'Silver'}: ${sound}`;
+  return `**${who}** Shot ${target === shooter ? self : nameOf(game, target) ?? 'Silver'}: ${shell === 'live' ? '**BANG.** Live.' : '*Click.* Blank.'}`;
 };
 
-// One shot, with its lines added to the log.
-function shot(game, atSelf, rnd) {
-  const g = fire(game, atSelf, rnd);
-  const { skipped, reloaded } = g.event;
-  return {
-    ...g,
-    log: [...(game.log ?? []), shotText(g, g.event), ...(skipped ? [`*${nameOf(g, skipped)} Is Cuffed And Skips A Turn.*`] : []), ...(reloaded ? [RELOAD] : [])],
-  };
-}
-
-// Plays the shot, then Silver's turn (her items, her shots) until it's a person's turn again (or it's over).
-// The log keeps this turn's item uses (acted) and adds everything after them.
+// Plays the shot, then Silver's shots until it's a person's turn again (or it's over). Returns the new state.
 function play(game, atSelf, rnd = randomInt) {
-  let g = shot({ ...game, log: game.acted ? game.log : [], acted: false }, atSelf, rnd);
-  while (g.turn === SILVER && !g.winner) {
-    const next = decide(g, SILVER);
-    g = next.item ? useItem(g, next.item, rnd).game : shot(g, next.shoot, rnd);
+  let g = { ...game, log: [] };
+  for (let first = true; first || (g.turn === SILVER && !g.winner); first = false) {
+    g = fire(g, first ? atSelf : silverShoots(g), rnd);
+    g.log = [...g.log, shotText(g, g.event), ...(g.event.reloaded ? [RELOAD] : [])];
   }
   return g;
 }
@@ -252,28 +138,9 @@ const view = (message) => ({ ...gameMessage(HOST, { title: 'Shotgun Roulette', .
 // The shots so far, as a quote (the > bar)
 const quote = (lines) => lines.map((l) => `> ${l}`);
 const bolts = (n) => SHELLS.charge.emoji.repeat(n) + SHELLS.lost.emoji.repeat(CHARGES - n);
-const bag = (game, p) => (itemsOf(game, p).length ? itemsOf(game, p).map((k) => ITEMS[k].emoji).join(' ') : 'No Items');
 
-// The charges left, one field per player (the template every game follows, his pick Oct 22: one line, the state in
-// fields); while playing, each player's items under them.
-const chargeFields = (game, items = false) => game.players.map((p) => [
-  nameOf(game, p),
-  [bolts(game.charges[p]), ...(items ? [bag(game, p)] : []), ...(items && game.cuffed === p ? ['⛓️ Skips Next Turn'] : [])].join('\n'),
-]);
-
-// The turn player's items as one dropdown (5 buttons would wrap on a phone), one option per kind.
-function itemMenu(id, game) {
-  const mine = itemsOf(game, game.turn);
-  if (!mine.length) return [];
-  const foe = nameOf(game, foeOf(game, game.turn));
-  return [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
-    .setCustomId(`${BUTTON_ID}:${id}:item`)
-    .setPlaceholder('Use An Item...')
-    .addOptions([...new Set(mine)].map((k) => {
-      const n = mine.filter((m) => m === k).length;
-      return { label: `${ITEMS[k].name}${n > 1 ? ` (×${n})` : ''}`, description: ITEMS[k].does(foe), value: k, emoji: ITEMS[k].emoji };
-    })))];
-}
+// The charges left, one field per player (the template every game follows, his pick Oct 22: one line, the state in fields).
+const chargeFields = (game) => game.players.map((p) => [nameOf(game, p), bolts(game.charges[p])]);
 
 function inviteView(id, game) {
   const message = view({
@@ -286,22 +153,22 @@ function inviteView(id, game) {
 }
 
 function playView(id, game) {
-  const { live, blank } = shown(game);
+  const { live, blank } = count(game.shells);
   const turnName = nameOf(game, game.turn);
   const other = nameOf(game, foeOf(game, game.turn));
-  const log = game.log?.length ? [...quote(game.log), ''] : ['Silver Loads The Shotgun. 2 Items Each.', ''];
+  const log = game.log?.length ? [...quote(game.log), ''] : ['Silver Loads The Shotgun.', ''];
   return view({
-    lines: [...log, `${turnName}, Your Turn.${itemsOf(game, game.turn).length ? ' Use An Item, Or Shoot.' : ''}`],
+    lines: [...log, `${turnName}, Your Turn.`],
     fields: [
-      ...chargeFields(game, true),
-      ['Shotgun', [`${SHELLS.live.emoji} ${live} Live`, `${SHELLS.blank.emoji} ${blank} Blank`, ...(game.saw ? ['🪚 Sawed Off'] : [])].join('\n')],
+      ...chargeFields(game),
+      ['Shotgun', `${SHELLS.live.emoji} ${live} Live\n${SHELLS.blank.emoji} ${blank} Blank`],
       ...(solo(game) ? [['Win Pays', winnings(game.bet)], ['Bet', game.bet]] : [['Pot', pot(game)]]),
     ],
     footer: `"${pickRandom(TURN_LINES)}"`,
-    rows: [...itemMenu(id, game), [
+    buttons: [
       [`${BUTTON_ID}:${id}:other`, `Shoot ${other}`, ButtonStyle.Danger],
       [`${BUTTON_ID}:${id}:self`, 'Shoot Yourself', ButtonStyle.Secondary],
-    ]],
+    ],
   });
 }
 
@@ -310,12 +177,11 @@ async function startGame(user, name, bet, opponent = null) {
   if (opponent?.bot) return { error: 'Bots do not play roulette. Pick a member, or leave the opponent empty to face Silver.' };
   if (opponent?.id === user.id) return { error: 'You cannot play yourself. Pick another member, or leave it empty to face Silver.' };
   const otherId = opponent?.id ?? SILVER;
-  const players = [user.id, otherId];
   const { error, id, game } = await openGame(games(), user.id, bet, () => ({
     userId: user.id, name, bet, done: false,
     opponentId: opponent?.id ?? null, opponentName: opponent ? opponent.globalName ?? opponent.username : 'Silver',
-    phase: opponent ? 'invite' : 'play', players, charges: { [user.id]: CHARGES, [otherId]: CHARGES },
-    turn: user.id, log: [], ...reload({ players }),
+    phase: opponent ? 'invite' : 'play', players: [user.id, otherId], charges: { [user.id]: CHARGES, [otherId]: CHARGES },
+    shells: loadShells(), turn: user.id, log: [],
   }));
   if (error) return { error };
   return opponent ? inviteView(id, game) : playView(id, game);
@@ -413,34 +279,11 @@ async function shoot(id, userId, atSelf) {
   return resultView(game, balance);
 }
 
-// An item from the dropdown. Using one doesn't end the turn; the Magnifying Glass answers only the clicker.
-async function item(id, userId, key) {
-  const current = await games().get(id);
-  if (!current || current.phase !== 'play') return null;
-  const refused = notYours(current, userId);
-  if (refused) return refused;
-  let used = null;
-  await games().update(id, (g) => {
-    if (!g || g.done || g.phase !== 'play' || g.turn !== userId) return g; // a double click
-    used = useItem(g.acted ? g : { ...g, log: [] }, key); // the first item of a turn clears the last turn's shots
-    if (used.error) return g;
-    used.game.acted = true;
-    return used.game;
-  });
-  if (!used) return null;
-  if (used.error) return { error: used.error };
-  const update = playView(id, used.game);
-  return used.secret ? { private: used.secret, update } : update;
-}
+const move = (id, userId, [action]) =>
+  action === 'accept' ? accept(id, userId) : action === 'decline' ? decline(id, userId) : shoot(id, userId, action === 'self');
 
-const move = (id, userId, [action, value]) =>
-  action === 'accept' ? accept(id, userId)
-    : action === 'decline' ? decline(id, userId)
-      : action === 'item' ? item(id, userId, value)
-        : shoot(id, userId, action === 'self');
-
-// Time ran out (casino.js expireGames). Once a shot was fired or an item used, whoever's turn it is forfeits: against
-// Silver the bet is lost, against a member the other one takes the pot. Before that everything staked goes back (timeoutView).
+// Time ran out (casino.js expireGames). Once a shot has been fired, whoever's turn it is forfeits: against Silver the
+// bet is lost, against a member the other one takes the pot. Before any shot everything staked goes back (timeoutView).
 function finishOnTimeout(id, state) {
   if (state.phase !== 'play' || !state.log?.length) return null;
   const quitter = state.turn;
@@ -474,6 +317,5 @@ async function timeoutView(id, game, balance) {
 
 module.exports = {
   games, staked, refunds, timeoutView, finishOnTimeout, loadShellEmojis, startGame, move,
-  loadShells, fire, play, useItem, decide, liveChance, shown, deal, count, winnings,
-  ITEMS, CHARGES, MAX_ITEMS, SILVER, BUTTON_ID, AGAIN_ID, PVP,
+  loadShells, fire, play, silverShoots, count, winnings, CHARGES, SILVER, BUTTON_ID, AGAIN_ID, PVP,
 };

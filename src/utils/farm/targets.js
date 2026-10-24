@@ -16,7 +16,7 @@
 // where /urn pays 1,000-2,200 a day and Shop prices are 8,000-64,000). The Mid-Boss and the siege pay double that (HARD_PAY).
 const path = require('node:path');
 const { ASSETS } = require('../art');
-const { Fight, enemy } = require('./engine');
+const { Fight, enemy, damageBreakdown } = require('./engine');
 const { SCALE } = require('../economy');
 
 const { npcs, objectives } = require(path.join(ASSETS, 'farm', 'npcs.json'));
@@ -225,8 +225,10 @@ function runStages(hero, stages, { rng, maxSecondsPerStage = 600, watch } = {}) 
   let time = 0;
   let fight;
   let bonusSouls = 0;
+  const fights = [];
   for (const [i, stage] of stages.entries()) {
     fight = new Fight({ heroes: [hero], enemies: stage.enemies(), rng, time });
+    fights.push(fight);
     watch?.(fight, i, 'start');
     const end = time + maxSecondsPerStage;
     while (fight.time < end && hero.alive && fight.enemies.some((e) => e.alive)) {
@@ -235,9 +237,9 @@ function runStages(hero, stages, { rng, maxSecondsPerStage = 600, watch } = {}) 
     }
     time = fight.time;
     bonusSouls += fight.bonusSouls;
-    if (fight.enemies.some((e) => e.alive)) return { won: false, stage: i, time, fight, timedOut: hero.alive, bonusSouls };
+    if (fight.enemies.some((e) => e.alive)) return { won: false, stage: i, time, fight, timedOut: hero.alive, bonusSouls, damage: damageBreakdown(hero, fights) };
   }
-  return { won: true, stage: stages.length, time, fight, timedOut: false, bonusSouls };
+  return { won: true, stage: stages.length, time, fight, timedOut: false, bonusSouls, damage: damageBreakdown(hero, fights) };
 }
 
 // One attempt: `hero` (from buildHero) against a target. Souls are paid only for a win; a lost fight leaves the target

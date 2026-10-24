@@ -34,7 +34,7 @@ module.exports = [
   // Accept / Decline (a challenge), then Power Slash / Flying Strike / Crimson Slash
   ...gameButtons('duel-of-stances', yamato, { play: yamato.play }),
   // Accept / Decline (a challenge), then Shoot (the other player) / Shoot Yourself
-  ...gameButtons('shotgun-roulette', silver, { play: silver.move, menu: true }),
+  ...gameButtons('shotgun-roulette', silver, { play: silver.move }),
   // Remling 1-5
   ...gameButtons('remling-race', rem, { play: (id, userId, [lane]) => rem.pick(id, userId, Number(lane)), menu: true }), // a dropdown of the 5 Remlings
   // Play Again (the letter dropdowns, Solve It and its pop-up are in components/paige.js)

@@ -366,7 +366,7 @@ test('imbue items ask for an ability when bought, can be moved for free, and fig
   assert.strictEqual((await getFarmUser(id)).imbues['Compress Cooldown'], 2);
   assert.strictEqual((await setImbue(id, 'Extra Health', 2)).error, 'missing');
   const main = await views.heroView(member(id), await getFarmUser(id));
-  assert.deepStrictEqual(main.embeds[0].toJSON().fields.find((f) => f.name === 'Imbued').value, 'Compress Cooldown\ninto Smoke Bomb');
+  assert.deepStrictEqual(main.embeds[0].toJSON().fields.find((f) => f.name === 'Imbued').value, '> Compress Cooldown\nInto Smoke Bomb');
   assert.ok(main.components.length <= 5);
 });
 

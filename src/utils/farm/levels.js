@@ -94,23 +94,26 @@ function heldIn(name, items) {
 }
 
 // Legendaries (his calls, Oct 2): all 17 of the game's Tier 5 items (Street Brawl's) can drop. Every enemy killed in a fight the hero wins
-// (a wave run: the waves it cleared) has a 1% chance (his call, Oct 22; it was 0.01%); a hero gets at most one, ever, and can't sell it.
-// It takes one of the 12 slots, and with a full build it waits (record `legendary` set but not in `items`) for the next free slot (play.js sellItem).
+// (a wave run: the waves it cleared) has a 1% chance (his call, Oct 22; it was 0.01%); a legendary can't be sold.
+// The legendary slot (his call, Oct 22): a 13th slot of its own, not one of the 12, that shows once the hero has a legendary and always holds
+// one (record `legendary`, the one equipped). Every legendary the hero gets is kept (`legendaries`, each at most once per hero), and the member
+// can change which one is in the slot at will (play.js equipLegendary).
 const LEGENDARY_CHANCE = 0.01;
+const SIEGE_LEGENDARY_CHANCE = 0.05; // a won siege rolls this once instead of the per-kill chance (his call, Oct 22)
 const LEGENDARY_NAMES = LEGENDARIES.map((c) => c.Name);
-// The legendary `kills` kills bring (one roll each), or null.
-function rollLegendary(kills, rng = Math.random) {
-  for (let i = 0; i < kills; i++) if (rng() < LEGENDARY_CHANCE) return LEGENDARY_NAMES[Math.floor(rng() * LEGENDARY_NAMES.length)];
+// The legendary `kills` kills bring (one roll of `chance` each), never one in `owned`, or null.
+function rollLegendary(kills, rng = Math.random, owned = [], chance = LEGENDARY_CHANCE) {
+  const pool = LEGENDARY_NAMES.filter((n) => !owned.includes(n));
+  if (!pool.length) return null;
+  for (let i = 0; i < kills; i++) if (rng() < chance) return pool[Math.floor(rng() * pool.length)];
   return null;
 }
-// A hero's legendary that is waiting for a free slot, or undefined.
-const waitingLegendary = (r) => (r.legendary && !SLOTS.some((slot) => r.items[slot]?.includes(r.legendary)) ? r.legendary : undefined);
 
 // A member's items as { weapon: [names], vitality: [...], spirit: [...] } (older records may hold a single name per slot).
 const itemsOf = (items = {}) => Object.fromEntries(SLOTS.map((slot) => [slot, [].concat(items[slot] ?? []).filter(Boolean)]));
 
 module.exports = {
-  THRESHOLDS, MAX_LEVEL, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, LEGENDARY_NAMES, rollLegendary, waitingLegendary, SLOT_OF, sellPrice, POOL, ITEM_POOL, itemsOf,
+  THRESHOLDS, MAX_LEVEL, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, LEGENDARY_NAMES, rollLegendary, SIEGE_LEGENDARY_CHANCE, SLOT_OF, sellPrice, POOL, ITEM_POOL, itemsOf,
   BROKER, brokerOpen, brokerNext, brokerCloses, corruptible, corruptPrice, rollDrawback,
-  progress, pointsSpent, unlockLevel, campMultiplier,
+  progress, pointsSpent, unlockLevel, campMultiplier, UNLOCKS, POINTS,
 };

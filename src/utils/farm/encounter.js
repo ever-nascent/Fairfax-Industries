@@ -2,11 +2,12 @@
 // up; beating it unlocks it. The rival is a full hero (engine.js runs it through a mirrored view of the fight): the member's hero level, as many
 // ability points spent at random, an item of the same tier for each of the member's, and the hero's permanent buffs (a fair fight).
 // This file is the rules only: who shows up, what it carries, and the duel itself. The member's side (the offer, the unlock) is in play.js.
-const { Fight } = require('./engine');
+const { Fight, damageBreakdown } = require('./engine');
 const { buildHero, roster } = require('./hero');
 const { keptAfter } = require('./items');
 const { TIER_COSTS, MAX_TIER, ITEM_POOL } = require('./levels');
 const { itemByName } = require('./stats');
+const { isWolf } = require('./heroes/silver');
 const { pickRandom } = require('../random');
 const { rejuvIcon } = require('../format');
 
@@ -59,7 +60,7 @@ function duel(heroName, kit, rivalName, theirs, { rng = Math.random, rejuvs = 0 
   const snapshot = () => ({
     t: fight.time, stage: 0,
     hero: { hp: hero.health, max: hero.stats.maxHealth, respawning: hero.has('rejuv') }, rejuvs: hero.rejuvs,
-    enemies: [{ name: rivalName, hp: rival.health, max: rival.stats.maxHealth, asleep: asleep || rival.has('sleep') }],
+    enemies: [{ name: rivalName, hp: rival.health, max: rival.stats.maxHealth, asleep: asleep || rival.has('sleep'), ...(rivalName === 'Silver' && isWolf(rival) && { wolf: true }) }],
     abilities: hero.abilities.filter((a) => !a.hidden).map((a) => ({ name: a.name, status: a.status(fight) })),
     log: log.slice(-4),
   });
@@ -73,7 +74,7 @@ function duel(heroName, kit, rivalName, theirs, { rng = Math.random, rejuvs = 0 
   for (const unit of [rival, hero]) if (!unit.alive) log.push([+fight.time.toFixed(1), `${unit.name} went down`]);
   frames.push(snapshot());
   const keep = frames.length <= MAX_FRAMES ? frames : Array.from({ length: MAX_FRAMES }, (_, i) => frames[Math.round((i * (frames.length - 1)) / (MAX_FRAMES - 1))]);
-  return { encounter: true, hero: heroName, rival: rivalName, won: hero.alive && !rival.alive, timedOut: hero.alive && rival.alive, seconds: fight.time, rejuvsUsed: rejuvs - hero.rejuvs, kept: keptAfter(hero), frames: keep, log };
+  return { encounter: true, hero: heroName, rival: rivalName, won: hero.alive && !rival.alive, timedOut: hero.alive && rival.alive, seconds: fight.time, rejuvsUsed: rejuvs - hero.rejuvs, kept: keptAfter(hero), frames: keep, log, damage: damageBreakdown(hero, [fight]) };
 }
 
 module.exports = { ENCOUNTER_CHANCE, DUEL_SECONDS, rollRival, rivalKit, duel };

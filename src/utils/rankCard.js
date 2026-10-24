@@ -213,7 +213,7 @@ async function renderLeaderboard(serverName, rows, by = 'xp') {
   g.textAlign = 'left';
   g.fillStyle = C.text;
   g.font = `52px ${TEXT_FONT}`;
-  g.fillText('LEADERBOARD', 40, 72);
+  g.fillText(by === 'xp' ? 'XP LEADERBOARD' : 'SOULS LEADERBOARD', 40, 72);
   g.fillStyle = C.muted;
   g.font = `22px ${TEXT_FONT}`;
   g.fillText(fit(g, `${serverName.toUpperCase()}  ·  TOP ${rows.length} BY ${by.toUpperCase()}`, W - 300), 42, 106);
@@ -245,18 +245,21 @@ async function renderLeaderboard(serverName, rows, by = 'xp') {
     g.fillText(fit(g, r.name, 440), 200, mid + 2);
     g.fillStyle = C.muted;
     g.font = `18px ${TEXT_FONT}`;
-    g.fillText(`LEVEL ${r.level}  ·  ${fmt(r.xp)} XP`, 202, mid + 26);
+    g.fillText(`LEVEL ${r.level}`, 202, mid + 26);
 
-    // Souls on the right, like the in-game "$0 ITEM VALUE".
+    // The ranked value on the right, like the in-game "$0 ITEM VALUE".
+    const isXp = by === 'xp';
+    const label = isXp ? 'XP' : 'SOULS';
+    const value = fmt(isXp ? r.xp : r.souls);
     g.textAlign = 'right';
     g.fillStyle = C.souls;
     g.font = '20px Retail';
-    const lw = g.measureText('SOULS').width;
-    g.fillText('SOULS', W - 56, mid + 12);
+    const lw = g.measureText(label).width;
+    g.fillText(label, W - 56, mid + 12);
     g.font = '36px Retail';
-    const nw = g.measureText(fmt(r.souls)).width;
-    g.fillText(fmt(r.souls), W - 64 - lw, mid + 12);
-    g.drawImage(soulsIcon, W - 64 - lw - nw - 28, mid - 16, 18, 32);
+    const nw = g.measureText(value).width;
+    g.fillText(value, W - 64 - lw, mid + 12);
+    if (!isXp) g.drawImage(soulsIcon, W - 64 - lw - nw - 28, mid - 16, 18, 32);
   });
 
   return c.toBuffer('image/png');

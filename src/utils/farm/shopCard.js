@@ -599,4 +599,4 @@ async function listPage({ title, line, accent, cards, empty }) {
   return c.toBuffer('image/png');
 }
 
-module.exports = { shopTab, listPage, brokerPage, BROKER, CORRUPTED, TIER_PRICE };
+module.exports = { shopTab, listPage, brokerPage, BROKER, CORRUPTED, TIER_PRICE, write, measure };

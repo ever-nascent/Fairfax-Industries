@@ -6,6 +6,7 @@ const {
   ButtonBuilder,
   ButtonStyle,
   MessageFlags,
+  EmbedBuilder,
 } = require('discord.js');
 const { replyEmbed, privateReply } = require('../../utils/embeds');
 const { requirePermission } = require('../../utils/permissions');
@@ -22,6 +23,8 @@ const {
   getMenu,
   deleteMenu,
   listMenus,
+  parseEmoji,
+  saveMenuRoles,
 } = require('../../utils/reactionRoles');
 
 module.exports = {
@@ -71,6 +74,21 @@ module.exports = {
         .addRoleOption((option) => option.setName('role').setDescription('Role to remove').setRequired(true)),
     )
     .addSubcommand((sub) => sub.setName('preview').setDescription('Preview the draft and get a button to post it'))
+    .addSubcommand((sub) =>
+      sub
+        .setName('menu-add')
+        .setDescription('Add an option to a menu that is already posted')
+        .addStringOption((option) => option.setName('message-id').setDescription('Message ID of the menu').setRequired(true))
+        .addStringOption((option) => option.setName('emoji').setDescription('Emoji to react with').setRequired(true))
+        .addRoleOption((option) => option.setName('role').setDescription('Role to grant').setRequired(true)),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('menu-remove')
+        .setDescription('Remove an option from a menu that is already posted')
+        .addStringOption((option) => option.setName('message-id').setDescription('Message ID of the menu').setRequired(true))
+        .addRoleOption((option) => option.setName('role').setDescription('Role to remove').setRequired(true)),
+    )
     .addSubcommand((sub) =>
       sub
         .setName('delete')
@@ -131,6 +149,46 @@ module.exports = {
         new ButtonBuilder().setCustomId(`rr_post:${userId}`).setLabel('Post').setStyle(ButtonStyle.Success),
       );
       return interaction.reply({ embeds: [buildEmbed(draft)], components: [row], flags: MessageFlags.Ephemeral });
+    }
+
+    if (sub === 'menu-add' || sub === 'menu-remove') {
+      const messageId = interaction.options.getString('message-id').trim();
+      const menu = await getMenu(messageId);
+      if (!menu || menu.guildId !== guildId) {
+        return reply(`There is no Reaction Role Menu with the ID \`${messageId}\` in this server. \`/reaction-roles list\` shows the IDs.`);
+      }
+      const role = interaction.options.getRole('role');
+      const message = await (await interaction.guild.channels.fetch(menu.channelId)).messages.fetch(messageId).catch(() => null);
+      if (!message?.embeds[0]) return reply("I can't find that menu's message (deleted?).");
+      const embed = EmbedBuilder.from(message.embeds[0]);
+      const text = embed.data.description ?? '';
+
+      if (sub === 'menu-add') {
+        const problem = roleProblem(role, interaction.guild);
+        if (problem) return reply(problem);
+        const emoji = interaction.options.getString('emoji');
+        const { key, display } = parseEmoji(emoji);
+        if (key in menu.roles) return reply(`${display} is already on that menu.`);
+        if (Object.keys(menu.roles).length >= MAX_OPTIONS) return reply(`A menu can have at most ${MAX_OPTIONS} options (Discord's reaction limit).`);
+        const react = interaction.guild.emojis.cache.get(key) ?? key;
+        try {
+          await message.react(react); // first, so a bad emoji changes nothing
+        } catch {
+          return reply(`I couldn't react with ${display}. Is it a real emoji from this server?`);
+        }
+        await message.edit({ embeds: [embed.setDescription(`${text}\n> ${display} \`-\` ${role}`)] });
+        await saveMenuRoles(messageId, menu, { ...menu.roles, [key]: role.id });
+        return reply(`Added ${display} - ${role} to menu \`${messageId}\`.`);
+      }
+
+      const key = Object.keys(menu.roles).find((k) => menu.roles[k] === role.id);
+      if (!key) return reply(`${role} isn't on that menu.`);
+      const kept = text.split('\n').filter((line) => !line.includes(`<@&${role.id}>`)).join('\n');
+      await message.edit({ embeds: [embed.setDescription(kept || null)] });
+      const { [key]: _gone, ...roles } = menu.roles;
+      await saveMenuRoles(messageId, menu, roles);
+      await message.reactions.cache.get(key)?.remove().catch(() => {});
+      return reply(`Removed ${role} from menu \`${messageId}\`.\n(Members who already have the role keep it.)`);
     }
 
     if (sub === 'delete') {

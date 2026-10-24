@@ -83,22 +83,18 @@ test('Blackjack with basic strategy returns a little under 100%, never more', ()
   assert.ok(back / staked > 0.96 && back / staked < 1.005, `Blackjack returned ${(back / staked).toFixed(4)}`);
 });
 
-test("Shotgun Roulette against Silver: playing by her own item rules (the best plan found) stays under 100%", () => {
-  const run = (strategy, games = 40_000) => {
+test('Shotgun Roulette against Silver: the best simple plan stays under 100%', () => {
+  const run = (shootSelf, games = 40_000) => {
     let wins = 0;
     for (let i = 0; i < games; i++) {
-      const players = ['p', silver.SILVER];
-      let g = { players, charges: { p: silver.CHARGES, [silver.SILVER]: silver.CHARGES }, shells: silver.loadShells(), turn: 'p', winner: null, log: [], items: silver.deal({ players }), known: {} };
-      while (!g.winner) {
-        const d = strategy(g);
-        g = d.item ? { ...silver.useItem(g, d.item).game, acted: true } : silver.play(g, d.shoot);
-      }
+      let g = { players: ['p', silver.SILVER], charges: { p: silver.CHARGES, [silver.SILVER]: silver.CHARGES }, shells: silver.loadShells(), turn: 'p', winner: null };
+      while (!g.winner) g = silver.play(g, shootSelf(silver.count(g.shells)));
       if (g.winner === 'p') wins++;
     }
     return (wins / games) * (silver.winnings(BET) / BET);
   };
-  const best = run((g) => silver.decide(g, 'p'));
-  const noItems = run((g) => ({ shoot: silver.liveChance(g, 'p') === 0 })); // only shoot yourself on a sure blank
-  assert.ok(best < 1.01, `her own rules returned ${best.toFixed(4)}`);
-  assert.ok(noItems < best, 'ignoring the items should do worse');
+  const safest = run(({ live }) => live === 0); // only shoot yourself when it must be a blank
+  const always = run(() => false); // always shoot Silver
+  assert.ok(safest < 1.01, `safest plan returned ${safest.toFixed(4)}`);
+  assert.ok(always < safest, 'always shooting Silver should do worse than the safest plan');
 });

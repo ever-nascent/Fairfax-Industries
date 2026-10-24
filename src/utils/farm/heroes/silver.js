@@ -255,4 +255,4 @@ const info = [
   ['Lycan Curse', 'Dealing damage builds bloodlust. When it is full, turns into a wolf for a while, with its own attacks.'],
 ];
 
-module.exports = { name: 'Silver', abilities: { 1: SlamFire, 2: BootKick, 3: EntanglingBola, 4: LycanCurse }, info };
+module.exports = { name: 'Silver', abilities: { 1: SlamFire, 2: BootKick, 3: EntanglingBola, 4: LycanCurse }, info, isWolf };

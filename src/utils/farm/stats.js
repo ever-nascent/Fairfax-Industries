@@ -16,6 +16,21 @@ const LEGENDARIES = Object.values(load('legendaries')); // Tier 5, never sold: t
 const itemByName = (name) => ITEMS.find((i) => i.Name.toLowerCase() === String(name).toLowerCase())
   ?? LEGENDARIES.find((i) => i.Name.toLowerCase() === String(name).toLowerCase());
 
+// Precision on items (his ask, Oct 22: "add precision % increases to any item that you think should have precision, and add headshot precision to
+// items that you personally think should have them"): flat points on the item's innate stats, written onto the loaded cards below so the shop
+// pictures, the item pages and the stat sheet all see them. Two groups: the headshot items (Crippling Headshot +15 is his call; the others
+// "slightly", +5), and my picks, the items whose bullet speed / zoom did nothing in fights (distance isn't a factor here), bigger for a higher
+// tier. The base is 25 and a buff is 1. ponytail: placeholder numbers apart from Crippling Headshot's.
+const ITEM_PRECISION = {
+  'Crippling Headshot': 15, 'Headshot Booster': 5, 'Weakening Headshot': 5, Headhunter: 5, 'Spirit Rend': 5, 'Lucky Shot': 5,
+  'High-Velocity Rounds': 5, 'Opening Rounds': 6, 'Express Shot': 8, 'Armor Piercer': 10, 'Infinite Rounds': 20, Sharpshooter: 10,
+};
+for (const card of [...ITEMS, ...LEGENDARIES]) {
+  const points = ITEM_PRECISION[card.Name];
+  const innate = points && Object.values(card).find((info) => info?.Type === 'Innate');
+  if (innate) innate.Main.push({ Key: 'Precision', Value: points, Label: 'Precision', Prefix: '{s:sign}', Postfix: '' });
+}
+
 const num = (v) => (typeof v === 'number' ? v : parseFloat(v) || 0); // the wiki writes distances "7m"
 // Innate item stat -> change to the stat sheet. Values are the wiki's: flat amounts, or percents (divided here).
 // Anything not listed (zoom, bullet speed, gravity, footsteps, melee resist: nothing on a farm uses them) is ignored.
@@ -55,6 +70,7 @@ const ITEM_STATS = {
   Stamina: (s, v) => { s.stamina += v; },
   StaminaCooldownReduction: (s, v) => { s.staminaCdr += v / 100; },
   SlideScale: (s, v) => { s.slideScale += v / 100; },
+  Precision: (s, v) => { s.precision += v; }, // flat points (ITEM_PRECISION above, engine.js headshotChance / pelletChance)
   BonusAttackRangePercent: (s, v) => { s.attackRange += v / 100; }, // pushes weapon falloff out
   OutgoingDamagePenaltyPercent: (s, v) => { s.damageDealt += v / 100; }, // Golden Goose Egg: -15% damage dealt
   BonusAbilityCharges: (s, v) => { s.bonusCharges += v; }, // charged abilities only (ability.js maxCharges)

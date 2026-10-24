@@ -135,7 +135,7 @@ test('timeouts: no question asked = bet back; a question asked = the case goes c
   assert.strictEqual(await souls('t3'), START + BET);
 });
 
-test('odds: always asking the most even split returns under 100% (tools/interrogation-rtp.js has the full check)', () => {
+test('odds: always asking the most even split returns a little over 100%, on purpose (tools/interrogation-rtp.js has the full check)', () => {
   let s = 7;
   const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const int = (n) => Math.floor(rnd() * n);
@@ -157,5 +157,14 @@ test('odds: always asking the most even split returns under 100% (tools/interrog
     if (S[int(S.length)] === culprit) back += abrams.PAYOUT[asked];
   }
   const rtp = back / GAMES;
-  assert.ok(rtp > 0.85 && rtp < 1, `returns ${(rtp * 100).toFixed(1)}%`);
+  assert.ok(rtp > 0.95 && rtp < 1.15, `returns ${(rtp * 100).toFixed(1)}%`);
+});
+
+test('the case board: the same case draws the same picture, and every clue gets its sticky note', async () => {
+  const { renderBoard } = require('../src/utils/abramsBoard');
+  const board = { left: ['Haze', 'Shiv', 'Wraith', 'Paige'], caseNo: 4821, clues: QUESTIONS.slice(0, 6).map((_, q) => [q, q % 2 === 0]) };
+  const a = await renderBoard(board);
+  assert.ok(a.equals(await renderBoard(board)), 'redrawing a case must not move its clutter');
+  assert.ok(!a.equals(await renderBoard({ ...board, clues: board.clues.slice(0, 5) })), 'a new clue changes the board');
+  assert.deepStrictEqual(QUESTIONS.filter((q) => !q.note || q.note.length > 16), [], 'every question has a short note');
 });
