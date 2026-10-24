@@ -13,7 +13,7 @@ const { itemFile } = require('./itemArt');
 const { fmt } = require('../format');
 
 const W = 800;
-const H = 960; // room under the ability names for "Unlocks at level N"
+const BASE_H = 960; // room under the ability names for "Unlocks at level N"
 const PAD = 32;
 const READY = '#7dffb3';
 const UI = path.join(ASSETS, 'farm', 'ui');
@@ -33,7 +33,7 @@ const STATS = {
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V']; // V: a legendary
 const CORRUPTED = '#b44dff'; // the frame of the hero's corrupted item (ponytail: my pick of colour)
 
-let texture;
+const textures = new Map(); // the film grain, one per card height (a legendary adds a row)
 
 // A one-colour copy of a glyph (the game's icons are white on nothing), kept per file, colour and size.
 const tints = new Map();
@@ -68,8 +68,60 @@ const box = (g, x, y, w, h, r, fill, stroke, lw = 1.5) => {
   if (stroke) { g.lineWidth = lw; g.strokeStyle = stroke; g.stroke(); }
 };
 
-// view: { hero, progress, pointsLeft, abilities: [{ slot, name, tier, locked }], stats: { label: text }, items: { weapon: [names], vitality: [...], spirit: [...] }, souls, corrupted: item name | undefined }
+// The legendary slot's tile (his call, Oct 22): gold, its own row under the 12 items, drawn only once the hero has a legendary.
+const LEGENDARY = { rgb: '255,196,72', tile: ['#ffd77a', '#e9a92f'], ink: '#3d2603' };
+const TILE = 100;
+const NAME_H = 32;
+const LEGEND_H = TILE + NAME_H + 40; // the row's height: its label, the tile and the name under it
+
+// One item's tile at (x, y): the item's own picture (the game's shop art, as the HUD shows it) with a glow in its kind's colour (a flat tile with
+// the HUD glyph only when that picture is missing), its tier in the corner and its name under it. `frame` / `frameWidth`: the border.
+async function itemTile(g, name, kind, x, y, frame = `rgba(${kind.rgb},0.9)`, frameWidth = 2) {
+  let art = null;
+  try { art = await image(itemFile(name)); } catch { /* no shop art for it */ }
+  g.save();
+  g.shadowColor = `rgba(${kind.rgb},0.45)`;
+  g.shadowBlur = 14;
+  const fill = g.createLinearGradient(x, y, x, y + TILE);
+  fill.addColorStop(0, kind.tile[0]);
+  fill.addColorStop(1, kind.tile[1]);
+  box(g, x, y, TILE, TILE, 12, fill);
+  g.restore();
+  g.save();
+  g.beginPath();
+  g.roundRect(x, y, TILE, TILE, 12);
+  g.clip();
+  if (art) g.drawImage(art, x, y, TILE, TILE);
+  else { try { g.drawImage(await tinted(path.join(ASSETS, 'farm', 'items', `${slug(name)}.png`), kind.ink, 72), x + 14, y + 16); } catch { /* the name under the tile says what it is */ } }
+  g.restore();
+  box(g, x, y, TILE, TILE, 12, null, frame, frameWidth);
+  // the tier, on a dark tab in the corner
+  const tier = ROMAN[itemByName(name)?.Tier ?? 0];
+  if (tier) {
+    g.beginPath();
+    g.roundRect(x + TILE - 30, y, 30, 22, [0, 12, 0, 10]);
+    g.fillStyle = 'rgba(0,0,0,0.6)';
+    g.fill();
+    g.textAlign = 'center';
+    g.fillStyle = '#fff';
+    g.font = FONT(13);
+    g.fillText(tier, x + TILE - 15, y + 16);
+  }
+  // the name under the tile, on one or two lines
+  g.textAlign = 'center';
+  g.fillStyle = 'rgba(255,255,255,0.85)';
+  g.font = FONT(12);
+  const words = name.split(' ');
+  const lines = words.length > 1 && g.measureText(name).width > TILE + 6 ? [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')] : [name];
+  lines.forEach((line, k) => fit(g, line, x + TILE / 2, y + TILE + 14 + k * 13, TILE + 8, 12));
+  g.textAlign = 'left';
+}
+
+// view: { hero, progress, pointsLeft, abilities: [{ slot, name, tier, locked }], stats: { label: text }, items: { weapon: [names], vitality: [...], spirit: [...] }, souls,
+//   corrupted: item name | undefined, legendary: the one in the legendary slot | undefined (the card grows a row for it),
+//   counter: { top, amount, label } | undefined (a /descend run: what stands in for the level's souls and the hero's souls, which a run has none of) }
 async function heroCard(view) {
+  const H = BASE_H + (view.legendary ? LEGEND_H : 0);
   const c = createCanvas(W, H);
   const g = c.getContext('2d');
   const bg = g.createLinearGradient(0, 0, W, H);
@@ -102,16 +154,17 @@ async function heroCard(view) {
   g.textAlign = 'left';
   g.font = FONT(15);
   g.fillStyle = SOULS;
-  g.fillText(p.max ? 'MAX LEVEL' : `${fmt(Math.round(p.needed - p.into))} TO NEXT`, bx + 66, 62);
-  drawSouls(g, souls, bx + 66, 76, 40);
+  g.fillText(view.counter?.top ?? (p.max ? 'MAX LEVEL' : `${fmt(Math.round(p.needed - p.into))} TO NEXT`), bx + 66, 62);
+  if (!view.counter) drawSouls(g, souls, bx + 66, 76, 40);
   g.font = '44px Radiance';
   g.fillStyle = SOULS;
-  const amount = fmt(view.souls);
-  g.fillText(amount, bx + 96, 112);
+  const amount = view.counter?.amount ?? fmt(view.souls);
+  const ax = view.counter ? bx + 66 : bx + 96;
+  g.fillText(amount, ax, 112);
   const amountW = g.measureText(amount).width;
   g.font = FONT(14);
   g.fillStyle = 'rgba(171,255,227,0.6)';
-  g.fillText('YOUR SOULS', bx + 106 + amountW, 110);
+  g.fillText(view.counter?.label ?? 'YOUR SOULS', ax + 10 + amountW, 110);
   // ability points to spend, top right
   const pointColor = view.pointsLeft ? READY : 'rgba(255,255,255,0.35)';
   g.textAlign = 'right';
@@ -160,7 +213,6 @@ async function heroCard(view) {
   let iy = sTop + sh + 40;
   label(g, 'Items', PAD, iy);
   iy += 16;
-  const TILE = 100, NAME_H = 32;
   const COLS = MAX_ITEMS / 2;
   const colGap = (W - 2 * PAD - COLS * TILE) / (COLS - 1);
   const held = SLOTS.flatMap((slot) => view.items[slot].map((name) => [name, KIND[slot]]));
@@ -169,57 +221,21 @@ async function heroCard(view) {
   g.fillStyle = 'rgba(255,255,255,0.45)';
   g.fillText(`${held.length} / ${MAX_ITEMS}`, W - PAD, iy - 4);
   g.textAlign = 'left';
-  {
-    for (let i = 0; i < MAX_ITEMS; i++) {
-      const x = PAD + (i % COLS) * (TILE + colGap);
-      const y = iy + Math.floor(i / COLS) * (TILE + NAME_H);
-      const [name, kind] = held[i] ?? [];
-      if (!name) { box(g, x, y, TILE, TILE, 12, 'rgba(255,255,255,0.035)', 'rgba(255,255,255,0.12)'); continue; }
-      // the item's own picture (the game's shop art, as the HUD shows it), with a glow in its kind's colour; a flat tile with the
-      // HUD glyph only when that picture is missing
-      let art = null;
-      try { art = await image(itemFile(name)); } catch { /* no shop art for it */ }
-      g.save();
-      g.shadowColor = `rgba(${kind.rgb},0.45)`;
-      g.shadowBlur = 14;
-      const fill = g.createLinearGradient(x, y, x, y + TILE);
-      fill.addColorStop(0, kind.tile[0]);
-      fill.addColorStop(1, kind.tile[1]);
-      box(g, x, y, TILE, TILE, 12, fill);
-      g.restore();
-      g.save();
-      g.beginPath();
-      g.roundRect(x, y, TILE, TILE, 12);
-      g.clip();
-      if (art) g.drawImage(art, x, y, TILE, TILE);
-      else { try { g.drawImage(await tinted(path.join(ASSETS, 'farm', 'items', `${slug(name)}.png`), kind.ink, 72), x + 14, y + 16); } catch { /* the name under the tile says what it is */ } }
-      g.restore();
-      box(g, x, y, TILE, TILE, 12, null, name === view.corrupted ? CORRUPTED : `rgba(${kind.rgb},0.9)`, name === view.corrupted ? 4 : 2); // the corrupted one: a violet frame
-      // the tier, on a dark tab in the corner
-      const tier = ROMAN[itemByName(name)?.Tier ?? 0];
-      if (tier) {
-        g.beginPath();
-        g.roundRect(x + TILE - 30, y, 30, 22, [0, 12, 0, 10]);
-        g.fillStyle = 'rgba(0,0,0,0.6)';
-        g.fill();
-        g.textAlign = 'center';
-        g.fillStyle = '#fff';
-        g.font = FONT(13);
-        g.fillText(tier, x + TILE - 15, y + 16);
-      }
-      // the name under the tile, on one or two lines
-      g.textAlign = 'center';
-      g.fillStyle = 'rgba(255,255,255,0.85)';
-      g.font = FONT(12);
-      const words = name.split(' ');
-      const lines = words.length > 1 && g.measureText(name).width > TILE + 6 ? [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')] : [name];
-      lines.forEach((line, k) => fit(g, line, x + TILE / 2, y + TILE + 14 + k * 13, TILE + 8, 12));
-    }
-    g.textAlign = 'left';
+  for (let i = 0; i < MAX_ITEMS; i++) {
+    const x = PAD + (i % COLS) * (TILE + colGap);
+    const y = iy + Math.floor(i / COLS) * (TILE + NAME_H);
+    const [name, kind] = held[i] ?? [];
+    if (!name) { box(g, x, y, TILE, TILE, 12, 'rgba(255,255,255,0.035)', 'rgba(255,255,255,0.12)'); continue; }
+    await itemTile(g, name, kind, x, y, ...(name === view.corrupted ? [CORRUPTED, 4] : [])); // the corrupted one: a violet frame
   }
   iy += 2 * (TILE + NAME_H) + 8;
+  if (view.legendary) { // the legendary slot, under the 12
+    label(g, 'Legendary', PAD, iy + 16);
+    await itemTile(g, view.legendary, LEGENDARY, PAD, iy + 32, `rgba(${LEGENDARY.rgb},1)`, 3);
+    iy += LEGEND_H;
+  }
 
-  // ---- the ability bar: a dark panel with a green top edge; per ability the three upgrade pips, a white disc with its glyph, its number and name ----
+  // ---- the ability bar: a dark panel with a green top edge; per ability the three upgrade pips, a white disc with its glyph, its name ----
   const aTop = iy + 8;
   const aH = H - aTop - 24;
   g.save();
@@ -259,10 +275,6 @@ async function heroCard(view) {
       const glyph = a.locked ? await tinted(path.join(UI, 'lock.svg'), 'rgba(255,255,255,0.5)', size) : await tinted(path.join(ASSETS, 'trivia', 'abilities', `${slug(a.name)}.png`), '#141414', size);
       g.drawImage(glyph, cx - size / 2, cy - size / 2);
     } catch { /* no glyph for it */ }
-    box(g, cx - 12, cy + 34, 24, 22, 5, a.locked ? 'rgba(255,255,255,0.25)' : '#e9e9e9');
-    g.fillStyle = '#141414';
-    g.font = FONT(14);
-    g.fillText(`${a.slot}`, cx, cy + 50);
     g.fillStyle = a.locked ? 'rgba(255,255,255,0.4)' : '#fff';
     fit(g, a.name, cx, cy + 78, colW - 16, 15);
     if (a.locked) {
@@ -273,8 +285,8 @@ async function heroCard(view) {
     g.textAlign = 'left';
   }
 
-  texture ??= grain(W, H, 53, 90);
-  grainAndVignette(g, W, H, texture, { grainAlpha: 0.3, inner: 300, outer: 640, dark: 0.5 });
+  if (!textures.has(H)) textures.set(H, grain(W, H, 53, 90));
+  grainAndVignette(g, W, H, textures.get(H), { grainAlpha: 0.3, inner: 300, outer: 640, dark: 0.5 });
   return c.toBuffer('image/png');
 }
 

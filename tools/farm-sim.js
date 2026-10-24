@@ -13,6 +13,8 @@
 //   roster   every hero's win rates at every target, weakest first (--f= for harder enemies)
 //   carry    what carries a hero: its win rates whole and without each ability in turn (--hero=, --f=)
 //   best     can this hero win with the right kit? its best kit of each stage against that stage's target (--hero=, --f=1,1.5)
+//   descend  /descend runs (descent.js): how deep a bot that picks at random gets, against one that picks well (tries each choice on the next room);
+//            median, quarters and what ended the runs (--seeds=20 runs each; --hero=, or --hero=all for the roster, random and good medians only)
 //   check    the gate for a new hero: a typical kit of each target's own stage must win at least 35% (heroes may differ, his call Oct 2: above 75% is only noted as easy)
 // Options: --hero=Abrams (default Haze; tune and check every hero before it goes in the roster), --kits=24 --seeds=5 (kits x seeds fights per number).
 // A "kit" is what a member would have at a stage: level, ability points spent in order, items, permanent buffs, Rejuvs. The stages are in STAGES.
@@ -31,7 +33,7 @@ const pick = (arr, n, rng) => { const a = [...arr]; const out = []; while (out.l
 const pct = (x) => `${Math.round(x * 100)}%`;
 const opt = (name, fallback) => { const hit = process.argv.find((a) => a.startsWith(`--${name}=`)); return hit ? hit.slice(name.length + 3) : fallback; };
 const arg = (name, fallback) => Number(opt(name, fallback));
-const HERO = heroNames().find((n) => n.toLowerCase() === String(opt('hero', 'Haze')).toLowerCase());
+const HERO = heroNames().find((n) => n.toLowerCase() === String(opt('hero', 'Haze')).toLowerCase()) ?? (opt('hero') === 'all' ? 'Haze' : null); // 'all': descend's roster sweep
 if (!HERO) { console.log(`Unknown hero. The farm has data for: ${heroNames().join(', ')}`); process.exit(1); }
 // Every number is KITS x SEEDS fights (120), with the same kits in every command, so the commands agree with each other.
 const KITS = arg('kits', 24);
@@ -202,16 +204,16 @@ ${HERO} passes every target.`);
   process.exitCode = bad ? 1 : 0;
 }
 
-// The same typical kits at each target's own stage, without a legendary and with each one added (it takes a free slot; a full kit drops its last item).
+// The same typical kits at each target's own stage, without a legendary and with each one added (in the legendary slot, on top of the 12; his call, Oct 22).
 function legendary() {
-  const { LEGENDARY_NAMES, MAX_ITEMS } = require(path.join(ROOT, 'levels'));
+  const { LEGENDARY_NAMES } = require(path.join(ROOT, 'levels'));
   const keys = KEYS.slice(1);
   console.log(`Typical kits of each target's own stage, without and with each legendary (only what fights simulate of it).
 ${''.padEnd(22)}${keys.map((k) => k.replace('-camp', '').padEnd(10)).join('')}`);
   const base = keys.map((k) => winRate(k, STAGES[k], randomKits(STAGES[k])));
   console.log('no legendary'.padEnd(22) + base.map((r) => pct(r).padEnd(10)).join(''));
   for (const name of LEGENDARY_NAMES) {
-    const rates = keys.map((k) => winRate(k, STAGES[k], randomKits(STAGES[k]).map((items) => [...items.slice(0, MAX_ITEMS - 1), name])));
+    const rates = keys.map((k) => winRate(k, STAGES[k], randomKits(STAGES[k]).map((items) => [...items, name])));
     console.log(name.padEnd(22) + rates.map((r, i) => `${pct(r)}${r - base[i] >= 0.005 ? ` +${Math.round((r - base[i]) * 100)}` : ''}`.padEnd(10)).join(''));
   }
 }
@@ -329,7 +331,97 @@ function best() {
   }
 }
 
-const COMMANDS = { ladder, tune, siege: siegeNeeds, growth, rank, lanes, waves, check, legendary, race, retune, roster: rosterTable, carry, best };
+// /descend (descent.js): whole runs from room 1 until the hero falls. The random bot picks any choice (a full build gives up its cheapest item). The good
+// bot plays like a member who knows the game: it takes the item worth the most to its hero over what it replaces (`worth`), gives up its least useful item
+// when full, skips to heal when low with nothing much on offer, and for a boss's buff or legendary plays each choice on the next room and keeps the best.
+// Both spend ability points in order (tier 1s, then 2s, then 3s).
+function descend() {
+  const D = require(path.join(ROOT, 'descent'));
+  const { SLOTS, countItems, priceFor } = require(path.join(ROOT, 'levels'));
+  const runs = arg('seeds', 20);
+  for (const k of ['health', 'dps', 'growth', 'knee', 'late']) if (opt(k)) D.TUNE[k] = Number(opt(k)); // try other numbers without editing descent.js
+  for (const k of ['boss-health', 'boss-dps']) if (opt(k)) D.BOSS[k.slice(5)] = Number(opt(k));
+  const spendAll = (d) => { for (const tier of [0, 1, 2]) for (let slot = 1; slot <= 4; slot++) if ((d.tiers[slot] ?? 0) === tier) D.spendPoint(d, slot); };
+  const cheapest = (d) => SLOTS.flatMap((s) => d.items[s]).sort((a, b) => itemByName(a).Cost - itemByName(b).Cost)[0];
+  const apply = (d, i) => { if (i < 0) return D.skipChoice(d); const r = D.takeChoice(d, i); if (r.error === 'full') D.takeChoice(d, i, cheapest(d)); return r; };
+  const score = (d, i, rng) => { // how the next room goes after taking choice i (-1: skip)
+    const copy = structuredClone(d);
+    apply(copy, i);
+    spendAll(copy);
+    const spec = D.roomSpec(copy.seed, copy.room, copy.hero);
+    let total = 0;
+    for (let t = 0; t < 3; t++) { const run = D.fightRoom(copy, spec, rng); total += run.won ? 1 + run.health : 0; }
+    return total;
+  };
+  // What one item is worth to this hero (a member who knows the game): how much more damage it deals and how much longer it lasts with it alone,
+  // at level 12, against weapon and spirit damage (log-scaled, so a 10% gain in either counts the same). Kept per hero.
+  const values = new Map();
+  const worth = (hero, name) => {
+    const key = `${hero}|${name}`;
+    if (!values.has(key)) {
+      const deal = (items) => { let t = 0; for (let s = 1; s <= 2; s++) { const h = buildHero(hero, { items, boons: 12 }); const f = new Fight({ heroes: [h], enemies: [enemy('Dummy', { maxHealth: 1e6, dps: 0, bulletResist: 0.15, spiritResist: 0.15, distance: 15 })], rng: seeded(s * 7919) }); f.run(30); t += f.dealt.get(h) || 0; } return t; };
+      const last = (items) => { let t = 0; for (const damageType of ['bullet', 'spirit']) { const h = buildHero(hero, { items, boons: 12 }); const f = new Fight({ heroes: [h], enemies: [enemy('Brute', { maxHealth: 1e7, dps: 60, damageType, distance: 15 })], rng: seeded(31) }); f.run(120); t += f.time; } return t; };
+      if (!values.has(`${hero}|`)) values.set(`${hero}|`, { deal: deal([]), last: last([]) });
+      const base = values.get(`${hero}|`);
+      values.set(key, Math.log(Math.max(1e-3, deal([name]) / base.deal)) + Math.log(Math.max(1e-3, last([name]) / base.last)));
+    }
+    return values.get(key);
+  };
+  const held = (d) => SLOTS.flatMap((s) => d.items[s]);
+  const weakest = (d) => held(d).sort((a, b) => worth(d.hero, a) - worth(d.hero, b))[0];
+  // the item worth the most over what it replaces (its part when it is an upgrade, the weakest item when the build is full); skip when nothing helps
+  // or the hero is low and the best gain is small
+  function itemPick(d) {
+    let best = 0;
+    let pick = -1;
+    d.offer.choices.forEach((n, i) => {
+      const used = priceFor(itemByName(n), d.items).used;
+      const gain = worth(d.hero, n) - (used.length ? used.reduce((s, u) => s + worth(d.hero, u), 0) : countItems(d.items) >= 12 ? worth(d.hero, weakest(d)) : 0);
+      if (gain > best) { best = gain; pick = i; }
+    });
+    return d.health < 0.35 && best < 0.1 ? -1 : pick;
+  }
+  function one(hero, seed, good) {
+    const d = D.newRun(hero, seed);
+    const rng = seeded(seed * 7919 + (good ? 1 : 0));
+    for (;;) {
+      const spec = D.roomSpec(d.seed, d.room, d.hero);
+      const run = D.fightRoom(d, spec, rng);
+      if (!run.won) return { rooms: d.room - 1, end: spec.kind, level: d.level };
+      D.afterWin(d, run);
+      if (spec.final) return { rooms: D.LAST_ROOM, end: 'cleared', level: d.level };
+      spendAll(d);
+      let choice = Math.floor(rng() * d.offer.choices.length);
+      if (good && d.offer.kind === 'items') choice = itemPick(d);
+      else if (good) { let best = -1; choice = -1; for (let i = -1; i < d.offer.choices.length; i++) { const sc = score(d, i, rng); if (sc > best) { best = sc; choice = i; } } }
+      if (good && choice >= 0 && d.offer.kind === 'items' && countItems(d.items) >= 12 && !priceFor(itemByName(d.offer.choices[choice]), d.items).used.length) {
+        D.takeChoice(d, choice, weakest(d)); // a full build gives up its least useful item, not its cheapest
+      } else apply(d, choice);
+      spendAll(d);
+    }
+  }
+  const stat = (list) => { const r = list.map((x) => x.rooms).sort((a, b) => a - b); const q = (f) => r[Math.min(r.length - 1, Math.floor(f * r.length))]; return { med: q(0.5), lo: q(0.25), hi: q(0.75), max: r.at(-1) }; };
+  const floor = (rooms) => `room ${rooms} (floor ${Math.min(D.FLOORS, D.floorOf(rooms + 1))})`;
+  const heroes = String(opt('hero', 'Haze')).toLowerCase() === 'all' ? roster() : [HERO];
+  if (heroes.length > 1) {
+    console.log(`${runs} runs each, rooms cleared: median random / good`);
+    for (const hero of heroes) {
+      const r = stat(Array.from({ length: runs }, (_, i) => one(hero, i + 1, false)));
+      const g = stat(Array.from({ length: Math.max(4, Math.round(runs / 4)) }, (_, i) => one(hero, i + 1, true)));
+      console.log(`${hero.padEnd(16)}${String(r.med).padEnd(6)}${g.med}`);
+    }
+    return;
+  }
+  for (const good of [false, true]) {
+    const list = Array.from({ length: runs }, (_, i) => one(HERO, i + 1, good));
+    const s2 = stat(list);
+    const ends = {};
+    for (const x of list) ends[x.end] = (ends[x.end] ?? 0) + 1;
+    console.log(`${good ? 'Good picks  ' : 'Random picks'}  median ${floor(s2.med)}, quarters ${s2.lo}-${s2.hi}, best ${s2.max}   ended by: ${Object.entries(ends).map(([k, n]) => `${k} ${n}`).join(', ')}`);
+  }
+}
+
+const COMMANDS = { descend, ladder, tune, siege: siegeNeeds, growth, rank, lanes, waves, check, legendary, race, retune, roster: rosterTable, carry, best };
 const name = process.argv[2];
 if (!COMMANDS[name]) {
   console.log(`Usage: node tools/farm-sim.js <${Object.keys(COMMANDS).join(' | ')}>`);

@@ -5,7 +5,8 @@
 //   Each hero's own (his calls, Oct 2 and Oct 11: "for longevity", so a member can switch heroes and keep playing): heroes: { <hero name>: {
 //   souls: its own souls (trips, roams, egg hatches and sell-backs pay into them, its items and corruption are bought with them; never the server balance),
 //   earned: souls its trips have paid (hero level, levels.js), tiers: { <ability slot>: tier 0-3 },
-//   items: { weapon | vitality | spirit: [item names] }, legendary, corrupted: { name, drawback, amount } (its one corrupted item, stats.js),
+//   items: { weapon | vitality | spirit: [item names] } (the 12 slots), legendary (the one in the legendary slot), legendaries: [every legendary it
+//   has got], corrupted: { name, drawback, amount } (its one corrupted item, stats.js),
 //   imbues: { <item name>: ability slot }, egg: souls its Golden Goose Egg has grown (wiki souls), giftTime: fight seconds towards the next
 //   Eternal Gift buff, gifts: { <buff key>: count } (Eternal Gift's permanent buffs), kept: { <item>: stacks } (Glass Cannon's and Trophy Collector's kill stacks, kept until the hero dies),
 //   cooldowns: { <target | '<guardian | walker | waves>:<lane>' | 'siege' | 'roam'>: ms timestamp it is ready again },
@@ -21,7 +22,7 @@ const { pickRandom } = require('../random');
 const { buildHero, roster } = require('./hero');
 const { TARGETS, SIEGE, WAVES, WAVE, wavesPay, LANES, LANED, WALKER_STEP, payout, runStages, clearSouls, strengthen, CLEAR_CAP } = require('./targets');
 const { roam, COOLDOWN: ROAM_COOLDOWN } = require('./roam');
-const { progress, pointsSpent, campMultiplier, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, rollLegendary, waitingLegendary, SLOT_OF, ITEM_POOL, itemsOf, sellPrice,
+const { progress, pointsSpent, campMultiplier, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, rollLegendary, SIEGE_LEGENDARY_CHANCE, LEGENDARY_NAMES, SLOT_OF, ITEM_POOL, itemsOf, sellPrice,
   brokerOpen, brokerNext, corruptible, corruptPrice, rollDrawback } = require('./levels');
 const { itemByName, effectValue } = require('./stats');
 const { IMBUES, NO_ULT_IMBUE, keptAfter } = require('./items');
@@ -34,12 +35,15 @@ const { HAUNTS } = require('./refresh'); // the Haunt families live with the dow
 const MAX_REJUVS = 3; // like the game's 3 credits per Mid-Boss kill; placeholder until he decides
 const FRAME_STEPS = 30; // a snapshot every 3 seconds of fight
 const MAX_FRAMES = 14; // the live message plays back at most this many snapshots (3 s apart on screen)
+const DESCEND_SECONDS = 300; // a /descend room nobody has won by then counts as lost (descent.js)
 
 const farm = () => getStore('farm');
 const blankRecord = () => ({ hero: null, heroes: {}, tokens: 0, siegeTokens: [] });
+// Before the legendary slot (Oct 22) a legendary sat in one of the 12; it moves to its own slot.
+const legendaryOut = (items) => Object.fromEntries(Object.entries(items).map(([slot, names]) => [slot, names.filter((n) => !LEGENDARY_NAMES.includes(n))]));
 // One hero's saved part -> the working copy, and back (empty parts are left out of the file).
 const heroPart = (mine = {}) => ({
-  souls: mine.souls ?? 0, earned: mine.earned ?? 0, tiers: { ...mine.tiers }, items: itemsOf(mine.items), legendary: mine.legendary ?? null, corrupted: mine.corrupted ?? null,
+  souls: mine.souls ?? 0, earned: mine.earned ?? 0, tiers: { ...mine.tiers }, items: legendaryOut(itemsOf(mine.items)), legendary: mine.legendary ?? null, legendaries: mine.legendaries ?? (mine.legendary ? [mine.legendary] : []), corrupted: mine.corrupted ?? null,
   imbues: { ...mine.imbues }, egg: mine.egg ?? 0, giftTime: mine.giftTime ?? 0, gifts: { ...mine.gifts }, kept: { ...(mine.glass ? { 'Glass Cannon': mine.glass } : {}), ...mine.kept }, // (`glass`: Glass Cannon's alone, Oct 22)
   cooldowns: { ...mine.cooldowns }, down: { ...mine.down }, clears: { ...mine.clears }, rejuvs: mine.rejuvs ?? 0, buffs: { ...mine.buffs }, bridge: [...(mine.bridge ?? [])],
 });
@@ -110,7 +114,7 @@ const setCooldowns = (on) => { cooldownsOn = on; };
 const cooldownsActive = () => cooldownsOn;
 
 // ---- more heroes (his calls, Oct 2): unlock each extra one once, then switch between the unlocked ones (any time, his call Oct 11) ----
-const hasHero = (record, name) => record.hero === name || !!record.heroes[name];
+const hasHero = (record, name) => record.hero === name || !!record.heroes?.[name];
 
 // Unlocks another hero with a Character Unlock Token (his call, Oct 2: no souls price; a token comes from each hero's first siege win).
 // It starts at level 0 with nothing (no souls, buffs or Rejuvs either) and doesn't switch.
@@ -166,19 +170,21 @@ const hauntFile = (family, size) => path.join(ASSETS, 'farm', 'haunts', `${famil
 // `cleared` is how many waves were beaten and every one of them pays. Returns the run:
 //   { key, siege, hero, won, timedOut, cleared (stages beaten), stageNames, seconds, souls, rejuvsUsed, rejuvsEarned,
 //     family: { key, name, size } | null (camps), frames (snapshots to replay), log: [[seconds, text]] }
-function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, kept = {}, clears = 0, family: wanted, walkersDown: fallen = 0 } = {}) {
+function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, kept = {}, clears = 0, family: wanted, walkersDown: fallen = 0, stages: rooms = null, health = null } = {}) {
   const rnd = (n) => Math.floor(rng() * n);
   const isSiege = requested === 'siege';
   const isWaves = requested === 'waves';
+  const isDescend = requested === 'descend'; // a /descend room (descent.js): its own `stages`, the run's health carried in (`health`, a share of max)
   const key = requested;
-  const target = isSiege || isWaves ? null : TARGETS[key];
+  const target = isSiege || isWaves || isDescend ? null : TARGETS[key];
   const hero = buildHero(heroName, { buffs, bridge, boons, items, tiers, unlocked, corrupted, imbues, copies, kept });
-  hero.rejuvs = isSiege ? rejuvs : 0; // Rejuvs are for the siege (his design); the Mid-Boss gives them, never takes them
+  hero.rejuvs = isSiege || isDescend ? rejuvs : 0; // Rejuvs are for the siege (his design) and a descent; the Mid-Boss gives them, never takes them
+  if (health != null) hero.health = Math.max(1, health * hero.stats.maxHealth);
   const size = CAMP_SIZE[key];
   // a camp's family: the one its details screen showed (`wanted`), else a random one of its size
   const family = !size ? null : campFamilies(key).includes(wanted) ? wanted : pickRandom(campFamilies(key), rnd);
   const grown = (stage) => ({ ...stage, enemies: () => stage.enemies().map((e) => strengthen(e, clears, key)) }); // it grows with every clear
-  const stages = isWaves ? WAVES.stages : isSiege ? SIEGE.stages.map(grown) : [grown({
+  const stages = isDescend ? rooms : isWaves ? WAVES.stages : isSiege ? SIEGE.stages.map(grown) : [grown({
     name: target.name,
     enemies: () => target.enemies().map((e) => {
       if (key === 'walker' && fallen) { e.stats.maxHealth += WALKER_STEP * fallen; e.health = e.stats.maxHealth; } // tougher for every other Walker that is down
@@ -216,7 +222,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     }
     for (; seen < fight.log.length; seen++) {
       const l = fight.log[seen];
-      log.push([l.t, l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.special ? `${l.who} used ${l.what}` : `${l.who} ${l.what === 'stomp' ? 'stomped' : 'cursed'} ${hero.name}`) : `${hero.name} used ${l.what}`]);
+      log.push([l.t, l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.special ? `${l.who} used ${l.what}` : `${l.who} ${l.what === 'stomp' ? 'stomped' : 'cursed'} ${hero.name}`) : `${l.who} used ${l.what}`]); // (a rival hero's casts are its own)
     }
     fight.enemies.forEach((e, i) => { if (!e.alive && !dead.has(i)) { dead.add(i); kills[stage]++; log.push([+fight.time.toFixed(1), `${label(fight, i)} went down`]); } });
     if (!hero.alive && !downLogged) { downLogged = true; log.push([+fight.time.toFixed(1), `${hero.name} went down`]); }
@@ -224,13 +230,17 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     if (++steps % FRAME_STEPS === 0) { frames.push(snapshot(fight, stage)); slept.clear(); }
   };
 
-  const out = runStages(hero, stages, { rng, maxSecondsPerStage: isWaves ? WAVES.secondsPerWave : isSiege ? 900 : 600, watch });
+  const out = runStages(hero, stages, { rng, maxSecondsPerStage: isWaves ? WAVES.secondsPerWave : isSiege ? 900 : isDescend ? DESCEND_SECONDS : 600, watch });
   frames.push(snapshot(out.fight, Math.min(out.stage, stages.length - 1)));
   const killed = (n) => kills.slice(0, n).reduce((s, k) => s + (k ?? 0), 0);
-  const total = isWaves ? 0 : isSiege ? SIEGE.stages.reduce((s, st) => s + st.souls, 0) : target.souls;
+  const total = isWaves || isDescend ? 0 : isSiege ? SIEGE.stages.reduce((s, st) => s + st.souls, 0) : target.souls;
+  if (isDescend) {
+    return { key, descend: true, hero: heroName, won: out.won, timedOut: out.timedOut, cleared: out.stage, stageNames: stages.map((s) => s.name), seconds: out.time, kills: killed(out.stage),
+      rejuvsUsed: rejuvs - hero.rejuvs, health: hero.alive ? hero.health / hero.stats.maxHealth : 0, kept: keptAfter(hero), frames: downsample(frames, MAX_FRAMES), log, damage: out.damage };
+  }
   if (isWaves) {
     return { key, waves: true, siege: false, hero: heroName, won: out.stage > 0, timedOut: out.timedOut, cleared: out.stage, stageNames: stages.map((s) => s.name), seconds: out.time,
-      souls: wavesPay(out.stage) + payout(out.bonusSouls), itemSouls: payout(out.bonusSouls), kills: killed(out.stage), rejuvsUsed: 0, rejuvsEarned: 0, family: null, kept: keptAfter(hero), frames: downsample(frames, MAX_FRAMES), log };
+      souls: wavesPay(out.stage) + payout(out.bonusSouls), itemSouls: payout(out.bonusSouls), kills: killed(out.stage), rejuvsUsed: 0, rejuvsEarned: 0, family: null, kept: keptAfter(hero), frames: downsample(frames, MAX_FRAMES), log, damage: out.damage };
   }
   return {
     key, siege: isSiege, hero: heroName, won: out.won, timedOut: out.timedOut,
@@ -240,7 +250,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     itemSouls: out.won ? payout(out.bonusSouls) : 0, // what souls items (Trophy Collector, Cultist Sacrifice) added
     rejuvsUsed: isSiege ? rejuvs - hero.rejuvs : 0, rejuvsEarned: out.won && target ? target.rejuv || 0 : 0,
     family: family ? { key: family, name: familyName(family), size } : null, kept: keptAfter(hero),
-    frames: downsample(frames, MAX_FRAMES), log,
+    frames: downsample(frames, MAX_FRAMES), log, damage: out.damage,
   };
 }
 
@@ -256,7 +266,7 @@ function downsample(frames, n) {
 // What a member's hero fights with: boons (its level), the abilities unlocked, the tiers they bought, the items equipped.
 // Permanent buffs are the member's (roams) plus this hero's own Eternal Gift ones.
 const fightKit = (r) => ({
-  boons: progress(r.earned).level, unlocked: progress(r.earned).unlocks, points: progress(r.earned).points, tiers: r.tiers, items: Object.values(r.items).flat(), corrupted: r.corrupted ?? null, imbues: r.imbues ?? {},
+  boons: progress(r.earned).level, unlocked: progress(r.earned).unlocks, points: progress(r.earned).points, tiers: r.tiers, items: [...Object.values(r.items).flat(), ...(r.legendary ? [r.legendary] : [])], corrupted: r.corrupted ?? null, imbues: r.imbues ?? {},
   buffs: Object.entries(r.gifts ?? {}).reduce((all, [k, n]) => ({ ...all, [k]: (all[k] ?? 0) + n }), { ...r.buffs }),
   copies: roster().filter((n) => n !== r.hero && !!r.heroes?.[n]), // Sinclair copies the ultimate of one of the member's other unlocked heroes (his call, Oct 5)
   kept: { ...r.kept }, // Glass Cannon's and Trophy Collector's kill stacks (his calls, Oct 22: kept until the hero dies)
@@ -291,7 +301,7 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
       return { run };
     }
     paid(run.souls, await settle((h, r) => {
-      h.earned += run.souls; h.souls += run.souls; run.legendary = dropLegendary(h, run.kills, rng); afterFight(h, run, rng);
+      h.earned += run.souls; h.souls += run.souls; run.legendary = run.siege ? dropLegendary(h, run.won ? 1 : 0, rng, SIEGE_LEGENDARY_CHANCE) : dropLegendary(h, run.kills, rng); afterFight(h, run, rng); // a won siege: one 5% roll, not one per kill (his call, Oct 22)
       Object.assign(h.kept, run.kept);
       if (run.won && LANED.has(key)) h.down[slot] = now + cooldownSeconds(slot) * 1000;
       h.clears[key] = Math.max(0, Math.min(CLEAR_CAP, (h.clears[key] ?? 0) + (run.won ? 1 : -1)));
@@ -374,17 +384,26 @@ function afterFight(r, run, rng = Math.random) {
   }
 }
 
-// Rolls the legendary drop for `kills` on a record (inside its update): a hero gets one at most, ever. It goes into the build, or waits
-// for a free slot when the build is full. Returns { name, waiting } or null.
-function dropLegendary(r, kills, rng = Math.random) {
-  if (r.legendary || !kills) return null;
-  const name = rollLegendary(kills, rng);
+// Rolls the legendary drop for `kills` on a record (inside its update): one the hero hasn't got yet. The first goes into the legendary slot;
+// later ones are kept to change to (equipLegendary). Returns { name, equipped } or null.
+function dropLegendary(r, kills, rng = Math.random, chance) {
+  if (!kills) return null;
+  r.legendaries ??= [];
+  const name = rollLegendary(kills, rng, r.legendaries, chance);
   if (!name) return null;
-  r.legendary = name;
-  const waiting = countItems(r.items) >= MAX_ITEMS;
-  if (!waiting) r.items[SLOT_OF[itemByName(name).Slot]].push(name);
-  return { name, waiting };
+  r.legendaries.push(name);
+  const equipped = !r.legendary;
+  if (equipped) r.legendary = name;
+  return { name, equipped };
 }
+
+// Puts another of the hero's legendaries in the legendary slot (his call, Oct 22: at will). Returns { ok: true } or { error: 'no-hero' | 'missing' }.
+const equipLegendary = (userId, name) => updateFarmUser(userId, (r) => {
+  if (!r.hero) return { error: 'no-hero' };
+  if (!r.legendaries.includes(name)) return { error: 'missing' };
+  r.legendary = name;
+  return { ok: true };
+});
 
 // ---- the hero screen's two actions ----
 // Puts an ability point into the next tier of ability `slot` (1-4). Returns { ok: true, tier } or { error: 'locked' | 'max' | 'points' | 'no-hero' }.
@@ -402,35 +421,57 @@ const upgradeAbility = (userId, slot) => updateFarmUser(userId, (r) => {
 // Buys one of ITEM_POOL with the hero's own souls (his call, Oct 11; it sells back for half, sellItem). A hero carries 12 items of any kind (MAX_ITEMS).
 // An item the member owns a component of costs the difference, and the component is used up (priceFor in levels.js).
 // A component of an owned item can't be bought again (heldIn). Returns { ok: true, paid, used: [components] }, { error: 'inside', holder },
-// { error: 'corrupted', item }, or { error: 'unknown' | 'no-hero' | 'owned' | 'full' | 'souls' }.
-async function buyItem(userId, name) {
+// { error: 'corrupted', item }, or { error: 'unknown' | 'no-hero' | 'owned' | 'full' | 'souls' | 'missing' }.
+// `sell` (his call, Oct 22: a full build asks which item to sell for the new one): that item is sold first (sellItem's rules, its refund counts
+// towards the price), all in one go: nothing is sold unless the buy goes through. Then also { sold, refund }.
+async function buyItem(userId, name, { sell = null } = {}) {
   const card = ITEM_POOL.includes(name) && itemByName(name);
   if (!card) return { error: 'unknown' };
   const slot = SLOT_OF[card.Slot];
+  const sellCard = sell && itemByName(sell);
   let paid = null; // [hero, price, souls after]
+  let refunded = null; // [hero, refund, souls after]
   const result = await updateFarmUser(userId, (r) => {
     if (!r.hero) return { error: 'no-hero' };
-    if (r.items[slot].includes(name)) return { error: 'owned' };
-    const holder = heldIn(name, r.items);
+    if (sell && !(sellCard && r.items[SLOT_OF[sellCard.Slot]]?.includes(sell))) return { error: 'missing' };
+    const items = sell ? Object.fromEntries(SLOTS.map((s) => [s, r.items[s].filter((n) => n !== sell)])) : r.items; // the build once `sell` is gone
+    const refund = sell ? sellPrice(sellCard, r.corrupted) : 0;
+    if (items[slot].includes(name)) return { error: 'owned' };
+    const holder = heldIn(name, items);
     if (holder) return { error: 'inside', holder };
-    const { price, used } = priceFor(card, r.items);
-    if (r.corrupted && used.includes(r.corrupted.name)) return { error: 'corrupted', item: r.corrupted.name }; // sell it first: an upgrade would lose the corruption
-    if (countItems(r.items) - used.length + (waitingLegendary(r) ? 1 : 0) >= MAX_ITEMS) return { error: 'full' }; // a legendary waiting for a slot gets the next free one
-    if (r.souls < price) return { error: 'souls' };
+    const { price, used } = priceFor(card, items);
+    if (r.corrupted && r.corrupted.name !== sell && used.includes(r.corrupted.name)) return { error: 'corrupted', item: r.corrupted.name }; // sell it first: an upgrade would lose the corruption
+    if (countItems(items) - used.length >= MAX_ITEMS) return { error: 'full' };
+    if (r.souls + refund < price) return { error: 'souls' };
+    if (sell) { sellOut(r, sell, sellCard); refunded = [r.hero, refund, r.souls]; }
     r.souls -= price;
     for (const s of SLOTS) r.items[s] = r.items[s].filter((n) => !used.includes(n));
     for (const u of used) delete r.imbues[u];
     r.items[slot].push(name);
     if (IMBUES.includes(name)) r.imbues[name] = 1; // until the member picks (the shop asks right away)
     paid = [r.hero, price, r.souls];
-    return { ok: true, paid: price, used, ...(IMBUES.includes(name) ? { imbue: true } : {}) };
+    return { ok: true, paid: price, used, ...(IMBUES.includes(name) ? { imbue: true } : {}), ...(sell ? { sold: sell, refund } : {}) };
   });
+  if (refunded) logSouls(userId, ...refunded.slice(0, 2), 'farm-shop', refunded[2]);
   if (paid) logSouls(userId, paid[0], -paid[1], 'farm-shop', paid[2]);
   return result;
 }
 
-// Sells an item back for half its price (sellPrice), into the hero's own souls; a waiting legendary takes the slot it frees. A legendary can't be sold.
-// Returns { ok: true, refund, placed? } or { error: 'no-hero' | 'missing' | 'legendary' }.
+// Takes a sold item out of a hero's build (inside an update): its corruption, egg growth, kill stacks and imbue go with it; half its price back.
+function sellOut(r, name, card) {
+  const refund = sellPrice(card, r.corrupted);
+  if (r.corrupted?.name === name) r.corrupted = null;
+  if (name === EGG.Name) r.egg = 0; // an unhatched egg's growth goes with it
+  delete r.kept[name]; // and Glass Cannon's / Trophy Collector's kill stacks
+  delete r.imbues[name];
+  const slot = SLOT_OF[card.Slot];
+  r.items[slot] = r.items[slot].filter((n) => n !== name);
+  r.souls += refund;
+  return refund;
+}
+
+// Sells an item back for half its price (sellPrice), into the hero's own souls. A legendary is never in the 12 slots, so it can't be sold.
+// Returns { ok: true, refund } or { error: 'no-hero' | 'missing' }.
 async function sellItem(userId, name) {
   const card = itemByName(name);
   let paid = null;
@@ -438,18 +479,9 @@ async function sellItem(userId, name) {
     if (!r.hero) return { error: 'no-hero' };
     const slot = card && SLOT_OF[card.Slot];
     if (!slot || !r.items[slot].includes(name)) return { error: 'missing' };
-    if (name === r.legendary) return { error: 'legendary' };
-    const refund = sellPrice(card, r.corrupted);
-    if (r.corrupted?.name === name) r.corrupted = null;
-    if (name === EGG.Name) r.egg = 0; // an unhatched egg's growth goes with it
-    delete r.kept[name]; // and Glass Cannon's / Trophy Collector's kill stacks
-    delete r.imbues[name];
-    r.items[slot] = r.items[slot].filter((n) => n !== name);
-    r.souls += refund;
+    const refund = sellOut(r, name, card);
     paid = [r.hero, refund, r.souls];
-    const placed = waitingLegendary(r);
-    if (placed) r.items[SLOT_OF[itemByName(placed).Slot]].push(placed);
-    return { ok: true, refund, ...(placed ? { placed } : {}) };
+    return { ok: true, refund };
   });
   if (paid) logSouls(userId, ...paid.slice(0, 2), 'farm-shop', paid[2]);
   return sold;
@@ -490,7 +522,7 @@ const setImbue = (userId, name, slot) => updateFarmUser(userId, (r) => {
 });
 
 // Hatches the hero's Golden Goose Egg: it pays its 400 + what it grew, at the trip payout scale, into the hero's own souls, plus one random permanent buff per 80 souls it grew in
-// fights (the card: "a permanent buff per 80 souls accrued"), and is used up. Returns { ok: true, souls, buffs: [keys], placed? } or { error: 'no-hero' | 'missing' }.
+// fights (the card: "a permanent buff per 80 souls accrued"), and is used up. Returns { ok: true, souls, buffs: [keys] } or { error: 'no-hero' | 'missing' }.
 async function hatchEgg(userId, rng = Math.random) {
   let paid = null;
   const done = await updateFarmUser(userId, (r) => {
@@ -505,12 +537,10 @@ async function hatchEgg(userId, rng = Math.random) {
     r.egg = 0;
     r.souls += souls;
     paid = [r.hero, souls, r.souls];
-    const placed = waitingLegendary(r);
-    if (placed) r.items[SLOT_OF[itemByName(placed).Slot]].push(placed);
-    return { ok: true, souls, buffs, ...(placed ? { placed } : {}) };
+    return { ok: true, souls, buffs };
   });
   if (paid?.[1]) logSouls(userId, ...paid.slice(0, 2), 'farm', paid[2]);
   return done;
 }
 
-module.exports = { heroOf, offerFor, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, hasHero, unlockHero, switchHero, updateFarmUser, updateHero, OLD_OWNER, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, hauntFile, campFamilies, CAMP_SIZE, simulate, play };
+module.exports = { TRAITS, heroOf, offerFor, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, equipLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, hasHero, unlockHero, switchHero, updateFarmUser, updateHero, OLD_OWNER, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, hauntFile, campFamilies, CAMP_SIZE, simulate, play };

@@ -140,7 +140,7 @@ test('pick a hero, select it, then the home screen; the pick sticks', async () =
   const home = again.log.at(-1)[1].embeds[0].toJSON();
   assert.strictEqual(home.title, 'Haze  -  Level 0');
   assert.ok(!home.description && !home.footer, 'no text in the home embed but the stats');
-  assert.deepStrictEqual(home.fields.map((f) => f.name), ['Health', 'Bullet Damage', 'Fire Rate', 'Ammo', 'Spirit Power', 'Cooldown Reduction', 'Rejuvs']);
+  assert.deepStrictEqual(home.fields.map((f) => f.name), ['Health', 'Bullet Damage', 'Fire Rate', 'Ammo', 'Spirit Power', 'Cooldown Reduction', 'Rejuvs', 'Waves']);
 });
 
 test("only the owner can use a member's buttons", async () => {
@@ -285,8 +285,15 @@ test('more heroes: unlock once with a token, switch any time, and each hero keep
   const list = (await press('Switch Hero button', `farm_switch:${id}`)).log.at(-1)[1];
   checkLimits(list, 'switch list');
   assert.strictEqual(list.embeds[0].toJSON().title, 'Switch Hero');
-  assert.match(list.embeds[0].toJSON().description, /\*\*Haze\*\* {2}- {2}Level \d+ {2}- {2}Current Hero\n[\s\S]*\*\*Abrams\*\* {2}- {2}Locked/);
+  assert.deepStrictEqual(labels(list), [['Unlock Hero', false], ['Back', false]]);
+  assert.match(list.embeds[0].toJSON().description, /\*\*Haze\*\* {2}- {2}Level \d+ {2}- {2}Current Hero/);
+  assert.doesNotMatch(list.embeds[0].toJSON().description, /Abrams/, 'Switch lists unlocked heroes only');
   assert.match(list.embeds[0].toJSON().footer.text, /^You can switch any time\./);
+  const unlockList = (await press('Switch Hero button', `farm_switch:${id}:unlock`)).log.at(-1)[1];
+  checkLimits(unlockList, 'unlock list');
+  assert.strictEqual(unlockList.embeds[0].toJSON().title, 'Unlock Hero');
+  assert.match(unlockList.embeds[0].toJSON().description, /do not have a Character Unlock Token[\s\S]*\*\*Abrams\*\* {2}- {2}Locked/);
+  assert.doesNotMatch(unlockList.embeds[0].toJSON().description, /\*\*Haze\*\*/, 'Unlock lists locked heroes only');
 
   // locked and no token: Unlock is greyed out, and pressing it anyway does nothing
   const locked = (await press('Hero select', `farm_hero:${id}`, ['Abrams'])).log.at(-1)[1];
@@ -682,6 +689,39 @@ test('duels: the rival gloats while ahead and is hurt while behind; every hero a
   for (const name of require('../src/utils/farm/hero').roster()) {
     for (const mood of ['gloat', 'critical']) assert.ok(fs.existsSync(path.join(__dirname, '..', 'assets', 'farm', 'rivals', `${name.toLowerCase()}_${mood}.png`)), `${name} ${mood}`);
   }
+});
+
+test('Damage Breakdown: every point of damage counted by what dealt it; a button under the result answers privately', async () => {
+  const { buildHero } = require('../src/utils/farm/hero');
+  const { runStages, TARGETS } = require('../src/utils/farm/targets');
+  const hero = buildHero('Seven', { boons: 20, items: ['Mystic Shot', 'Toxic Bullets', 'Lucky Shot'] });
+  const out = runStages(hero, [TARGETS['mid-boss']], {});
+  const sum = out.damage.reduce((s, d) => s + d.dealt, 0);
+  assert.ok(Math.abs(sum - out.fight.dealt.get(hero)) <= out.damage.length, `${sum} vs ${out.fight.dealt.get(hero)}`); // each line is rounded
+  for (const kind of ['weapon', 'ability', 'item']) assert.ok(out.damage.some((d) => d.kind === kind), kind);
+  assert.ok(out.damage.some((d) => d.name === 'Mystic Shot') && out.damage.some((d) => d.name === 'Gun'));
+  // an ability the hero no longer has at the end (Silver's after the wolf) still counts as an ability
+  const { damageBreakdown } = require('../src/utils/farm/engine');
+  const fakeFight = { breakdown: new Map([[hero, new Map([['Gun', 10], ['Boot Kick', 5], ['Mystic Shot', 3]])]]) };
+  assert.deepStrictEqual(damageBreakdown(hero, [fakeFight]).map((d) => d.kind), ['weapon', 'ability', 'item']);
+
+  const id = 'breakdown-ui';
+  await chooseHero(id, 'Haze');
+  const sent = fake(id, `farm_send:${id}:small-camp`);
+  await route('Send button').execute(sent);
+  const button = sent.log.at(-1)[1].components.at(-1).toJSON().components[0];
+  assert.strictEqual(button.label, 'Damage Breakdown');
+  const pressed = fake('someone-else', button.custom_id); // anyone may look, privately
+  await route('Damage Breakdown button').execute(pressed);
+  const [kind, p] = pressed.log[0];
+  assert.ok(kind === 'reply' && p.flags);
+  checkLimits(p, 'damage breakdown');
+  const e = p.embeds[0].toJSON();
+  assert.strictEqual(e.title, "Haze's Damage Breakdown");
+  assert.ok(e.fields.some((f) => f.name.startsWith('Weapon & Melee')));
+  const gone = fake(id, `farm_damage:${id}:nope`);
+  await route('Damage Breakdown button').execute(gone);
+  assert.match(gone.log[0][1].content, /gone/);
 });
 
 test('voice lines: a hero with lines says one of them, a hero without says nothing', () => {

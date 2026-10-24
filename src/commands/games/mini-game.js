@@ -18,7 +18,7 @@ module.exports = betCommand('mini-game', 'Bet Souls on one of the mini-games', {
   blackjack: { label: 'Blackjack', game: blackjack },
   'rabbit-in-the-hat': { label: 'Rabbit in the Hat', game: sinclair, slow: true },
   'borrowed-time': { label: 'Borrowed Time', game: paradox, slow: true },
-  'bebops-bombs': { label: "Bebop's Bombs", game: bebop },
+  'bebops-bombs': { label: "Bebop's Bombs", game: bebop, slow: true }, // no picture, but the first start after a restart can still pass Discord's 3 s limit
   'powder-keg': { label: 'Powder Keg', game: holliday, slow: true },
   'duel-of-stances': { label: 'Duel of Stances', game: yamato },
   'shotgun-roulette': { label: 'Shotgun Roulette', game: silver },

@@ -2378,6 +2378,12 @@ test('Precision: 25 flat points to start, a permanent buff adds 1, and a headsho
   assert.strictEqual(headshotChance(buffed), 0.4);
   assert.strictEqual(buffText('precision', 3), '+3 Precision');
   assert.strictEqual(headshotChance({ stat: () => 250 }), 1, 'never above every bullet');
+  // items (my picks, his ask Oct 22): the bullet-speed / zoom items and the headshot items add flat points; nothing else does
+  const { heroStats: stats, itemByName } = require('../src/utils/farm/stats');
+  assert.strictEqual(stats(HEROES.Haze, { items: ['Headshot Booster', 'Headhunter'] }).precision, 25 + 5 + 5);
+  assert.strictEqual(stats(HEROES.Haze, { items: ['High-Velocity Rounds'] }).precision, 30);
+  assert.strictEqual(stats(HEROES.Haze, { items: ['Extra Health'] }).precision, 25);
+  assert.ok(itemByName('Infinite Rounds').Info1.Main.some((l) => l.Key === 'Precision' && l.Value === 20), 'a legendary shows it too');
 });
 
 test("buffs rotate daily: the same day gives the same buffs, other days differ, and drops come from today's buffs", () => {

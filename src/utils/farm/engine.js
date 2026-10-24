@@ -102,6 +102,8 @@ class Fight {
     this.queue = []; // [{ t, fn }] delayed effects
     this.log = []; // [{ t, who, what }] casts, for tests and later a recap
     this.dealt = new Map(); // unit -> damage it dealt
+    this.breakdown = new Map(); // hero -> Map(what dealt it: 'Gun' | 'Heavy Melee' | an ability or item name -> damage) (the Damage Breakdown button)
+    this.by = null; // the ability or item whose hook, tick, cast or delayed effect is running right now (what its damage is counted under)
     this.bonusSouls = 0; // souls items earned in this fight (wiki souls; a won trip pays them at the payout scale)
     this.casting = null; // the ability whose effect is running right now (its damage is tagged with it)
     // Who acts in this fight, and what each sees. A member's hero sees the fight as it is. A rival hero among the enemies (an encounter) sees it mirrored:
@@ -110,14 +112,20 @@ class Fight {
     const rivals = enemies.filter((e) => e.team === 'hero');
     if (rivals.length) {
       const mirror = Object.create(this);
-      Object.assign(mirror, { heroes: rivals, enemies: heroes, casting: null, bonusSouls: 0 });
+      Object.assign(mirror, { heroes: rivals, enemies: heroes, casting: null, by: null, bonusSouls: 0 });
       for (const rival of rivals) this.views.set(rival, mirror);
     }
     let at = 0; // where each enemy stands behind the front one, in metres (a lone enemy rolls nothing)
     enemies.forEach((e, i) => { e.offset = i ? (at += SPREAD * (0.5 + rng())) : 0; });
   }
 
-  at(delay, fn) { this.queue.push({ t: this.time + delay, fn }); }
+  at(delay, fn) { const by = this.by; this.queue.push({ t: this.time + delay, fn: () => this.as(by, fn) }); } // a delayed effect counts for what scheduled it
+  // Runs `fn` with `by` (an ability or item) as what deals its damage.
+  as(by, fn) {
+    const before = this.by;
+    this.by = by;
+    try { return fn(); } finally { this.by = before; }
+  }
 
   get foes() { return this.enemies.filter((e) => e.alive && e.targetable); } // enemies still standing (and in sight: a rival hero can hide)
   // The enemies an area of `radius` metres reaches: the front one (the hero is on it) and those standing close enough behind it.
@@ -160,8 +168,8 @@ class Fight {
     const only = !OWN_EVENTS.has(event) ? null : this.views.has(payload.source) ? payload.source : payload.target; // a blast's source is an NPC: its target hears it
     for (const [hero, view] of this.views) {
       if (only && hero !== only) continue;
-      for (const a of hero.abilities) a.on(event, view, payload);
-      for (const it of hero.items) it.on(event, view, payload);
+      for (const a of hero.abilities) view.as(a, () => a.on(event, view, payload));
+      for (const it of hero.items) view.as(it, () => it.on(event, view, payload));
     }
   }
 
@@ -206,6 +214,12 @@ class Fight {
     if (dealt > 0) target.lastHit = this.time;
     if (!target.alive && target.rejuvs > 0) this.rejuvenate(target);
     this.dealt.set(source, (this.dealt.get(source) || 0) + dealt);
+    if (dealt > 0 && this.views.has(source)) { // a hero's damage, by what dealt it
+      const what = this.by?.name ?? (type === 'melee' ? 'Heavy Melee' : type === 'bullet' ? 'Gun' : 'Other');
+      if (!this.breakdown.has(source)) this.breakdown.set(source, new Map());
+      const mine = this.breakdown.get(source);
+      mine.set(what, (mine.get(what) || 0) + dealt);
+    }
     // lifestealOn / spiritLifestealOn: lifesteal against this one target (Apollo's Riposte, Celeste's Light Eater)
     const hero = target.team === 'hero'; // full strength off a rival hero
     if (type === 'bullet' || type === 'melee') { const steal = (type === 'bullet' ? source.stat('lifesteal') : 0) + target.mod('lifestealOn'); if (steal > 0) this.heal(source, dealt * steal * (hero ? 1 : BULLET_LIFESTEAL_VS_NPC), 'lifesteal'); }
@@ -364,7 +378,7 @@ class Fight {
   running(ability, fn) {
     const before = this.casting;
     this.casting = ability;
-    try { fn(); } finally { this.casting = before; }
+    try { this.as(ability, fn); } finally { this.casting = before; }
   }
 
   step() {
@@ -391,8 +405,7 @@ class Fight {
       for (const it of hero.items) {
         it.cdLeft = Math.max(0, it.cdLeft - DT);
         it.procLeft = Math.max(0, it.procLeft - DT);
-        it.tickDots(view, DT);
-        it.tick(view, DT);
+        view.as(it, () => { it.tickDots(view, DT); it.tick(view, DT); });
         const mods = it.dynamicMods(view); // conditional stats, re-read every step
         if (mods) { const { tags = [], ...m } = mods; view.addStatus(hero, { id: `item:${it.name}`, duration: DT * 1.5, mods: m, tags }); }
       }
@@ -447,7 +460,7 @@ class Fight {
     item.cdLeft = item.cooldown;
     this.log.push({ t: +this.time.toFixed(1), who: item.unit.name, what: item.name });
     this.emit('cast', { source: item.unit, item });
-    item.cast(this);
+    this.as(item, () => item.cast(this));
   }
 
   // Runs until `seconds` pass or one side is dead.
@@ -466,4 +479,14 @@ class Fight {
 const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', blast = null, souls = 0 } = {}) =>
   new Unit({ name, team: 'enemy', stats: { maxHealth, dps, dpsMaxHealthPct, damageType, blast: blast && { ...blast }, bulletResist, spiritResist, distance, healthRegen, lifesteal: 0, souls } });
 
-module.exports = { PELLETS, PRECISION, headshotChance, pelletChance, DUEL, DT, Unit, Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC, BULLET_LIFESTEAL_VS_NPC, SPIRIT_LIFESTEAL_VS_NPC, SPREAD, DODGE, dodgeChance, MELEE, HELPLESS };
+// A hero's damage over one or more fights, by what dealt it (the Damage Breakdown button): [{ name, kind: 'weapon' | 'ability' | 'item', dealt }], most first.
+function damageBreakdown(hero, fights) {
+  const total = new Map();
+  for (const f of fights) for (const [what, n] of f.breakdown.get(hero) ?? []) total.set(what, (total.get(what) || 0) + n);
+  const items = new Set(hero.items.map((it) => it.name));
+  const weapon = new Set(['Gun', 'Heavy Melee', 'Other']); // anything else is an ability, also one the hero no longer has (Silver's after the wolf)
+  return [...total].map(([name, dealt]) => ({ name, kind: items.has(name) ? 'item' : weapon.has(name) ? 'weapon' : 'ability', dealt: Math.round(dealt) }))
+    .filter((d) => d.dealt > 0).sort((a, b) => b.dealt - a.dealt);
+}
+
+module.exports = { damageBreakdown, PELLETS, PRECISION, headshotChance, pelletChance, DUEL, DT, Unit, Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC, BULLET_LIFESTEAL_VS_NPC, SPIRIT_LIFESTEAL_VS_NPC, SPREAD, DODGE, dodgeChance, MELEE, HELPLESS };

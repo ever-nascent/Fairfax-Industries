@@ -34,31 +34,37 @@ const stanceName = (s) => `${STANCES[s].emoji} ${STANCES[s].label}`; // inside a
 // 1 = a beats b, -1 = b beats a, 0 = same
 const versus = (a, b) => (a === b ? 0 : STANCES[a].beats === b ? 1 : -1);
 
-// Original lines in Yamato's voice: patient, dry, honour above all (deadlock.wiki "Yamato/Voice lines").
+// Original lines in Yamato's voice: confident, competitive, blunt, a little cocky, honour underneath (deadlock.wiki "Yamato/Voice lines").
 const WIN_LINES = [
-  'Too slow. Again.',
-  'You telegraphed it. Study the blade, then return.',
-  'A clean cut. Do not take it personally.',
-  'Patience wins duels. You had none.',
+  'Too slow. You were still deciding when I moved.',
+  'I read that stance before you picked it. Try something I have not seen.',
+  'That was never going to land. Want another go?',
+  'You hesitated. That is the whole difference between us.',
+  'Not bad for a first cut. Not good enough, either.',
 ];
 const LOSE_LINES = [
-  'Hm. A fine cut. Do not let it swell your head.',
-  'You read me. That is not easy to do.',
-  'I underestimated you. It will not happen twice.',
-  'Well struck. Again, and I will not hold back.',
+  'Hm. That one got through. It will not happen again.',
+  'You read me. Annoying. Draw again.',
+  'Fine, that was yours. Do it twice and I will start to worry.',
+  'Well struck. Next round I stop going easy.',
+  'I let my guard slip. You noticed. You have my respect.',
 ];
-const DRAW_LINES = ['Same stance. Neither of us moved first.', 'Our blades meet. We are equals, for now.'];
+const DRAW_LINES = [
+  'Same stance? Are you copying me?',
+  'Neither of us gave an inch. Again.',
+  'A draw. I do not like those.',
+];
 const DUEL_LINES = [
-  'Steel decides. Words do not.',
-  'Honour the loser. They will be back.',
-  'A fine duel. The dojo has seen worse.',
-  'Too slow. Again.',
+  'Steel decides this. Talking will not change it.',
+  'Good duel. The loser should come back and try again.',
+  'That was close. Closer than I would like to admit.',
+  'Fast hands, both of you. Neither of you was fast enough for me.',
 ];
 const TIMEOUT_LINES = [
-  'Hesitation is a stance too. You lost that one by yourself.',
-  'The blade waits for no one. Your Souls are returned.',
-  'You never drew. I do not duel shadows.',
-  'Come back when you have decided.',
+  'You never drew. Hesitation is a stance, and it loses. Your Souls are returned.',
+  'I do not wait forever. Your Souls are returned.',
+  'No move, no duel. Come back when you have made up your mind.',
+  'You froze. It happens. Try again when you are ready.',
 ];
 
 // Games in progress, saved so a restart doesn't eat bets. key: game id
@@ -85,7 +91,7 @@ const view = (message) => ({ ...gameMessage(HOST, { title: 'Duel of Stances', ..
 // Emoji-only, so the three fit one row on a phone (with names they wrapped, his ask Oct 21); the key names them.
 const stanceButtons = (id) =>
   [Object.entries(STANCES).map(([key, s]) => [`${BUTTON_ID}:${id}:${key}`, null, ButtonStyle.Secondary, { emoji: s.emoji }])];
-const stanceKey = () => Object.keys(STANCES).map((k) => `${stanceText(k)} beats ${STANCES[STANCES[k].beats].emoji}`);
+const stanceKey = () => Object.keys(STANCES).map((k) => `${stanceText(k)} Beats ${STANCES[STANCES[k].beats].emoji}`);
 const ready = (game, userId) => (game.picks[userId] ? 'Ready' : 'Choosing...');
 const rematchButton = (game) => [`${AGAIN_ID}:${game.bet}:${game.userId}:${game.opponentId}`, `Rematch (${fmt(game.bet)})`, ButtonStyle.Primary];
 
@@ -93,7 +99,7 @@ function inviteView(id, game) {
   const message = view({
     lines: [`${mention(game.userId)} challenges ${mention(game.opponentId)}. Accept?`],
     fields: [['Bet Each', game.bet], ['Pot', pot(game)]],
-    footer: '"Draw your blade or walk away. Both are answers."',
+    footer: '"Draw your blade or walk away. Your call."',
     buttons: [[`${BUTTON_ID}:${id}:accept`, 'Accept', ButtonStyle.Success], [`${BUTTON_ID}:${id}:decline`, 'Decline', ButtonStyle.Danger]],
   });
   return { ...message, content: mention(game.opponentId) };
@@ -101,9 +107,9 @@ function inviteView(id, game) {
 
 function pickView(id, game) {
   const [lines, fields] = solo(game)
-    ? [['Yamato has chosen. Pick your stance.'], [['Win Pays', winnings(game.bet)], ['Draw', 'Bet back'], ['Bet', game.bet]]]
+    ? [['Yamato has chosen. Pick your stance.'], [['Win Pays', winnings(game.bet)], ['Draw', 'Bet Back'], ['Bet', game.bet]]]
     : [['Pick your stance. Picks stay secret.'], [[game.name, ready(game, game.userId)], [game.opponentName, ready(game, game.opponentId)], ['Pot', pot(game)]]];
-  return view({ lines: [...lines, '', ...stanceKey()], fields, footer: '"Choose. Hesitation is a stance too, and it always loses."', rows: stanceButtons(id) });
+  return view({ lines: [...lines, '', ...stanceKey()], fields, footer: '"Pick one. Hesitation is a stance too, and it always loses."', rows: stanceButtons(id) });
 }
 
 // Takes the bet and opens a new duel. Returns a message payload, or { error } if they can't play.
@@ -127,7 +133,7 @@ function resultView(game, outcome, balance) {
 
   if (solo(game)) {
     const won = outcome > 0 ? winnings(game.bet) : outcome === 0 ? game.bet : 0;
-    const line = outcome > 0 ? `Your ${stanceName(mine)} beats Yamato's ${stanceName(theirs)}.` : `Yamato's ${stanceName(theirs)} beats your ${stanceName(mine)}.`;
+    const line = outcome > 0 ? `Your ${stanceName(mine)} Beats Yamato's ${stanceName(theirs)}.` : `Yamato's ${stanceName(theirs)} Beats your ${stanceName(mine)}.`;
     return view({
       lines: [`**${outcome === 0 ? draw : line}**`],
       fields: resultFields(game.bet, won, balance),
@@ -139,7 +145,7 @@ function resultView(game, outcome, balance) {
   }
   const [winner, loser] = outcome > 0 ? [game.userId, game.opponentId] : [game.opponentId, game.userId];
   return view({
-    lines: [`**${outcome === 0 ? `${draw} Both bets came back.` : `${mention(winner)}'s ${stanceName(game.picks[winner])} beats ${mention(loser)}'s ${stanceName(game.picks[loser])}.`}**`],
+    lines: [`**${outcome === 0 ? `${draw} Both bets came back.` : `${mention(winner)}'s ${stanceName(game.picks[winner])} Beats ${mention(loser)}'s ${stanceName(game.picks[loser])}.`}**`],
     fields: outcome === 0 ? [['Bet Each', game.bet]] : [['Winner', mention(winner)], ['Pot', pot(game)]],
     buttons: [rematchButton(game)],
     footer: `"${pickRandom(outcome === 0 ? DRAW_LINES : DUEL_LINES)}"`,
@@ -180,7 +186,7 @@ async function decline(id, userId) {
   await pay(game.userId, game.bet);
   return view({
     lines: [`${mention(game.opponentId)} turned down the challenge. ${mention(game.userId)} got ${boldSouls(game.bet)} back.`],
-    footer: '"No shame in walking away. Only in never drawing."',
+    footer: '"No shame in walking away. Just do not make a habit of it."',
     rows: [],
   });
 }

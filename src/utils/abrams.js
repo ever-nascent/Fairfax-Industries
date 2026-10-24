@@ -15,7 +15,7 @@ const { QUESTIONS, answer } = require('./abramsCase');
 const { renderBoard, renderDuel } = require('./abramsBoard');
 const { GREEN, RED, mention, pot, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
-const ART = path.join(ASSETS, 'abrams'); // Seismic Impact icon (deadlock.wiki); portrait cropped from his full-body render
+const ART = path.join(ASSETS, 'abrams'); // Seismic Impact icon (deadlock.wiki); portraits the wiki's Abrams card / Gloat / Critical
 const HOST = { color: 0xb5762c, name: "Abrams' Interrogation", icon: path.join(ART, 'seismic_impact.png'), art: ART, prefix: 'abrams' };
 
 const PVP = true; // casino.js: /mini-game accepts an opponent for this game
@@ -23,12 +23,13 @@ const BUTTON_ID = 'case'; // custom id: case:<game id>:<accept|decline|ask|accus
 const AGAIN_ID = 'case_again'; // custom id: case_again:<bet>:<player id>[:<other detective's id>]
 const { takeBet, pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
 
-// Solo pays bet x PAYOUT[questions asked] for a right accusation. Simulated Oct 22 (tools/interrogation-rtp.js): a player who
-// always asks the best question in the hand and accuses at the best moment gets about 95% back and wins 87% of cases;
-// weaker play gets less. With 8 questions (the first draft) the same player got far more than 100%, so it is 6.
-const HAND = 4;
-const MAX_QUESTIONS = 6;
-const PAYOUT = [4, 3, 2.25, 1.75, 1.4, 1.15, 1];
+// Solo pays bet x PAYOUT[questions asked] for a right accusation. Simulated Oct 23 with the reworked questions
+// (tools/interrogation-rtp.js): a player who always asks the best question in the hand and accuses at the best moment gets
+// about 95% back and wins 92% of cases; weaker play gets less (the Oct 22 table, 1.75 / 1.4 / 1.15 at 3-5 questions, gave
+// 100% with the better questions). Oct 23, his ask (it was too hard to profit): hand of 5, 7 questions, a flatter table; good play now returns about 106%, careless play about 88%.
+const HAND = 5;
+const MAX_QUESTIONS = 7;
+const PAYOUT = [4, 3, 2.25, 1.7, 1.35, 1.1, 1, 1];
 const winnings = (bet, asked) => Math.floor(bet * PAYOUT[Math.min(asked, MAX_QUESTIONS)]);
 
 const NAMES = HEROES.map((h) => h.name);
@@ -94,10 +95,9 @@ const loadHeroEmojis = (g) => {
 const emojiOf = (name) => heroEmoji(guild, HEROES.find((h) => h.name === name)?.slug);
 
 const view = (message) => ({ ...gameMessage(HOST, message), content: '' });
-const clueLine = ([q, yes]) => `🔍 ${QUESTIONS[q].text} **${yes ? 'Yes' : 'No'}**`;
+const clueLine = ([q, yes]) => `> ${QUESTIONS[q].text}\n**${yes ? 'Yes' : 'No'}**`; // the question quoted, the answer bold under it, no emoji (his ask Oct 22)
 const picture = (id, data) => ({ name: `case_${id}_${Date.now()}.png`, data });
-const status = (n) => (n === 1 ? '1 SUSPECT LEFT' : `${n} SUSPECTS LEFT`);
-const boardPicture = (id, game, userId, extra = {}) => ({ left: game.hunts[userId].suspects, caseNo: caseNo(id), status: status(game.hunts[userId].suspects.length), ...extra });
+const boardPicture = (id, game, userId, extra = {}) => ({ left: game.hunts[userId].suspects, caseNo: caseNo(id), clues: game.hunts[userId].asked, ...extra });
 
 function questionMenu(id, board) {
   return new ActionRowBuilder().addComponents(
@@ -230,8 +230,7 @@ async function soloResult(id, game, accused, balance) {
   return view({
     lines: [right ? `**Case closed. It was ${culprit}.**` : `**You accused ${accused}. It was ${culprit}.**`],
     image: picture(id, await renderBoard({
-      ...boardPicture(id, game, game.userId), left: game.hunts[game.userId].suspects, accused: right ? null : accused,
-      solved: right ? culprit : null, culprit: right ? null : culprit, status: right ? `CASE CLOSED: ${culprit.toUpperCase()}` : `COLD CASE: ${culprit.toUpperCase()}`,
+      ...boardPicture(id, game, game.userId), accused: right ? null : accused, solved: right ? culprit : null, culprit: right ? null : culprit,
     })),
     fields: [['Questions Asked', String(asked)], ...resultFields(game.bet, right ? winnings(game.bet, asked) : 0, balance)],
     buttons: [playAgainButton(AGAIN_ID, game.bet, game.userId)],
@@ -248,7 +247,7 @@ async function duelResult(id, game, accuser, accused) {
   const line = right
     ? `${mention(accuser)} cracked the case: it was ${target}. ${mention(accuser)} takes the pot.`
     : `${mention(accuser)} accused ${accused}, but it was ${target}. ${mention(winner)} takes the pot.`;
-  const extra = { [accuser]: right ? { solved: target, status: `CASE CLOSED: ${target.toUpperCase()}` } : { culprit: target, accused, status: `COLD CASE: ${target.toUpperCase()}` } };
+  const extra = { [accuser]: right ? { solved: target } : { culprit: target, accused } };
   return view({
     lines: [`**${line}**`],
     image: picture(id, await duelBoards(id, game, extra)),
@@ -410,7 +409,7 @@ function finishOnTimeout(id, game) {
       pays: [[game.userId, 0]],
       view: async (balance) => view({
         lines: [`**The case went cold. It was ${game.culprit}.**`],
-        image: picture(id, await renderBoard({ ...boardPicture(id, game, game.userId), culprit: game.culprit, status: `COLD CASE: ${game.culprit.toUpperCase()}` })),
+        image: picture(id, await renderBoard({ ...boardPicture(id, game, game.userId), culprit: game.culprit })),
         fields: [['Questions Asked', String(game.hunts[game.userId].asked.length)], ...resultFields(game.bet, 0, balance)],
         buttons: [playAgainButton(AGAIN_ID, game.bet, game.userId)],
         footer: `"${pickRandom(TIMEOUT_LINES)}"`,

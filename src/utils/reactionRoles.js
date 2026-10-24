@@ -108,7 +108,25 @@ async function listMenus(guildId) {
   return Object.entries(all).filter(([, menu]) => menu.guildId === guildId);
 }
 
+// ---- Repair after a server emoji was replaced (tools/startup-check.js deletes the old one and uploads a new one under the same name) ----
+// The menu's keys that are custom emoji ids no longer in the server.
+const staleKeys = (menu, liveIds) => Object.keys(menu.roles).filter((key) => /^\d{17,20}$/.test(key) && !liveIds.has(key));
+// Emoji id -> name, as written in a menu's text (the saved menu keeps ids only).
+const emojiNames = (text) => new Map([...text.matchAll(/<a?:(\w+):(\d+)>/g)].map((m) => [m[2], m[1]]));
+// `swaps`: old id -> new id. Returns the menu's roles and text with those ids replaced, key order kept.
+function swapEmojis(menu, text, swaps) {
+  let out = text;
+  for (const [from, to] of swaps) out = out.replaceAll(`:${from}>`, `:${to}>`);
+  return { roles: Object.fromEntries(Object.entries(menu.roles).map(([key, role]) => [swaps.get(key) ?? key, role])), text: out };
+}
+const saveMenuRoles = (messageId, menu, roles) => store().set(messageId, { ...menu, roles });
+
 module.exports = {
+  parseEmoji,
+  staleKeys,
+  emojiNames,
+  swapEmojis,
+  saveMenuRoles,
   MAX_OPTIONS,
   SELF_PICKED,
   startDraft,

@@ -13,6 +13,7 @@ echo   5  rank     how much each shop item helps
 echo   6  check    does this hero pass every target? (run it for every new hero)
 echo   8  lanes    the three Walkers and the siege they open
 echo   9  waves    how far a wave run gets and what it pays
+echo   D  descend  how deep /descend runs get: random picks against good picks
 echo   R  race     every hero from nothing: +1 level, +1 item ... who wins each target first (about 4 minutes)
 echo   7  change the hero
 echo   0  quit
@@ -26,6 +27,7 @@ if "%choice%"=="5" node tools/farm-sim.js rank --hero=%hero%
 if "%choice%"=="6" node tools/farm-sim.js check --hero=%hero%
 if "%choice%"=="8" node tools/farm-sim.js lanes --hero=%hero%
 if "%choice%"=="9" node tools/farm-sim.js waves --hero=%hero%
+if /i "%choice%"=="D" node tools/farm-sim.js descend --hero=%hero%
 if /i "%choice%"=="R" node tools/farm-sim.js race
 if "%choice%"=="7" set /p hero=Hero name: 
 if "%choice%"=="0" exit /b

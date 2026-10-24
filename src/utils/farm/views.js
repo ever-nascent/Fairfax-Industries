@@ -16,7 +16,7 @@ const { itemFile } = require('./itemArt');
 const { heroCard } = require('./heroCard');
 const { shopTab, listPage, brokerPage, BROKER, CORRUPTED, TIER_PRICE } = require('./shopCard');
 const { bonusLines, corruptionBlock } = require('./corruption');
-const { progress, pointsSpent, campMultiplier, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, waitingLegendary, POOL, itemsOf, sellPrice,
+const { progress, pointsSpent, campMultiplier, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, POOL, itemsOf, sellPrice,
   brokerOpen, brokerNext, brokerCloses, corruptible, corruptPrice } = require('./levels');
 const { homeCard } = require('./homeCard');
 const { siegeCard } = require('./siegeCard');
@@ -42,7 +42,7 @@ const ITEM_ID = 'farm_item'; // select (item shop): farm_item:<user id>:<weapon 
 const BUY_ID = 'farm_buy'; // button "Buy (price)" (item shop): farm_buy:<user id>:<weapon | vitality | spirit>:<tier>:<item name>
 const SHOPMODE_ID = 'farm_shopmode'; // button: farm_shopmode:<user id>:<on (the item shop) | off (the hero screen)>
 const SELL_ID = 'farm_sell'; // select: farm_sell:<user id>, value = item name
-const SWITCH_ID = 'farm_switch'; // button "Switch Hero" (home): farm_switch:<user id>
+const SWITCH_ID = 'farm_switch'; // buttons "Switch Hero" and "Unlock Hero" (home): farm_switch:<user id>[:unlock]
 const SWITCHTO_ID = 'farm_switchto'; // button "Switch": farm_switchto:<user id>:<hero>
 const UNLOCK_ID = 'farm_unlock'; // button "Unlock": farm_unlock:<user id>:<hero>
 const IMBUE_ID = 'farm_imbue'; // select (hero screen): farm_imbue:<user id>, value = an owned imbue item -> its ability pick
@@ -50,6 +50,8 @@ const IMBUESET_ID = 'farm_imbueset'; // select: farm_imbueset:<user id>:<item>, 
 const SHOPTAB_ID = 'farm_shoptab'; // button (item shop): farm_shoptab:<user id>:<weapon | vitality | spirit | broker | sell>[:<tier 1-4>]
 const CORRUPT_ID = 'farm_corrupt'; // select (Broker screen): farm_corrupt:<user id>, value = item name
 const HATCH_ID = 'farm_hatch'; // button "Hatch Egg": farm_hatch:<user id>
+const LEGEND_ID = 'farm_legend'; // select (hero screen): farm_legend:<user id>, value = one of the hero's legendaries -> into the legendary slot
+const ROOM_ID = 'farm_room'; // select (item shop, a full build): farm_room:<user id>:<tab>:<tier>:<item to buy>, value = the item to sell for it
 
 const COLOR = 0xabffe3; // the souls glyph's colour
 const WIN = 0x57f287; // Discord green, like /trivia's right answer
@@ -131,28 +133,35 @@ const statLines = (name) => {
 // No `selected`: the list of heroes. With one: that hero's stats and abilities and a Select button (nothing is saved until then).
 // A member who already has a hero (`record`) gets the same screen for switching: each hero shows its level or its unlock price, and the
 // button is Switch (any time, his call Oct 11) or Unlock (a Character Unlock Token).
-async function pickView(member, selected = null, record = null) {
+async function pickView(member, selected = null, record = null, mode = 'switch') {
   const guild = member.guild;
   const names = roster();
   const switching = !!record?.hero;
   const levelOf = (n) => progress(n === record.hero ? record.earned : record.heroes?.[n]?.earned).level;
   const tokens = record?.tokens ?? 0;
+  if (switching && selected) mode = hasHero(record, selected) ? 'switch' : 'unlock'; // a picked hero decides which list the dropdowns show
+  const pool = switching ? names.filter((n) => hasHero(record, n) === (mode === 'switch')) : names; // Switch lists unlocked heroes, Unlock the locked ones
   const back = new ButtonBuilder().setCustomId(`${BACK_ID}:${member.id}`).setLabel('Back').setStyle(ButtonStyle.Secondary);
   // a dropdown holds 25 options: a bigger roster is split A to Z over two of them
-  const sorted = [...names].sort((x, y) => x.replace(/^The /, '').localeCompare(y.replace(/^The /, '')));
-  const halves = names.length <= 25 ? [names] : [sorted.slice(0, Math.ceil(sorted.length / 2)), sorted.slice(Math.ceil(sorted.length / 2))];
-  const menus = halves.map((part, i) => new StringSelectMenuBuilder().setCustomId(`${HERO_ID}:${member.id}${i ? `:${i}` : ''}`)
+  const sorted = [...pool].sort((x, y) => x.replace(/^The /, '').localeCompare(y.replace(/^The /, '')));
+  const halves = pool.length <= 25 ? [pool] : [sorted.slice(0, Math.ceil(sorted.length / 2)), sorted.slice(Math.ceil(sorted.length / 2))];
+  const menus = !pool.length ? [] : halves.map((part, i) => new StringSelectMenuBuilder().setCustomId(`${HERO_ID}:${member.id}${i ? `:${i}` : ''}`)
     .setPlaceholder(halves.length > 1 ? `${part[0]} to ${part.at(-1)}` : switching ? 'Choose a hero' : 'Choose your hero')
     .addOptions(part.map((n) => ({ label: n, value: n, emoji: heroEmoji(guild, slugOf(n)), default: n === selected }))));
   const e = embed();
   const files = [soulsFile()];
   const components = menus.map((m) => row(m));
   if (switching && !selected) {
-    e.setTitle('Switch Hero').setDescription(
-      `Each hero keeps its own souls, level, abilities and items,\nand its own buffs, cooldowns and ${rejuvIcon()}Rejuvs.\n\n` +
-      names.map((n) => `${heroText(guild, n)}**${n}**  -  ${hasHero(record, n) ? `Level ${levelOf(n)}${n === record.hero ? '  -  Current Hero' : ''}` : 'Locked'}`).join('\n'),
-    ).setFooter({ text: `You can switch any time.  ${tokenText(tokens)}` });
-    components.push(row(back));
+    const unlock = mode === 'unlock';
+    const locked = pool.map((n) => `${heroText(guild, n)}**${n}**  -  Locked`).join('\n');
+    const noToken = '**You do not have a Character Unlock Token.** Win the Base Siege with a hero to earn one.';
+    e.setTitle(unlock ? 'Unlock Hero' : 'Switch Hero').setDescription(unlock
+      ? (pool.length ? `${tokens > 0 ? `You have ${plural(tokens, 'Character Unlock Token')}. Pick a hero to unlock with one.` : noToken}\n\n${locked}` : 'You have unlocked every hero.')
+      : `Each hero keeps its own souls, level, abilities and items,\nand its own buffs, cooldowns and ${rejuvIcon()}Rejuvs.\n\n` +
+        pool.map((n) => `${heroText(guild, n)}**${n}**  -  Level ${levelOf(n)}${n === record.hero ? '  -  Current Hero' : ''}`).join('\n'),
+    ).setFooter({ text: unlock ? tokenText(tokens) : 'You can switch any time.' });
+    const unlockButton = new ButtonBuilder().setCustomId(`${SWITCH_ID}:${member.id}:unlock`).setLabel('Unlock Hero').setStyle(ButtonStyle.Success);
+    components.push(row(...(unlock || pool.length === names.length ? [back] : [unlockButton, back]))); // Unlock Hero sits under the Switch Hero list, only while a hero is locked
   } else if (!selected) {
     e.setTitle('Pick Your Hero').setDescription(
       'Pick the hero who farms for you. You gear them up and send them out,\nand they stay yours, so choose the one you want to run with.\n\n' +
@@ -209,6 +218,13 @@ const payText = (key, record) => {
 // (Abrams' Infernal Resilience: health and regen), so it is the very sheet a fight uses.
 const currentStats = (record) => buildHero(record.hero, fightKit({ ...record, items: itemsOf(record.items) })).stats;
 
+// "3 Ready" or the wait until the first lane's wave run is back (waves are never locked).
+const waveText = (record, now) => {
+  const lefts = Object.keys(LANES).map((lane) => cooldownLeft(record, slotOf('waves', lane), now));
+  const open = lefts.filter((l) => l <= 0).length;
+  return open ? `${open} Ready` : timeLeft(Math.min(...lefts));
+};
+
 // One drawn card (homeCard.js) with every target; the dropdown below it still lists them with their cooldowns.
 async function homeView(member, record, now = Date.now()) {
   const hero = record.hero;
@@ -242,6 +258,7 @@ async function homeView(member, record, now = Date.now()) {
       { name: 'Spirit Power', value: `${+st.spirit.toFixed(1)}`, inline: true },
       { name: 'Cooldown Reduction', value: `${+(st.cdr * 100).toFixed(1)}%`, inline: true },
       { name: 'Rejuvs', value: `${rejuvIcon()}${record.rejuvs} / ${MAX_REJUVS}`, inline: true },
+      { name: 'Waves', value: waveText(record, now), inline: true }, // fills the empty slot beside Rejuvs; waves have no tile on the card
     );
   const heroButton = new ButtonBuilder().setCustomId(`${HEROCARD_ID}:${member.id}`).setLabel('Hero').setStyle(ButtonStyle.Secondary);
   const buttons = [heroButton];
@@ -258,7 +275,7 @@ const ITEM_STAT_TEXT = {
   OutOfCombatHealthRegen: ['Regen Out of Combat', ''], AbilityLifestealPercentHero: ['Spirit Lifesteal', '%'], AbilityLifestealPercentHeroPassive: ['Spirit Lifesteal', '%'],
   TechPowerPercent: ['Spirit Power', '%'], MaxHealthLossPercent: ['Max Health', '%'], NonPlayerBonusWeaponPower: ['Weapon Damage vs Camps', '%'], NonPlayerBulletResist: ['Bullet Resist vs Camps', '%'],
   BonusMoveSpeed: ['Move Speed', ' m/s'], BonusSprintSpeed: ['Sprint Speed', ' m/s'], TechRangeMultiplier: ['Ability Range', '%'], StatusResistancePercent: ['Debuff Resist', '%'], Stamina: ['Stamina', ''],
-  BonusMeleeDamagePercent: ['Melee Damage', '%'], BonusAbilityCharges: ['Ability Charges', ''], ItemCooldownReduction: ['Item Cooldown Reduction', '%'], HealAmpCastPercent: ['Healing', '%'],
+  BonusMeleeDamagePercent: ['Melee Damage', '%'], Precision: ['Precision', ''], BonusAbilityCharges: ['Ability Charges', ''], ItemCooldownReduction: ['Item Cooldown Reduction', '%'], HealAmpCastPercent: ['Healing', '%'],
 };
 const itemStats = (card) => innateStats(card).filter(([k]) => ITEM_STAT_TEXT[k]).map(([k, v]) => `${v >= 0 ? '+' : ''}${+v.toFixed(2)}${ITEM_STAT_TEXT[k][1]} ${ITEM_STAT_TEXT[k][0]}`).join(', ');
 
@@ -270,6 +287,18 @@ const eggWorth = (record) => ({
 // "The Broker Is Open For 21 More Minutes" / "The Broker Opens In 2h 10m" (30 minutes every 3 hours, UTC).
 const brokerLine = (now) => (brokerOpen(now) ? `The Broker is open for ${timeLeft(brokerCloses(now) - now)} more.` : `The Broker opens in ${timeLeft(brokerNext(now) - now)}.`);
 
+// The hero card's stat panels (heroCard.js) from a stat sheet: the game's names for them on the HUD (his list, Oct 3).
+const statsFor = (st) => {
+  const pct = (x) => `${+(x * 100).toFixed(1)}%`;
+  return {
+    Health: fmt(Math.round(st.maxHealth)), 'Bullet Damage': `${+(st.bulletDamage * st.weaponDamageMult).toFixed(1)}`, 'Fire Rate': `${+st.fireRate.toFixed(2)}/s`,
+    Ammo: `${st.clip}`, 'Spirit Power': `${+st.spirit.toFixed(1)}`, Lifesteal: pct(st.lifesteal), Precision: `${+st.precision.toFixed(1)}`,
+    'Ability Cooldown': st.cdr ? `-${pct(st.cdr)}` : '0%', 'Ability Duration': `+${pct(st.durationMult - 1)}`,
+    'Ability Range': `+${pct(st.rangeMult - 1)}`, 'Movement Speed': `${+st.moveSpeed.toFixed(1)} m/s`,
+    'Health Regen': `${+st.healthRegen.toFixed(1)}/s`, 'Bullet Armor': pct(st.bulletResist), 'Spirit Armor': pct(st.spiritResist),
+  };
+};
+
 // mode: 'main' | 'imbue:<item>' (pick its ability). Buying, selling and the Broker are in the item shop (shopView).
 // The souls shown are the hero's own (his call, Oct 11).
 async function heroView(member, record, mode = 'main') {
@@ -280,26 +309,15 @@ async function heroView(member, record, mode = 'main') {
   const slots = Object.entries(HERO_DATA[hero].BoundAbilities).map(([slot, { Key }]) => ({
     slot: Number(slot), name: ABILITIES[Key].Name, tier: record.tiers?.[slot] ?? 0, locked: Number(slot) > p.unlocks,
   }));
-  const st = currentStats(record);
-  const pct = (x) => `${+(x * 100).toFixed(1)}%`;
-  const stats = {
-    Health: fmt(Math.round(st.maxHealth)), 'Bullet Damage': `${+(st.bulletDamage * st.weaponDamageMult).toFixed(1)}`, 'Fire Rate': `${+st.fireRate.toFixed(2)}/s`,
-    Ammo: `${st.clip}`, 'Spirit Power': `${+st.spirit.toFixed(1)}`, Lifesteal: pct(st.lifesteal), Precision: `${+st.precision.toFixed(1)}`,
-    // the game's names for them on the HUD (his list, Oct 3)
-    'Ability Cooldown': st.cdr ? `-${pct(st.cdr)}` : '0%', 'Ability Duration': `+${pct(st.durationMult - 1)}`,
-    'Ability Range': `+${pct(st.rangeMult - 1)}`, 'Movement Speed': `${+st.moveSpeed.toFixed(1)} m/s`,
-    'Health Regen': `${+st.healthRegen.toFixed(1)}/s`, 'Bullet Armor': pct(st.bulletResist), 'Spirit Armor': pct(st.spiritResist),
-  };
-  const card = await heroCard({ hero, progress: p, pointsLeft: Math.max(0, left), abilities: slots, stats, items: owned, souls: record.souls ?? 0, corrupted: record.corrupted?.name });
+  const stats = statsFor(currentStats(record));
+  const card = await heroCard({ hero, progress: p, pointsLeft: Math.max(0, left), abilities: slots, stats, items: owned, souls: record.souls ?? 0, corrupted: record.corrupted?.name, legendary: record.legendary ?? undefined });
   const e = embed().setTitle(`${hero}  -  Level ${p.level}`).setImage('attachment://hero.png').setThumbnail('attachment://thumb.png');
-  const held = SLOTS.flatMap((slot) => owned[slot]);
+  const held = [...SLOTS.flatMap((slot) => owned[slot]), ...(record.legendary ? [record.legendary] : [])]; // the 12 and the legendary slot
   const notes = [];
   const itemFields = []; // what the hero's items are doing, one field each (his call, Oct 3)
-  const waiting = waitingLegendary(record);
-  if (waiting) itemFields.push({ name: 'Legendary Waiting', value: `${waiting}\nSell an item to make room.` });
   const imbued = held.filter((n) => IMBUES.includes(n));
   const abilityName = (slot) => slots.find((a) => a.slot === slot)?.name ?? `Ability ${slot}`;
-  if (imbued.length) itemFields.push({ name: 'Imbued', value: imbued.map((n) => `${n}\ninto ${abilityName(record.imbues?.[n] ?? 1)}`).join('\n') });
+  if (imbued.length) itemFields.push({ name: 'Imbued', value: imbued.map((n) => `> ${n}\nInto ${abilityName(record.imbues?.[n] ?? 1)}`).join('\n') });
   if (held.includes(EGG.Name)) { const w = eggWorth(record); itemFields.push({ name: 'Golden Goose Egg', value: `Hatches for ${fmt(w.souls)} souls\nand ${plural(w.buffs, 'permanent buff')}` }); }
   const components = [];
   const button = (id, label) => new ButtonBuilder().setCustomId(id).setLabel(label).setStyle(ButtonStyle.Secondary);
@@ -314,6 +332,11 @@ async function heroView(member, record, mode = 'main') {
     if (upgradable.length) {
       components.push(row(new StringSelectMenuBuilder().setCustomId(`${UPGRADE_ID}:${member.id}`).setPlaceholder(`Spend an ability point (${Math.max(0, left)} left)`)
         .addOptions(upgradable.map((a) => ({ label: `${a.name}  -  Tier ${a.tier + 1}`, value: String(a.slot), description: `Costs ${plural(TIER_COSTS[a.tier], 'ability point')}` })))));
+    }
+    const legends = record.legendaries ?? [];
+    if (legends.length > 1) { // which of its legendaries is in the legendary slot (his call, Oct 22: change it at will)
+      components.push(row(new StringSelectMenuBuilder().setCustomId(`${LEGEND_ID}:${member.id}`).setPlaceholder('Change your legendary')
+        .addOptions(legends.map((n) => ({ label: n, value: n, default: n === record.legendary, description: n === record.legendary ? 'In the legendary slot' : 'Put it in the legendary slot' })))));
     }
     if (imbued.length) {
       components.push(row(new StringSelectMenuBuilder().setCustomId(`${IMBUE_ID}:${member.id}`).setPlaceholder('Change what an item is imbued into')
@@ -342,9 +365,23 @@ const buyText = (name, owned) => {
   const kind = SLOTS.find((slot) => POOL[slot].includes(name));
   return titleCase(`${owned[kind].includes(name) ? 'Owned  -  ' : holder ? `In ${holder}  -  ` : used.length ? `Upgrade from ${used.join(' + ')}  -  ` : ''}${fmt(price)} souls  -  ${itemStats(c) || 'effect only'}`).slice(0, 100);
 };
+// The wiki's item text is HTML plus game tokens: highlights become bold, the grey small print an italic paragraph, icon / key tokens go.
+const itemText = (raw = '') => {
+  const text = String(raw)
+    .replace(/\{g:citadel_binding:'(\w+)'\}/g, '$1')
+    .replace(/\{g:citadel_inline_attribute:'(\w+)'\}/g, (_, k) => (k === 'SpiritIcon' ? 'Spirit ' : k === 'SpiritDPS' ? 'Spirit Damage Per Second' : k.replace(/^Bonus/, '').replace(/([a-z])([A-Z])/g, '$1 $2')))
+    .replace(/<span class="diminish">([\s\S]*?)<\/span>(?=\s*$|<)/g, (_, t) => `\n\n${t.replace(/<br\s*\/?>/g, '\n').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => `*${l.replace(/<[^>]+>/g, '')}*`).join('\n')}`)
+    .replace(/<span class="highlight">([\s\S]*?)<\/span>/g, (_, t) => (t.trim() ? `**${t.trim()}**` : ''))
+    .replace(/<br\s*\/?>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\*\*\s*\*\*/g, '')
+    .replace(/[ \t]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  return text.length > 700 ? `${text.slice(0, 700).replace(/\s+\S*$/, '')}...` : text;
+};
 // `picked` is the item chosen in the dropdown: its card is framed, its page (description, stats, price, souls left) is in the embed, and Buy confirms.
 // Items are paid with the hero's own souls (his call, Oct 11).
-async function shopView(member, record, tab = 'weapon', now = Date.now(), tier = 1, picked = null) {
+// `room`: Buy was pressed with a full build, so the screen asks which item to sell for it (his call, Oct 22: no trip to the Sell tab).
+async function shopView(member, record, tab = 'weapon', now = Date.now(), tier = 1, picked = null, room = false) {
   const balance = record.souls ?? 0;
   if (!SHOP_TABS[tab]) tab = 'weapon';
   tier = [1, 2, 3, 4].includes(Number(tier)) ? Number(tier) : 1;
@@ -352,7 +389,7 @@ async function shopView(member, record, tab = 'weapon', now = Date.now(), tier =
   const held = SLOTS.flatMap((slot) => owned[slot]);
   const e = embed().setTitle(`Item Shop  -  ${SHOP_TABS[tab]}${SLOTS.includes(tab) ? `  -  ${fmt(TIER_PRICE[tier])}` : ''}`).setImage('attachment://shop.png').setThumbnail('attachment://thumb.png')
     .addFields({ name: `${record.hero}'s Souls`, value: fmt(balance), inline: true }, { name: 'Items', value: `${countItems(owned)} / ${MAX_ITEMS}`, inline: true });
-  const components = [row(...Object.entries(SHOP_TABS).map(([key, label]) => new ButtonBuilder().setCustomId(`${SHOPTAB_ID}:${member.id}:${key}`).setLabel(label)
+  const components = [row(...Object.entries(SHOP_TABS).map(([key, label]) => new ButtonBuilder().setCustomId(`${SHOPTAB_ID}:${member.id}:${key}:${tier}`).setLabel(label) // the price picked stays when the tab changes (his ask, Oct 22)
     .setStyle(key === tab ? ButtonStyle.Primary : ButtonStyle.Secondary).setDisabled(key === tab)))];
   let pic;
   let buy = null;
@@ -365,7 +402,8 @@ async function shopView(member, record, tab = 'weapon', now = Date.now(), tier =
       return { owned: mine, corrupted: record.corrupted?.name === name, inside: !!holder, upgrade: !mine && !holder && used.length > 0, poor: !mine && !holder && price > balance, picked: name === picked };
     };
     pic = await shopTab({ kind: tab, tier, names: POOL[tab], state });
-    components.push(row(...[1, 2, 3, 4].map((t) => new ButtonBuilder().setCustomId(`${SHOPTAB_ID}:${member.id}:${tab}:${t}`).setLabel(fmt(TIER_PRICE[t]))
+    // ':price' keeps these apart from the tab button with the same tab and tier (Discord refuses duplicate ids)
+    components.push(row(...[1, 2, 3, 4].map((t) => new ButtonBuilder().setCustomId(`${SHOPTAB_ID}:${member.id}:${tab}:${t}:price`).setLabel(fmt(TIER_PRICE[t]))
       .setStyle(t === tier ? ButtonStyle.Primary : ButtonStyle.Secondary).setDisabled(t === tier))));
     const names = POOL[tab].filter((n) => itemByName(n).Tier === tier);
     components.push(row(new StringSelectMenuBuilder().setCustomId(`${ITEM_ID}:${member.id}:${tab}:${tier}`).setPlaceholder(titleCase(`Buy a ${fmt(TIER_PRICE[tier])} souls item`))
@@ -376,13 +414,20 @@ async function shopView(member, record, tab = 'weapon', now = Date.now(), tier =
       const holder = heldIn(picked, owned);
       const mine = held.includes(picked);
       const full = countItems(owned) - used.length >= MAX_ITEMS;
+      const sale = full ? Math.max(0, ...held.filter((n) => !used.includes(n)).map((n) => sellPrice(itemByName(n), record.corrupted))) : 0; // a full build sells one for it (buyItem counts the refund)
       const why = mine ? 'You already own this.' : holder ? `Already part of ${holder}.` : record.corrupted && used.includes(record.corrupted.name) ? `That would use up your corrupted ${record.corrupted.name}.`
-        : full ? `Your build is full (${MAX_ITEMS} items). Sell one first.` : price > balance ? `You need ${fmt(price - balance)} more souls.` : null;
-      const lines = [`**${picked}**  -  ${c.Activation === 'Passive' ? 'Passive' : 'Active'}`, (c.Description ?? '').replace(/<[^>]+>/g, '').slice(0, 400)].filter(Boolean);
+        : price > balance + sale ? `You need ${fmt(price - balance - sale)} more souls.` : null;
+      const lines = [`**${picked}**  -  ${c.Activation === 'Passive' ? 'Passive' : 'Active'}`, itemText(c.Description)].filter(Boolean);
       if (itemStats(c)) lines.push(`${itemStats(c)}`);
       if (used.length) lines.push(titleCase(`Upgrades ${used.join(' + ')} for ${fmt(price)} souls (${fmt(TIER_PRICE[tier] - price)} off).`));
-      lines.push(why ? `*${why}*` : titleCase(`Costs ${fmt(price)} souls. You will have ${fmt(balance - price)} left.`));
+      lines.push(why ? `*${why}*` : titleCase(`Costs ${fmt(price)} souls.${full ? '' : ` You will have ${fmt(balance - price)} left.`}`)); // full: what's left depends on the item sold
+      if (full && !why) lines.push(titleCase(room ? `Your build is full (${MAX_ITEMS} items). Choose an item to sell for ${picked}.` : `Your build is full (${MAX_ITEMS} items): Buy asks which item to sell for it.`));
       e.setDescription(lines.join('\n'));
+      if (full && !why && room) { // that item is sold for half its price and the new one takes its slot, in one go
+        const sellable = held.filter((n) => !used.includes(n));
+        components.push(row(new StringSelectMenuBuilder().setCustomId(`${ROOM_ID}:${member.id}:${tab}:${tier}:${picked}`).setPlaceholder(titleCase(`Sell an item for ${picked}`))
+          .addOptions(sellable.map((n) => ({ label: n, value: n, description: titleCase(`Sells for ${fmt(sellPrice(itemByName(n), record.corrupted))} souls${record.corrupted?.name === n ? ' (corrupted)' : ''}`) })))));
+      }
       buy = new ButtonBuilder().setCustomId(`${BUY_ID}:${member.id}:${tab}:${tier}:${picked}`).setLabel(`Buy (${fmt(price)})`).setStyle(ButtonStyle.Success).setDisabled(!!why);
     }
   } else if (tab === 'broker') { // corrupt one owned tier 3 or 4 item (one per hero), only while he is open
@@ -591,7 +636,7 @@ function voiceLine(hero, beat, rng) {
   else {
     const names = new RegExp(`\\b(${all.flatMap((h) => h.name.split(/[\s&]+/)).filter((w) => w && w !== 'The').join('|')}|Doorman)\\b`);
     const aboutHero = new Set(Object.values(me?.kills?.heroes ?? {}).flat());
-    lines = me?.lines.filter((l) => !names.test(l) && !aboutHero.has(l));
+    lines = me?.lines.filter((l) => !names.test(l) && !aboutHero.has(l) && !/rejuv/i.test(l)); // Oct 23 (his call): Rejuv lines left out, Rejuvs are barely used
   }
   return lines?.length ? `\n\n**${hero}:** *"${pickRandom(lines, rng)}"*` : '';
 }
@@ -658,10 +703,11 @@ async function withRival(view, rival, ownerId) {
 }
 
 // The rival's face: its portrait from the wiki where one was downloaded (assets/farm/rivals: gloating when it won, hurt when it was beaten),
-// else the hero's icon.
-async function rivalFace(name, mood = null) {
-  const file = mood && path.join(ASSETS, 'farm', 'rivals', `${name.toLowerCase()}_${mood}.png`);
-  return file && fs.existsSync(file) ? picture(file) : heroPicture(name);
+// else the hero's icon. Silver in wolf form (her ultimate) shows the wolf's face first.
+async function rivalFace(name, mood = null, wolf = false) {
+  const dir = path.join(ASSETS, 'farm', 'rivals');
+  const file = mood && [wolf && `silver wolf_${mood}.png`, `${name.toLowerCase()}_${mood}.png`].filter(Boolean).map((f) => path.join(dir, f)).find((f) => fs.existsSync(f));
+  return file ? picture(file) : heroPicture(name);
 }
 
 // The rival's mood in a snapshot (his call, Oct 16): gloating while it has more of its health left than the member's hero, hurt while it has less.
@@ -681,7 +727,7 @@ Rejuvs Left: ${rejuvIcon()}${frame.rejuvs}` },
       { name: 'Abilities', value: frame.abilities.map((a) => `${a.name}  -  ${a.status}`).join('\n') },
       { name: 'Battle Log', value: frame.log.length ? frame.log.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing yet' },
     ).setFooter({ text: `Fight time ${clock(frame.t)}  -  win and ${run.rival} is unlocked` });
-  return { embeds: [e], components: [], files: [soulsFile(), await rivalFace(run.rival, rivalMood(frame))], attachments: [] };
+  return { embeds: [e], components: [], files: [soulsFile(), await rivalFace(run.rival, rivalMood(frame), frame.enemies[0].wolf)], attachments: [] };
 }
 
 async function duelResultView(run) {
@@ -701,11 +747,28 @@ async function duelResultView(run) {
     ...enemyFields(last),
     { name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' },
   ).setFooter({ text: run.won ? 'Switch any time. Each hero keeps its own souls, items and cooldowns.' : 'Another rival may show up after a won fight.' });
-  return { embeds: [e], components: [], files: [soulsFile(), await rivalFace(rival, run.won ? 'critical' : 'gloat')], attachments: [] };
+  return { embeds: [e], components: [], files: [soulsFile(), await rivalFace(rival, run.won ? 'critical' : 'gloat', last.enemies[0].wolf)], attachments: [] };
+}
+
+// ---- Damage Breakdown (his ask, Oct 22): a button under a fight's or a duel's result, answered privately ----
+// Every point of the hero's damage by what dealt it (engine.js damageBreakdown): the gun, melee, each ability and each item.
+const DAMAGE_ID = 'farm_damage'; // button "Damage Breakdown": farm_damage:<user id>:<fight id>
+const damageButton = (ownerId, id) => row(new ButtonBuilder().setCustomId(`${DAMAGE_ID}:${ownerId}:${id}`).setLabel('Damage Breakdown').setStyle(ButtonStyle.Secondary));
+const DAMAGE_GROUPS = { weapon: 'Weapon & Melee', ability: 'Abilities', item: 'Items' };
+function damageView(run) {
+  const total = run.damage.reduce((s, d) => s + d.dealt, 0);
+  const share = (n) => { const pct = (n / total) * 100; return pct < 1 ? '<1%' : `${Math.round(pct)}%`; };
+  const e = embed().setTitle(`${run.hero}'s Damage Breakdown`)
+    .setDescription(total ? `${run.hero} dealt **${fmt(total)}** damage${run.rival ? ` to ${run.rival}` : ''} in ${clock(run.seconds)}.` : `${run.hero} dealt no damage.`);
+  for (const [kind, name] of Object.entries(DAMAGE_GROUPS)) {
+    const mine = run.damage.filter((d) => d.kind === kind);
+    if (mine.length) e.addFields({ name: `${name}  -  ${share(mine.reduce((s, d) => s + d.dealt, 0))}`, value: mine.map((d) => `${d.name}  -  ${fmt(d.dealt)}  (${share(d.dealt)})`).join('\n') });
+  }
+  return { embeds: [e], files: [soulsFile()] };
 }
 
 // How many Character Unlock Tokens a member holds, and where the next one comes from (the footer of the switch screens).
-const tokenText = (n) => (n > 0 ? `You have ${plural(n, 'Character Unlock Token')}.` : 'Win the Base Siege with a hero to earn a Character Unlock Token (once per hero).');
+const tokenText = (n) => (n > 0 ? `You have ${plural(n, 'Character Unlock Token')}.` : 'To earn a Hero Token, you must win the Base Siege.');
 
 // A hero's first siege win pays a Character Unlock Token (his call, Oct 2): its own message after the result, like a legendary drop.
 const TOKEN_COLOR = 0xa98be8; // the token's violet
@@ -719,11 +782,13 @@ Use it on the Switch Hero screen to unlock any hero.`)
 
 // A legendary drop (levels.js rollLegendary) is its own gold message right after the fight result (his call, Oct 2): the item's name,
 // every number on its card with the game's own labels, and its picture.
-function legendaryView(name) {
+// `equipped`: it went into the legendary slot (the hero's first); otherwise it is kept to change to on the hero screen.
+function legendaryView(name, equipped = true) {
   const card = itemByName(name);
   const lines = [...new Map(Object.entries(card).filter(([k]) => k.startsWith('Info')).flatMap(([, info]) => info.Main).map((l) => [l.Key, l])).values()]
     .map((l) => `${l.Prefix === '{s:sign}' ? (l.Value > 0 ? '+' : '') : l.Prefix}${(+l.Value.toFixed(2)).toLocaleString('en-US')}${l.Postfix.trim()} ${l.Label.replace(/([a-z])([A-Z])/g, '$1 $2')}`); // a missing label is the key, split into words
-  const e = embed(parseInt(GOLD.slice(1), 16)).setTitle('Legendary Drop').setDescription([`**${name}**`, ...lines].join('\n')).setImage('attachment://legendary.png');
+  const e = embed(parseInt(GOLD.slice(1), 16)).setTitle('Legendary Drop')
+    .setDescription([`**${name}**`, ...lines, '', equipped ? titleCase("It's in your hero's legendary slot.") : titleCase('Kept with your legendaries: change which one is in the slot on the Hero screen.')].join('\n')).setImage('attachment://legendary.png');
   return { embeds: [e], files: [soulsFile(), new AttachmentBuilder(itemFile(name), { name: 'legendary.png' })] };
 }
 
@@ -750,6 +815,8 @@ const notReady = (what, left) => `${what} isn't ready yet. Ready in ${timeLeft(l
 module.exports = {
   titleCase,
   HERO_ID, PICK_ID, TARGET_ID, SEND_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, LABELS,
-  IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, DUEL_ID, WALK_ID, withRival, duelView, duelResultView, voiceLine, rivalMood,
+  IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, LEGEND_ID, ROOM_ID, DUEL_ID, WALK_ID, DAMAGE_ID, damageButton, damageView, withRival, duelView, duelResultView, voiceLine, rivalMood,
   pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, roamView, notReady, timeLeft, every, clock, heroPicture,
+  // shared with /descend (descentViews.js)
+  embed, soulsFile, picture, plural, row, barLine, enemyFields, heroText, rivalFace, WIN, LOSS, itemStats, statsFor,
 };

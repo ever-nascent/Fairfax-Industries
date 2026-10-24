@@ -15019,6 +15019,69 @@
   }
  },
  {
+  "name": "Nurse Harrow",
+  "slug": "nurse_harrow",
+  "lines": [
+   "If you want me to work miracles, I expect your full cooperation. I will not tolerate any questioning of my methods.",
+   "I am stern, severe even... but while you hate me today, tomorrow you will be grateful that your life crossed paths with mine.",
+   "My work demands strict discipline.",
+   "I don't particularly care if you like me or not. I am effective and I deliver results.",
+   "Follow my instructions and survive, or ignore them and die. It's your choice.",
+   "I have seen things you cannot fathom.",
+   "I fear no spirit, demon, or unruly family member.",
+   "Rules exist for reasons, and I will not abide by those who ignore mine.",
+   "Treatment is about to begin.",
+   "The Patrons can wait, I have rounds to attend to.",
+   "I must continue my rounds!",
+   "Me help the Patrons? Ha. You must be mad.",
+   "I will not shirk my duties.",
+   "Helping the Patrons today does not serve me, or those under my care.",
+   "It would be borderline malfeasance for me to leave the ward during the Maelstrom!",
+   "My charges require care; go find someone desperate with a gun.",
+   "Feel free to tempt fate. I, however, know better.",
+   "Leeches are almost ready.",
+   "Bloodletting is not pleasant, but it is essential to proper care.",
+   "Parents always whine whenever I pull these out.",
+   "I will use leeches as liberally as needed.",
+   "The bad humors need to be removed.",
+   "I will drain the fight out of them.",
+   "The leeches do their job well.",
+   "Ah, to think... there was a time when modern medicine turned their noses at leeches.",
+   "I am... proficient in the application of leeches.",
+   "They won't enjoy themselves once these come out.",
+   "Mm, the classics remain classics for a reason.",
+   "Let the leeches do their work.",
+   "Soon, you will feel weak. This is to be expected.",
+   "Take all the nasty humors out, my dears.",
+   "Glad I brought plenty of these.",
+   "I will apply these liberally.",
+   "I won't let this be the end.",
+   "I see they want to resist."
+  ],
+  "abilities": [
+   {
+    "name": "Leech Therapy",
+    "icon": "leech_therapy.png"
+   },
+   {
+    "name": "Wretched Vapors",
+    "icon": "wretched_vapors.png"
+   },
+   {
+    "name": "Healing Needles",
+    "icon": "healing_needles.png"
+   },
+   {
+    "name": "Lurking Terrors",
+    "icon": "lurking_terrors.png"
+   }
+  ],
+  "kills": {
+   "any": [],
+   "heroes": {}
+  }
+ },
+ {
   "name": "Paige",
   "slug": "paige",
   "lines": [
@@ -25272,6 +25335,9 @@
    "You have much to learn, boy.",
    "Ah, the arrogance of youth.",
    "There's no shame in losing to me.",
+   "The old must make way for the new.",
+   "The old hag's time is over.",
+   "You were a foolish old fool.",
    "I won't lose to scrap metal.",
    "I've cut Pinnochio's strings.",
    "You aren't ready to fight me Bebop.",
@@ -25301,6 +25367,9 @@
    "You meddle with things you could never understand…",
    "You don't belong here, little girl.",
    "She desecrates the memory of the dead.",
+   "The dead should keep quiet.",
+   "Junk like that is good for nothing.",
+   "I won't let the likes of Fairfax Industries get in my way!",
    "I take no joy in killing an old man.",
    "He had a warrior's heart.",
    "He wasn't as frail as I thought he'd be.",
@@ -25354,6 +25423,10 @@
    "I'll turn the big one into a coat and the small one into a hat.",
    "He thought his strength would save him.",
    "I won't forgive you Krill!",
+   "You couldn't be more wrong, Harrow.",
+   "The enemy's healer is taken care of.",
+   "Not much of a nurse, was she?",
+   "Now the enemy has lost their support.",
    "She never should have left the library.",
    "Your story ends here, Paige.",
    "A pity I had to kill you.",
@@ -25369,6 +25442,7 @@
    "No wonder your family disowned you.",
    "They need to let go of the past.",
    "Just give me the case, Pocket.",
+   "Long Island belongs to the Seventh Moon. It's not yours.",
    "Your power is nothing before the Seventh Moon.",
    "You're what people are afraid of?",
    "He had delusions of grandeur.",
@@ -25382,6 +25456,9 @@
    "Slaughtered the werewolf.",
    "You've disgraced that bond of yours.",
    "You know nothing about devotion.",
+   "I don't have time to play your games.",
+   "I took down the chess master.",
+   "So much for the wisdom of age.",
    "Where's your faith now, Father?",
    "That's the best the Vatican has?",
    "You never were going to beat me, Venator…",
@@ -25393,6 +25470,9 @@
    "Why don't you wear shoes?",
    "I could have used someone like her.",
    "A women like her can't kill me.",
+   "Next time, bring a real weapon.",
+   "Crawl back to your parents, girl.",
+   "This is no place for you.",
    "Truly a strange creature.",
    "What the hell was that thing?",
    "That goo creature offends me.",
@@ -25458,6 +25538,13 @@
      "You need more practice.",
      "There's no shame in losing to me."
     ],
+    "Baba": [
+     "The old must make way for the new.",
+     "The old hag's time is over.",
+     "You were a foolish old fool.",
+     "Your time is over.",
+     "Die, witch."
+    ],
     "Bebop": [
      "I won't lose to scrap metal.",
      "I've cut Pinnochio's strings.",
@@ -25513,6 +25600,13 @@
      "You don't belong here, little girl.",
      "She desecrates the memory of the dead.",
      "Ugh, I hate teenagers."
+    ],
+    "Deadman Danny": [
+     "Shut up!",
+     "The dead should keep quiet.",
+     "Stay dead, you fool.",
+     "Junk like that is good for nothing.",
+     "I won't let the likes of Fairfax Industries get in my way!"
     ],
     "Grey Talon": [
      "I take no joy in killing an old man.",
@@ -25598,6 +25692,13 @@
      "He thought his strength would save him.",
      "I don't fear vermin."
     ],
+    "Nurse Harrow": [
+     "You couldn't be more wrong, Harrow.",
+     "The enemy's healer is taken care of.",
+     "I cut Harrow down.",
+     "Not much of a nurse, was she?",
+     "Now the enemy has lost their support."
+    ],
     "Paige": [
      "She never should have left the library.",
      "Your story ends here, Paige.",
@@ -25618,6 +25719,12 @@
      "They need to let go of the past.",
      "I want that case.",
      "Just give me the case, Pocket."
+    ],
+    "Rat King": [
+     "Die, vermin!",
+     "You filthy rat.",
+     "I hate rats...",
+     "Long Island belongs to the Seventh Moon. It's not yours."
     ],
     "Rem": [
      "Wretched creature...",
@@ -25654,6 +25761,13 @@
      "I ended your suffering.",
      "You know nothing about devotion."
     ],
+    "Solomon": [
+     "Move, you old fool.",
+     "I don't have time to play your games.",
+     "I took down the chess master.",
+     "So much for the wisdom of age.",
+     "I cut Solomon in two."
+    ],
     "Venator": [
      "Where's your faith now, Father?",
      "Zealots…",
@@ -25675,8 +25789,15 @@
      "Why don't you wear shoes?",
      "I could have used someone like her."
     ],
+    "Violet": [
+     "Foolish girl.",
+     "Next time, bring a real weapon.",
+     "Crawl back to your parents, girl.",
+     "Insolent girl.",
+     "This is no place for you."
+    ],
     "Viscous": [
-     "Ugh",
+     "Ugh.",
      "What a vile pile of goo…",
      "Truly a strange creature.",
      "What the hell was that thing?",

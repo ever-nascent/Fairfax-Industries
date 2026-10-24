@@ -162,6 +162,8 @@ test('a trip adds its souls to the hero (levels), and the hero screen fits Disco
       assert.strictEqual(shop.components.length, 4, `${kind}: tabs, price buttons, the buy menu, Back / Hero`);
       assert.deepStrictEqual(shop.components[1].toJSON().components.map((b) => b.label), ['800', '1,600', '3,200', '6,400']);
       assert.ok(shop.files.some((f) => f.name === 'shop.png'));
+      const ids = shop.components.flatMap((r) => r.toJSON().components.map((c) => c.custom_id));
+      assert.strictEqual(new Set(ids).size, ids.length, `${kind} ${tier}: Discord refuses duplicate custom ids`);
       menus.push(shop.components[2].toJSON().components[0].options);
     }
     assert.strictEqual(menus.flat().length, require('../src/utils/farm/levels').POOL[kind].length, 'every item of the kind is for sale');
@@ -258,16 +260,19 @@ test('camp Haunts roll a random trait that moves their resists, and bosses resis
   assert.ok(Math.abs(boss.statuses.find((x) => x.id === 'sleep').until - 1) < 1e-9, 'a 4 s sleep lasts 1 s on a boss that shrugs off 75%');
 });
 
-test('legendaries: 1% a kill in a won fight, one per hero ever, it takes a slot or waits for one, and it can never be sold', async () => {
+test('legendaries: 1% a kill in a won fight, their own slot on top of the 12, every one kept, and the slot changed at will', async () => {
   const { rollLegendary, LEGENDARY_NAMES, POOL, MAX_ITEMS } = require('../src/utils/farm/levels');
-  const { dropLegendary, updateFarmUser, switchHero, unlockHero } = require('../src/utils/farm/play');
+  const { dropLegendary, equipLegendary, updateFarmUser, switchHero } = require('../src/utils/farm/play');
   const { itemByName } = require('../src/utils/farm/stats');
   assert.strictEqual(LEGENDARY_NAMES.length, 17);
   assert.ok(LEGENDARY_NAMES.every((n) => itemByName(n)?.Tier === 5));
   assert.strictEqual(rollLegendary(0, () => 0), null, 'no kills, no roll');
   assert.strictEqual(rollLegendary(1000, () => 0.01), null, 'just above the chance');
   assert.strictEqual(rollLegendary(1, () => 0.0099), LEGENDARY_NAMES[0], 'just below the chance');
-  assert.strictEqual(rollLegendary(1, () => 0), LEGENDARY_NAMES[0]);
+  assert.strictEqual(rollLegendary(1, () => 0, [LEGENDARY_NAMES[0]]), LEGENDARY_NAMES[1], 'never one the hero has');
+  assert.strictEqual(rollLegendary(5, () => 0, LEGENDARY_NAMES), null, 'a hero with all 17 gets no more');
+  assert.strictEqual(rollLegendary(1, () => 0.049, [], 0.05), LEGENDARY_NAMES[0], 'a won siege: just below 5%');
+  assert.strictEqual(rollLegendary(1, () => 0.05, [], 0.05), null, 'a won siege: just above 5%');
   // a won camp counts every enemy in it; a lost fight counts none
   const won = simulate('Haze', 'small-camp', { rng: () => 0.5, boons: 30, items: POOL.weapon.slice(0, 6) });
   assert.ok(won.won);
@@ -279,23 +284,83 @@ test('legendaries: 1% a kill in a won fight, one per hero ever, it takes a slot 
   await giveSouls(id, 1e6);
   const plain = POOL.weapon.filter((n) => !itemByName(n).Components?.length);
   for (const name of plain.slice(0, MAX_ITEMS)) await buyItem(id, name);
-  // the build is full: it waits, and holds the next free slot
-  const drop = await updateFarmUser(id, (r) => dropLegendary(r, 5, () => 0));
-  assert.deepStrictEqual(drop, { name: LEGENDARY_NAMES[0], waiting: true });
-  assert.strictEqual(await updateFarmUser(id, (r) => dropLegendary(r, 5, () => 0)), null, 'only one per hero');
-  const sold = await sellItem(id, plain[0]);
-  assert.strictEqual(sold.placed, LEGENDARY_NAMES[0]);
+  // a full build: the first legendary goes into its own slot anyway, never into the 12
+  assert.deepStrictEqual(await updateFarmUser(id, (r) => dropLegendary(r, 5, () => 0)), { name: LEGENDARY_NAMES[0], equipped: true });
   let r = await getFarmUser(id);
-  assert.ok(Object.values(r.items).flat().includes(LEGENDARY_NAMES[0]));
-  assert.deepStrictEqual(await sellItem(id, LEGENDARY_NAMES[0]), { error: 'legendary' });
-  // while it waits, buying can't take its slot
-  await updateFarmUser(id, (x) => { x.legendary = LEGENDARY_NAMES[1]; for (const s of Object.keys(x.items)) x.items[s] = x.items[s].filter((n) => n !== LEGENDARY_NAMES[0]); });
-  assert.deepStrictEqual(await buyItem(id, plain[0]), { error: 'full' });
+  assert.strictEqual(r.legendary, LEGENDARY_NAMES[0]);
+  assert.strictEqual(Object.values(r.items).flat().length, MAX_ITEMS);
+  assert.ok(!Object.values(r.items).flat().includes(LEGENDARY_NAMES[0]));
+  // a second one is kept, the slot keeps the first until the member changes it
+  assert.deepStrictEqual(await updateFarmUser(id, (x) => dropLegendary(x, 5, () => 0)), { name: LEGENDARY_NAMES[1], equipped: false });
+  r = await getFarmUser(id);
+  assert.deepStrictEqual([r.legendary, r.legendaries], [LEGENDARY_NAMES[0], [LEGENDARY_NAMES[0], LEGENDARY_NAMES[1]]]);
+  assert.deepStrictEqual(await equipLegendary(id, LEGENDARY_NAMES[1]), { ok: true });
+  assert.strictEqual((await getFarmUser(id)).legendary, LEGENDARY_NAMES[1]);
+  assert.deepStrictEqual(await equipLegendary(id, LEGENDARY_NAMES[5]), { error: 'missing' }, 'only one it has got');
+  assert.deepStrictEqual(await sellItem(id, LEGENDARY_NAMES[1]), { error: 'missing' }, 'never sold');
+  // the hero screen draws it and offers the change (two of them)
+  const screen = await views.heroView(member(id), await getFarmUser(id));
+  const ids = screen.components.flatMap((row) => row.components.map((c) => c.data.custom_id));
+  assert.ok(ids.includes(`${views.LEGEND_ID}:${id}`));
   // it belongs to the hero: another hero starts without one and can get its own
   await updateFarmUser(id, (x) => { x.heroes.Abrams = {}; });
   assert.ok((await switchHero(id, 'Abrams')).ok);
   r = await getFarmUser(id);
-  assert.strictEqual(r.legendary, null);
+  assert.deepStrictEqual([r.legendary, r.legendaries], [null, []]);
   assert.ok(await updateFarmUser(id, (x) => dropLegendary(x, 1, () => 0)));
   assert.strictEqual((await getFarmUser(id)).heroes.Haze.legendary, LEGENDARY_NAMES[1]);
+});
+
+test('a legendary from before the legendary slot moves out of the 12 into its own slot', async () => {
+  const { LEGENDARY_NAMES } = require('../src/utils/farm/levels');
+  const { updateFarmUser } = require('../src/utils/farm/play');
+  const id = 'legend-old';
+  await chooseHero(id, 'Haze');
+  await updateFarmUser(id, (r) => { r.items.weapon.push(LEGENDARY_NAMES[0], 'Headshot Booster'); r.legendary = LEGENDARY_NAMES[0]; delete r.legendaries; });
+  const r = await getFarmUser(id);
+  assert.deepStrictEqual([r.items.weapon, r.legendary, r.legendaries], [['Headshot Booster'], LEGENDARY_NAMES[0], [LEGENDARY_NAMES[0]]]);
+});
+
+test('buying with a full build: the item picked to sell goes, the new one comes, in one go; nothing is sold if the buy fails', async () => {
+  const { POOL, MAX_ITEMS, sellPrice } = require('../src/utils/farm/levels');
+  const { itemByName } = require('../src/utils/farm/stats');
+  const id = 'room';
+  await chooseHero(id, 'Haze');
+  await giveSouls(id, 1e6);
+  const plain = POOL.weapon.filter((n) => !itemByName(n).Components?.length);
+  for (const name of plain.slice(0, MAX_ITEMS)) await buyItem(id, name);
+  const next = plain[MAX_ITEMS];
+  assert.deepStrictEqual(await buyItem(id, next), { error: 'full' });
+  // the shop asks which item to sell for it
+  const room = await views.shopView(member(id), await getFarmUser(id), 'weapon', Date.now(), itemByName(next).Tier, next, true);
+  const ids = room.components.flatMap((row) => row.components.map((c) => c.data.custom_id));
+  assert.ok(ids.includes(`${views.ROOM_ID}:${id}:weapon:${itemByName(next).Tier}:${next}`));
+  const before = await heroSouls(id);
+  const result = await buyItem(id, next, { sell: plain[0] });
+  assert.ok(result.ok);
+  assert.strictEqual(result.sold, plain[0]);
+  const r = await getFarmUser(id);
+  assert.ok(r.items.weapon.includes(next) && !r.items.weapon.includes(plain[0]));
+  assert.strictEqual(r.souls, before + sellPrice(itemByName(plain[0])) - result.paid);
+  // selling what you don't have, or a buy that can't go through, changes nothing
+  assert.deepStrictEqual(await buyItem(id, plain[1 + MAX_ITEMS], { sell: 'Extra Health' }), { error: 'missing' });
+  await changeRecord(id, (x) => { x.souls = 0; });
+  assert.deepStrictEqual(await buyItem(id, plain[1 + MAX_ITEMS], { sell: plain[1] }), { error: 'souls' });
+  assert.ok((await getFarmUser(id)).items.weapon.includes(plain[1]), 'the item is still there');
+  // short on souls but a sale covers it: Buy stays lit
+  const want = plain[1 + MAX_ITEMS];
+  await changeRecord(id, (x) => { x.souls = itemByName(want).Cost - 1; });
+  const shop = await views.shopView(member(id), await getFarmUser(id), 'weapon', Date.now(), itemByName(want).Tier, want);
+  const buy = shop.components.flatMap((row) => row.components).find((c) => c.data.custom_id?.startsWith(`${views.BUY_ID}:`));
+  assert.ok(!buy.data.disabled, 'Buy is lit when selling an item covers the price');
+});
+
+test('the item shop keeps the price picked when the tab changes', async () => {
+  const id = 'tabs';
+  await chooseHero(id, 'Haze');
+  const shop = await views.shopView(member(id), await getFarmUser(id), 'weapon', Date.now(), 4);
+  const ids = shop.components[0].components.map((c) => c.data.custom_id);
+  assert.ok(ids.includes(`${views.SHOPTAB_ID}:${id}:spirit:4`));
+  const spirit = await views.shopView(member(id), await getFarmUser(id), 'spirit', Date.now(), 4);
+  assert.match(spirit.embeds[0].data.title, /Spirit\s+-\s+6,400/);
 });
