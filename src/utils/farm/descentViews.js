@@ -11,7 +11,7 @@ const { MAX_ITEMS, countItems, priceFor, SLOTS, MAX_TIER, TIER_COSTS, MAX_LEVEL,
 const { MAX_REJUVS, hasHero } = require('./play');
 const D = require('./descent');
 const { pickPicture, choicesOf } = require('./descentCard');
-const { embed, soulsFile, picture, plural, row, barLine, enemyFields, heroText, rivalFace, rivalMood, voiceLine, heroPicture, clock, titleCase, itemStats, statsFor, WIN, LOSS } = require('./views');
+const { embed, soulsFile, picture, plural, row, barLine, enemyFields, heroText, rivalFace, rivalMood, voiceLine, heroPicture, clock, titleCase, itemText, itemStats, statsFor, WIN, LOSS } = require('./views');
 const { roster } = require('./hero');
 const { heroEmoji, HEROES } = require('../heroes');
 const { rejuvIcon } = require('../format');
@@ -42,6 +42,35 @@ const healthLine = (d, hero = buildHero(d.hero, D.runKit(d))) => barLine(d.healt
 const boldHealthLine = (d) => healthLine(d).replace(/(\d[\d,]* \/ \d[\d,]*)$/, '**$1**');
 const bestText = (best) => (best?.rooms ? `${plural(best.rooms, 'room')} (${best.hero})` : 'None yet');
 const sentence = (text) => `${text[0].toUpperCase()}${text.slice(1)}${/[.!?]$/.test(text) ? '' : '.'}`;
+const UPGRADE_LABELS = {
+  WeaponPowerPerStack: ['Weapon Damage per Hero Hit', '%'], WeaponPowerPerStackNonHero: ['Weapon Damage per Camp Hit', '%'],
+  TechRangeMultiplier: ['Ability Range', '%'], TechRadiusMultiplier: ['Ability Radius', '%'], AbilityDuration: ['Duration', ' s'],
+  ParryCooldownReduction: ['Parry Cooldown', ' s'], MeleeResistPercent: ['Melee Resist', '%'], BonusDamagePercent: ['Bonus Damage', '%'],
+  BonusHealth: ['Health', ''], CloseRangeBonusWeaponPower: ['Close-Range Damage', '%'], SpiritDamage: ['Spirit Damage', ''], TechArmorDamageReduction: ['Spirit Resist', '%'],
+  ItemCooldownReduction: ['Item Cooldown Reduction', '%'], CooldownReduction: ['Cooldown Reduction', '%'], OutOfCombatHealthRegen: ['Regen Out of Combat', ''],
+};
+const property = (card, key) => Object.values(card).filter((v) => v?.Main).flatMap((v) => [...v.Main, ...v.Alt]).find((v) => v.Key === key) ?? card.Other?.[key];
+const propertyText = (card, key) => {
+  const stat = property(card, key);
+  if (!stat || typeof stat.Value !== 'number') return null;
+  const [name, unit] = UPGRADE_LABELS[key] ?? [key.replace(/([a-z])([A-Z])/g, '$1 $2'), stat.Postfix?.trim() ?? ''];
+  return { name, value: `${stat.Value >= 0 ? '+' : ''}${+stat.Value.toFixed(2)}${unit}` };
+};
+const enhancedEffect = (base, card) => Object.keys(base.PropertyUpgrades ?? {}).map((key) => {
+  const before = propertyText(base, key);
+  const after = propertyText(card, key);
+  return before && after ? `${before.name}: **${before.value} → ${after.value}**` : null;
+}).filter(Boolean).join('; ');
+const choiceEffect = (card, limit = 135) => {
+  const stats = itemStats(card);
+  if (stats) return stats;
+  const description = itemText(card.Description).replace(/\n+/g, ' ');
+  return description.length > limit ? `${description.slice(0, limit - 3).replace(/\s+\S*$/, '')}...` : description;
+};
+const choiceText = (lines) => {
+  const text = lines.filter(Boolean).join('\n');
+  return text.length > 300 ? `${text.slice(0, 297).replace(/\s+\S*$/, '')}...` : text;
+};
 
 // The fields every run screen shares: health, level, items, Rejuvs, points, rooms.
 function runFields(d) {
@@ -193,13 +222,13 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     const enhanced = offer.enhanced?.includes(n);
     const c = enhanced ? enhancedCard(base) : base;
     const used = priceFor(base, d.items).used;
-    const normalStats = itemStats(base);
-    const enhancedStats = itemStats(c);
-    const effect = enhanced ? `${normalStats || 'Effect'} → ${enhancedStats || 'Improved effect'}` : normalStats;
-    const head = `${enhanced ? '[Enhanced] ' : ''}**${n}** ; **${offer.kind === 'legendaries' ? 'Legendary' : KIND_NAME[c.Slot]}** ; __Tier ${c.Tier}__`;
+    const effect = choiceEffect(base, enhanced ? 90 : 135);
+    const improvement = enhanced ? enhancedEffect(base, c) : null;
+    const head = `${enhanced ? '[Enhanced] ' : ''}**${n}**`;
+    const type = `**${offer.kind === 'legendaries' ? 'Legendary' : KIND_NAME[c.Slot]}** ; __Tier ${c.Tier}__`;
     const upgrades = used.length ? `Upgrades **${used.join(' + ')}**` : '';
     const bonus = offer.bonuses?.[i] ? `**BONUS:** ${offer.bonuses[i]} ; __Tier ${itemByName(offer.bonuses[i]).Tier}__` : '';
-    return [head, upgrades, effect, bonus].filter(Boolean).join('\n');
+    return choiceText([head, type, effect, improvement && `**Enhanced:** ${improvement}`, upgrades, bonus]);
   });
   e.addFields({ name: offer.kind === 'buffs' ? 'Buff Choices' : 'Item Choices', value: about.join('\n\n').slice(0, 1024) }, ...runFields(d));
   if (run) e.addFields({ name: 'Fight Time', value: `**${clock(run.seconds)}**`, inline: true });
@@ -223,7 +252,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     if (points) components.push(points);
     const short = (n) => (offer.kind === 'buffs' ? buffText(n, D.BOSS_BUFFS) : n);
     const picks = offer.choices.map((n, i) => button(`${DTAKE_ID}:${member.id}:${offer.room}:${i}`, short(n), ButtonStyle.Primary));
-    const actions = [button(`${DSKIP_ID}:${member.id}:${offer.room}`, `Skip: Heal ${D.SKIP_HEAL * 100}%`), button(`${DBUILD_ID}:${member.id}`, 'Build')];
+    const actions = [button(`${DSKIP_ID}:${member.id}:${offer.room}`, `Skip + ${D.SKIP_BUFFS} Buffs`), button(`${DBUILD_ID}:${member.id}`, 'Build')];
     if (offer.kind === 'items') actions.push(button(`${DREROLL_ID}:${member.id}:${offer.room}`, `Reroll (${d.rerolls ?? D.REROLLS_PER_FLOOR} left)`).setDisabled((d.rerolls ?? D.REROLLS_PER_FLOOR) <= 0));
     components.push(row(...picks), row(...actions));
   }

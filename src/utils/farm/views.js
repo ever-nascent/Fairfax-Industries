@@ -818,5 +818,5 @@ module.exports = {
   IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, LEGEND_ID, ROOM_ID, DUEL_ID, WALK_ID, DAMAGE_ID, damageButton, damageView, withRival, duelView, duelResultView, voiceLine, rivalMood,
   pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, roamView, notReady, timeLeft, every, clock, heroPicture,
   // shared with /descend (descentViews.js)
-  embed, soulsFile, picture, plural, row, barLine, enemyFields, heroText, rivalFace, WIN, LOSS, itemStats, statsFor,
+  embed, soulsFile, picture, plural, row, barLine, enemyFields, heroText, rivalFace, WIN, LOSS, itemText, itemStats, statsFor,
 };
