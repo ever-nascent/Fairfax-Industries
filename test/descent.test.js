@@ -311,6 +311,11 @@ test('every /descend screen fits the Discord limits and attaches what it points 
   d.legendary = LEGENDARY_NAMES[0];
   d.buffs = { fireRate: 3 };
   d.offer = { kind: 'items', choices: [POOL.vitality[10], POOL.weapon[10], POOL.spirit[10]], room: 15 };
+  const over = await dviews.overView(member(id), { over: d, spec: D.roomSpec(d.seed, d.room, d.hero), best: { rooms: 15, hero: d.hero }, log: [], cleared: 0 });
+  checkLimits(over, 'over build card');
+  assert.strictEqual(over.embeds[0].toJSON().image.url, 'attachment://hero.png');
+  assert.ok(over.files.some((f) => f.name === 'hero.png'), 'run-over screen shows the build card');
+  assert.ok(!(over.embeds[0].toJSON().fields ?? []).some((f) => f.name === 'Build'), 'run-over screen drops the text build');
   checkLimits(await dviews.offerView(member(id), d, { replace: 1 }), 'replace');
   const animated = await dviews.offerView(member(id), d, { animate: true });
   checkLimits(animated, 'animated offer');

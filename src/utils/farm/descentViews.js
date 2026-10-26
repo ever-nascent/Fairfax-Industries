@@ -189,16 +189,20 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   return { embeds: [e], components, files: [soulsFile(), await heroPicture(d.hero), file] };
 }
 
-// ---- the run's build: the hero card (heroCard.js) with the run's level, abilities, items and stats ----
-async function buildView(member, d) {
+// The run's current build, shared by the Build and run-over screens.
+async function runCard(d) {
   const hero = buildHero(d.hero, D.runKit(d));
-  const left = D.pointsLeft(d);
   const abilities = Object.keys(HERO_DATA[d.hero].BoundAbilities).map(Number).map((slot) => ({ slot, name: abilityName(d.hero, slot), tier: d.tiers[slot] ?? 0, locked: slot > UNLOCKS(d.level) }));
-  const card = await heroCard({
+  return heroCard({
     hero: d.hero, progress: { level: d.level, into: (d.room - 1) % D.ROOMS_PER_FLOOR, needed: D.ROOMS_PER_FLOOR, max: d.level >= MAX_LEVEL },
-    pointsLeft: Math.max(0, left), abilities, stats: statsFor(hero.stats), items: d.items, souls: 0, legendary: d.legendary ?? undefined,
+    pointsLeft: Math.max(0, D.pointsLeft(d)), abilities, stats: statsFor(hero.stats), items: d.items, souls: 0, legendary: d.legendary ?? undefined,
     counter: { top: `FLOOR ${D.floorOf(d.room)}`, amount: `${d.room - 1}`, label: 'ROOMS CLEARED' },
   });
+}
+
+// ---- the run's build: the hero card (heroCard.js) with the run's level, abilities, items and stats ----
+async function buildView(member, d) {
+  const card = await runCard(d);
   const e = dembed().setTitle(`${d.hero}  -  Level ${d.level}  -  This Run`).setImage('attachment://hero.png').setThumbnail('attachment://thumb.png');
   const buffs = Object.entries(d.buffs);
   if (buffs.length) e.addFields({ name: 'Permanent Buffs (This Run)', value: buffs.map(([k, n]) => buffText(k, n)).join('\n'), inline: true });
@@ -221,16 +225,14 @@ async function overView(member, run) {
   const how = run.timedOut ? `${d.hero} ran out of time in Room ${spec.room}.` : spec.kind === 'rival' ? `${spec.rival} won the duel in Room ${spec.room}.${voiceLine(spec.rival, d.hero)}`
     : `${d.hero} fell in Room ${spec.room} to ${D.roomLine(spec)}.`;
   e.setDescription(how);
-  const items = [...SLOTS.flatMap((s) => d.items[s]), ...(d.legendary ? [`${d.legendary} (Legendary)`] : [])];
   const lines = run.log.slice(-5);
   e.addFields(
     { name: 'Reached', value: `Floor ${spec.floor} of ${D.FLOORS}, Room ${spec.room}`, inline: true },
     { name: 'Level', value: `${d.level}`, inline: true },
     { name: 'Your Best', value: bestText(run.best), inline: true },
-    { name: 'Build', value: items.length ? items.join(', ').slice(0, 1024) : 'No items' },
     { name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' },
-  ).setFooter({ text: 'Every run starts again from level 0. Your hero keeps nothing from it, and loses nothing.' });
-  return { embeds: [e], components: [row(button(`${DAGAIN_ID}:${member.id}`, 'Descend Again', ButtonStyle.Success))], files: [soulsFile(), await roomFile(spec, spec.kind === 'rival' ? 'gloat' : null, false, run.cleared)], attachments: [] };
+  ).setImage('attachment://hero.png').setFooter({ text: 'Every run starts again from level 0. Your hero keeps nothing from it, and loses nothing.' });
+  return { embeds: [e], components: [row(button(`${DAGAIN_ID}:${member.id}`, 'Descend Again', ButtonStyle.Success))], files: [soulsFile(), await roomFile(spec, spec.kind === 'rival' ? 'gloat' : null, false, run.cleared), new AttachmentBuilder(await runCard(d), { name: 'hero.png' })], attachments: [] };
 }
 
 // ---- the descent cleared: the Patron and the Weakened Patron beaten in the last room (his call, Oct 24: nothing more than this and the leaderboard) ----
@@ -275,5 +277,5 @@ const screen = async (member, record, opts = {}) => (!record.descent ? startView
 
 module.exports = {
   DHERO_ID, DBEGIN_ID, DFIGHT_ID, DWALK_ID, DTAKE_ID, DSKIP_ID, DSWAP_ID, DPOINT_ID, DBUILD_ID, DBACK_ID, DQUIT_ID, DAGAIN_ID,
-  startView, roomView, fightView, offerView, buildView, overView, completeView, tokenView, leaderboardView, screen, buffLine: (key) => buffText(key, D.BOSS_BUFFS),
+  startView, roomView, fightView, offerView, runCard, buildView, overView, completeView, tokenView, leaderboardView, screen, buffLine: (key) => buffText(key, D.BOSS_BUFFS),
 };
