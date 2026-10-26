@@ -218,7 +218,7 @@ function enhancedBadge(g, x, y) {
   g.translate(x + w / 2 + 5, y - 6);
   g.rotate(rad(-5 + 8));
   const k = 24 / 220; // about 24 px tall
-  g.scale(k, k);
+  g.scale(k * 0.8, k); // a slimmer bolt
   g.translate(-122, -100);
   g.lineJoin = 'miter';
   g.miterLimit = 6;
