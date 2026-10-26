@@ -204,39 +204,31 @@ function slanted(g, text, x, y, px, fill, outline, turn = 0) {
   g.fillText(text, 0, 0);
   g.restore();
 }
-// The blue ENHANCED badge with the game's upgrade arrow (a curl that ends in an arrowhead pointing up and right), centred at (x, y).
+// The blue ENHANCED badge with the game's upgrade mark (a sharp lightning zigzag that ends in an arrowhead), centred at (x, y).
 function enhancedBadge(g, x, y) {
   const px = 13;
   g.save();
   g.font = `italic bold ${px}px sans-serif`;
   const w = g.measureText('ENHANCED').width;
   g.restore();
-  const blue = g.createLinearGradient(0, y - 12, 0, y + 4); // lighter on top, deeper blue underneath
-  blue.addColorStop(0, '#7fd8f2');
-  blue.addColorStop(1, '#3a95d0');
+  slanted(g, 'ENHANCED', x - 6, y, px, '#45acce', '#1d527e', -5);
   g.save();
-  g.shadowColor = 'rgba(40,140,230,0.85)'; // a soft blue glow, strongest underneath
-  g.shadowBlur = 9;
-  g.shadowOffsetY = 3;
-  slanted(g, 'ENHANCED', x - 5, y, px, blue, '#1d527e', -5);
-  g.restore();
-  g.save();
-  g.translate(x + w / 2 + 5, y - 12);
+  g.translate(x + w / 2 + 2, y - 15);
   g.rotate(rad(-5));
-  g.lineCap = 'round';
-  g.lineJoin = 'round';
-  const arrow = () => { // the curl, then the head
-    g.beginPath(); g.moveTo(0, 15); g.quadraticCurveTo(-1, 8, 5, 8); g.quadraticCurveTo(10, 8, 11, 4); g.stroke();
-    g.beginPath(); g.moveTo(11.5, -3); g.lineTo(6.5, 4.5); g.lineTo(15.5, 5.5); g.closePath();
+  g.lineJoin = 'miter';
+  g.miterLimit = 10;
+  const bolt = () => { // the zigzag, then the head on its last stroke
+    g.beginPath(); g.moveTo(1, 20); g.lineTo(9, 12); g.lineTo(3.5, 10.5); g.lineTo(10.5, 4); g.stroke();
+    g.beginPath(); g.moveTo(13.5, -1); g.lineTo(6.5, 3.5); g.lineTo(13, 8); g.closePath();
   };
-  g.strokeStyle = '#1d527e'; g.lineWidth = 6; arrow(); g.stroke();
-  g.strokeStyle = '#45acce'; g.lineWidth = 2.6; arrow(); g.stroke(); g.fillStyle = '#45acce'; g.fill();
+  g.strokeStyle = '#1d527e'; g.lineWidth = 5.5; bolt(); g.stroke();
+  g.strokeStyle = '#45acce'; g.lineWidth = 2.4; bolt(); g.stroke(); g.fillStyle = '#45acce'; g.fill();
   g.restore();
 }
 
 // One framed item card (the picture, its border in the kind's colour, tier marks top right, ACTIVE / IMBUE along the bottom, the UPGRADE ribbon)
 // centred at (cx, cy), `size` square, turned by `turn` degrees.
-async function card(g, { picture, kind, tier, active, upgrade }, cx, cy, size, turn = 0) {
+async function card(g, { picture, kind, tier, active, upgrade, enhanced }, cx, cy, size, turn = 0) {
   const x = -size / 2;
   g.save();
   g.translate(cx, cy);
@@ -250,6 +242,14 @@ async function card(g, { picture, kind, tier, active, upgrade }, cx, cy, size, t
   g.save();
   g.beginPath(); g.roundRect(x, x, size, size, 4); g.clip();
   try { g.drawImage(await image(picture), x, x, size, size); } catch { /* no picture: the name says what it is */ }
+  if (enhanced) { // an enhanced item has a blue hue rising from the bottom of its card
+    const hue = g.createLinearGradient(0, -x, 0, x);
+    hue.addColorStop(0, 'rgba(60,170,230,0.6)');
+    hue.addColorStop(0.55, 'rgba(60,170,230,0.18)');
+    hue.addColorStop(1, 'rgba(60,170,230,0)');
+    g.fillStyle = hue;
+    g.fillRect(x, x, size, size);
+  }
   if (active) {
     const th = Math.round(size * 0.14);
     g.fillStyle = active === 'IMBUE' ? 'rgba(90,58,138,0.92)' : 'rgba(14,14,14,0.88)';
