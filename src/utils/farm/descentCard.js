@@ -107,6 +107,9 @@ function drawBody() {
   // the scalloped shell: one big round with a flute (a round notch) cut between every two chambers
   let shell = new Path2D();
   shell.arc(0, 0, SHELL, 0, Math.PI * 2);
+  const rim = new Path2D(); // the big rim behind the top chamber is part of the shell's outline, not a line through it
+  rim.arc(...polar(-90, SPOKE), 112, 0, Math.PI * 2);
+  shell = shell.op(rim, PathOp.Union);
   for (let i = 0; i < 6; i++) { const [x, y] = polar(-60 + 60 * i, SHELL + 8); const p = new Path2D(); p.arc(x, y, 46, 0, Math.PI * 2); shell = shell.op(p, PathOp.Difference); }
   g.fillStyle = 'rgba(12,12,16,0.30)';
   g.fill(shell);
@@ -117,14 +120,6 @@ function drawBody() {
   g.strokeStyle = 'rgba(222,222,228,0.92)';
   g.lineWidth = 4.5;
   g.stroke(shell);
-  // the big rim arc behind the top chamber
-  g.strokeStyle = 'rgba(222,222,228,0.9)';
-  g.lineWidth = 4.5;
-  const [tx, ty] = polar(-90, SPOKE);
-  g.beginPath(); g.arc(tx, ty, 112, rad(-90 - 78), rad(-90 + 78)); g.stroke();
-  g.lineWidth = 2.5;
-  g.strokeStyle = 'rgba(206,206,212,0.4)';
-  g.beginPath(); g.arc(tx, ty, 122, rad(-90 - 55), rad(-90 + 55)); g.stroke();
   // short arcs linking neighbours, on the circle between the chambers and the hub
   g.lineCap = 'round';
   g.strokeStyle = 'rgba(222,222,228,0.75)';
