@@ -5,6 +5,7 @@ const path = require('node:path');
 const { AttachmentBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const { HEROES: HERO_DATA, ABILITIES, itemByName, enhancedCard } = require('./stats');
 const { buildHero } = require('./hero');
+const { NO_ULT_IMBUE } = require('./items');
 const { heroCard } = require('./heroCard');
 const { buffText, BRIDGE } = require('./buffs');
 const { MAX_ITEMS, countItems, priceFor, SLOTS, MAX_TIER, TIER_COSTS, MAX_LEVEL, UNLOCKS } = require('./levels');
@@ -30,6 +31,7 @@ const DBUILD_ID = 'farm_dbuild'; // button "Build": farm_dbuild:<user id>
 const DBACK_ID = 'farm_dback'; // button "Back": farm_dback:<user id> (the run's current screen)
 const DQUIT_ID = 'farm_dquit'; // button "Abandon Run": farm_dquit:<user id>, then farm_dquit:<user id>:yes
 const DAGAIN_ID = 'farm_dagain'; // button "Descend Again" (the end of a run): farm_dagain:<user id>
+const DIMBUE_ID = 'farm_dimbue'; // select: farm_dimbue:<user id>, value = ability slot for the pending item
 
 const TOKEN_ICON = path.join(ASSETS, 'farm', 'icons', 'unlock-token.png');
 const KIND_NAME = { Weapon: 'Weapon', Armor: 'Vitality', Tech: 'Spirit' };
@@ -276,6 +278,22 @@ async function buildView(member, d) {
   return { embeds: [e], components, files: [soulsFile(), await heroPicture(d.hero), new AttachmentBuilder(card, { name: 'hero.png' })] };
 }
 
+// Descend owns its build, so an imbue item must ask here rather than borrowing the
+// farm hero's picker. There is no bypass: the run waits for this choice.
+async function imbueView(member, d) {
+  const name = d.imbuing;
+  const slots = [1, 2, 3, 4].filter((slot) => slot <= UNLOCKS(d.level) && (!NO_ULT_IMBUE.has(name) || slot !== 4));
+  const e = dembed().setTitle(`Imbue ${name}`).setThumbnail('attachment://thumb.png')
+    .setDescription(`Choose which unlocked ability receives **${name}**. This item must be imbued before you continue.`)
+    .setFooter({ text: `Floor ${D.floorOf(d.room)} of ${D.FLOORS}  -  your run waits for this choice` });
+  return {
+    embeds: [e],
+    components: [row(new StringSelectMenuBuilder().setCustomId(`${DIMBUE_ID}:${member.id}`).setPlaceholder(`Imbue ${name} into`)
+      .addOptions(slots.map((slot) => ({ label: abilityName(d.hero, slot), value: String(slot), description: slot === 4 ? 'Ultimate' : `Ability ${slot}` }))))],
+    files: [soulsFile(), await heroPicture(d.hero)],
+  };
+}
+
 // ---- the end of a run ----
 async function overView(member, run) {
   const d = run.over;
@@ -333,9 +351,10 @@ function leaderboardView(member, rows, record) {
 
 // The run's current screen: the start screen (no run), the pick (still), or the next room.
 const screen = async (member, record, opts = {}) => (!record.descent ? startView(member, record)
-  : record.descent.phase === 'offer' ? offerView(member, record.descent, opts) : roomView(member, record.descent, opts));
+  : record.descent.phase === 'offer' ? offerView(member, record.descent, opts)
+    : record.descent.phase === 'imbue' ? imbueView(member, record.descent) : roomView(member, record.descent, opts));
 
 module.exports = {
-  DHERO_ID, DBEGIN_ID, DFIGHT_ID, DWALK_ID, DTAKE_ID, DSKIP_ID, DREROLL_ID, DSWAP_ID, DPOINT_ID, DBUILD_ID, DBACK_ID, DQUIT_ID, DAGAIN_ID,
-  startView, roomView, fightView, runCard, offerView, buildView, overView, completeView, tokenView, leaderboardView, screen, buffLine: (key) => buffText(key, D.BOSS_BUFFS),
+  DHERO_ID, DBEGIN_ID, DFIGHT_ID, DWALK_ID, DTAKE_ID, DSKIP_ID, DREROLL_ID, DSWAP_ID, DPOINT_ID, DBUILD_ID, DBACK_ID, DQUIT_ID, DAGAIN_ID, DIMBUE_ID,
+  startView, roomView, fightView, runCard, offerView, buildView, imbueView, overView, completeView, tokenView, leaderboardView, screen, buffLine: (key) => buffText(key, D.BOSS_BUFFS),
 };

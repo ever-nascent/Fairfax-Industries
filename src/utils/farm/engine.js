@@ -25,7 +25,13 @@ const MOVE = { dashGap: 1, airTime: 1, slideEvery: 6, slideTime: 1 };
 // Hero against hero (an encounter's duel; his call, Oct 3: "half damage plus 25% miss"): heroes deal `damage` of their damage to each other and
 // `miss` of their gun shots at a hero miss, so a duel lasts about half a minute instead of ten seconds and no pairing is decided before it starts.
 // Nothing here touches a fight against NPCs.
-const DUEL = { damage: 0.5, miss: 0.25 };
+const DUEL = {
+  damage: 0.5, miss: 0.25,
+  parryChance: 0.20, parryWithRebuttal: 0.45,
+  // His call: a missed parry locks the defender out for two melee cycles, and
+  // a successful one stuns the attacker for the same two cycles.
+  parryMissCooldown: MELEE.every * 2, parryStun: MELEE.every * 2,
+};
 // Shotguns (his call, Oct 3: "shotguns have to have chances for some to miss"): each pellet of a spread shot rolls on its own. Standing close
 // (within `full` metres, e.g. right after a melee hit) every pellet lands; the chance falls to `far` of them landing at `at` metres and beyond.
 // A gun that deals one shot's damage however many pellets hit (Drifter) has nothing to miss. ponytail: the wiki has no spread numbers; his to tune.
@@ -150,10 +156,17 @@ class Fight {
   // Crowd control on a hero (an enemy blast's curse or stomp). Unstoppable ignores it, an item may block it (Cloak of Opportunity), debuff resist
   // shortens it, and items hear about it (Reactive Barrier). Returns true if it landed.
   cc(unit, status) {
-    if (unit.has('unstoppable')) return false;
+    const tag = status.tags?.find((t) => CC_TAGS.includes(t)) ?? 'control';
+    if (unit.has('unstoppable')) {
+      this.log.push({ t: +this.time.toFixed(1), who: unit.name, what: tag, ccBlocked: 'Unstoppable' });
+      return false;
+    }
     const event = { target: unit, status, blocked: false };
     this.emit('cc', event);
-    if (event.blocked) return false;
+    if (event.blocked) {
+      this.log.push({ t: +this.time.toFixed(1), who: unit.name, what: tag, ccBlocked: event.blockedBy ?? 'CC immunity' });
+      return false;
+    }
     this.addStatus(unit, { ...status, duration: status.duration * (1 - clamp(unit.stat('statusResist'), 0, 0.9)), debuff: true, ccApplied: true });
     this.emit('ccLanded', event);
     return true;
@@ -330,6 +343,7 @@ class Fight {
   reload(hero) {
     hero.weapon.reloadLeft = hero.stats.reload;
     hero.weapon.charge = 0;
+    this.log.push({ t: +this.time.toFixed(1), who: hero.name, reload: true });
     this.emit('reloadStart', { source: hero });
   }
 
@@ -349,6 +363,19 @@ class Fight {
     const bonus = hero.items.reduce((sum, it) => sum + it.meleeBonus(this, target), 0);
     const amount = (hero.stats[kind === 'light' ? 'lightMelee' : 'heavyMelee'] ?? 0) * (1 + hero.stat('meleeDamage') + bonus);
     const opts = { melee: true, meleeType: kind };
+    // Rival heavy melees can be parried. This is intentionally only for duels:
+    // NPCs have their own Rebuttal behaviour and never choose a parry.
+    if (kind === 'heavy' && hero.team === 'hero' && target.team === 'hero' && this.time >= (target.parryAt ?? 0)
+      && !target.cantAct && !target.has('stun') && !target.has('blind')) {
+      const chance = target.items.some((it) => it.name === 'Rebuttal') ? DUEL.parryWithRebuttal : DUEL.parryChance;
+      if (this.rng() < chance) {
+        opts.dodged = true;
+        this.log.push({ t: +this.time.toFixed(1), who: target.name, target: hero.name, parry: true });
+        this.cc(hero, { id: 'duel-parry', duration: DUEL.parryStun, tags: ['stun'] });
+        return;
+      }
+      target.parryAt = this.time + DUEL.parryMissCooldown;
+    }
     const dealt = this.damage(hero, target, amount, 'melee', opts);
     if (!opts.dodged) {
       this.log.push({ t: +this.time.toFixed(1), who: hero.name, what: `${kind === 'light' ? 'Light' : 'Heavy'} Melee`, target: target.name, melee: true });

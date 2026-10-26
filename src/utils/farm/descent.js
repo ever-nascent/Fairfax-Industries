@@ -21,7 +21,7 @@ const { buildHero, roster } = require('./hero');
 const { POOL, ITEM_POOL, SLOTS, SLOT_OF, MAX_ITEMS, countItems, priceFor, heldIn, LEGENDARY_NAMES, TIER_COSTS, MAX_TIER, MAX_LEVEL, UNLOCKS, POINTS, pointsSpent } = require('./levels');
 const { itemByName } = require('./stats');
 const { BUFFS, BRIDGE, rollAnyBuff } = require('./buffs');
-const { IMBUES } = require('./items');
+const { IMBUES, NO_ULT_IMBUE } = require('./items');
 const { rivalKit } = require('./encounter');
 const { ASSETS } = require('../art');
 const { getStore } = require('../../storage');
@@ -303,7 +303,8 @@ function addItem(d, name, replace = null, enhanced = false) {
   for (const u of used) dropItem(d, u);
   d.items[SLOT_OF[card.Slot]].push(name);
   if (enhanced && !(d.enhanced ??= []).includes(name)) d.enhanced.push(name);
-  if (IMBUES.includes(name)) d.imbues[name] = 1; // ponytail: into the first ability; the farm's imbue picker isn't in a run yet
+  // An imbue item is not useful until its owner chooses the ability. The pick screen
+  // holds the run here instead of silently putting every item into ability one.
   return { ok: true, used, replaced };
 }
 // Takes choice `index` of the offer. Returns { ok, kind, name, used, replaced } or { error: 'none' | 'full' | 'missing' }.
@@ -332,8 +333,25 @@ function takeChoice(d, index, replace = null) {
   if (enhanced) d.enhancedChance = ENHANCED_CHANCE;
   const { kind } = d.offer;
   d.offer = null;
-  d.phase = 'ready';
+  const imbues = [name, extra.bonus].filter((n) => IMBUES.includes(n));
+  if (imbues.length) {
+    d.pendingImbues = [...(d.pendingImbues ?? []), ...imbues];
+    d.imbuing = d.pendingImbues.shift();
+    d.phase = 'imbue';
+  } else d.phase = 'ready';
   return { ...extra, ok: true, kind, name, ...(enhanced ? { enhanced: true } : {}) };
+}
+// Finishes the mandatory ability choice for an imbue item. A bonus can also be an
+// imbue item, so keep a small queue rather than dropping a second choice.
+function setImbue(d, slot) {
+  const name = d.imbuing;
+  if (d.phase !== 'imbue' || !name || !IMBUES.includes(name)) return { error: 'none' };
+  if (!(slot >= 1 && slot <= UNLOCKS(d.level))) return { error: 'locked' };
+  if (NO_ULT_IMBUE.has(name) && slot === 4) return { error: 'ultimate' };
+  d.imbues[name] = slot;
+  d.imbuing = d.pendingImbues?.shift() ?? null;
+  if (!d.imbuing) { delete d.imbuing; delete d.pendingImbues; d.phase = 'ready'; }
+  return { ok: true, name, slot, more: d.imbuing };
 }
 function rerollChoice(d) {
   if (d.phase !== 'offer' || d.offer?.kind !== 'items') return { error: 'none' };
@@ -405,8 +423,8 @@ async function fight(userId, { rng = Math.random, now = Date.now() } = {}) {
   const claim = await updateFarmUser(userId, (r) => {
     const d = r.descent;
     if (!d) return { error: 'none' };
-    if (d.phase === 'offer') return { error: 'offer' };
     if (d.phase === 'fighting' && now - (d.fightingAt ?? 0) < STALE_MS) return { error: 'busy' };
+    if (d.phase !== 'ready' && d.phase !== 'fighting') return { error: 'offer' };
     d.phase = 'fighting';
     d.fightingAt = now;
     return { d: structuredClone(d) };
@@ -458,6 +476,7 @@ const choose = (userId, room, index, replace = null) => updateFarmUser(userId, (
 const skip = (userId, room) => updateFarmUser(userId, (r) => (r.descent?.offer?.room === room ? skipChoice(r.descent) : { error: 'none' }));
 const reroll = (userId, room) => updateFarmUser(userId, (r) => (r.descent?.offer?.room === room ? rerollChoice(r.descent) : { error: 'none' }));
 const spend = (userId, slot) => updateFarmUser(userId, (r) => (r.descent ? spendPoint(r.descent, slot) : { error: 'none' }));
+const imbue = (userId, slot) => updateFarmUser(userId, (r) => (r.descent ? setImbue(r.descent, slot) : { error: 'none' }));
 // Ends the run where it stands (his open question; my pick: a run waits as long as the member likes, and Abandon ends it). Returns the run or null.
 const abandon = (userId) => updateFarmUser(userId, (r) => {
   const d = r.descent;
@@ -476,6 +495,6 @@ async function leaderboard() {
 
 module.exports = {
   ROOMS_PER_FLOOR, FLOORS, LAST_ROOM, TOKEN_ROOM, SKIP_HEAL, SKIP_BUFFS, BOSS_BUFFS, LITTLE_BUFF_CHANCE, BIG_BUFF_CHANCE, REROLLS_PER_FLOOR, ENHANCED_CHANCE, ENHANCED_STEP, REST, TUNE, BOSS, RIVAL, ARCHETYPES, AFFIXES, BOSSES, TIER_WEIGHTS, NO_RUN_ITEMS, NO_RUN_LEGENDARIES,
-  dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, rollFind, addItem, takeChoice, skipChoice, rerollChoice, spendPoint, afterWin, newRun,
-  startRun, getRun, fight, walkPast, choose, skip, reroll, spend, abandon, leaderboard,
+  dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, rollFind, addItem, takeChoice, skipChoice, rerollChoice, spendPoint, setImbue, afterWin, newRun,
+  startRun, getRun, fight, walkPast, choose, skip, reroll, spend, imbue, abandon, leaderboard,
 };

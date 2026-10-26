@@ -705,6 +705,7 @@ define('Cloak of Opportunity', {
   on(event, fight, p) {
     if (event !== 'cc' || p.target !== this.unit || p.blocked || !this.fire()) return;
     p.blocked = true;
+    p.blockedBy = this.name;
     this.buff(fight, 'unstoppable', this.value('StatusImmuneDuration'), {}, ['unstoppable']);
     this.barrier(fight, this.value('CombatBarrier'), this.value('BuffDuration'), { moveSpeed: this.value('BonusMoveSpeed') });
   },
@@ -716,6 +717,7 @@ define('Indomitable', {
   on(event, fight, p) {
     if (event !== 'cc' || p.target !== this.unit || p.blocked || !this.fire()) return;
     p.blocked = true;
+    p.blockedBy = this.name;
     this.barrier(fight, this.value('VexBarrierCombatBarrier'), this.value('AbilityDuration'));
     for (const a of this.unit.abilities) a.cdLeft *= 1 - this.pct('CooldownReductionOnProc');
   },
@@ -748,8 +750,11 @@ define('Majestic Leap', ACTIVE, barrierItem('CombatBarrier', 'BarrierDuration', 
 define('Guardian Ward', ACTIVE, barrierItem('GuardianWardCombatBarrier', 'BuffDuration', function (fight) { this.buff(fight, 'speed', this.value('BuffDuration'), { moveSpeed: this.value('BonusMoveSpeed') }); }));
 define('Divine Barrier', ACTIVE, barrierItem('CombatBarrier', 'BuffDuration', function (fight) { this.buff(fight, 'speed', this.value('BuffDuration'), { moveSpeed: this.value('BonusMoveSpeed') }); fight.cleanse(this.unit, 1, { stuns: false }); }));
 const hurtActive = (hurtBelow, cast) => ({ want(fight) { return fight.foes.length > 0 && this.hurt < hurtBelow; }, cast });
-define('Healing Nova', ACTIVE, hurtActive(0.7, function (fight) { this.regen(fight, this.value('TotalHealthRegen') / this.value('RegenDuration'), this.value('RegenDuration')); }));
-define('Rescue Beam', ACTIVE, hurtActive(0.6, function (fight) { const t = this.value('AbilityChannelTime') || 2.5; this.regen(fight, (this.pct('HealPercentAmount') * this.maxHealth) / t, t); }));
+// Healing actives are saved for the recovery they provide, rather than spent at the
+// first scratch. His call: a healing active starts below half health.
+const healActive = (cast) => hurtActive(0.5, cast);
+define('Healing Nova', ACTIVE, healActive(function (fight) { this.regen(fight, this.value('TotalHealthRegen') / this.value('RegenDuration'), this.value('RegenDuration')); }));
+define('Rescue Beam', ACTIVE, healActive(function (fight) { const t = this.value('AbilityChannelTime') || 2.5; this.regen(fight, (this.pct('HealPercentAmount') * this.maxHealth) / t, t); }));
 // Dispel Magic: used when something is on the hero to purge (a curse, a slow, a healing cut ...); only a purge that removed something heals and gives
 // speed (the wiki).
 define('Dispel Magic', ACTIVE, {
@@ -789,7 +794,7 @@ define('Metal Skin', ACTIVE, {
   cast(fight) { this.buff(fight, 'metal', this.value('AbilityDuration'), { bulletTaken: -1, moveSpeed: this.value('ActiveMoveSpeedPenalty') }); }, // slower meanwhile (the wiki: -1.5 m/s)
 });
 // Healing Rite: a long heal over time; damage from a boss or a rival hero (the game's "enemy players or objectives") ends it.
-define('Healing Rite', ACTIVE, hurtActive(0.8, function (fight) { this.regen(fight, this.value('TotalHealthRegen') / this.value('RegenDuration'), this.value('RegenDuration')); this.buff(fight, 'speed', this.value('RegenDuration'), { moveSpeed: this.value('BonusSprintSpeed') }); }), {
+define('Healing Rite', ACTIVE, healActive(function (fight) { this.regen(fight, this.value('TotalHealthRegen') / this.value('RegenDuration'), this.value('RegenDuration')); this.buff(fight, 'speed', this.value('RegenDuration'), { moveSpeed: this.value('BonusSprintSpeed') }); }), {
   on(event, fight, p) { if (event === 'damage' && p.target === this.unit && ((p.source.team === 'enemy' && isBoss(p.source)) || (p.source.team === 'hero' && p.source !== this.unit))) { fight.removeStatus(this.unit, `${this.name}:regen`); fight.removeStatus(this.unit, `${this.name}:speed`); } },
 });
 // Restorative Locket (his call, Oct 3): a stack per enemy blast and per enemy spirit hit (max 25); the active heals per stack and gives back stamina.
@@ -798,7 +803,7 @@ define('Restorative Locket', ACTIVE, {
   on(event, fight, p) {
     if ((event === 'blast' && p.target === this.unit) || (event === 'damage' && p.target === this.unit && p.type === 'spirit' && p.opts.attack)) this.stacks = Math.min(this.value('MaxStacks'), this.stacks + 1);
   },
-  want(fight) { return fight.foes.length > 0 && this.stacks >= 5 && this.hurt < 0.7; },
+  want(fight) { return fight.foes.length > 0 && this.stacks >= 5 && this.hurt < 0.5; },
   cast(fight) {
     fight.heal(this.unit, this.value('HealPerStack') * this.stacks);
     this.unit.stamina += Math.round((this.value('MaxStaminaRestore') * this.stacks) / this.value('MaxStacks'));
@@ -843,6 +848,7 @@ define('Fury Trance', ACTIVE, {
 });
 // Vampiric Burst: lifesteal and fire rate for 5 s, and 75% of the clip added on top of what is loaded (past the clip size; a reload under way stops: the wiki).
 define('Vampiric Burst', ACTIVE, {
+  want(fight) { return fight.foes.length > 0 && this.hurt < 0.5; },
   cast(fight) {
     this.buff(fight, 'burst', this.value('AbilityDuration'), { lifesteal: this.pct('ActiveBonusLifesteal'), fireRate: this.pct('ActiveBonusFireRate') });
     const w = this.unit.weapon;

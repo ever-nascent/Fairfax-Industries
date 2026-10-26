@@ -224,6 +224,16 @@ const descentRoutes = [
   },
   {
     name: 'farm',
+    label: 'Descend imbue ability select',
+    matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DIMBUE_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const result = await descent.imbue(interaction.user.id, Number(interaction.values[0]));
+      return result.ok ? { note: `Imbued **${result.name}** into ability ${result.slot}.` }
+        : { locked: { say: "That ability isn't unlocked yet." }, ultimate: { say: 'That item cannot imbue an ultimate.' }, none: STALE }[result.error];
+    }),
+  },
+  {
+    name: 'farm',
     label: 'Descend ability point',
     matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DPOINT_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
