@@ -39,6 +39,7 @@ const abilityName = (hero, slot) => ABILITIES[HERO_DATA[hero].BoundAbilities[slo
 const roomTitle = (spec) => `Floor ${spec.floor}  -  Room ${spec.room}${spec.final ? '  -  The Bottom' : spec.kind === 'boss' ? '  -  Boss' : spec.kind === 'rival' ? '  -  Rival' : ''}`;
 const healthLine = (d, hero = buildHero(d.hero, D.runKit(d))) => barLine(d.health * hero.stats.maxHealth, hero.stats.maxHealth);
 const bestText = (best) => (best?.rooms ? `${plural(best.rooms, 'room')} (${best.hero})` : 'None yet');
+const sentence = (text) => `${text[0].toUpperCase()}${text.slice(1)}${/[.!?]$/.test(text) ? '' : '.'}`;
 
 // The fields every run screen shares: health, level, items, Rejuvs, points, rooms.
 function runFields(d) {
@@ -105,8 +106,8 @@ async function roomView(member, d, { note = null, quit = false } = {}) {
   if (spec.kind === 'fight' && !quit) {
     const seen = new Set();
     const about = spec.groups.filter(({ type, affix }) => !seen.has(`${type}${affix}`) && seen.add(`${type}${affix}`))
-      .map(({ type, affix }) => `**${affix ? `${affix} ` : ''}${D.ARCHETYPES[type].name}**  -  ${D.ARCHETYPES[type].text}${affix ? `, ${D.AFFIXES[affix].text}` : ''}`);
-    e.addFields({ name: 'Enemies', value: about.join('\n') });
+      .map(({ type, affix }) => `**${affix ? `${affix} ` : ''}${D.ARCHETYPES[type].name}**\n> ${sentence(D.ARCHETYPES[type].text)}${affix ? `\n> **Affix:** ${sentence(D.AFFIXES[affix].text)}` : ''}`);
+    e.addFields({ name: 'Enemies', value: about.join('\n\n') });
   }
   e.addFields(runFields(d)).setFooter({ text: `Floor ${spec.floor} of ${D.FLOORS}  -  one death ends the run, health carries from room to room` });
   const components = [];
