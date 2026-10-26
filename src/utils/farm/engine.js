@@ -134,6 +134,7 @@ class Fight {
   distance(hero, target) { return hero.close === target && hero.closeUntil > this.time ? MELEE.closeDistance : target.stats.distance ?? 15; }
 
   addStatus(unit, status) {
+    if (!status.ccApplied && unit.team === 'hero' && status.debuff && status.tags?.some((t) => CC_TAGS.includes(t)) && this.by?.unit && this.by.unit !== unit) return this.cc(unit, status);
     let { id, duration } = status;
     if (unit.stats.ccResist && status.tags?.some((t) => CC_TAGS.includes(t))) duration *= 1 - unit.stats.ccResist; // bosses shrug off part of a stun, sleep or disarm
     if (duration <= 0) return;
@@ -153,7 +154,7 @@ class Fight {
     const event = { target: unit, status, blocked: false };
     this.emit('cc', event);
     if (event.blocked) return false;
-    this.addStatus(unit, { ...status, duration: status.duration * (1 - clamp(unit.stat('statusResist'), 0, 0.9)), debuff: true });
+    this.addStatus(unit, { ...status, duration: status.duration * (1 - clamp(unit.stat('statusResist'), 0, 0.9)), debuff: true, ccApplied: true });
     this.emit('ccLanded', event);
     return true;
   }
@@ -409,8 +410,8 @@ class Fight {
         const mods = it.dynamicMods(view); // conditional stats, re-read every step
         if (mods) { const { tags = [], ...m } = mods; view.addStatus(hero, { id: `item:${it.name}`, duration: DT * 1.5, mods: m, tags }); }
       }
-      if (hero.cantAct || hero.has('stun') || hero.has('blind') || !hero.alive) continue; // a stun, disarm or silence on a hero only ever comes from a rival hero
-      view.move(hero);
+      if (hero.cantAct || hero.has('stun') || hero.has('blind') || !hero.alive) continue;
+      if (!hero.has('immobilize')) view.move(hero);
       const target = view.foes[0];
       if (target && view.wantMelee(hero, target)) view.melee(hero, target);
       if (target && hero.alive && !hero.has('disarm')) view.fireWeapon(hero, target);
@@ -446,11 +447,20 @@ class Fight {
         const event = { source: enemy, target, what, parried: false, dodged: false };
         this.emit('blast', event); // Counterspell parries it; Restorative Locket counts it; Mina's Sanguine Retreat slips it (dodged)
         const dodged = event.dodged || (!event.parried && !target.has('sleep') && this.rng() < dodgeChance(target, enemy));
+        let landed = false;
         if (!event.parried && !dodged) {
           this.damage(enemy, target, blast.damage + blast.maxHealthPct * target.stats.maxHealth, blast.type ?? 'true', { blast: true });
-          if (target.alive) this.cc(target, { id: what, duration: blast.curse, tags: ['sleep'] });
+          if (target.alive) landed = this.cc(target, { id: what, duration: blast.curse, tags: blast.tags ?? ['sleep'] });
         }
-        this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what, dodged, parried: event.parried, enemy: true });
+        this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what, verb: landed ? blast.verb : null, dodged, parried: event.parried, enemy: true });
+      }
+      for (const control of enemy.stats.controls ?? []) {
+        control.nextAt ??= this.time + control.every;
+        if (!target.alive || enemy.has('silence') || this.time < control.nextAt) continue;
+        control.nextAt = this.time + control.every;
+        if (this.cc(target, { id: `enemy:${control.id}`, duration: control.duration, tags: control.tags })) {
+          this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: control.verb, enemy: true, cc: true });
+        }
       }
     }
   }
@@ -476,8 +486,8 @@ class Fight {
 // damageType = what its attack is ('bullet' | 'spirit' | 'mixed' = half each): which of the hero's resists takes the edge off it,
 // blast = { every (s), damage, maxHealthPct, curse (s the hero can't act), type = 'true', what = 'curse' }: the Patron's cursing blast, the Walker's stomp,
 // souls = what it is worth on its own (Cultist Sacrifice). A Haunt's `special` (haunts.js) is put on its stats by play.js.
-const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', blast = null, souls = 0 } = {}) =>
-  new Unit({ name, team: 'enemy', stats: { maxHealth, dps, dpsMaxHealthPct, damageType, blast: blast && { ...blast }, bulletResist, spiritResist, distance, healthRegen, lifesteal: 0, souls } });
+const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', blast = null, controls = [], souls = 0 } = {}) =>
+  new Unit({ name, team: 'enemy', stats: { maxHealth, dps, dpsMaxHealthPct, damageType, blast: blast && { ...blast }, controls: controls.map((c) => ({ ...c, tags: [...c.tags] })), bulletResist, spiritResist, distance, healthRegen, lifesteal: 0, souls } });
 
 // A hero's damage over one or more fights, by what dealt it (the Damage Breakdown button): [{ name, kind: 'weapon' | 'ability' | 'item', dealt }], most first.
 function damageBreakdown(hero, fights) {

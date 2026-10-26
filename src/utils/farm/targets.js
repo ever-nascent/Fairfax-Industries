@@ -29,17 +29,17 @@ const pct = (x) => (x || 0) / 100;
 
 // ponytail: placeholder damage numbers, the wiki's NpcData has no plain DPS for creeps or Crates (their attacks are
 // abilities). Replace with real numbers when we flesh those targets out.
-const creep = (key, name, dps) => () => {
+const creep = (key, name, dps, controls = []) => () => {
   const n = npcs[key];
   const mods = n.IntrinsicModifiers[0];
   return enemy(name, {
-    maxHealth: n.MaxHealth, dps, distance: 10, souls: n.GoldReward,
+    maxHealth: n.MaxHealth, dps, distance: 10, controls, souls: n.GoldReward,
     bulletResist: pct(mods.BULLET_DAMAGE_REDUCTION_PERCENT), spiritResist: pct(mods.ABILITY_DAMAGE_REDUCTION_PERCENT),
   });
 };
 const small = creep('neutral_trooper_weak', 'Small Haunt', 6);
-const medium = creep('neutral_trooper_normal', 'Medium Haunt', 12);
-const large = creep('neutral_trooper_strong', 'Large Haunt', 25);
+const medium = creep('neutral_trooper_normal', 'Medium Haunt', 12, [{ id: 'silence', every: 12, duration: 1, tags: ['silence'], verb: 'silenced' }]);
+const large = creep('neutral_trooper_strong', 'Large Haunt', 25, [{ id: 'grapple', every: 10, duration: 1.2, tags: ['stun', 'immobilize'], verb: 'grappled' }]);
 const camp = (...makers) => () => makers.map((m) => m());
 const soulsOf = (key) => npcs[key].GoldReward;
 
@@ -57,12 +57,12 @@ const BOSS_RESISTS = {
   npc_boss_tier1: { spirit: 0.25, cc: 0.5 }, npc_boss_tier2: { spirit: 0.35, cc: 0.5 }, npc_super_neutral: { spirit: 0.3, bullet: 0.1, cc: 0.75 },
   npc_barrack_boss: { spirit: 0.3, cc: 0.5 }, destroyable_building: { spirit: 0.4, cc: 1 }, npc_boss_tier3: { spirit: 0.35, bullet: 0.2, cc: 0.75 },
 };
-const boss = (key, name, { health, dps, regen = 0, dpsMaxHealthPct = 0, extraResist = 0, damageType = 'bullet', blast = null }) => () => {
+const boss = (key, name, { health, dps, regen = 0, dpsMaxHealthPct = 0, extraResist = 0, damageType = 'bullet', blast = null, controls = [] }) => () => {
   const n = npcs[key];
   const mods = n.IntrinsicModifiers?.[0] || {};
   const r = BOSS_RESISTS[key] ?? {};
   const e = enemy(name, {
-    maxHealth: health ?? n.MaxHealth, dps, dpsMaxHealthPct, damageType, blast, distance: 20, healthRegen: regen,
+    maxHealth: health ?? n.MaxHealth, dps, dpsMaxHealthPct, damageType, blast, controls, distance: 20, healthRegen: regen,
     bulletResist: resistWith(resistWith(pct(mods.BULLET_ARMOR_DAMAGE_RESIST), extraResist), r.bullet || 0),
     spiritResist: resistWith(pct(mods.ABILITY_DAMAGE_REDUCTION_PERCENT), r.spirit || 0),
   });
@@ -170,18 +170,18 @@ const WAVES = {
 // The Walker's stomp (wiki NpcData: 350 + 15% of max health, a 2 s stun, a 6 s cooldown), spirit damage like all its attacks. A hero can dodge it (engine.js DODGE).
 // ponytail: in the game it only reaches heroes within 12 m; the fight has no hero position, so every hero is in reach.
 const walkerData = npcs.npc_boss_tier2;
-const WALKER_STOMP = { every: walkerData.BoundAbilities.ESlot_Signature_3.AbilityProperties.AbilityCooldown, damage: walkerData.StompDamage, maxHealthPct: walkerData.StompDamageMaxHealthPercent / 100, curse: walkerData.StunDuration, type: 'spirit', what: 'stomp' };
+const WALKER_STOMP = { every: walkerData.BoundAbilities.ESlot_Signature_3.AbilityProperties.AbilityCooldown, damage: walkerData.StompDamage, maxHealthPct: walkerData.StompDamageMaxHealthPercent / 100, curse: walkerData.StunDuration, type: 'spirit', what: 'stomp', tags: ['stun'] };
 const TARGETS = {
   'small-camp': { name: 'Tier 1 Camp (3 small Haunts)', cooldown: 1 * HOUR, souls: 3 * soulsOf('neutral_trooper_weak'), enemies: scaled(HARDNESS['small-camp'], camp(small, small, small)) },
   // the wiki lists 6 medium makeups; this is its changelog example (2 normal, 3 weak)
   'medium-camp': { name: 'Tier 2 Camp (2 medium + 3 small Haunts)', cooldown: 3 * HOUR, souls: 2 * soulsOf('neutral_trooper_normal') + 3 * soulsOf('neutral_trooper_weak'), enemies: scaled(HARDNESS['medium-camp'], camp(medium, medium, small, small, small)) },
   'large-camp': { name: 'Tier 3 Camp (3 large Haunts)', cooldown: 6 * HOUR, souls: 3 * soulsOf('neutral_trooper_strong'), enemies: scaled(HARDNESS['large-camp'], camp(large, large, large)) },
-  guardian: { name: 'Guardian', cooldown: 12 * HOUR, souls: objectives.Tier1GoldKill, enemies: scaled(HARDNESS.guardian, boss('npc_boss_tier1', 'Guardian', { dps: npcs.npc_boss_tier1.PlayerDPS })) },
+  guardian: { name: 'Guardian', cooldown: 12 * HOUR, souls: objectives.Tier1GoldKill, enemies: scaled(HARDNESS.guardian, boss('npc_boss_tier1', 'Guardian', { dps: npcs.npc_boss_tier1.PlayerDPS, controls: [{ id: 'stun', every: 10, duration: 1, tags: ['stun'], verb: 'stunned' }] })) },
   // ponytail: base health only; the wiki's 9000 / 12000 are for after other Walkers have fallen
   walker: { name: 'Walker', cooldown: 24 * HOUR, souls: objectives.Tier2GoldKill, enemies: scaled(HARDNESS.walker, boss('npc_boss_tier2', 'Walker', { damageType: 'spirit', blast: WALKER_STOMP, dps: npcs.npc_boss_tier2.BoundAbilities.ESlot_Signature_2.AbilityProperties.DPS })) },
   // Mid-Boss (once every 12 hours, his call Oct 2): 13000 HP (+195 per minute after it spawns, not scaled yet), regenerates 15 HP/s, 3000 souls (+50/min). No revive
   // during the fight; a kill drops a Rejuv (the wiki gives up to 3 credits per kill to a team, 1 for a lone hero here).
-  'mid-boss': { name: 'Mid-Boss', cooldown: 12 * HOUR, souls: HARD_PAY * 3000, rejuv: 1, enemies: scaled(HARDNESS['mid-boss'], boss('npc_super_neutral', 'Mid-Boss', { health: npcs.npc_super_neutral.StartingHealth, dps: 100, regen: npcs.npc_super_neutral.IntrinsicModifiers[0].HEALTH_REGEN_PER_SECOND })) },
+  'mid-boss': { name: 'Mid-Boss', cooldown: 12 * HOUR, souls: HARD_PAY * 3000, rejuv: 1, enemies: scaled(HARDNESS['mid-boss'], boss('npc_super_neutral', 'Mid-Boss', { health: npcs.npc_super_neutral.StartingHealth, dps: 100, regen: npcs.npc_super_neutral.IntrinsicModifiers[0].HEALTH_REGEN_PER_SECOND, controls: [{ id: 'grapple', every: 11, duration: 1.2, tags: ['stun', 'immobilize'], verb: 'grappled' }] })) },
 };
 
 for (const [key, target] of Object.entries(TARGETS)) target.icon = path.join(ICONS, `${key}.png`);
@@ -199,12 +199,12 @@ const SIEGE = {
   cooldown: 24 * HOUR,
   stages: [
     { name: 'Base Guardians', icon: 'base-guardian', souls: 2 * objectives.BaseGuardiansGoldKill,
-      enemies: () => [0, 1].flatMap(() => boss('npc_barrack_boss', 'Base Guardian', { dps: npcs.npc_barrack_boss.PlayerDPS, extraResist: baseGuardianResist() })()) },
+      enemies: () => [0, 1].flatMap(() => boss('npc_barrack_boss', 'Base Guardian', { dps: npcs.npc_barrack_boss.PlayerDPS, extraResist: baseGuardianResist(), controls: [{ id: 'grapple', every: 12, duration: 0.8, tags: ['stun', 'immobilize'], verb: 'grappled' }] })()) },
     { name: 'Shrine', icon: 'shrine', souls: objectives.ShrinesGoldKill,
-      enemies: boss('destroyable_building', 'Shrine', { health: npcs.destroyable_building.MaxHealthGenerator, ...PATRON_BEAM, blast: PATRON_BLAST, extraResist: shrineResist() }) },
+      enemies: boss('destroyable_building', 'Shrine', { health: npcs.destroyable_building.MaxHealthGenerator, ...PATRON_BEAM, blast: { ...PATRON_BLAST, tags: ['silence'], what: 'silence', verb: 'silenced' }, extraResist: shrineResist() }) },
     { name: 'Second Shrine', icon: 'shrine', souls: objectives.ShrinesGoldKill,
-      enemies: boss('destroyable_building', 'Second Shrine', { health: npcs.destroyable_building.MaxHealthGeneratorSecond, ...PATRON_BEAM, blast: PATRON_BLAST, extraResist: shrineResist() }) },
-    { name: 'Patron', icon: 'patron', souls: 0, enemies: boss('npc_boss_tier3', 'Patron', { ...PATRON_BEAM, damageType: 'mixed', regen: 0 }) },
+      enemies: boss('destroyable_building', 'Second Shrine', { health: npcs.destroyable_building.MaxHealthGeneratorSecond, ...PATRON_BEAM, blast: { ...PATRON_BLAST, tags: ['silence'], what: 'silence', verb: 'silenced' }, extraResist: shrineResist() }) },
+    { name: 'Patron', icon: 'patron', souls: 0, enemies: boss('npc_boss_tier3', 'Patron', { ...PATRON_BEAM, damageType: 'mixed', regen: 0, controls: [{ id: 'sleep', every: 10, duration: 1, tags: ['sleep'], verb: 'slept' }] }) },
     { name: 'Weakened Patron', icon: 'patron-weakened', souls: 0, enemies: boss('npc_boss_tier3', 'Weakened Patron', { health: npcs.npc_boss_tier3.Phase2Health, dps: 75, damageType: 'mixed', blast: PATRON_BLAST }) },
   ],
 };

@@ -222,7 +222,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     }
     for (; seen < fight.log.length; seen++) {
       const l = fight.log[seen];
-      log.push([l.t, l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.special ? `${l.who} used ${l.what}` : `${l.who} ${l.what === 'stomp' ? 'stomped' : 'cursed'} ${hero.name}`) : `${l.who} used ${l.what}`]); // (a rival hero's casts are its own)
+      log.push([l.t, l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.special ? `${l.who} used ${l.what}` : l.cc ? `${l.who} ${l.what} ${hero.name}` : l.verb ? `${l.who} ${l.verb} ${hero.name}` : `${l.who} ${l.what === 'stomp' ? 'stomped' : 'cursed'} ${hero.name}`) : `${l.who} used ${l.what}`]); // (a rival hero's casts are its own)
     }
     fight.enemies.forEach((e, i) => { if (!e.alive && !dead.has(i)) { dead.add(i); kills[stage]++; log.push([+fight.time.toFixed(1), `${label(fight, i)} went down`]); } });
     if (!hero.alive && !downLogged) { downLogged = true; log.push([+fight.time.toFixed(1), `${hero.name} went down`]); }

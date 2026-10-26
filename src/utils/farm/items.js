@@ -722,7 +722,7 @@ define('Indomitable', {
 });
 // Unstoppable: used just before a blast lands: immune to its curse or stomp for a while, and existing debuffs end.
 define('Unstoppable', ACTIVE, {
-  want(fight) { return fight.foes.some((e) => e.stats.blast && (e.blastAt ?? Infinity) - fight.time < 1.5 && !e.has('silence')) && !this.unit.has('unstoppable'); },
+  want(fight) { return fight.foes.some((e) => !e.has('silence') && ((e.stats.blast && (e.blastAt ?? Infinity) - fight.time < 1.5) || e.stats.controls?.some((c) => (c.nextAt ?? Infinity) - fight.time < 1.5))) && !this.unit.has('unstoppable'); },
   cast(fight) { this.buff(fight, 'unstoppable', this.value('AbilityDuration'), {}, ['unstoppable']); fight.cleanse(this.unit); },
 });
 // Frenzy: below half health, a burst of speed, fire rate and debuff resist (and existing debuffs are shortened by as much).
