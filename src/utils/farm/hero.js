@@ -23,14 +23,14 @@ const heroInfo = (name) => LOGIC[name]?.info ?? [];
  *  (slots 1-4 in order) are unlocked; @param corrupted its corrupted item { name, drawback, amount } | null; @param imbues { item name: ability slot };
  *  @param copies the heroes whose ultimate Sinclair may copy: the member's other unlocked heroes (default: the whole roster, for simulations and rivals);
  *  @param kept the kill stacks it brings into the fight ({ item name: stacks }: Glass Cannon, Trophy Collector; items.js KEPT) */
-function buildHero(name, { boons = 0, items = [], buffs = {}, bridge = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, kept = {} } = {}) {
+function buildHero(name, { boons = 0, items = [], buffs = {}, bridge = [], tiers = {}, unlocked = 4, corrupted = null, enhanced = [], imbues = {}, copies = null, kept = {} } = {}) {
   const data = HEROES[name];
   if (!data) throw new Error(`Unknown hero: ${name}`);
-  const unit = new Unit({ name, team: 'hero', stats: heroStats(data, { boons, items, buffs, bridge, corrupted }) });
+  const unit = new Unit({ name, team: 'hero', stats: heroStats(data, { boons, items, buffs, bridge, corrupted, enhanced }) });
   unit.boons = boons; // item numbers that scale per boon read it
   unit.copies = copies ?? roster().filter((n) => n !== name);
   unit.kept = kept;
-  unit.items = makeItems(items.map((n) => cardFor(n, corrupted)), unit, imbues);
+  unit.items = makeItems(items.map((n) => cardFor(n, corrupted, enhanced)), unit, imbues);
   unit.abilities = Object.entries(data.BoundAbilities).map(([slot, { Key }]) => {
     const Cls = Number(slot) > unlocked ? Locked : LOGIC[name]?.abilities[slot] || Unimplemented;
     return new Cls(Number(slot), ABILITIES[Key], unit, tiers[slot] || 0);

@@ -370,8 +370,12 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
     assert.match(result.embeds[0].toJSON().title, /Room 1 Cleared/);
     assert.ok(result.files.some((f) => f.name === 'pick.gif'), 'the cylinder spins the first time');
     const rows = result.components.map((r) => r.toJSON().components.map((c) => c.label).filter(Boolean));
-    assert.ok(rows.some((labels) => labels.length === 4 && labels.some((label) => label.startsWith('Skip'))), 'the three picks and Skip share a row');
+    assert.ok(rows.some((labels) => labels.length === 5 && labels.some((label) => label.startsWith('Skip')) && labels.includes('Reroll (3 left)')), 'the three picks, Skip and Reroll share a row');
     assert.ok(rows.some((labels) => labels.includes('Build') && labels.includes('Damage Breakdown')), 'Build and Damage Breakdown share a row');
+    const reroll = fake(id, `farm_dreroll:${id}:1`);
+    await route('Descend reroll button').execute(reroll);
+    assert.ok(reroll.log.at(-1)[1].files.some((f) => f.name === 'pick.gif'), 'a reroll spins the cylinder again');
+    assert.ok(reroll.log.at(-1)[1].components.some((r) => r.toJSON().components.some((c) => c.label === 'Reroll (2 left)')));
     const take = fake(id, `farm_dtake:${id}:1:1`);
     await route('Descend pick button').execute(take);
     assert.match(take.log.at(-1)[1].embeds[0].toJSON().description, /^Took \*\*/);

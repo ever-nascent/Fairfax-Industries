@@ -32,6 +32,7 @@ const STATS = {
 };
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V']; // V: a legendary
 const CORRUPTED = '#b44dff'; // the frame of the hero's corrupted item (ponytail: my pick of colour)
+const ENHANCED = '#57e3ff'; // Street Brawl's improved item, kept visibly distinct in a Descend build
 
 const textures = new Map(); // the film grain, one per card height (a legendary adds a row)
 
@@ -226,12 +227,12 @@ async function heroCard(view) {
     const y = iy + Math.floor(i / COLS) * (TILE + NAME_H);
     const [name, kind] = held[i] ?? [];
     if (!name) { box(g, x, y, TILE, TILE, 12, 'rgba(255,255,255,0.035)', 'rgba(255,255,255,0.12)'); continue; }
-    await itemTile(g, name, kind, x, y, ...(name === view.corrupted ? [CORRUPTED, 4] : [])); // the corrupted one: a violet frame
+    await itemTile(g, name, kind, x, y, ...(name === view.corrupted ? [CORRUPTED, 4] : view.enhanced?.includes(name) ? [ENHANCED, 4] : []));
   }
   iy += 2 * (TILE + NAME_H) + 8;
   if (view.legendary) { // the legendary slot, under the 12
     label(g, 'Legendary', PAD, iy + 16);
-    await itemTile(g, view.legendary, LEGENDARY, PAD, iy + 32, `rgba(${LEGENDARY.rgb},1)`, 3);
+    await itemTile(g, view.legendary, LEGENDARY, PAD, iy + 32, view.enhanced?.includes(view.legendary) ? ENHANCED : `rgba(${LEGENDARY.rgb},1)`, view.enhanced?.includes(view.legendary) ? 4 : 3);
     iy += LEGEND_H;
   }
 

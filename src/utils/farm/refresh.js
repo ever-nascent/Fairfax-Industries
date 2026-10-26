@@ -79,13 +79,13 @@ const raw = async (page) => {
 const save = (file, data) => fs.writeFile(path.join(OUT, file), typeof data === 'string' ? data : JSON.stringify(data, null, 1));
 
 const SLOT_NAMES = { weapon: 'Weapon', vitality: 'Armor', spirit: 'Tech' }; // deadlock-api's slot -> the wiki's
-async function legendaries() {
+async function legendaries(itemData = {}) {
   const api = await (await get('https://api.deadlock-api.com/v1/assets/items/by-type/upgrade')).json();
   const num = (p) => { const v = parseFloat(p?.value); return Number.isFinite(v) ? v : null; };
   const type = (i, sec) => ({ innate: 'Innate', active: 'Active', passive: 'Passive' })[sec.section_type] ?? (i.is_active_item ? 'Active' : 'Passive');
   return Object.fromEntries(api.filter((i) => i.shopable && !i.disabled && i.item_tier === 5).map((i) => {
     const card = { Key: i.class_name, Name: i.name, Description: i.description?.desc ?? null, Cost: i.cost, Tier: 5, Slot: SLOT_NAMES[i.item_slot_type],
-      Activation: i.is_active_item ? 'Active' : 'Passive', Components: null, StreetBrawl: true };
+      Activation: i.is_active_item ? 'Active' : 'Passive', Components: null, StreetBrawl: true, PropertyUpgrades: itemData[i.class_name]?.PropertyUpgrades ?? {} };
     (i.tooltip_sections ?? []).forEach((sec, n) => {
       const keys = sec.section_attributes.flatMap((a) => [...(a.properties ?? []), ...(a.elevated_properties ?? []), ...(a.important_properties ?? [])]);
       const scale = (k) => { const f = i.properties[k]?.scale_function; return f?.specific_stat_scale_type === 'ETechPower' && f.stat_scale ? { Scale: { Value: f.stat_scale, Type: 'spirit' } } : {}; }; // x spirit power (Nullification Burst, Prism Blast, Shadow Strike)
@@ -182,10 +182,12 @@ async function refresh() {
     }
   }
   const cards = await raw('Data:ItemCards.json');
-  const items = Object.fromEntries(Object.entries(cards).filter(([, c]) => c.Name && !c.IsDisabled && [1, 2, 3, 4].includes(c.Tier)));
+  const itemData = await raw('Data:ItemData.json');
+  const items = Object.fromEntries(Object.entries(cards).filter(([, c]) => c.Name && !c.IsDisabled && [1, 2, 3, 4].includes(c.Tier))
+    .map(([key, card]) => [key, { ...card, PropertyUpgrades: itemData[key]?.PropertyUpgrades ?? {} }]));
   const allNpcs = await raw('Data:NpcData.json');
   const npcs = { npcs: Object.fromEntries(NPC_KEYS.map((k) => [k, allNpcs[k]])), objectives: (await raw('Data:GenericData.json')).ObjectiveParams };
-  const legends = await legendaries();
+  const legends = await legendaries(itemData);
   if (!Object.keys(legends).length) failed.push('the legendaries (deadlock-api.com)');
   if (Object.keys(items).length < 100) failed.push(`only ${Object.keys(items).length} items (expected about 150)`);
   if (failed.length) {

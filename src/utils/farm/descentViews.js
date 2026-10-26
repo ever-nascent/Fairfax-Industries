@@ -3,7 +3,7 @@
 // descentCard.js) are a new message, which becomes the next room's screen once a pick is made.
 const path = require('node:path');
 const { AttachmentBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
-const { HEROES: HERO_DATA, ABILITIES, itemByName } = require('./stats');
+const { HEROES: HERO_DATA, ABILITIES, itemByName, enhancedCard } = require('./stats');
 const { buildHero } = require('./hero');
 const { heroCard } = require('./heroCard');
 const { buffText, BRIDGE } = require('./buffs');
@@ -23,6 +23,7 @@ const DFIGHT_ID = 'farm_dfight'; // button "Fight": farm_dfight:<user id>:<room>
 const DWALK_ID = 'farm_dwalk'; // button "Walk Away" (a rival room): farm_dwalk:<user id>:<room>
 const DTAKE_ID = 'farm_dtake'; // button (the pick): farm_dtake:<user id>:<room>:<choice 0-2>
 const DSKIP_ID = 'farm_dskip'; // button "Skip": farm_dskip:<user id>:<room>
+const DREROLL_ID = 'farm_dreroll'; // button "Reroll": farm_dreroll:<user id>:<room>
 const DSWAP_ID = 'farm_dswap'; // select (a full build): farm_dswap:<user id>:<room>:<choice>, value = the item given up for it
 const DPOINT_ID = 'farm_dpoint'; // select: farm_dpoint:<user id>, value = ability slot
 const DBUILD_ID = 'farm_dbuild'; // button "Build": farm_dbuild:<user id>
@@ -149,7 +150,7 @@ async function runCard(d) {
   const abilities = Object.keys(HERO_DATA[d.hero].BoundAbilities).map(Number).map((slot) => ({ slot, name: abilityName(d.hero, slot), tier: d.tiers[slot] ?? 0, locked: slot > UNLOCKS(d.level) }));
   return heroCard({
     hero: d.hero, progress: { level: d.level, into: (d.room - 1) % D.ROOMS_PER_FLOOR, needed: D.ROOMS_PER_FLOOR, max: d.level >= MAX_LEVEL },
-    pointsLeft: Math.max(0, D.pointsLeft(d)), abilities, stats: statsFor(hero.stats), items: d.items, souls: 0, legendary: d.legendary ?? undefined,
+    pointsLeft: Math.max(0, D.pointsLeft(d)), abilities, stats: statsFor(hero.stats), items: d.items, souls: 0, legendary: d.legendary ?? undefined, enhanced: d.enhanced ?? [],
     counter: { top: `FLOOR ${D.floorOf(d.room)}`, amount: `${d.room - 1}`, label: 'ROOMS CLEARED' },
   });
 }
@@ -180,12 +181,15 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   else lines.push(`Pick 1 of 3 items, or Skip to heal ${D.SKIP_HEAL * 100}%.${countItems(d.items) >= MAX_ITEMS ? ' Your build is full: an upgrade takes its part\'s place, anything else replaces an item.' : ''}`);
   e.setDescription(lines.join('\n'));
   // what each choice does
-  const about = offer.choices.map((n) => {
+  const about = offer.choices.map((n, i) => {
     if (offer.kind === 'buffs') return `**${buffText(n, D.BOSS_BUFFS)}**`;
-    const c = itemByName(n);
-    const used = priceFor(c, d.items).used;
-    const head = `**${n}**  -  ${offer.kind === 'legendaries' ? 'Legendary' : `${KIND_NAME[c.Slot]}, Tier ${c.Tier}`}${used.length ? `  -  upgrades ${used.join(' + ')}` : ''}`;
-    return itemStats(c) ? `${head}\n${itemStats(c)}` : head;
+    const base = itemByName(n);
+    const c = offer.enhanced?.includes(n) ? enhancedCard(base) : base;
+    const used = priceFor(base, d.items).used;
+    const enhanced = offer.enhanced?.includes(n) ? '  -  **ENHANCED**' : '';
+    const bonus = offer.bonuses?.[i] ? `\n**BONUS:** ${offer.bonuses[i]} (Tier ${itemByName(offer.bonuses[i]).Tier})` : '';
+    const head = `**${n}**  -  ${offer.kind === 'legendaries' ? 'Legendary' : `${KIND_NAME[c.Slot]}, Tier ${c.Tier}`}${used.length ? `  -  upgrades ${used.join(' + ')}` : ''}${enhanced}`;
+    return `${itemStats(c) ? `${head}\n${itemStats(c)}` : head}${bonus}`;
   });
   e.addFields({ name: 'The Choices', value: about.join('\n').slice(0, 1024) }, ...runFields(d));
   if (run) e.addFields({ name: 'Fight Time', value: clock(run.seconds), inline: true });
@@ -199,7 +203,8 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   e.setImage(`attachment://${replace != null ? 'hero.png' : pic.gif ? 'pick.gif' : 'pick.png'}`).setFooter({ text: `Floor ${spec.floor} of ${D.FLOORS}  -  ${plural(d.room - 1, 'room')} of ${D.LAST_ROOM} cleared  -  one death ends the run` });
   const components = [];
   if (replace != null) {
-    const all = SLOTS.flatMap((s) => d.items[s]);
+    const used = priceFor(itemByName(offer.choices[replace]), d.items).used;
+    const all = SLOTS.flatMap((s) => d.items[s]).filter((n) => !used.includes(n));
     components.push(row(new StringSelectMenuBuilder().setCustomId(`${DSWAP_ID}:${member.id}:${offer.room}:${replace}`).setPlaceholder(titleCase(`Give up an item for ${offer.choices[replace]}`).slice(0, 150))
       .addOptions(all.map((n) => ({ label: n, value: n, description: `${KIND_NAME[itemByName(n).Slot]}, Tier ${itemByName(n).Tier}` })))));
     components.push(row(button(`${DBACK_ID}:${member.id}`, 'Back')));
@@ -207,7 +212,10 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     const points = pointMenu(member.id, d);
     if (points) components.push(points);
     const short = (n) => (offer.kind === 'buffs' ? buffText(n, D.BOSS_BUFFS) : n);
-    components.push(row(...offer.choices.map((n, i) => button(`${DTAKE_ID}:${member.id}:${offer.room}:${i}`, short(n), ButtonStyle.Primary)), button(`${DSKIP_ID}:${member.id}:${offer.room}`, `Skip (Heal ${D.SKIP_HEAL * 100}%)`)));
+    const picks = offer.choices.map((n, i) => button(`${DTAKE_ID}:${member.id}:${offer.room}:${i}`, short(n), ButtonStyle.Primary));
+    picks.push(button(`${DSKIP_ID}:${member.id}:${offer.room}`, `Skip (Heal ${D.SKIP_HEAL * 100}%)`));
+    if (offer.kind === 'items') picks.push(button(`${DREROLL_ID}:${member.id}:${offer.room}`, `Reroll (${d.rerolls ?? D.REROLLS_PER_FLOOR} left)`).setDisabled((d.rerolls ?? D.REROLLS_PER_FLOOR) <= 0));
+    components.push(row(...picks));
     components.push(row(button(`${DBUILD_ID}:${member.id}`, 'Build')));
   }
   return { embeds: [e], components, files: [soulsFile(), await heroPicture(d.hero), file] };
@@ -220,6 +228,7 @@ async function buildView(member, d) {
   const buffs = Object.entries(d.buffs);
   if (buffs.length) e.addFields({ name: 'Permanent Buffs (This Run)', value: buffs.map(([k, n]) => buffText(k, n)).join('\n'), inline: true });
   if (d.bridge?.length) e.addFields({ name: 'Big Buffs (This Floor)', value: d.bridge.map((k) => `${BRIDGE[k].name} — ${BRIDGE[k].text}`).join('\n'), inline: true });
+  if (d.enhanced?.length) e.addFields({ name: 'Enhanced Items', value: d.enhanced.join('\n'), inline: true });
   const imbued = Object.keys(d.imbues);
   if (imbued.length) e.addFields({ name: 'Imbued', value: imbued.map((n) => `${n} into ${abilityName(d.hero, d.imbues[n])}`).join('\n'), inline: true });
   e.setFooter({ text: 'This build is the run\'s own. Your hero\'s farm items, level and souls are untouched.' });
@@ -290,6 +299,6 @@ const screen = async (member, record, opts = {}) => (!record.descent ? startView
   : record.descent.phase === 'offer' ? offerView(member, record.descent, opts) : roomView(member, record.descent, opts));
 
 module.exports = {
-  DHERO_ID, DBEGIN_ID, DFIGHT_ID, DWALK_ID, DTAKE_ID, DSKIP_ID, DSWAP_ID, DPOINT_ID, DBUILD_ID, DBACK_ID, DQUIT_ID, DAGAIN_ID,
+  DHERO_ID, DBEGIN_ID, DFIGHT_ID, DWALK_ID, DTAKE_ID, DSKIP_ID, DREROLL_ID, DSWAP_ID, DPOINT_ID, DBUILD_ID, DBACK_ID, DQUIT_ID, DAGAIN_ID,
   startView, roomView, fightView, runCard, offerView, buildView, overView, completeView, tokenView, leaderboardView, screen, buffLine: (key) => buffText(key, D.BOSS_BUFFS),
 };

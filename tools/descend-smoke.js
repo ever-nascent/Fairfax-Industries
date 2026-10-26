@@ -8,7 +8,8 @@ const ROOT = path.join(__dirname, '..', 'src', 'utils', 'farm');
 const D = require(path.join(ROOT, 'descent'));
 const V = require(path.join(ROOT, 'descentViews'));
 const { roster } = require(path.join(ROOT, 'hero'));
-const { SLOTS } = require(path.join(ROOT, 'levels'));
+const { SLOTS, priceFor } = require(path.join(ROOT, 'levels'));
+const { itemByName } = require(path.join(ROOT, 'stats'));
 // the server's bar emojis, as long as the real ones (a health bar of them is about 380 characters)
 const STREAK = ['left', 'mid', 'right'].flatMap((p) => ['on', 'off'].map((s) => `streak_${p}_${s}`));
 require(path.join(__dirname, '..', 'src', 'utils', 'trivia')).loadStreakEmojis({ emojis: { cache: { find: (fn) => STREAK.map((name) => ({ name, toString: () => `<:${name}:1554307832742940715>` })).find(fn) } } });
@@ -67,13 +68,18 @@ function limits(payload, what) {
           if (!d.offer.choices.length) fail(`an empty ${d.offer.kind} offer`);
           for (let n = Math.floor(rng() * 4); n > 0; n--) D.spendPoint(d, 1 + Math.floor(rng() * 4));
           if (d.room % 3 === 0) problems.push(...limits(await V.offerView(member, d, { run }), `${hero} offer ${d.room - 1}`));
+          if (d.offer.kind === 'items' && d.rerolls > 0 && rng() < 0.25) {
+            D.rerollChoice(d);
+            problems.push(...limits(await V.offerView(member, d, { animate: true }), `${hero} reroll ${d.room - 1}`));
+          }
           if (rng() < 0.1) D.skipChoice(d);
           else {
             const i = Math.floor(rng() * d.offer.choices.length);
             const r = D.takeChoice(d, i);
             if (r.error === 'full') {
               problems.push(...limits(await V.offerView(member, d, { replace: i }), `${hero} replace`));
-              const all = SLOTS.flatMap((s) => d.items[s]);
+              const used = priceFor(itemByName(d.offer.choices[i]), d.items).used;
+              const all = SLOTS.flatMap((s) => d.items[s]).filter((name) => !used.includes(name));
               const r2 = D.takeChoice(d, i, all[Math.floor(rng() * all.length)]);
               if (!r2.ok) fail(`swap: ${r2.error}`);
             } else if (!r.ok) fail(`pick: ${r.error}`);
