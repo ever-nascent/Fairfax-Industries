@@ -322,6 +322,20 @@ test('every /descend screen fits the Discord limits and attaches what it points 
   checkLimits(dviews.tokenView('Haze'), 'token');
 });
 
+test('the start screen uses the requested paragraphs and separates the best run from the others', async () => {
+  const record = { bestDescent: { hero: 'Vyper', rooms: 29 }, descentBest: { Vyper: 29, Haze: 18, Abrams: 7 }, hero: 'Vyper', heroes: {} };
+  const view = await dviews.startView(member('start-format'), record);
+  const e = view.embeds[0].toJSON();
+  assert.match(e.description, /\*\*8 Floors,\*\*\n\*\*40 Rooms,\*\*/);
+  assert.match(e.description, /Room\*\* is \*\*Cleared/);
+  assert.match(e.description, /\*\*The Patron\*\* waits at the bottom/);
+  assert.deepStrictEqual(e.fields.map((f) => [f.name, f.value]), [
+    ['Your Best Runs', 'Vyper  -  **29 Rooms**'],
+    ['Other Runs.', 'Haze  -  **18 Rooms**\nAbrams  -  **7 Rooms**'],
+  ]);
+  assert.strictEqual(e.footer.text, 'Pick a Hero that you have unlocked.');
+});
+
 test('the buttons: begin, fight, pick, build, back, abandon; only the runner may press them', async () => {
   const id = 'd4';
   const cmd = fake(id);
@@ -330,7 +344,7 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
   await chooseHero(id, 'Haze');
   const start = fake(id);
   await descend.execute({ ...start, options: { getSubcommand: () => 'run' } });
-  assert.strictEqual(start.log.at(-1)[1].embeds[0].toJSON().footer.text, 'Pick a Hero you have unlocked.');
+  assert.strictEqual(start.log.at(-1)[1].embeds[0].toJSON().footer.text, 'Pick a Hero that you have unlocked.');
   const sel = fake(id, `farm_dhero:${id}`, { values: ['Haze'] });
   await route('Descend hero select').execute(sel);
   assert.strictEqual(sel.log.at(-1)[1].components.at(-1).toJSON().components[0].custom_id, `farm_dbegin:${id}:Haze`);

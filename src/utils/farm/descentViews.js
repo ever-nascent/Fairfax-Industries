@@ -69,22 +69,30 @@ const roomFile = async (spec, mood = null, wolf = false, stage = 0) => (spec.kin
 async function startView(member, record, selected = null) {
   const guild = member.guild;
   const mine = roster().filter((n) => hasHero(record, n));
+  const runs = Object.entries(record.descentBest ?? {}).filter(([, rooms]) => rooms > 0).sort((a, b) => b[1] - a[1]);
+  const best = record.bestDescent?.rooms ? [record.bestDescent.hero, record.bestDescent.rooms] : runs[0];
+  const runLine = ([hero, rooms]) => `${heroText(guild, hero)}${hero}  -  **${plural(rooms, 'Room')}**`;
   const e = dembed().setDescription([
-    `Take one of your Heroes down ${D.FLOORS} Floors, ${D.LAST_ROOM} Rooms, starting from **Level 0 with no Items**.`,
+    `Take one of your Heroes down **${D.FLOORS} Floors,**`,
+    `**${D.LAST_ROOM} Rooms,** starting from **Level 0** with no **Items**.`,
     '',
-    'Once a Room is defeated, you pick **1 of 3 random items**.',
-    'Every 5th room is a Boss, which when defeated, earns one Rejuv and Item and more.',
+    'Once a **Room** is **Cleared**, you pick **1 of 3 Random Items**.',
     '',
-    'Rival Heroes may block your path. **The Patron** waits at the bottom. **A single death ends the run.**',
+    'Every **5th** **Room** is a **Boss**, which when defeated, earns one',
+    `**${rejuvIcon()}Rejuv** and **Item** and Buffs. Rivaling Heroes may attempt to`,
+    'block your path in an attempt to end your run.',
+    '',
+    '**The Patron** waits at the bottom. **A single death ends the run.**',
   ].join('\n')).addFields(
-    { name: 'Your Best Run', value: record.bestDescent?.rooms ? bestText(record.bestDescent) : 'None Yet', inline: true },
+    { name: 'Your Best Runs', value: best ? runLine(best) : 'None yet.' },
+    { name: 'Other Runs.', value: runs.filter(([hero]) => hero !== best?.[0]).map(runLine).join('\n') || 'No other runs yet.' },
   );
   const files = [soulsFile()];
   if (selected) {
-    e.addFields({ name: `${selected}'s Best`, value: record.descentBest?.[selected] ? plural(record.descentBest[selected], 'room') : 'None yet', inline: true }).setThumbnail('attachment://thumb.png');
+    e.setThumbnail('attachment://thumb.png');
     files.push(await heroPicture(selected));
   }
-  e.setFooter({ text: 'Pick a Hero you have unlocked.' });
+  e.setFooter({ text: 'Pick a Hero that you have unlocked.' });
   const options = mine.slice(0, 25).map((n) => ({ label: n, value: n, emoji: heroEmoji(guild, slugOf(n)), default: n === selected, description: record.descentBest?.[n] ? `Best: ${plural(record.descentBest[n], 'room')}` : 'No run yet' }));
   const components = [row(new StringSelectMenuBuilder().setCustomId(`${DHERO_ID}:${member.id}`).setPlaceholder('Choose a hero to take down').addOptions(options))];
   if (selected) components.push(row(button(`${DBEGIN_ID}:${member.id}:${selected}`, `Descend with ${selected}`, ButtonStyle.Success)));
