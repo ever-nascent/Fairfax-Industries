@@ -2564,7 +2564,7 @@ test('the Patron: half weapon and half spirit damage, and a true-damage blast th
   close(shrine.blast.damage, 300 * HARDNESS.siege, 0.001);
   assert.strictEqual(shrine.blast.every, 8);
   const run = require('../src/utils/farm/play').simulate('Haze', 'siege', { boons: 35, rejuvs: 3 });
-  assert.ok(run.log.some(([, text]) => /Silenced Haze/.test(text)), 'the battle log says who silenced the hero');
+  assert.ok(run.log.some(([, text]) => /\*\*Silenced\*\* Haze/.test(text)), 'the battle log says who silenced the hero');
 });
 
 test('ability range and movement speed: area abilities reach further back, and a fast hero dodges blasts', () => {
