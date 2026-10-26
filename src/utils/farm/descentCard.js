@@ -81,17 +81,17 @@ function hexagon(g, x, y, r, turn = 0) {
   for (let k = 0; k < 6; k++) { const [px, py] = polar(turn - 90 + 60 * k, r); if (k) g.lineTo(x + px, y + py); else g.moveTo(x + px, y + py); }
   g.closePath();
 }
-// A chamber's bore: six facets under a hexagon, drawn faint (a pick's tint makes them show).
-function bore(g, x, y, r, alpha) {
+// A chamber's bore, like the game's: a six-pointed star of two triangles (an upright one and an upside-down one) crossing inside it. `dark` draws it as
+// shaded lines (a tinted pick's chamber), else faint light ones (an empty chamber).
+function bore(g, x, y, r, dark) {
   g.save();
-  g.strokeStyle = `rgba(255,255,255,${alpha})`;
-  g.lineWidth = 1.5;
-  hexagon(g, x, y, r * 0.58);
-  g.stroke();
-  for (let k = 0; k < 6; k++) {
-    const [a, b] = polar(-90 + 60 * k, r * 0.58);
-    const [c, d] = polar(-90 + 60 * k, r * 0.93);
-    g.beginPath(); g.moveTo(x + a, y + b); g.lineTo(x + c, y + d); g.stroke();
+  g.lineJoin = 'round';
+  for (const turn of [0, 180]) {
+    g.beginPath();
+    for (let k = 0; k < 3; k++) { const [px, py] = polar(turn - 90 + 120 * k, r * 0.93); if (k) g.lineTo(x + px, y + py); else g.moveTo(x + px, y + py); }
+    g.closePath();
+    if (dark) { g.strokeStyle = 'rgba(0,0,0,0.34)'; g.lineWidth = 5; g.stroke(); g.strokeStyle = 'rgba(255,255,255,0.07)'; g.lineWidth = 1.2; g.stroke(); }
+    else { g.strokeStyle = 'rgba(255,255,255,0.09)'; g.lineWidth = 2; g.stroke(); }
   }
   g.restore();
 }
@@ -139,7 +139,7 @@ function drawBody() {
     well.addColorStop(0, '#0b0b0d');
     well.addColorStop(1, '#27272c');
     g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = well; g.fill();
-    bore(g, x, y, r, 0.1);
+    bore(g, x, y, r, false);
     g.strokeStyle = 'rgba(206,206,212,0.8)';
     g.lineWidth = 5;
     g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke();
@@ -204,25 +204,33 @@ function slanted(g, text, x, y, px, fill, outline, turn = 0) {
   g.fillText(text, 0, 0);
   g.restore();
 }
-// The blue ENHANCED badge with its lightning mark, centred at (x, y).
+// The blue ENHANCED badge with the game's upgrade arrow (a curl that ends in an arrowhead pointing up and right), centred at (x, y).
 function enhancedBadge(g, x, y) {
   const px = 13;
   g.save();
   g.font = `italic bold ${px}px sans-serif`;
   const w = g.measureText('ENHANCED').width;
   g.restore();
-  slanted(g, 'ENHANCED', x - 5, y, px, '#45acce', '#1d527e', -5);
+  const blue = g.createLinearGradient(0, y - 12, 0, y + 4); // lighter on top, deeper blue underneath
+  blue.addColorStop(0, '#7fd8f2');
+  blue.addColorStop(1, '#3a95d0');
   g.save();
-  g.translate(x + w / 2 + 3, y - 8);
+  g.shadowColor = 'rgba(40,140,230,0.85)'; // a soft blue glow, strongest underneath
+  g.shadowBlur = 9;
+  g.shadowOffsetY = 3;
+  slanted(g, 'ENHANCED', x - 5, y, px, blue, '#1d527e', -5);
+  g.restore();
+  g.save();
+  g.translate(x + w / 2 + 5, y - 12);
   g.rotate(rad(-5));
-  g.beginPath(); // a small lightning bolt
-  g.moveTo(5, 0); g.lineTo(0, 7); g.lineTo(4, 7); g.lineTo(1, 14); g.lineTo(9, 5); g.lineTo(5, 5); g.lineTo(8, 0); g.closePath();
+  g.lineCap = 'round';
   g.lineJoin = 'round';
-  g.lineWidth = 3;
-  g.strokeStyle = '#1d527e';
-  g.stroke();
-  g.fillStyle = '#45acce';
-  g.fill();
+  const arrow = () => { // the curl, then the head
+    g.beginPath(); g.moveTo(0, 15); g.quadraticCurveTo(-1, 8, 5, 8); g.quadraticCurveTo(10, 8, 11, 4); g.stroke();
+    g.beginPath(); g.moveTo(11.5, -3); g.lineTo(6.5, 4.5); g.lineTo(15.5, 5.5); g.closePath();
+  };
+  g.strokeStyle = '#1d527e'; g.lineWidth = 6; arrow(); g.stroke();
+  g.strokeStyle = '#45acce'; g.lineWidth = 2.6; arrow(); g.stroke(); g.fillStyle = '#45acce'; g.fill();
   g.restore();
 }
 
@@ -284,9 +292,10 @@ async function choiceIn(g, choice, deg, grow = 1) {
   // the inside, tinted by the kind and glowing inward
   const well = g.createRadialGradient(x, y, 6, x, y, r);
   well.addColorStop(0, mid);
+  well.addColorStop(0.5, mid);
   well.addColorStop(1, rim);
   g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = well; g.fill();
-  bore(g, x, y, r, 0.16);
+  bore(g, x, y, r, true);
   // the ring
   const ring = g.createLinearGradient(x - r, y + r, x + r, y - r);
   ring.addColorStop(0, RING_FROM[kind] ?? KIND[kind]);
