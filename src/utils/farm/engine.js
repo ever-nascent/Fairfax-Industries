@@ -301,7 +301,7 @@ class Fight {
       return;
     }
     if (this.time < hero.busyUntil) return; // mid-swing
-    w.charge += hero.stats.fireRate * (1 + hero.mod('fireRate')) * DT;
+    w.charge += hero.stats.fireRate * (1 + hero.mod('fireRate')) * (1 - slowed(hero)) * DT;
     const infinite = hero.has('infiniteClip');
     while (w.charge >= 1 && (w.clip > 0 || infinite) && target.alive) {
       w.charge -= 1;
@@ -421,7 +421,7 @@ class Fight {
       const target = this.heroes.find((h) => h.alive && h.targetable);
       if (!target) continue;
       if (!enemy.has('disarm')) {
-        enemy.swing = (enemy.swing ?? 0) + DT;
+        enemy.swing = (enemy.swing ?? 0) + DT * (1 - slowed(enemy));
         if (enemy.swing >= ATTACK_EVERY - 1e-9) {
           enemy.swing -= ATTACK_EVERY;
           const hit = (enemy.stats.dps + (enemy.stats.dpsMaxHealthPct || 0) * target.stats.maxHealth) * ATTACK_EVERY;
