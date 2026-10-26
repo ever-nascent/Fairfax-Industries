@@ -204,25 +204,32 @@ function slanted(g, text, x, y, px, fill, outline, turn = 0) {
   g.fillText(text, 0, 0);
   g.restore();
 }
-// The blue ENHANCED badge with the game's upgrade mark (a sharp lightning zigzag that ends in an arrowhead), centred at (x, y).
+// The blue ENHANCED badge with the game's upgrade mark (a solid lightning bolt with an arrowhead on top, leaning right, outlined), centred at (x, y).
+const BOLT = [[113, 48], [162, 48], [136, 98], [172, 98], [88, 210], [117, 128], [60, 128]]; // a lightning bolt (traced from a plain bolt icon)
+const BOLT_HEAD = [[96, 52], [178, 52], [140, -10]]; // the arrowhead above it
 function enhancedBadge(g, x, y) {
-  const px = 14;
+  const px = 13;
   g.save();
   g.font = `italic bold ${px}px sans-serif`;
   const w = g.measureText('ENHANCED').width;
   g.restore();
-  slanted(g, 'ENHANCED', x - 7, y, px, '#45acce', '#1d527e', 0);
+  slanted(g, 'ENHANCED', x - 6, y, px, '#45acce', '#1d527e', -5);
   g.save();
-  g.translate(x + w / 2 - 1, y - 14.5);
-  g.scale(0.78, 0.78);
+  g.translate(x + w / 2 + 5, y - 6);
+  g.rotate(rad(-5 + 8));
+  const k = 24 / 220; // about 24 px tall
+  g.scale(k, k);
+  g.translate(-122, -100);
   g.lineJoin = 'miter';
-  g.miterLimit = 10;
-  const bolt = () => { // the zigzag, then the head on its last stroke
-    g.beginPath(); g.moveTo(1, 22); g.lineTo(8, 14.5); g.lineTo(3, 12.5); g.lineTo(10.5, 5); g.stroke();
-    g.beginPath(); g.moveTo(13, 0); g.lineTo(7, 4.5); g.lineTo(12.5, 8.5); g.closePath();
-  };
-  g.strokeStyle = '#1d527e'; g.lineWidth = 4.6; bolt(); g.stroke();
-  g.strokeStyle = '#45acce'; g.lineWidth = 1.9; bolt(); g.stroke(); g.fillStyle = '#45acce'; g.fill();
+  g.miterLimit = 6;
+  for (const pts of [BOLT, BOLT_HEAD]) { // the outline first (both shapes), then the fill over it so the two read as one mark
+    g.beginPath(); pts.forEach(([a_, b_], i) => (i ? g.lineTo(a_, b_) : g.moveTo(a_, b_))); g.closePath();
+    g.strokeStyle = '#1d527e'; g.lineWidth = 26; g.stroke();
+  }
+  for (const pts of [BOLT, BOLT_HEAD]) {
+    g.beginPath(); pts.forEach(([a_, b_], i) => (i ? g.lineTo(a_, b_) : g.moveTo(a_, b_))); g.closePath();
+    g.fillStyle = '#45acce'; g.fill();
+  }
   g.restore();
 }
 
@@ -319,7 +326,7 @@ async function choiceIn(g, choice, deg, grow = 1) {
   // the card, then the name and the badge under it (the block is centred a little high in the ring)
   const size = Math.round(r * 2 * 0.45) * (0.5 + grow / 2);
   const lines = wrap(g, choice.name, 160);
-  const rows = lines.length + (choice.enhanced ? 0.8 : 0);
+  const rows = lines.length + (choice.enhanced ? 1.15 : 0);
   const top = y - (size + 8 + rows * 21) / 2 + 2;
   const cy = top + size / 2;
   await card(g, choice, x, cy, size);
