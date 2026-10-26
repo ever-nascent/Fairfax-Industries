@@ -32,6 +32,7 @@ const DBACK_ID = 'farm_dback'; // button "Back": farm_dback:<user id> (the run's
 const DQUIT_ID = 'farm_dquit'; // button "Abandon Run": farm_dquit:<user id>, then farm_dquit:<user id>:yes
 const DAGAIN_ID = 'farm_dagain'; // button "Descend Again" (the end of a run): farm_dagain:<user id>
 const DIMBUE_ID = 'farm_dimbue'; // select: farm_dimbue:<user id>, value = ability slot for the pending item
+const DBONUSSWAP_ID = 'farm_dbonusswap'; // select: farm_dbonusswap:<user id>, value = item given up for a pending BONUS
 
 const TOKEN_ICON = path.join(ASSETS, 'farm', 'icons', 'unlock-token.png');
 const KIND_NAME = { Weapon: 'Weapon', Armor: 'Vitality', Tech: 'Spirit' };
@@ -294,6 +295,20 @@ async function imbueView(member, d) {
   };
 }
 
+async function bonusView(member, d) {
+  const pending = d.pendingBonus;
+  const all = SLOTS.flatMap((s) => d.items[s]);
+  const e = dembed().setTitle('Upgrade Taken').setThumbnail('attachment://thumb.png')
+    .setDescription(`**${pending.upgraded}** replaced **${pending.used.join(' + ')}**.\n\n**BONUS: ${pending.name}**\nChoose an item to give up for the bonus.`)
+    .setImage('attachment://hero.png');
+  return {
+    embeds: [e],
+    components: [row(new StringSelectMenuBuilder().setCustomId(`${DBONUSSWAP_ID}:${member.id}`).setPlaceholder(`Give up an item for ${pending.name}`)
+      .addOptions(all.map((n) => ({ label: n, value: n, description: `${KIND_NAME[itemByName(n).Slot]}, Tier ${itemByName(n).Tier}` }))))],
+    files: [soulsFile(), await heroPicture(d.hero), new AttachmentBuilder(await runCard(d), { name: 'hero.png' })],
+  };
+}
+
 // ---- the end of a run ----
 async function overView(member, run) {
   const d = run.over;
@@ -352,9 +367,10 @@ function leaderboardView(member, rows, record) {
 // The run's current screen: the start screen (no run), the pick (still), or the next room.
 const screen = async (member, record, opts = {}) => (!record.descent ? startView(member, record)
   : record.descent.phase === 'offer' ? offerView(member, record.descent, opts)
-    : record.descent.phase === 'imbue' ? imbueView(member, record.descent) : roomView(member, record.descent, opts));
+    : record.descent.phase === 'imbue' ? imbueView(member, record.descent)
+      : record.descent.phase === 'bonus' ? bonusView(member, record.descent) : roomView(member, record.descent, opts));
 
 module.exports = {
-  DHERO_ID, DBEGIN_ID, DFIGHT_ID, DWALK_ID, DTAKE_ID, DSKIP_ID, DREROLL_ID, DSWAP_ID, DPOINT_ID, DBUILD_ID, DBACK_ID, DQUIT_ID, DAGAIN_ID, DIMBUE_ID,
-  startView, roomView, fightView, runCard, offerView, buildView, imbueView, overView, completeView, tokenView, leaderboardView, screen, buffLine: (key) => buffText(key, D.BOSS_BUFFS),
+  DHERO_ID, DBEGIN_ID, DFIGHT_ID, DWALK_ID, DTAKE_ID, DSKIP_ID, DREROLL_ID, DSWAP_ID, DPOINT_ID, DBUILD_ID, DBACK_ID, DQUIT_ID, DAGAIN_ID, DIMBUE_ID, DBONUSSWAP_ID,
+  startView, roomView, fightView, runCard, offerView, buildView, imbueView, bonusView, overView, completeView, tokenView, leaderboardView, screen, buffLine: (key) => buffText(key, D.BOSS_BUFFS),
 };

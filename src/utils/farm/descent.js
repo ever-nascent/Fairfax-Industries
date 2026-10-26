@@ -307,6 +307,14 @@ function addItem(d, name, replace = null, enhanced = false) {
   // holds the run here instead of silently putting every item into ability one.
   return { ok: true, used, replaced };
 }
+function beginImbues(d, names) {
+  const imbues = names.filter((n) => IMBUES.includes(n));
+  if (!imbues.length) return false;
+  d.pendingImbues = [...(d.pendingImbues ?? []), ...imbues];
+  d.imbuing = d.pendingImbues.shift();
+  d.phase = 'imbue';
+  return true;
+}
 // Takes choice `index` of the offer. Returns { ok, kind, name, used, replaced } or { error: 'none' | 'full' | 'missing' }.
 function takeChoice(d, index, replace = null) {
   const name = d.offer?.choices[index];
@@ -325,6 +333,14 @@ function takeChoice(d, index, replace = null) {
     const bonus = d.offer.bonuses?.[index];
     if (bonus) {
       const added = addItem(next, bonus, replace);
+      if (added.error === 'full' && !replace) {
+        Object.assign(d, next);
+        d.pendingBonus = { name: bonus, upgraded: name, used: extra.used };
+        d.offer = null;
+        if (!beginImbues(d, [name])) d.phase = 'bonus';
+        if (enhanced) d.enhancedChance = ENHANCED_CHANCE;
+        return { ...extra, ok: true, kind: 'items', name, bonus, bonusPending: true, ...(enhanced ? { enhanced: true } : {}) };
+      }
       if (added.error) return added;
       extra.bonus = bonus;
     }
@@ -333,12 +349,7 @@ function takeChoice(d, index, replace = null) {
   if (enhanced) d.enhancedChance = ENHANCED_CHANCE;
   const { kind } = d.offer;
   d.offer = null;
-  const imbues = [name, extra.bonus].filter((n) => IMBUES.includes(n));
-  if (imbues.length) {
-    d.pendingImbues = [...(d.pendingImbues ?? []), ...imbues];
-    d.imbuing = d.pendingImbues.shift();
-    d.phase = 'imbue';
-  } else d.phase = 'ready';
+  if (!beginImbues(d, [name, extra.bonus].filter(Boolean))) d.phase = 'ready';
   return { ...extra, ok: true, kind, name, ...(enhanced ? { enhanced: true } : {}) };
 }
 // Finishes the mandatory ability choice for an imbue item. A bonus can also be an
@@ -350,8 +361,19 @@ function setImbue(d, slot) {
   if (NO_ULT_IMBUE.has(name) && slot === 4) return { error: 'ultimate' };
   d.imbues[name] = slot;
   d.imbuing = d.pendingImbues?.shift() ?? null;
-  if (!d.imbuing) { delete d.imbuing; delete d.pendingImbues; d.phase = 'ready'; }
+  if (!d.imbuing) { delete d.imbuing; delete d.pendingImbues; d.phase = d.pendingBonus ? 'bonus' : 'ready'; }
   return { ok: true, name, slot, more: d.imbuing };
+}
+// The primary upgrade is always taken first. At a full build, its extra BONUS item
+// gets its own replacement choice, so an upgrade never masquerades as a swap.
+function takeBonus(d, replace) {
+  const pending = d.pendingBonus;
+  if (d.phase !== 'bonus' || !pending?.name) return { error: 'none' };
+  const added = addItem(d, pending.name, replace);
+  if (added.error) return added;
+  delete d.pendingBonus;
+  if (!beginImbues(d, [pending.name])) d.phase = 'ready';
+  return { ...added, ok: true, name: pending.name, bonus: true };
 }
 function rerollChoice(d) {
   if (d.phase !== 'offer' || d.offer?.kind !== 'items') return { error: 'none' };
@@ -477,6 +499,7 @@ const skip = (userId, room) => updateFarmUser(userId, (r) => (r.descent?.offer?.
 const reroll = (userId, room) => updateFarmUser(userId, (r) => (r.descent?.offer?.room === room ? rerollChoice(r.descent) : { error: 'none' }));
 const spend = (userId, slot) => updateFarmUser(userId, (r) => (r.descent ? spendPoint(r.descent, slot) : { error: 'none' }));
 const imbue = (userId, slot) => updateFarmUser(userId, (r) => (r.descent ? setImbue(r.descent, slot) : { error: 'none' }));
+const takeBonusItem = (userId, replace) => updateFarmUser(userId, (r) => (r.descent ? takeBonus(r.descent, replace) : { error: 'none' }));
 // Ends the run where it stands (his open question; my pick: a run waits as long as the member likes, and Abandon ends it). Returns the run or null.
 const abandon = (userId) => updateFarmUser(userId, (r) => {
   const d = r.descent;
@@ -495,6 +518,6 @@ async function leaderboard() {
 
 module.exports = {
   ROOMS_PER_FLOOR, FLOORS, LAST_ROOM, TOKEN_ROOM, SKIP_HEAL, SKIP_BUFFS, BOSS_BUFFS, LITTLE_BUFF_CHANCE, BIG_BUFF_CHANCE, REROLLS_PER_FLOOR, ENHANCED_CHANCE, ENHANCED_STEP, REST, TUNE, BOSS, RIVAL, ARCHETYPES, AFFIXES, BOSSES, TIER_WEIGHTS, NO_RUN_ITEMS, NO_RUN_LEGENDARIES,
-  dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, rollFind, addItem, takeChoice, skipChoice, rerollChoice, spendPoint, setImbue, afterWin, newRun,
-  startRun, getRun, fight, walkPast, choose, skip, reroll, spend, imbue, abandon, leaderboard,
+  dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, rollFind, addItem, takeChoice, takeBonus, skipChoice, rerollChoice, spendPoint, setImbue, afterWin, newRun,
+  startRun, getRun, fight, walkPast, choose, skip, reroll, spend, imbue, takeBonusItem, abandon, leaderboard,
 };

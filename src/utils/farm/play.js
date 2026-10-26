@@ -17,6 +17,7 @@
 const path = require('node:path');
 const { getStore } = require('../../storage');
 const { ASSETS } = require('../art');
+const { titleCase } = require('../format');
 const ledger = require('../soulsLedger');
 const { pickRandom } = require('../random');
 const { buildHero, roster } = require('./hero');
@@ -223,11 +224,11 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     }
     for (; seen < fight.log.length; seen++) {
       const l = fight.log[seen];
-      log.push([l.t, l.warped ? `${l.who} warped away from ${l.from}'s ${l.what}` : l.reload ? `${l.who} started reloading` : l.ccBlocked ? `${l.who}'s ${l.ccBlocked} blocked ${l.what}` : l.parry ? `${l.who} parried ${l.target}'s Heavy Melee` : l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.special ? `${l.who} used ${l.what}` : l.cc ? `${l.who} ${l.what} ${hero.name}` : l.verb ? `${l.who} ${l.verb} ${hero.name}` : `${l.who} ${l.what === 'stomp' ? 'stomped' : 'cursed'} ${hero.name}`) : l.melee ? `${l.who} landed a ${l.what} on ${l.target}` : `${l.who} used ${l.what}`]); // (a rival hero’s casts are its own)
+      log.push([l.t, titleCase(l.warped ? `${l.who} warped away from ${l.from}'s ${l.what}` : l.reload ? `${l.who} started reloading` : l.ccBlocked ? `${l.who}'s ${l.ccBlocked} blocked ${l.what}` : l.parry ? `${l.who} parried ${l.target}'s Heavy Melee` : l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.special ? `${l.who} used ${l.what}` : l.cc ? `${l.who} ${l.what} ${hero.name}` : l.verb ? `${l.who} ${l.verb} ${hero.name}` : `${l.who} ${l.what === 'stomp' ? 'stomped' : 'cursed'} ${hero.name}`) : l.melee ? `${l.who} landed a ${l.what} on ${l.target}` : `${l.who} used ${l.what}`)]); // (a rival hero’s casts are its own)
       if (l.warped) lastWarp = log.at(-1);
     }
-    fight.enemies.forEach((e, i) => { if (!e.alive && !dead.has(i)) { dead.add(i); kills[stage]++; log.push([+fight.time.toFixed(1), `${label(fight, i)} went down`]); } });
-    if (!hero.alive && !downLogged) { downLogged = true; log.push([+fight.time.toFixed(1), `${hero.name} went down`]); }
+    fight.enemies.forEach((e, i) => { if (!e.alive && !dead.has(i)) { dead.add(i); kills[stage]++; log.push([+fight.time.toFixed(1), titleCase(`${label(fight, i)} went down`)]); } });
+    if (!hero.alive && !downLogged) { downLogged = true; log.push([+fight.time.toFixed(1), titleCase(`${hero.name} went down`)]); }
     fight.enemies.forEach((e, i) => { if (e.has('sleep')) slept.add(i); });
     if (++steps % FRAME_STEPS === 0) { frames.push(snapshot(fight, stage)); slept.clear(); }
   };

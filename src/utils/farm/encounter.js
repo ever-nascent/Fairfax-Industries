@@ -9,7 +9,7 @@ const { TIER_COSTS, MAX_TIER, ITEM_POOL } = require('./levels');
 const { itemByName } = require('./stats');
 const { isWolf } = require('./heroes/silver');
 const { pickRandom } = require('../random');
-const { rejuvIcon } = require('../format');
+const { rejuvIcon, titleCase } = require('../format');
 
 const ENCOUNTER_CHANCE = 0.05; // per won fight. ponytail: placeholder, his to tune
 const DUEL_SECONDS = 120; // a duel nobody has won by then: the rival slips away (counts as lost; costs nothing)
@@ -70,13 +70,13 @@ function duel(heroName, kit, rivalName, theirs, { rng = Math.random, rejuvs = 0 
     fight.step();
     for (; seen < fight.log.length; seen++) {
       const l = fight.log[seen];
-      log.push([l.t, l.warped ? `${l.who} warped away from ${l.from}'s ${l.what}` : l.reload ? `${l.who} started reloading` : l.ccBlocked ? `${l.who}'s ${l.ccBlocked} blocked ${l.what}` : l.parry ? `${l.who} parried ${l.target}'s Heavy Melee` : l.melee ? `${l.who} landed a ${l.what} on ${l.target}` : `${l.who} used ${l.what === 'Rejuvenated' ? `a ${rejuvIcon()}Rejuv` : l.what}`]);
+      log.push([l.t, titleCase(l.warped ? `${l.who} warped away from ${l.from}'s ${l.what}` : l.reload ? `${l.who} started reloading` : l.ccBlocked ? `${l.who}'s ${l.ccBlocked} blocked ${l.what}` : l.parry ? `${l.who} parried ${l.target}'s Heavy Melee` : l.melee ? `${l.who} landed a ${l.what} on ${l.target}` : `${l.who} used ${l.what === 'Rejuvenated' ? `a ${rejuvIcon()}Rejuv` : l.what}`)]);
       if (l.warped) lastWarp = log.at(-1);
     }
     if (rival.has('sleep')) asleep = true;
     if (steps % FRAME_STEPS === 0) { frames.push(snapshot()); asleep = false; }
   }
-  for (const unit of [rival, hero]) if (!unit.alive) log.push([+fight.time.toFixed(1), `${unit.name} went down`]);
+  for (const unit of [rival, hero]) if (!unit.alive) log.push([+fight.time.toFixed(1), titleCase(`${unit.name} went down`)]);
   frames.push(snapshot());
   const keep = frames.length <= MAX_FRAMES ? frames : Array.from({ length: MAX_FRAMES }, (_, i) => frames[Math.round((i * (frames.length - 1)) / (MAX_FRAMES - 1))]);
   return { encounter: true, hero: heroName, rival: rivalName, won: hero.alive && !rival.alive, timedOut: hero.alive && rival.alive, seconds: fight.time, rejuvsUsed: rejuvs - hero.rejuvs, kept: keptAfter(hero), frames: keep, log, damage: damageBreakdown(hero, [fight]) };

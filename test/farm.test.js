@@ -4,6 +4,7 @@ const assert = require('node:assert');
 const { Fight, enemy, HEAL_RATE, HEAL_POOL, BULLET_LIFESTEAL_VS_NPC, SPIRIT_LIFESTEAL_VS_NPC } = require('../src/utils/farm/engine');
 const { buildHero, heroNames, implemented } = require('../src/utils/farm/hero');
 const { heroStats, HEROES, ITEMS, innateStats, ITEM_STATS } = require('../src/utils/farm/stats');
+const { titleCase } = require('../src/utils/format');
 
 const close = (a, b, eps = 0.01) => assert.ok(Math.abs(a - b) <= eps * Math.max(1, Math.abs(b)), `${a} vs ${b}`);
 const fight = (hero, foe = enemy('Dummy', { maxHealth: 100000, dps: 0, distance: 10 })) => new Fight({ heroes: [hero], enemies: [foe], rng: () => 0.99 });
@@ -64,6 +65,12 @@ test('reloads, duel parries, and crowd-control immunity are recorded in the Batt
   const rebuttal = new Fight({ heroes: [buildHero('Haze')], enemies: [parryWithRebuttal], rng: () => 0.3 });
   rebuttal.melee(rebuttal.heroes[0], parryWithRebuttal, 'heavy');
   assert.ok(rebuttal.heroes[0].has('stun'), 'Rebuttal raises the parry chance');
+});
+
+test('Battle Log text is Title Case', () => {
+  assert.strictEqual(titleCase("Haze started reloading"), 'Haze Started Reloading');
+  assert.strictEqual(titleCase("Abrams parried Haze's Heavy Melee"), "Abrams Parried Haze's Heavy Melee");
+  assert.strictEqual(titleCase("Haze's Unstoppable blocked stun"), "Haze's Unstoppable Blocked Stun");
 });
 
 test('resists, evasion and lifesteal go through Fight.damage', () => {
@@ -2557,7 +2564,7 @@ test('the Patron: half weapon and half spirit damage, and a true-damage blast th
   close(shrine.blast.damage, 300 * HARDNESS.siege, 0.001);
   assert.strictEqual(shrine.blast.every, 8);
   const run = require('../src/utils/farm/play').simulate('Haze', 'siege', { boons: 35, rejuvs: 3 });
-  assert.ok(run.log.some(([, text]) => /silenced Haze/.test(text)), 'the battle log says who silenced the hero');
+  assert.ok(run.log.some(([, text]) => /Silenced Haze/.test(text)), 'the battle log says who silenced the hero');
 });
 
 test('ability range and movement speed: area abilities reach further back, and a fast hero dodges blasts', () => {
@@ -2981,6 +2988,6 @@ test('Haunt specials: what each family does to the hero, and what stops it', () 
   // in a real camp: the two medium Haunts of a Tier 2 camp carry it, a Tier 1 camp's never do
   const seeded = (n) => () => (n = (n * 16807) % 2147483647) / 2147483647;
   const logs = (key, family) => Array.from({ length: 30 }, (_, i) => simulate('Haze', key, { family, boons: 6, rng: seeded(i + 1) }).log.map(([, text]) => text)).flat();
-  assert.ok(logs('medium-camp', 'slum_shroom').some((text) => /^Slum Shroom used Spore Mines|^w+ Slum Shroom used Spore Mines/.test(text)), 'the Battle Log names the special');
+  assert.ok(logs('medium-camp', 'slum_shroom').some((text) => /^Slum Shroom Used Spore Mines|^w+ Slum Shroom Used Spore Mines/.test(text)), 'the Battle Log names the special');
   assert.ok(!logs('small-camp', 'gutter_ghoul').some((text) => /Toxic Waste/.test(text)));
 });

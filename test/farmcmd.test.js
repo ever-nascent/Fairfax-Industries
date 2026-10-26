@@ -193,7 +193,7 @@ test('Rejuvs: only the siege uses them, and a spent Rejuv shows in the battle lo
   assert.strictEqual(simulate('Haze', 'mid-boss', { rejuvs: 3 }).rejuvsUsed, 0, 'a held Rejuv does nothing against the Mid-Boss');
   const siege = simulate('Haze', 'siege', { rejuvs: 1 });
   assert.strictEqual(siege.rejuvsUsed, 1);
-  assert.ok(siege.frames.length >= 2 && siege.log.some(([, t]) => /Rejuvenator has expired/.test(t)));
+  assert.ok(siege.frames.length >= 2 && siege.log.some(([, t]) => /Rejuvenator Has Expired/.test(t)));
 });
 
 test('roam: a haul with buffs that stay on the hero, once every 30 minutes', async () => {

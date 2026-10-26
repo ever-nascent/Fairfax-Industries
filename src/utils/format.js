@@ -16,4 +16,8 @@ const rejuvIcon = () => (rejuvEmoji ? `${rejuvEmoji} ` : ''); // with a trailing
 const soulsText = (n) => `${soulsIcon()}${fmt(n)} Souls`;
 const boldSouls = (n) => `${soulsIcon()}**${fmt(n)} Souls**`;
 
-module.exports = { fmt, setSoulsEmoji, soulsIcon, soulsText, boldSouls, setRejuvEmoji, rejuvIcon };
+// Shared display casing for short UI lines, including Hero Farming's Battle Log.
+const SMALL_WORDS = new Set(['a', 'an', 'the', 'and', 'or', 'of', 'to', 'in', 'at', 'for', 'on', 'by', 'per', 'vs']);
+const titleCase = (text) => text.replace(/<a?:\w+:\d+>|(?<![\dA-Za-z'])[A-Za-z][A-Za-z']*/g, (word, at) => (word[0] === '<' || (at > 0 && SMALL_WORDS.has(word)) ? word : word[0].toUpperCase() + word.slice(1)));
+
+module.exports = { fmt, setSoulsEmoji, soulsIcon, soulsText, boldSouls, setRejuvEmoji, rejuvIcon, titleCase };

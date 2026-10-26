@@ -234,6 +234,15 @@ const descentRoutes = [
   },
   {
     name: 'farm',
+    label: 'Descend bonus replacement select',
+    matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DBONUSSWAP_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const result = await descent.takeBonusItem(interaction.user.id, interaction.values[0]);
+      return result.ok ? { note: `Took BONUS **${result.name}**.` } : STALE;
+    }),
+  },
+  {
+    name: 'farm',
     label: 'Descend ability point',
     matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DPOINT_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {

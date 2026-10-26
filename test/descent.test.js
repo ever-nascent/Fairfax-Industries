@@ -147,6 +147,18 @@ test('picks: an upgrade replaces its part in place, a full build needs an item g
   assert.strictEqual(swap.replaced, fill[0]);
   assert.ok(d.items.spirit.includes('Mystic Burst') && !d.items.vitality.includes(fill[0]));
   assert.strictEqual(countItems(d.items), MAX_ITEMS);
+  // At a full build, an upgrade takes its component immediately. Only its BONUS
+  // needs a replacement choice, so the main item never looks like a swap.
+  d.items = { weapon: POOL.weapon.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4), vitality: POOL.vitality.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4), spirit: ['Compress Cooldown', ...POOL.spirit.filter((n) => !D.NO_RUN_ITEMS.has(n) && n !== 'Compress Cooldown').slice(0, 3)] };
+  d.phase = 'offer';
+  d.offer = { kind: 'items', choices: ['Transcendent Cooldown'], bonuses: { 0: 'Mystic Burst' }, room: 4 };
+  const upgradeWithBonus = D.takeChoice(d, 0);
+  assert.ok(upgradeWithBonus.ok && upgradeWithBonus.bonusPending);
+  assert.strictEqual(d.phase, 'bonus');
+  assert.ok(d.items.spirit.includes('Transcendent Cooldown') && !d.items.spirit.includes('Compress Cooldown'));
+  const bonus = D.takeBonus(d, d.items.weapon[0]);
+  assert.ok(bonus.ok && d.items.spirit.includes('Mystic Burst'));
+  assert.strictEqual(countItems(d.items), MAX_ITEMS);
   // a boss's buff pick and a legendary
   d.phase = 'offer';
   d.offer = { kind: 'buffs', choices: ['fireRate', 'maxHealth', 'spiritPower'], room: 5 };
@@ -438,4 +450,41 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
   const board = fake(id);
   await descend.execute({ ...board, options: { getSubcommand: () => 'leaderboard' } });
   assert.strictEqual(board.log.at(-1)[1].embeds[0].toJSON().title, 'Descend Leaderboard');
+});
+
+test('a full-build upgrade with a BONUS and an imbue item walks through its screens and selects without stranding the run', async () => {
+  const id = 'd9';
+  await chooseHero(id, 'Haze');
+  await D.startRun(id, 'Haze', 3);
+  const keep = POOL.weapon.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4);
+  await updateFarmUser(id, (r) => {
+    const d = r.descent;
+    d.level = 2;
+    d.phase = 'offer';
+    d.items = { weapon: keep, vitality: POOL.vitality.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4), spirit: ['Compress Cooldown', ...POOL.spirit.filter((n) => !D.NO_RUN_ITEMS.has(n) && n !== 'Compress Cooldown').slice(0, 3)] };
+    d.offer = { kind: 'items', choices: ['Transcendent Cooldown'], bonuses: { 0: 'Mystic Expansion' }, enhanced: [], room: 1 };
+  });
+  assert.ok((await D.choose(id, 1, 0)).bonusPending);
+  let d = await D.getRun(id);
+  assert.strictEqual(d.phase, 'bonus', 'the upgrade was taken; only the BONUS is still open');
+  checkLimits(await dviews.screen(member(id), await getFarmUser(id)), 'the bonus swap screen');
+  // a stale Fight button can't start a room while the bonus waits
+  assert.deepStrictEqual(await D.fight(id), { error: 'offer' });
+  // the select takes an item out for the bonus; it is an imbue item, so the imbue choice comes next
+  const swap = fake(id, `farm_dbonusswap:${id}`, { values: [keep[0]] });
+  await route('Descend bonus replacement select').execute(swap);
+  d = await D.getRun(id);
+  assert.strictEqual(d.phase, 'imbue');
+  assert.ok(!SLOTS.flatMap((s) => d.items[s]).includes(keep[0]) && SLOTS.flatMap((s) => d.items[s]).includes('Mystic Expansion'));
+  assert.strictEqual(countItems(d.items), MAX_ITEMS);
+  checkLimits(await dviews.screen(member(id), await getFarmUser(id)), 'the imbue screen');
+  assert.deepStrictEqual(await D.fight(id), { error: 'offer' });
+  const imbue = fake(id, `farm_dimbue:${id}`, { values: ['2'] });
+  await route('Descend imbue ability select').execute(imbue);
+  d = await D.getRun(id);
+  assert.strictEqual(d.phase, 'ready');
+  assert.strictEqual(d.imbues['Mystic Expansion'], 2);
+  assert.strictEqual(d.pendingBonus, undefined);
+  checkLimits(await dviews.screen(member(id), await getFarmUser(id)), 'the next room');
+  await D.abandon(id);
 });

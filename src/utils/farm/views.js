@@ -25,7 +25,7 @@ const { MAX_REJUVS, cooldownSeconds, cooldownLeft, hauntFile, campFamilies, CAMP
 const { PAYOUT_SCALE } = require('./targets');
 const { SPECIALS } = require('./haunts');
 const { HEROES, heroEmoji, heroArt } = require('../heroes');
-const { fmt, soulsIcon, rejuvIcon } = require('../format');
+const { fmt, soulsIcon, rejuvIcon, titleCase } = require('../format');
 const { pickRandom } = require('../random');
 const { streakBar, heroes: triviaHeroes } = require('../trivia'); // the same bar as /trivia and /urn; the heroes' voice lines
 
@@ -100,10 +100,6 @@ const bar = (hp, max) => streakBar(Math.max(hp > 0 ? 1 : 0, Math.round((hp / max
 const barLine = (hp, max) => `${bar(hp, max)} ${fmt(Math.round(hp))} / ${fmt(Math.round(max))}`;
 const slugOf = (name) => HEROES.find((h) => h.name === name).slug;
 const heroText = (guild, name) => { const e = heroEmoji(guild, slugOf(name)); return e ? `<:${e.name}:${e.id}> ` : ''; };
-// Title Case for a line of text (his call, Oct 3, for the target screens): every word capitalised but the little ones (and not the
-// unit after a number: "1h 5m", "4s").
-const SMALL_WORDS = new Set(['a', 'an', 'the', 'and', 'or', 'of', 'to', 'in', 'at', 'for', 'on', 'by', 'per', 'vs']);
-const titleCase = (text) => text.replace(/(?<![\dA-Za-z'])[A-Za-z][A-Za-z']*/g, (word, at) => (at > 0 && SMALL_WORDS.has(word) ? word : word[0].toUpperCase() + word.slice(1)));
 const row = (...components) => new ActionRowBuilder().addComponents(...components);
 
 // The hero's icon (his call, Oct 3: the icon, not the full-body art), kept as a PNG per hero.

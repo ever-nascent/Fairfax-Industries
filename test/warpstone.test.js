@@ -203,9 +203,9 @@ const busyItems = ['Warp Stone', 'Healing Nova', 'Colossus', 'Return Fire', 'Met
 const busyKit = { boons: 24, tiers: { 1: 3, 2: 3, 3: 3, 4: 3 }, items: busyItems };
 
 function retainedWarp(run) {
-  const warped = run.log.filter(([, text]) => text.includes(' warped away from '));
+  const warped = run.log.filter(([, text]) => text.toLowerCase().includes(' warped away from '));
   assert.ok(warped.length, 'the fight produced a Warp Stone dodge');
-  assert.ok(run.log.some(([, text]) => text.endsWith(' used Warp Stone')), 'the activation is still logged');
+  assert.ok(run.log.some(([, text]) => text.toLowerCase().endsWith(' used warp stone')), 'the activation is still logged');
   assert.ok(run.frames.length <= 14);
   assert.ok(run.frames.every((frame) => frame.log.length <= 4));
   assert.ok(run.frames.at(-1).log.some((line) => line[0] === warped.at(-1)[0] && line[1] === warped.at(-1)[1]), 'the final replay retains the latest dodge');
@@ -224,8 +224,8 @@ test('a long encounter retains the newest dodge after replay downsampling', () =
   retainedWarp(run);
   assert.ok(run.seconds > 14, 'the fixture has more snapshots than the replay limit');
   assert.equal(run.frames.length, 14);
-  assert.ok(run.log.some(([, text]) => text.startsWith('Haze warped away from Abrams')));
-  assert.ok(run.log.some(([, text]) => text.startsWith('Abrams warped away from Haze')));
+  assert.ok(run.log.some(([, text]) => text.toLowerCase().startsWith('haze warped away from abrams')));
+  assert.ok(run.log.some(([, text]) => text.toLowerCase().startsWith('abrams warped away from haze')));
 });
 
 test('Descend room replay retains Warp Stone dodges through the shared simulator', () => {

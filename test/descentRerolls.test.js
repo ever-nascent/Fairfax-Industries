@@ -82,11 +82,18 @@ test('taking an upgrade also gives its shown lower-tier BONUS item, including wi
   for (const name of extras) full.items[SLOTS.find((s) => POOL[s].includes(name))].push(name);
   full.phase = 'offer';
   full.offer = { kind: 'items', choices: ['Fortitude'], bonuses: { 0: 'Extra Regen' }, enhanced: [], room: 1 };
-  assert.deepEqual(D.takeChoice(full, 0), { error: 'full' });
-  assert.equal(countItems(full.items), 12, 'a failed choice changes nothing');
-  const replaced = extras[0];
-  assert.equal(D.takeChoice(full, 0, replaced).ok, true);
+  // his call Oct 26: the upgrade is taken at once; only the BONUS asks which other item to give up
+  const upgraded = D.takeChoice(full, 0);
+  assert.ok(upgraded.ok && upgraded.bonusPending);
+  assert.equal(full.phase, 'bonus');
+  const heldNow = () => SLOTS.flatMap((s) => full.items[s]);
+  assert.ok(heldNow().includes('Fortitude') && !heldNow().includes('Extra Health'));
   assert.equal(countItems(full.items), 12);
-  assert.ok(SLOTS.flatMap((s) => full.items[s]).includes('Extra Regen'));
-  assert.ok(!SLOTS.flatMap((s) => full.items[s]).includes(replaced));
+  assert.deepEqual(D.takeBonus(full, 'Not An Item'), { error: 'missing' }, 'a bonus swap needs an item the hero holds');
+  assert.equal(full.phase, 'bonus', 'a refused swap changes nothing');
+  const replaced = extras[0];
+  assert.equal(D.takeBonus(full, replaced).ok, true);
+  assert.equal(countItems(full.items), 12);
+  assert.ok(heldNow().includes('Extra Regen') && !heldNow().includes(replaced));
+  assert.equal(full.phase, 'ready');
 });

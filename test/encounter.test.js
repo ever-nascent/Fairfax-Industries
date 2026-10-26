@@ -116,7 +116,7 @@ test('the offer: after a won fight, kept 5 minutes, Fight unlocks the rival on a
     const bare = duel('Haze', kit, 'Abrams', strong, { rng: seeded(1) });
     const revived = duel('Haze', kit, 'Abrams', strong, { rng: seeded(1), rejuvs: 2 });
     assert.deepStrictEqual([bare.won, bare.rejuvsUsed, revived.rejuvsUsed], [false, 0, 2]);
-    assert.ok(revived.seconds > bare.seconds && revived.log.some(([, text]) => text === 'Haze used a Rejuv'));
+    assert.ok(revived.seconds > bare.seconds && revived.log.some(([, text]) => text === 'Haze Used a Rejuv'));
     await updateFarmUser(id, (rec) => { rec.rejuvs = 3; });
     let spent = 0;
     for (let i = 0; i < 40 && !spent; i++) {
@@ -189,7 +189,11 @@ test('Cultist Sacrifice never eats a rival hero', () => {
 
 test('a duel: heroes deal half damage to each other and a quarter of their gun shots miss; NPC fights are untouched', () => {
   const { DUEL, enemy } = require('../src/utils/farm/engine');
-  assert.deepStrictEqual(DUEL, { damage: 0.5, miss: 0.25 });
+  assert.deepStrictEqual({ damage: DUEL.damage, miss: DUEL.miss }, { damage: 0.5, miss: 0.25 });
+  // his call Oct 26: a Heavy Melee at a rival hero is parried 20% of the time (45% with Rebuttal); a miss locks the defender out and a parry stuns the attacker, both for two melee cycles
+  assert.strictEqual(DUEL.parryChance, 0.2);
+  assert.strictEqual(DUEL.parryWithRebuttal, 0.45);
+  assert.strictEqual(DUEL.parryMissCooldown, DUEL.parryStun);
   const quiet = (name) => { const h = buildHero(name, { unlocked: 0 }); h.meleeAt = Infinity; h.stamina = 0; h.stats.stamina = 0; return h; };
   const [a, b] = [quiet('Paige'), quiet('Abrams')];
   b.weapon.reloadLeft = 1e9;
