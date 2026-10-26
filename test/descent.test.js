@@ -127,6 +127,13 @@ test('picks: an upgrade replaces its part in place, a full build needs an item g
   const up = D.takeChoice(d, 1);
   assert.deepStrictEqual(up.used, ['Extended Magazine']);
   assert.deepStrictEqual(d.items.weapon, ['Titanic Magazine']);
+  // A tier-4 offer recognises a tier-2 component even if its tier-3 middle item was never held.
+  d.phase = 'offer';
+  d.items = { weapon: [], vitality: [], spirit: ['Compress Cooldown'] };
+  d.offer = { kind: 'items', choices: ['Transcendent Cooldown'], room: 3 };
+  const nested = D.takeChoice(d, 0);
+  assert.deepStrictEqual(nested.used, ['Compress Cooldown']);
+  assert.deepStrictEqual(d.items.spirit, ['Transcendent Cooldown']);
   // 12 items: a new one needs `replace`, an upgrade doesn't
   const fill = POOL.vitality.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, MAX_ITEMS - 1);
   d.items.vitality = fill;

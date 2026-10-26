@@ -78,11 +78,14 @@ function rollDrawback(card, rng = Math.random) {
 }
 
 // Upgrade paths, like the game (his call, Oct 3): an item's price includes its components, so a member who owns one pays the difference and the
-// component is used up (its slot is the new item's). priceFor gives { price, used: [component names owned] } for a member's items.
+// component is used up (its slot is the new item's). A held lower component counts even when an intermediate component is missing (for example,
+// Compress Cooldown -> Transcendent Cooldown). priceFor gives { price, used: [component names owned] } for a member's items.
 const BY_KEY = new Map(ITEMS.map((c) => [c.Key, c]));
 const componentsOf = (card) => (card.Components ?? []).map((key) => BY_KEY.get(key)).filter(Boolean);
 function priceFor(card, items) {
-  const used = componentsOf(card).filter((c) => SLOTS.some((slot) => items[slot]?.includes(c.Name)));
+  const held = (c) => SLOTS.some((slot) => items[slot]?.includes(c.Name));
+  const ownedComponent = (c) => (held(c) ? [c] : componentsOf(c).flatMap(ownedComponent));
+  const used = componentsOf(card).flatMap(ownedComponent);
   return { price: card.Cost - used.reduce((sum, c) => sum + c.Cost, 0), used: used.map((c) => c.Name) };
 }
 // The owned item that already holds `name` as a component, at any depth (an upgrade keeps its components' stats, so a second copy is refused;
