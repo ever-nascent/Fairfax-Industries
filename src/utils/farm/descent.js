@@ -6,7 +6,7 @@
 // It ends (his calls, Oct 24): 8 floors, 40 rooms; the last is the Patron then the Weakened Patron in one fight, like the siege's end. Clearing it is
 // "Descent Cleared" and a place on the leaderboard, nothing more.
 // No souls: a run never touches a hero's own souls, items or level (it lives on the member: `descent` on the farm record, next to `bestWave`).
-//   descent: { hero, seed, room (the next room to fight, from 1), level, tiers, items: { weapon | vitality | spirit: [names] }, legendary, buffs,
+//   descent: { hero, seed, room (the next room to fight, from 1), level, tiers, items: { weapon | vitality | spirit: [names] }, legendary, buffs, bridge, find,
 //     rejuvs, health (share of max), kept (kill stacks), imbues, offer: { kind: 'items' | 'buffs' | 'legendaries', choices, room } | null,
 //     phase: 'ready' (the next room waits) | 'offer' (picking) | 'fighting' (Fight was pressed), fightingAt }
 //   bestDescent: { rooms, hero } (the member's best run), descentBest: { <hero>: rooms }, descentToken: true once the token was paid,
@@ -20,7 +20,7 @@ const { TARGETS, SIEGE } = require('./targets');
 const { buildHero, roster } = require('./hero');
 const { POOL, ITEM_POOL, SLOTS, SLOT_OF, MAX_ITEMS, countItems, priceFor, heldIn, LEGENDARY_NAMES, TIER_COSTS, MAX_TIER, MAX_LEVEL, UNLOCKS, POINTS, pointsSpent } = require('./levels');
 const { itemByName } = require('./stats');
-const { BUFFS } = require('./buffs');
+const { BUFFS, BRIDGE, rollAnyBuff } = require('./buffs');
 const { IMBUES } = require('./items');
 const { rivalKit } = require('./encounter');
 const { ASSETS } = require('../art');
@@ -34,6 +34,8 @@ const TOKEN_ROOM = 25; // the end of floor 5: a Character Unlock Token, once per
 const SKIP_HEAL = 0.25; // skipping a pick heals this share of max health (his open question; my pick)
 const REST = 0.15; // a breather between two rooms, like waves'
 const BOSS_BUFFS = 3; // a boss's buff pick gives this many of that permanent buff
+const LITTLE_BUFF_CHANCE = 0.10; // his call, Oct 25: a won fight or rival may turn up one permanent stack
+const BIG_BUFF_CHANCE = 0.05; // his call: a Bridge buff for the rest of this floor
 const RIVAL_FROM = 3; // rivals show up from this room (never on a boss room)
 const RIVAL_CHANCE = 0.15;
 const AFFIX_FROM = 4; // enemies may roll an affix from this room, more often deeper
@@ -178,7 +180,7 @@ const roomPicture = (spec, stage = 0) => (spec.final ? BOSSES[FINAL[stage] ?? 'p
 // What the run's hero fights with (the same shape as play.js fightKit).
 const runKit = (d) => ({
   boons: d.level, unlocked: UNLOCKS(d.level), points: POINTS(d.level), tiers: d.tiers,
-  items: [...SLOTS.flatMap((s) => d.items[s]), ...(d.legendary ? [d.legendary] : [])], buffs: d.buffs, imbues: d.imbues, kept: d.kept,
+  items: [...SLOTS.flatMap((s) => d.items[s]), ...(d.legendary ? [d.legendary] : [])], buffs: d.buffs, bridge: d.bridge ?? [], imbues: d.imbues, kept: d.kept,
 });
 const pointsLeft = (d) => POINTS(d.level) - pointsSpent(d.tiers);
 
@@ -242,7 +244,20 @@ function rollOffer(d, spec) {
   return { kind: 'items', choices: itemOffer(d, rng, spec.kind === 'rival' ? 1 : 0, spec.room), room: spec.room };
 }
 
-// ---- the run's changes (pure: on a run `d`, inside a record update or in the simulations) ----
+// A won fight or rival may uncover one buff. The room's drop stream is fixed by the run seed, even across restarts.
+function rollFind(d, spec) {
+  if (spec.kind !== 'fight' && spec.kind !== 'rival') return null;
+  const rng = dice(d.seed, spec.room, 'drop');
+  const chance = rng();
+  if (chance < LITTLE_BUFF_CHANCE) return { kind: 'little', key: rollAnyBuff(rng), room: spec.room };
+  if (chance < LITTLE_BUFF_CHANCE + BIG_BUFF_CHANCE) {
+    const available = Object.keys(BRIDGE).filter((key) => !(d.bridge ?? []).includes(key));
+    if (available.length) return { kind: 'big', key: pick(available, rng), room: spec.room };
+  }
+  return null;
+}
+
+// ---- the run's changes (pure: on a run d, inside a record update or in the simulations) ----
 function dropItem(d, name) {
   for (const s of SLOTS) d.items[s] = d.items[s].filter((n) => n !== name);
   delete d.imbues[name];
@@ -301,11 +316,15 @@ function afterWin(d, run) {
   d.health = Math.min(1, run.health + REST);
   d.rejuvs = Math.min(MAX_REJUVS, Math.max(0, d.rejuvs - run.rejuvsUsed) + (spec.kind === 'boss' ? 1 : 0));
   d.kept = { ...d.kept, ...run.kept };
+  if (spec.kind === 'boss') d.bridge = []; // the Bridge buffs helped against this floor's boss; they expire now
+  d.find = rollFind(d, spec);
+  if (d.find?.kind === 'little') d.buffs[d.find.key] = (d.buffs[d.find.key] ?? 0) + 1;
+  else if (d.find?.kind === 'big') (d.bridge ??= []).push(d.find.key);
   d.offer = spec.final ? null : rollOffer(d, spec);
   d.room = spec.room + 1;
   d.phase = spec.final ? 'done' : 'offer'; // 'done': the last room is beaten (the run is then taken off the record)
 }
-const newRun = (hero, seed) => ({ hero, seed, room: 1, level: 0, tiers: {}, items: { weapon: [], vitality: [], spirit: [] }, legendary: null, buffs: {}, rejuvs: 0, health: 1, kept: {}, imbues: {}, offer: null, phase: 'ready' });
+const newRun = (hero, seed) => ({ hero, seed, room: 1, level: 0, tiers: {}, items: { weapon: [], vitality: [], spirit: [] }, legendary: null, buffs: {}, bridge: [], find: null, rejuvs: 0, health: 1, kept: {}, imbues: {}, offer: null, phase: 'ready' });
 
 // ---- the member's run (data/farm.json) ----
 // The best so far (inside a record update): the member's and this hero's, counting rooms behind the run.
@@ -399,7 +418,7 @@ async function leaderboard() {
 }
 
 module.exports = {
-  ROOMS_PER_FLOOR, FLOORS, LAST_ROOM, TOKEN_ROOM, SKIP_HEAL, BOSS_BUFFS, REST, TUNE, BOSS, RIVAL, ARCHETYPES, AFFIXES, BOSSES, TIER_WEIGHTS, NO_RUN_ITEMS, NO_RUN_LEGENDARIES,
-  dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, addItem, takeChoice, skipChoice, spendPoint, afterWin, newRun,
+  ROOMS_PER_FLOOR, FLOORS, LAST_ROOM, TOKEN_ROOM, SKIP_HEAL, BOSS_BUFFS, LITTLE_BUFF_CHANCE, BIG_BUFF_CHANCE, REST, TUNE, BOSS, RIVAL, ARCHETYPES, AFFIXES, BOSSES, TIER_WEIGHTS, NO_RUN_ITEMS, NO_RUN_LEGENDARIES,
+  dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, rollFind, addItem, takeChoice, skipChoice, spendPoint, afterWin, newRun,
   startRun, getRun, fight, walkPast, choose, skip, spend, abandon, leaderboard,
 };
