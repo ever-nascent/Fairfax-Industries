@@ -175,8 +175,8 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     addEvent(`${d.hero} reached **Level ${d.level}**${d.level >= MAX_LEVEL ? ' (the most)' : ''}${unlocked}.${spec.kind === 'boss' ? ` +${rejuvIcon()}1 Rejuv.` : ''}`);
   }
   if (d.find?.room === offer.room) addEvent(d.find.kind === 'little'
-    ? `Found a little buff: **${buffText(d.find.key)}** (permanent for this run).`
-    : `Found a big buff: **${BRIDGE[d.find.key].name} Bridge Buff** — ${BRIDGE[d.find.key].text}. Lasts through Floor **${spec.floor}**.`);
+    ? `Found a Buff.\n**${buffText(d.find.key)}**\nPermanent for this run.`
+    : `Found a Buff.\n**${BRIDGE[d.find.key].name} Bridge Buff**\n${BRIDGE[d.find.key].text}. Lasts through Floor **${spec.floor}**.`);
   const upgrades = new Set(offer.kind === 'items' ? offer.choices.filter((n) => priceFor(itemByName(n), d.items).used.length) : []);
   if (replace != null) {
     const name = offer.choices[replace];
