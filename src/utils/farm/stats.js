@@ -108,13 +108,14 @@ function innateStats(card) {
 // ---- corruption (his calls, Oct 3; levels.js has the Broker) ----
 // A corrupted item's card: the game's CorruptedUpgrades are added to the item's own numbers wherever the card has them (a cooldown change goes to the
 // cooldown of its active, or of its proc for ProcCooldown); a key the card doesn't have becomes a new stat line. Kept per item name.
-const corruptedCards = new Map();
-function corruptCard(card) {
-  if (!card?.CorruptedUpgrades) return card;
-  if (corruptedCards.has(card.Name)) return corruptedCards.get(card.Name);
+const upgradedCards = new Map();
+function upgradedCard(card, field) {
+  if (!card?.[field]) return card;
+  const cacheKey = `${field}:${card.Name}`;
+  if (upgradedCards.has(cacheKey)) return upgradedCards.get(cacheKey);
   const out = structuredClone(card);
   const infos = Object.keys(out).filter((k) => k.startsWith('Info')).map((k) => out[k]);
-  for (const [key, delta] of Object.entries(card.CorruptedUpgrades)) {
+  for (const [key, delta] of Object.entries(card[field])) {
     const d = num(delta);
     let found = false;
     for (const e of infos.flatMap((i) => [...i.Main, ...i.Alt]).concat(Object.values(out.Other ?? {}))) {
@@ -132,9 +133,11 @@ function corruptCard(card) {
     if (!innate) { innate = { Type: 'Innate', Main: [], Alt: [] }; out.InfoCorrupted = innate; }
     innate.Alt.push({ Key: key, Value: d });
   }
-  corruptedCards.set(card.Name, out);
+  upgradedCards.set(cacheKey, out);
   return out;
 }
+const corruptCard = (card) => upgradedCard(card, 'CorruptedUpgrades');
+const enhancedCard = (card) => upgradedCard(card, 'PropertyUpgrades');
 
 // The one drawback a corrupted item carries (the wiki's list, by item tier: [low, high] for tier 3 and for tier 4). Rolled once (levels.js rollDrawback).
 const DRAWBACKS = {
@@ -154,7 +157,11 @@ const DRAWBACKS = {
 const drawbackText = ({ drawback, amount }) => `-${+amount.toFixed(2)}${DRAWBACKS[drawback].unit} ${DRAWBACKS[drawback].name}`;
 
 // The card an item fights with: its corrupted card if it is the hero's corrupted item.
-const cardFor = (name, corrupted) => (corrupted?.name === name ? corruptCard(itemByName(name)) : itemByName(name));
+const cardFor = (name, corrupted, enhanced = []) => {
+  let card = itemByName(name);
+  if (enhanced.includes(name)) card = enhancedCard(card);
+  return corrupted?.name === name ? corruptCard(card) : card;
+};
 
 // Guns that deal full damage at any distance: Graves' beam (the wiki: no falloff; his call, Oct 5: its 17 m limit isn't simulated). The game data's
 // falloff numbers for it only shape Essence Theft's build-up (heroes/graves.js).
@@ -164,7 +171,7 @@ const SURE_PELLETS = { 'Rat King': 1 };
 
 // Stat sheet for a wiki hero (an entry of heroes.json) with `boons` level-ups, a list of item names, the member's permanent
 // buffs ({ key: count }, buffs.js) and its corrupted item ({ name, drawback, amount } | null).
-function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corrupted = null } = {}) {
+function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corrupted = null, enhanced = [] } = {}) {
   const w = hero.Weapon;
   const ls = hero.LevelScaling || {};
   const s = {
@@ -216,7 +223,7 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
   };
   const baseHealth = s.maxHealth;
   for (const name of items) {
-    const card = cardFor(name, corrupted);
+    const card = cardFor(name, corrupted, enhanced);
     if (!card) throw new Error(`Unknown item: ${name}`);
     for (const [key, value] of innateStats(card)) ITEM_STATS[key]?.(s, value);
     for (const key of PASSIVE_STATS[name] ?? []) ITEM_STATS[key]?.(s, effectValue(card, key));
@@ -236,4 +243,4 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
   return s;
 }
 
-module.exports = { HEROES, ABILITIES, ITEMS, LEGENDARIES, itemByName, innateStats, heroStats, ITEM_STATS, effectValue, corruptCard, cardFor, DRAWBACKS, drawbackText };
+module.exports = { HEROES, ABILITIES, ITEMS, LEGENDARIES, itemByName, innateStats, heroStats, ITEM_STATS, effectValue, corruptCard, enhancedCard, cardFor, DRAWBACKS, drawbackText };

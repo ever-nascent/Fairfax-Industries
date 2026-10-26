@@ -36,6 +36,9 @@ const REST = 0.15; // a breather between two rooms, like waves'
 const BOSS_BUFFS = 3; // a boss's buff pick gives this many of that permanent buff
 const LITTLE_BUFF_CHANCE = 0.10; // his call, Oct 25: a won fight or rival may turn up one permanent stack
 const BIG_BUFF_CHANCE = 0.05; // his call: a Bridge buff for the rest of this floor
+const REROLLS_PER_FLOOR = 3; // his call, Oct 25
+const ENHANCED_CHANCE = 0.10; // each displayed item; +3 points after a row with none, reset when one is picked
+const ENHANCED_STEP = 0.03;
 const RIVAL_FROM = 3; // rivals show up from this room (never on a boss room)
 const RIVAL_CHANCE = 0.15;
 const AFFIX_FROM = 4; // enemies may roll an affix from this room, more often deeper
@@ -185,7 +188,7 @@ const roomPicture = (spec, stage = 0) => (spec.final ? BOSSES[FINAL[stage] ?? 'p
 // What the run's hero fights with (the same shape as play.js fightKit).
 const runKit = (d) => ({
   boons: d.level, unlocked: UNLOCKS(d.level), points: POINTS(d.level), tiers: d.tiers,
-  items: [...SLOTS.flatMap((s) => d.items[s]), ...(d.legendary ? [d.legendary] : [])], buffs: d.buffs, bridge: d.bridge ?? [], imbues: d.imbues, kept: d.kept,
+  items: [...SLOTS.flatMap((s) => d.items[s]), ...(d.legendary ? [d.legendary] : [])], enhanced: d.enhanced ?? [], buffs: d.buffs, bridge: d.bridge ?? [], imbues: d.imbues, kept: d.kept,
 });
 const pointsLeft = (d) => POINTS(d.level) - pointsSpent(d.tiers);
 
@@ -226,7 +229,7 @@ function itemOffer(d, rng, bonus = 0, room = d.room) {
   const owned = SLOTS.flatMap((s) => d.items[s]);
   const ok = (n) => !NO_RUN_ITEMS.has(n) && !owned.includes(n) && !heldIn(n, d.items);
   const tierRoll = () => { let r = rng() * weights.reduce((a, b) => a + b, 0); return weights.findIndex((w) => (r -= w) < 0) + 1 || top; };
-  return OFFER_ORDER.map((kind) => {
+  const choices = OFFER_ORDER.map((kind) => {
     const upgrades = POOL[kind].filter((n) => ok(n) && itemByName(n).Tier <= top && priceFor(itemByName(n), d.items).used.length);
     if (upgrades.length && rng() < UPGRADE_CHANCE) return pick(upgrades, rng);
     const tier = tierRoll();
@@ -236,17 +239,32 @@ function itemOffer(d, rng, bonus = 0, room = d.room) {
     }
     return null;
   }).filter(Boolean);
+  const bonuses = {};
+  choices.forEach((name, i) => {
+    const card = itemByName(name);
+    if (!priceFor(card, d.items).used.length) return;
+    const pool = POOL[SLOT_OF[card.Slot]].filter((n) => ok(n) && !choices.includes(n) && itemByName(n).Tier < card.Tier);
+    if (pool.length) bonuses[i] = pick(pool, rng);
+  });
+  return { choices, bonuses };
 }
 
 // The reward for room `spec` just cleared: a boss gives 1 of 3 permanent buffs (or on odd floors from 3, 1 of 3 legendaries), anything else 3 items.
-function rollOffer(d, spec) {
-  const rng = dice(d.seed, spec.room, 'offer');
+function rollOffer(d, spec, roll = 0) {
+  const rng = dice(d.seed, spec.room, 'offer', roll);
+  const decorate = (offer) => {
+    if (offer.kind === 'buffs') return offer;
+    offer.enhanced = offer.choices.filter(() => rng() < (d.enhancedChance ?? ENHANCED_CHANCE));
+    if (!offer.enhanced.length) d.enhancedChance = Math.min(1, (d.enhancedChance ?? ENHANCED_CHANCE) + ENHANCED_STEP);
+    return offer;
+  };
   if (spec.kind === 'boss') {
     const legends = LEGENDARY_NAMES.filter((n) => !NO_RUN_LEGENDARIES.has(n) && n !== d.legendary);
-    if (spec.floor >= 3 && spec.floor % 2 && legends.length >= 3) return { kind: 'legendaries', choices: take(legends, 3, rng), room: spec.room };
+    if (spec.floor >= 3 && spec.floor % 2 && legends.length >= 3) return decorate({ kind: 'legendaries', choices: take(legends, 3, rng), room: spec.room, roll });
     return { kind: 'buffs', choices: take(Object.keys(BUFFS), 3, rng), room: spec.room };
   }
-  return { kind: 'items', choices: itemOffer(d, rng, spec.kind === 'rival' ? 1 : 0, spec.room), room: spec.room };
+  const { choices, bonuses } = itemOffer(d, rng, spec.kind === 'rival' ? 1 : 0, spec.room);
+  return decorate({ kind: 'items', choices, bonuses, room: spec.room, roll });
 }
 
 // A won fight or rival may uncover one buff. The room's drop stream is fixed by the run seed, even across restarts.
@@ -267,10 +285,11 @@ function dropItem(d, name) {
   for (const s of SLOTS) d.items[s] = d.items[s].filter((n) => n !== name);
   delete d.imbues[name];
   delete d.kept[name];
+  d.enhanced = (d.enhanced ?? []).filter((n) => n !== name);
 }
 // Puts item `name` in the build: an upgrade of a held item replaces it in place; with 12 items anything else needs `replace` (lost, no sell-back).
 // Returns { ok: true, used: [components replaced], replaced } or { error: 'full' | 'missing' }.
-function addItem(d, name, replace = null) {
+function addItem(d, name, replace = null, enhanced = false) {
   const card = itemByName(name);
   const { used } = priceFor(card, d.items);
   let replaced = null;
@@ -282,6 +301,7 @@ function addItem(d, name, replace = null) {
   }
   for (const u of used) dropItem(d, u);
   d.items[SLOT_OF[card.Slot]].push(name);
+  if (enhanced && !(d.enhanced ??= []).includes(name)) d.enhanced.push(name);
   if (IMBUES.includes(name)) d.imbues[name] = 1; // ponytail: into the first ability; the farm's imbue picker isn't in a run yet
   return { ok: true, used, replaced };
 }
@@ -290,13 +310,38 @@ function takeChoice(d, index, replace = null) {
   const name = d.offer?.choices[index];
   if (d.phase !== 'offer' || !name) return { error: 'none' };
   let extra = {};
+  const enhanced = d.offer.enhanced?.includes(name) ?? false;
   if (d.offer.kind === 'buffs') d.buffs[name] = (d.buffs[name] ?? 0) + BOSS_BUFFS;
-  else if (d.offer.kind === 'legendaries') d.legendary = name;
-  else { extra = addItem(d, name, replace); if (extra.error) return extra; }
+  else if (d.offer.kind === 'legendaries') {
+    d.enhanced = (d.enhanced ?? []).filter((n) => n !== d.legendary);
+    d.legendary = name;
+    if (enhanced && !d.enhanced.includes(name)) d.enhanced.push(name);
+  } else {
+    const next = structuredClone(d);
+    extra = addItem(next, name, replace, enhanced);
+    if (extra.error) return extra;
+    const bonus = d.offer.bonuses?.[index];
+    if (bonus) {
+      const added = addItem(next, bonus, replace);
+      if (added.error) return added;
+      extra.bonus = bonus;
+    }
+    Object.assign(d, next);
+  }
+  if (enhanced) d.enhancedChance = ENHANCED_CHANCE;
   const { kind } = d.offer;
   d.offer = null;
   d.phase = 'ready';
-  return { ...extra, ok: true, kind, name };
+  return { ...extra, ok: true, kind, name, ...(enhanced ? { enhanced: true } : {}) };
+}
+function rerollChoice(d) {
+  if (d.phase !== 'offer' || d.offer?.kind !== 'items') return { error: 'none' };
+  d.rerolls ??= REROLLS_PER_FLOOR; // runs already in progress when this shipped receive this floor's three
+  if (d.rerolls <= 0) return { error: 'empty' };
+  d.rerolls--;
+  const spec = roomSpec(d.seed, d.offer.room, d.hero);
+  d.offer = rollOffer(d, spec, (d.offer.roll ?? 0) + 1);
+  return { ok: true };
 }
 function skipChoice(d) {
   if (d.phase !== 'offer') return { error: 'none' };
@@ -322,6 +367,7 @@ function afterWin(d, run) {
   d.rejuvs = Math.min(MAX_REJUVS, Math.max(0, d.rejuvs - run.rejuvsUsed) + (spec.kind === 'boss' ? 1 : 0));
   d.kept = { ...d.kept, ...run.kept };
   if (spec.kind === 'boss') d.bridge = []; // the Bridge buffs helped against this floor's boss; they expire now
+  if (spec.room % ROOMS_PER_FLOOR === 0) d.rerolls = REROLLS_PER_FLOOR;
   d.find = rollFind(d, spec);
   if (d.find?.kind === 'little') d.buffs[d.find.key] = (d.buffs[d.find.key] ?? 0) + 1;
   else if (d.find?.kind === 'big') (d.bridge ??= []).push(d.find.key);
@@ -329,7 +375,7 @@ function afterWin(d, run) {
   d.room = spec.room + 1;
   d.phase = spec.final ? 'done' : 'offer'; // 'done': the last room is beaten (the run is then taken off the record)
 }
-const newRun = (hero, seed) => ({ hero, seed, room: 1, level: 0, tiers: {}, items: { weapon: [], vitality: [], spirit: [] }, legendary: null, buffs: {}, bridge: [], find: null, rejuvs: 0, health: 1, kept: {}, imbues: {}, offer: null, phase: 'ready' });
+const newRun = (hero, seed) => ({ hero, seed, room: 1, level: 0, tiers: {}, items: { weapon: [], vitality: [], spirit: [] }, legendary: null, enhanced: [], enhancedChance: ENHANCED_CHANCE, rerolls: REROLLS_PER_FLOOR, buffs: {}, bridge: [], find: null, rejuvs: 0, health: 1, kept: {}, imbues: {}, offer: null, phase: 'ready' });
 
 // ---- the member's run (data/farm.json) ----
 // The best so far (inside a record update): the member's and this hero's, counting rooms behind the run.
@@ -405,6 +451,7 @@ const walkPast = (userId) => updateFarmUser(userId, (r) => {
 // Takes choice `index` of the offer made for room `room` (an old message's buttons can't take a later offer).
 const choose = (userId, room, index, replace = null) => updateFarmUser(userId, (r) => (r.descent?.offer?.room === room ? takeChoice(r.descent, index, replace) : { error: 'none' }));
 const skip = (userId, room) => updateFarmUser(userId, (r) => (r.descent?.offer?.room === room ? skipChoice(r.descent) : { error: 'none' }));
+const reroll = (userId, room) => updateFarmUser(userId, (r) => (r.descent?.offer?.room === room ? rerollChoice(r.descent) : { error: 'none' }));
 const spend = (userId, slot) => updateFarmUser(userId, (r) => (r.descent ? spendPoint(r.descent, slot) : { error: 'none' }));
 // Ends the run where it stands (his open question; my pick: a run waits as long as the member likes, and Abandon ends it). Returns the run or null.
 const abandon = (userId) => updateFarmUser(userId, (r) => {
@@ -423,7 +470,7 @@ async function leaderboard() {
 }
 
 module.exports = {
-  ROOMS_PER_FLOOR, FLOORS, LAST_ROOM, TOKEN_ROOM, SKIP_HEAL, BOSS_BUFFS, LITTLE_BUFF_CHANCE, BIG_BUFF_CHANCE, REST, TUNE, BOSS, RIVAL, ARCHETYPES, AFFIXES, BOSSES, TIER_WEIGHTS, NO_RUN_ITEMS, NO_RUN_LEGENDARIES,
-  dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, rollFind, addItem, takeChoice, skipChoice, spendPoint, afterWin, newRun,
-  startRun, getRun, fight, walkPast, choose, skip, spend, abandon, leaderboard,
+  ROOMS_PER_FLOOR, FLOORS, LAST_ROOM, TOKEN_ROOM, SKIP_HEAL, BOSS_BUFFS, LITTLE_BUFF_CHANCE, BIG_BUFF_CHANCE, REROLLS_PER_FLOOR, ENHANCED_CHANCE, ENHANCED_STEP, REST, TUNE, BOSS, RIVAL, ARCHETYPES, AFFIXES, BOSSES, TIER_WEIGHTS, NO_RUN_ITEMS, NO_RUN_LEGENDARIES,
+  dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, rollFind, addItem, takeChoice, skipChoice, rerollChoice, spendPoint, afterWin, newRun,
+  startRun, getRun, fight, walkPast, choose, skip, reroll, spend, abandon, leaderboard,
 };

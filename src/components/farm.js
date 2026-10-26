@@ -113,9 +113,10 @@ const STALE = { say: 'That screen is out of date. Here is where your run stands.
 // What a pick did, for the next room's screen.
 function picked(result) {
   if (result.kind === 'buffs') return `Took **${dviews.buffLine(result.name)}** for this run.`;
-  if (result.kind === 'legendaries') return `**${result.name}** is in the legendary slot.`;
-  if (result.used?.length) return `Upgraded ${result.used.join(' + ')} into **${result.name}**.`;
-  return result.replaced ? `Gave up ${result.replaced} for **${result.name}**.` : `Took **${result.name}**.`;
+  const name = `${result.enhanced ? 'Enhanced ' : ''}${result.name}`;
+  if (result.kind === 'legendaries') return `**${name}** is in the legendary slot.`;
+  if (result.used?.length) return `Upgraded ${result.used.join(' + ')} into **${name}**.${result.bonus ? ` BONUS: **${result.bonus}**.` : ''}`;
+  return result.replaced ? `Gave up ${result.replaced} for **${name}**.` : `Took **${name}**.`;
 }
 
 // Fight: settled at once (descent.fight), replayed in the room's message, then the result and the pick (or the end of the run) as a new message.
@@ -147,6 +148,15 @@ async function descendFight(interaction) {
 }
 
 const descentRoutes = [
+  {
+    name: 'farm',
+    label: 'Descend reroll button',
+    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DREROLL_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const result = await descent.reroll(interaction.user.id, roomOf(interaction));
+      return result.ok ? { animate: true } : result.error === 'empty' ? { say: 'You have no rerolls left on this floor.' } : STALE;
+    }),
+  },
   {
     name: 'farm',
     label: 'Descend hero select',

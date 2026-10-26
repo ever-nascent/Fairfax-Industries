@@ -50,6 +50,9 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusClipSizePercent": 30
   }
  },
  "upgrade_non_player_bonus": {
@@ -111,6 +114,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "NonPlayerBonusWeaponPower": 35,
+   "NonPlayerBulletResist": 35,
+   "OutOfCombatHealthRegen": 1
   }
  },
  "upgrade_non_player_bonus_sacrifice": {
@@ -254,6 +262,14 @@
     "Type": "distance",
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "TechRadiusMultiplier": 40,
+   "TechRangeMultiplier": 40,
+   "BaseAttackDamagePercent": 47,
+   "BonusHealth": 300,
+   "NonPlayerBonusWeaponPower": 30,
+   "NonPlayerBulletResist": 30
   }
  },
  "upgrade_chain_lightning": {
@@ -344,6 +360,10 @@
     "Key": "ChainTickRate",
     "Value": 0.4
    }
+  },
+  "PropertyUpgrades": {
+   "DamagePerChain": 25,
+   "BonusPerChain": 25
   }
  },
  "upgrade_capacitor": {
@@ -489,6 +509,13 @@
     "Key": "ChainTickRate",
     "Value": 0.4
    }
+  },
+  "PropertyUpgrades": {
+   "ProcChance": 5,
+   "BonusFireRate": 15,
+   "DamagePerChain": 25,
+   "AbilityCooldown": -32,
+   "Damage": 25
   }
  },
  "upgrade_hollow_point_rounds": {
@@ -585,6 +612,11 @@
     "Key": "LifeThreshold",
     "Value": 65
    }
+  },
+  "PropertyUpgrades": {
+   "BulletArmorReduction": -12,
+   "BonusHealth": 150,
+   "BaseAttackDamagePercent": 25
   }
  },
  "upgrade_pristine_emblem": {
@@ -668,6 +700,12 @@
     "Key": "EnemyLifeThreshold",
     "Value": 50
    }
+  },
+  "PropertyUpgrades": {
+   "BaseAttackDamagePercentBonus": 25,
+   "TechPower": 18,
+   "BonusBulletSpeedPercent": 45,
+   "BaseAttackDamagePercent": 15
   }
  },
  "upgrade_high_velocity_mag": {
@@ -723,6 +761,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusBulletSpeedPercent": 45,
+   "BaseAttackDamagePercent": 15
   }
  },
  "upgrade_lifestrike_gauntlets": {
@@ -796,6 +838,10 @@
     "Key": "NonHeroHealPct",
     "Value": 30
    }
+  },
+  "PropertyUpgrades": {
+   "BonusMeleeDamagePercent": 12,
+   "AbilityCooldown": -6
   }
  },
  "upgrade_melee_rebuttal": {
@@ -884,6 +930,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "ParryCooldownReduction": 0.5,
+   "MeleeResistPercent": 22,
+   "BonusDamagePercent": 20,
+   "BonusHealth": 150
   }
  },
  "upgrade_counterspell": {
@@ -992,6 +1044,13 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "SpiritPower": 20,
+   "BonusHealth": 150,
+   "HealOnSuccess": 250,
+   "BonusMoveSpeed": "2m",
+   "AbilityCooldown": -8
   }
  },
  "upgrade_weighted_shots": {
@@ -1106,6 +1165,12 @@
     "Value": 5,
     "Type": "duration"
    }
+  },
+  "PropertyUpgrades": {
+   "StatusResistancePercent": 10,
+   "BaseAttackDamagePercent": 35,
+   "SlowPercent": 16,
+   "GroundDashReductionPercent": -8
   }
  },
  "upgrade_close_range": {
@@ -1174,6 +1239,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "CloseRangeBonusWeaponPower": 15,
+   "MeleeResistPercent": 10
   }
  },
  "upgrade_long_range": {
@@ -1248,6 +1317,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusAttackRangePercent": 8,
+   "LongRangeBonusWeaponPower": 30
   }
  },
  "upgrade_slowing_bullets": {
@@ -1321,6 +1394,10 @@
     "Value": 5,
     "Type": "duration"
    }
+  },
+  "PropertyUpgrades": {
+   "SlowPercent": 16,
+   "GroundDashReductionPercent": -8
   }
  },
  "upgrade_inhibitor": {
@@ -1429,6 +1506,13 @@
     "Type": "damage",
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "OutgoingDamagePenaltyPercent": -20,
+   "HealAmpReceivePenaltyPercent": -20,
+   "HealAmpRegenPenaltyPercent": -20,
+   "BonusHealth": 125,
+   "BaseAttackDamagePercent": 20
   }
  },
  "upgrade_tech_defense_shredders": {
@@ -1493,6 +1577,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "TechArmorDamageReduction": -10,
+   "AbilityLifestealPercentHero": 10
   }
  },
  "upgrade_dps_aura": {
@@ -1612,6 +1700,12 @@
     "Key": "NonHeroMult",
     "Value": 2
    }
+  },
+  "PropertyUpgrades": {
+   "ActiveBonusMoveSpeed": "3m",
+   "BonusFireRate": 34,
+   "BulletResist": 10,
+   "ActiveRadius": "15m"
   }
  },
  "upgrade_targeted_silence": {
@@ -1727,6 +1821,11 @@
     "Key": "InitialWidth",
     "Value": "5.0m"
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityCooldown": -10,
+   "Damage": 125,
+   "BonusHealth": 75
   }
  },
  "upgrade_proc_silence": {
@@ -1836,6 +1935,11 @@
     "Value": 5,
     "Type": "duration"
    }
+  },
+  "PropertyUpgrades": {
+   "TechDamageReduction": -15,
+   "SilenceDuration": 1.25,
+   "TechResist": 15
   }
  },
  "upgrade_berserker": {
@@ -1921,6 +2025,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "WeaponPowerPerStack": 3,
+   "BulletResist": 8,
+   "MaxStacks": 8
   }
  },
  "upgrade_fervor": {
@@ -2026,6 +2135,12 @@
     "Key": "LowHealthThreshold",
     "Value": 50
    }
+  },
+  "PropertyUpgrades": {
+   "BonusHealth": 125,
+   "FervorFireRate": 20,
+   "FervorMovespeed": "3m",
+   "FervorStatusResistancePercent": 15
   }
  },
  "upgrade_siphon_bullets": {
@@ -2131,6 +2246,10 @@
     "Value": "1m",
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "HealthStealPctHero": 1.5,
+   "BulletResist": 10
   }
  },
  "upgrade_headshot_booster": {
@@ -2197,6 +2316,9 @@
     "Key": "ProcChance",
     "Value": 100
    }
+  },
+  "PropertyUpgrades": {
+   "HeadShotBonusDamage": 55
   }
  },
  "upgrade_headshot_booster2": {
@@ -2271,6 +2393,10 @@
     "Key": "DiminishingMultiplier",
     "Value": 0.5
    }
+  },
+  "PropertyUpgrades": {
+   "BulletResistReduction": -7,
+   "BonusHealth": 125
   }
  },
  "upgrade_sharpshooter": {
@@ -2379,6 +2505,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "LongRangeBonusWeaponPower": 40,
+   "BonusAttackRangePercent": 10,
+   "BonusBulletSpeedPercent": 45,
+   "BaseAttackDamagePercent": 15
   }
  },
  "upgrade_headhunter": {
@@ -2488,6 +2620,11 @@
     "Key": "ProcChance",
     "Value": 100
    }
+  },
+  "PropertyUpgrades": {
+   "HeadShotBonusDamage": 75,
+   "HealPercentPerHeadshot": 4,
+   "AbilityCooldown": -3
   }
  },
  "upgrade_spellslinger_headshots": {
@@ -2598,6 +2735,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "MagicResistReduction": -5,
+   "AbilityLifestealPercentHero": 10,
+   "TechArmorDamageReduction": -10
   }
  },
  "upgrade_banshee_slugs": {
@@ -2702,6 +2844,13 @@
     "Key": "DiminishingMultiplier",
     "Value": 0.5
    }
+  },
+  "PropertyUpgrades": {
+   "MagicResistReduction": -12,
+   "BulletResistReduction": -12,
+   "HealAmpReceivePenaltyPercent": -25,
+   "HealAmpRegenPenaltyPercent": -25,
+   "BonusHealth": 150
   }
  },
  "upgrade_crackshot": {
@@ -2784,6 +2933,10 @@
     "Value": 1,
     "Type": "cooldown"
    }
+  },
+  "PropertyUpgrades": {
+   "ProcBonusMagicDamage": 109,
+   "SpiritPower": 14
   }
  },
  "upgrade_critshot": {
@@ -2865,6 +3018,11 @@
     "Value": "1m",
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "CritDamagePercent": 30,
+   "BonusClipSizePercent": 40,
+   "ProcChance": 5
   }
  },
  "upgrade_close_quarter_combat": {
@@ -2962,6 +3120,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "CloseRangeBonusWeaponPower": 30,
+   "MeleeResistPercent": 30,
+   "BonusHealth": 150,
+   "SlowPercent": 4
   }
  },
  "upgrade_toxic_bullets": {
@@ -3063,6 +3227,11 @@
     "Key": "DotMultiplerTroopers",
     "Value": 0.5
    }
+  },
+  "PropertyUpgrades": {
+   "HealAmpReceivePenaltyPercent": -30,
+   "HealAmpRegenPenaltyPercent": -30,
+   "DotHealthPercent": 0.7
   }
  },
  "upgrade_ricochet": {
@@ -3149,6 +3318,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "RicochetDamagePercent": 15,
+   "BonusFireRate": 25
   }
  },
  "upgrade_health": {
@@ -3197,6 +3370,9 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusHealth": 115
   }
  },
  "upgrade_vampire": {
@@ -3257,6 +3433,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletLifestealPercent": 16,
+   "BonusHealth": 120
   }
  },
  "upgrade_debuff_reducer": {
@@ -3319,6 +3499,9 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "StatusResistancePercent": 15
   }
  },
  "upgrade_reduce_debuff_duration": {
@@ -3403,6 +3586,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "HealOnActivate": 150,
+   "TechResist": 20,
+   "AbilityCooldown": -25
   }
  },
  "upgrade_tech_purge": {
@@ -3485,6 +3673,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "TechResist": 10,
+   "TechResistBelowThreshold": 10
   }
  },
  "upgrade_improved_bullet_armor": {
@@ -3566,6 +3758,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletResist": 10,
+   "BulletResistBelowThreshold": 10
   }
  },
  "upgrade_metal_skin": {
@@ -3648,6 +3844,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "ActiveMoveSpeedPenalty": "6.5m",
+   "GroundDashReductionPercent": 60,
+   "AbilityCooldown": -2,
+   "BulletResist": 5
   }
  },
  "upgrade_healing_booster": {
@@ -3722,6 +3924,11 @@
     "Key": "HealAmpRegenPercent",
     "Value": 20
    }
+  },
+  "PropertyUpgrades": {
+   "HealAmpRegenPercent": 15,
+   "HealAmpCastPercent": 15,
+   "BonusHealthRegen": 9
   }
  },
  "upgrade_chonky": {
@@ -3818,6 +4025,12 @@
     "Key": "HealthThreshold",
     "Value": 75
    }
+  },
+  "PropertyUpgrades": {
+   "RestoreDelay": -6,
+   "BonusHealth": 375,
+   "BonusMoveSpeed": "1m",
+   "HealLifePercentOutOfCombat": 1
   }
  },
  "upgrade_damage_recycler": {
@@ -3903,6 +4116,13 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletLifestealPercent": 15,
+   "AbilityLifestealPercentHero": 15,
+   "BonusHealth": 200,
+   "TechPower": 15,
+   "BaseAttackDamagePercent": 15
   }
  },
  "upgrade_sprint_booster": {
@@ -3958,6 +4178,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "OutOfCombatHealthRegen": 8,
+   "BonusSprintSpeed": "12m"
   }
  },
  "upgrade_trophy_collector": {
@@ -4062,6 +4286,13 @@
     "Key": "ThinkRate",
     "Value": 3
    }
+  },
+  "PropertyUpgrades": {
+   "StackingTechRadiusMultiplier": 3,
+   "StackingTechRangeMultiplier": 3,
+   "OutOfCombatHealthRegen": 6,
+   "BonusSprintSpeed": "12m",
+   "MaxStacks": 83
   }
  },
  "upgrade_cardio_calibrator": {
@@ -4134,6 +4365,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "SlowResistancePercent": 30,
+   "BonusMoveSpeed": "2m",
+   "OutOfCombatHealthRegen": 8
   }
  },
  "upgrade_superior_stamina": {
@@ -4206,6 +4442,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "Stamina": 2,
+   "AirMoveIncreasePercent": 40,
+   "StaminaCooldownReduction": 15
   }
  },
  "upgrade_rapid_rounds": {
@@ -4253,6 +4494,9 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusFireRate": 15
   }
  },
  "upgrade_improved_stamina": {
@@ -4306,6 +4550,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "Stamina": 1,
+   "StaminaCooldownReduction": 14
   }
  },
  "upgrade_bullet_armor_reduction_aura": {
@@ -4403,6 +4651,12 @@
     "Key": "SingleTargetPlayerMultiplier",
     "Value": 2
    }
+  },
+  "PropertyUpgrades": {
+   "FireRateSlow": 5,
+   "BulletArmorReduction": -6,
+   "BonusHealth": 125,
+   "BonusSprintSpeed": "3m"
   }
  },
  "upgrade_grit": {
@@ -4474,6 +4728,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "CombatBarrier": 250,
+   "OutOfCombatHealthRegen": 10,
+   "AbilityCooldown": -25
   }
  },
  "upgrade_weapon_shielding": {
@@ -4568,6 +4827,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "OutOfCombatHealthRegen": 3,
+   "CombatBarrier": 225,
+   "BulletResist": 15,
+   "AbilityCooldown": -20
   }
  },
  "upgrade_spirit_bubble": {
@@ -4662,6 +4927,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "OutOfCombatHealthRegen": 3,
+   "CombatBarrier": 175,
+   "TechResist": 20,
+   "AbilityCooldown": -20
   }
  },
  "upgrade_regenerating_bullet_shield": {
@@ -4744,6 +5015,12 @@
     "Key": "LifeThreshold",
     "Value": 65
    }
+  },
+  "PropertyUpgrades": {
+   "OutOfCombatHealthRegen": 3,
+   "BulletResist": 12,
+   "BaseAttackDamagePercent": 15,
+   "BonusFireRate": 8
   }
  },
  "upgrade_magic_shield": {
@@ -4825,6 +5102,12 @@
     "Key": "LifeThreshold",
     "Value": 65
    }
+  },
+  "PropertyUpgrades": {
+   "TechResist": 13,
+   "OutOfCombatHealthRegen": 3,
+   "TechPower": 15,
+   "CooldownReduction": 7
   }
  },
  "upgrade_improved_spirit": {
@@ -4872,6 +5155,9 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "TechPower": 10
   }
  },
  "upgrade_mystic_regeneration": {
@@ -4941,6 +5227,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "Regeneration": 8,
+   "BonusHealth": 150
   }
  },
  "upgrade_soaring_spirit": {
@@ -5007,6 +5297,10 @@
     "Value": 75,
     "Type": "health"
    }
+  },
+  "PropertyUpgrades": {
+   "TechPower": 22,
+   "OutOfCombatHealthRegen": 3
   }
  },
  "upgrade_tech_overflow": {
@@ -5134,6 +5428,14 @@
     "Value": 5,
     "Type": "duration"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusAbilityDurationPercent": 15,
+   "BonusSpirit": 30,
+   "BonusFireRate": 20,
+   "AbilityLifestealPercentHero": 15,
+   "BonusHealth": 80,
+   "TechPower": 9
   }
  },
  "upgrade_return_fire": {
@@ -5201,6 +5503,12 @@
     "Value": 10,
     "Type": "bullet_armor_up"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletResist": 16,
+   "SpiritDamageReflectedPct": 15,
+   "BulletDamageReflectedPct": 25,
+   "AbilityCooldown": -10
   }
  },
  "upgrade_tech_range": {
@@ -5278,6 +5586,11 @@
     "Value": 30,
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "TechResist": 10,
+   "TechRadiusMultiplier": 20,
+   "TechRangeMultiplier": 20
   }
  },
  "upgrade_magic_reach": {
@@ -5332,6 +5645,10 @@
     "Value": 20,
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "TechRadiusMultiplier": 15,
+   "TechRangeMultiplier": 15
   }
  },
  "upgrade_extra_charge": {
@@ -5386,6 +5703,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusAbilityCharges": 1,
+   "BonusSpiritForChargedAbilities": 7
   }
  },
  "upgrade_health_stealing_magic": {
@@ -5451,6 +5772,11 @@
     "Key": "NonHeroAbilityLifestealTooltipOnly",
     "Value": 3
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityLifestealPercentHero": 14,
+   "BonusHealth": 80,
+   "TechPower": 9
   }
  },
  "upgrade_bullet_resist_shredder": {
@@ -5532,6 +5858,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletResist": 7,
+   "BulletArmorReduction": -11,
+   "BaseAttackDamagePercent": 15
   }
  },
  "upgrade_mystic_reverb": {
@@ -5640,6 +5971,10 @@
     "UsageFlags": "ConditionallyApplied",
     "LocTokenOverride": "MagicShockDamage"
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityLifestealPercentHero": 25,
+   "TechDamagePercent": 20
   }
  },
  "upgrade_magic_burst": {
@@ -5700,6 +6035,9 @@
     "Key": "MinimumDamage",
     "Value": 80
    }
+  },
+  "PropertyUpgrades": {
+   "Damage": 60
   }
  },
  "upgrade_magic_shock": {
@@ -5798,6 +6136,11 @@
     "Key": "WatcherMaxDuration",
     "Value": 30
    }
+  },
+  "PropertyUpgrades": {
+   "CurrentHealthDamage": 5,
+   "BonusHealth": 100,
+   "Damage": 60
   }
  },
  "upgrade_magic_vulnerability": {
@@ -5871,6 +6214,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "TechResist": 8,
+   "TechArmorDamageReduction": -10
   }
  },
  "upgrade_healbane": {
@@ -5956,6 +6303,12 @@
     "Type": "damage",
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "HealAmpRegenPenaltyPercent": -20,
+   "HealAmpReceivePenaltyPercent": -20,
+   "TechPower": 11,
+   "HealOnKill": 125
   }
  },
  "upgrade_magic_slow": {
@@ -6041,6 +6394,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "MovementSpeedSlow": 12,
+   "GroundDashReductionPercent": -10,
+   "BonusHealth": 100,
+   "BonusSprintSpeed": 1
   }
  },
  "upgrade_escalating_exposure": {
@@ -6131,6 +6490,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "MagicIncreasePerStack": 1.5,
+   "TechResist": 8,
+   "TechArmorDamageReduction": -10,
+   "MaxStacks": 6
   }
  },
  "upgrade_rapid_recharge": {
@@ -6204,6 +6569,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusAbilityCharges": 2,
+   "CooldownReductionOnChargedAbilities": 15,
+   "BonusSpiritForChargedAbilities": 20,
+   "CooldownBetweenChargeReduction": 5
   }
  },
  "upgrade_magic_tempo": {
@@ -6253,6 +6624,9 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "CooldownReduction": 10
   }
  },
  "upgrade_cooldown_reduction": {
@@ -6322,6 +6696,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "CooldownReduction": 10,
+   "OutOfCombatHealthRegen": 6
   }
  },
  "upgrade_transcendent_cooldown": {
@@ -6398,6 +6776,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "ItemCooldownReduction": 10,
+   "OutOfCombatHealthRegen": 10,
+   "CooldownReduction": 15
   }
  },
  "upgrade_containment": {
@@ -6487,6 +6870,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "SlowPercent": 8,
+   "AbilityCooldown": -18,
+   "GroundDashReductionPercent": -6
   }
  },
  "upgrade_spirit_sap": {
@@ -6576,6 +6964,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusHealth": 150,
+   "MagicResistReduction": -12,
+   "AbilityCooldown": -12,
+   "TechPowerReduction": -26
   }
  },
  "upgrade_focus_lens": {
@@ -6689,6 +7083,14 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "PercentDamage": 20,
+   "BonusFireRate": 20,
+   "TechPowerReduction": -26,
+   "MagicResistReduction": -12,
+   "AbilityDuration": 0.25,
+   "AbilityCooldown": -12
   }
  },
  "upgrade_withering_whip": {
@@ -6785,6 +7187,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusHealth": 130,
+   "BulletArmorReduction": -4,
+   "FireRateSlow": 20,
+   "AbilityCooldown": -8
   }
  },
  "upgrade_greater_withering_whip": {
@@ -6886,6 +7294,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusHealth": 175,
+   "BulletArmorReduction": -7,
+   "AbilityCooldown": -8
   }
  },
  "upgrade_rescue_beam": {
@@ -6997,6 +7410,12 @@
     "Value": 6,
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "TechRadiusMultiplier": 20,
+   "TechRangeMultiplier": 20,
+   "HealPercentAmount": 15,
+   "AbilityCooldown": -45
   }
  },
  "upgrade_rupture": {
@@ -7129,6 +7548,14 @@
     "Key": "TickRate",
     "Value": 1
    }
+  },
+  "PropertyUpgrades": {
+   "TechPower": 12,
+   "BonusHealth": 90,
+   "HealAmpReceivePenaltyPercent": -20,
+   "HealAmpRegenPenaltyPercent": -20,
+   "DotHealthPercent": 0.375,
+   "AbilityCooldown": -10
   }
  },
  "upgrade_discord": {
@@ -7244,6 +7671,13 @@
     "Key": "TickRate",
     "Value": 0.25
    }
+  },
+  "PropertyUpgrades": {
+   "MaxHealthPercentAsDPS": 2,
+   "CombatBarrier": 300,
+   "StatusResistancePercent": 20,
+   "BonusHealth": 125,
+   "AbilityDuration": 3
   }
  },
  "upgrade_target_stun": {
@@ -7360,6 +7794,12 @@
     "Value": 5,
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "TechRadiusMultiplier": 6,
+   "TechRangeMultiplier": 6,
+   "StunDuration": 0.75,
+   "BonusHealth": 75
   }
  },
  "upgrade_phantom_strike": {
@@ -7471,6 +7911,12 @@
     "Value": "1.3m",
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "TechPower": 22,
+   "BaseAttackDamagePercent": 20,
+   "AbilityCooldown": -20,
+   "ImpactDamage": 100
   }
  },
  "upgrade_warp_stone": {
@@ -7540,6 +7986,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletResist": 20,
+   "AbilityCastRange": "9m",
+   "AbilityCooldown": -3
   }
  },
  "upgrade_aoe_root": {
@@ -7671,6 +8122,13 @@
     "Value": 8,
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusSprintSpeed": "9m",
+   "AbilityCooldown": -22,
+   "TechRadiusMultiplier": 10,
+   "TechRangeMultiplier": 10,
+   "SlowPercent": 12
   }
  },
  "upgrade_ability_refresher": {
@@ -7731,6 +8189,9 @@
     "Value": 15,
     "Type": "bullet_armor_up"
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityCooldown": -210
   }
  },
  "upgrade_ability_power_shard": {
@@ -7810,6 +8271,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletResist": 5,
+   "TechResist": 5,
+   "AbilityCooldown": -10
   }
  },
  "upgrade_tech_damage_pulse": {
@@ -7896,6 +8362,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusHealth": 75,
+   "DamagePulseAmount": 30
   }
  },
  "upgrade_cheat_death": {
@@ -7999,6 +8469,13 @@
     "Type": "move_speed",
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "DeathImmunityDamageReduction": 90,
+   "HealAmpReceivePenaltyPercent": 90,
+   "HealAmpRegenPenaltyPercent": 90,
+   "DeathImmunityDuration": 0.5,
+   "AbilityCooldown": -20
   }
  },
  "upgrade_cloaking_device_active": {
@@ -8159,6 +8636,13 @@
     "Key": "FullInvisDistance",
     "Value": "30m"
    }
+  },
+  "PropertyUpgrades": {
+   "OutOfCombatHealthRegen": 20,
+   "AmbushBonusFireRate": 35,
+   "AmbushBonusMeleeDamage": 30,
+   "AmbushBonusTechPower": 35,
+   "AbilityCooldown": -17
   }
  },
  "upgrade_rocket_booster": {
@@ -8290,6 +8774,11 @@
     "Key": "MinAimAngle",
     "Value": 30
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityCooldown": -35,
+   "CombatBarrier": 275,
+   "InterruptCooldown": -3
   }
  },
  "upgrade_health_nova": {
@@ -8398,6 +8887,12 @@
     "Value": 5,
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "TechRadiusMultiplier": 12,
+   "TechRangeMultiplier": 12,
+   "TechPower": 12,
+   "TotalHealthRegen": 425
   }
  },
  "upgrade_restorative_locket": {
@@ -8494,6 +8989,13 @@
     "Value": "32m",
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "TechResist": 10,
+   "HealPerStack": 30,
+   "AbilityCooldown": -8,
+   "MaxStaminaRestore": 2,
+   "MinStaminaRestore": 2
   }
  },
  "upgrade_health_stimpak": {
@@ -8572,6 +9074,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "TotalHealthRegen": 600,
+   "BonusSprintSpeed": "6m",
+   "AbilityCooldown": -60
   }
  },
  "upgrade_infuser": {
@@ -8681,6 +9188,13 @@
     "Key": "NonHeroAbilityLifestealTooltipOnly",
     "Value": 3
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityCooldown": -10,
+   "TechResist": 10,
+   "BonusSpirit": 30,
+   "BonusHealth": 50,
+   "AbilityLifestealPercentHeroPassive": 16
   }
  },
  "upgrade_guardian_ward": {
@@ -8790,6 +9304,13 @@
     "Value": 8,
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "TechRangeMultiplier": 12,
+   "TechRadiusMultiplier": 12,
+   "GuardianWardCombatBarrier": 250,
+   "ChannelMoveSpeed": 2,
+   "AbilityCooldown": -12
   }
  },
  "upgrade_divine_barrier": {
@@ -8903,6 +9424,11 @@
     "Value": 10,
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityCooldown": -27,
+   "TechRadiusMultiplier": 10,
+   "TechRangeMultiplier": 10
   }
  },
  "upgrade_thermal_detonator": {
@@ -9040,6 +9566,12 @@
     "Key": "TickRate",
     "Value": 0.5
    }
+  },
+  "PropertyUpgrades": {
+   "DPS": 30,
+   "DPSMax": 30,
+   "BulletArmorReduction": -8,
+   "SpiritPower": 15
   }
  },
  "upgrade_blood_tribute": {
@@ -9143,6 +9675,12 @@
     "Key": "TickRate",
     "Value": 0.1
    }
+  },
+  "PropertyUpgrades": {
+   "HealthDrainedPerSecond": -20,
+   "BonusFireRate": 30,
+   "TechResist": 14,
+   "OutOfCombatHealthRegen": 8
   }
  },
  "upgrade_fleetfoot_boots": {
@@ -9248,6 +9786,11 @@
     "Value": 100,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "SlowResistancePercent": 30,
+   "BulletResist": 12,
+   "ActiveBonusMoveSpeed": "3m"
   }
  },
  "upgrade_kinetic_sash": {
@@ -9332,6 +9875,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusFireRate": 20,
+   "Stamina": 1,
+   "BonusClipSize": 6,
+   "StaminaCooldownReduction": 14
   }
  },
  "upgrade_arcane_surge": {
@@ -9430,6 +9979,14 @@
     "Type": "distance",
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "Stamina": 1,
+   "SpiritPower": 25,
+   "TechRadiusMultiplierBuff": 15,
+   "TechRangeMultiplierBuff": 15,
+   "BonusAbilityDurationPercent": 15,
+   "StaminaCooldownReduction": 14
   }
  },
  "upgrade_unstoppable": {
@@ -9508,6 +10065,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityDuration": 1.25,
+   "BonusHealth": 75,
+   "AbilityCooldown": -35,
+   "StatusResistancePercent": 15
   }
  },
  "upgrade_colossus": {
@@ -9637,6 +10200,14 @@
     "Key": "ModelScaleGrowth",
     "Value": 1.2
    }
+  },
+  "PropertyUpgrades": {
+   "BonusBaseHealth": 15,
+   "ModelScaleGrowth": 0.2,
+   "ModelScaleGrowthTooltip": 20,
+   "BuffBulletResist": 10,
+   "BuffTechResist": 10,
+   "AbilityCooldown": -7
   }
  },
  "upgrade_cold_front": {
@@ -9742,6 +10313,11 @@
     "Value": 1,
     "Type": "tech_damage"
    }
+  },
+  "PropertyUpgrades": {
+   "TechResist": 8,
+   "AbilityCooldown": -13,
+   "Damage": 60
   }
  },
  "upgrade_arctic_blast": {
@@ -9864,6 +10440,12 @@
     "Value": 1,
     "Type": "tech_damage"
    }
+  },
+  "PropertyUpgrades": {
+   "Damage": 150,
+   "AbilityCooldown": -12,
+   "TechResist": 15,
+   "FreezeDuration": 0.25
   }
  },
  "upgrade_self_bubble": {
@@ -9972,6 +10554,14 @@
     "Type": "slow",
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityDuration": 2,
+   "BonusSpirit": 30,
+   "BonusMoveSpeed": "2m",
+   "TechResist": 10,
+   "AbilityCooldown": -10,
+   "FloatMoveSpeed": "3.5m"
   }
  },
  "upgrade_glitch": {
@@ -10059,6 +10649,10 @@
     "Value": 6,
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityCooldown": -40,
+   "AbilityDuration": 0.25
   }
  },
  "upgrade_arcane_extension": {
@@ -10107,6 +10701,9 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusAbilityDurationPercent": 12
   }
  },
  "upgrade_imbued_duration_extender": {
@@ -10179,6 +10776,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusAbilityDurationPercent": 12,
+   "BulletResist": 8
   }
  },
  "upgrade_glass_cannon": {
@@ -10284,6 +10885,10 @@
     "Key": "BuildUpPerShot",
     "Value": 1.2
    }
+  },
+  "PropertyUpgrades": {
+   "FireRatePerKill": 8,
+   "BaseAttackDamagePercent": 60
   }
  },
  "upgrade_fury_trance": {
@@ -10396,6 +11001,12 @@
     "Type": "move_speed",
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletLifestealPercent": 28,
+   "ActiveBonusFireRate": 25,
+   "TechResist": 20,
+   "BonusHealth": 110
   }
  },
  "upgrade_surging_power": {
@@ -10506,6 +11117,13 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "ActiveBonusFireRate": 25,
+   "AbilityCooldown": -10,
+   "BulletResist": 10,
+   "BulletLifestealPercent": 16,
+   "BonusHealth": 110
   }
  },
  "upgrade_boxing_glove": {
@@ -10622,6 +11240,11 @@
     "Key": "NonHeroHealPct",
     "Value": 40
    }
+  },
+  "PropertyUpgrades": {
+   "BonusMeleeDamagePercent": 10,
+   "BonusHealth": 125,
+   "AbilityCooldown": -3
   }
  },
  "upgrade_acolytes_glove": {
@@ -10693,6 +11316,10 @@
     "Key": "LightMeleeCooldownMult",
     "Value": 2
    }
+  },
+  "PropertyUpgrades": {
+   "SpiritDamage": 80,
+   "TechArmorDamageReduction": -5
   }
  },
  "upgrade_spirit_snatch": {
@@ -10817,6 +11444,13 @@
     "Type": "tech_damage",
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "SpiritDamage": 50,
+   "TechArmorGain": 5,
+   "TechArmorDamageReduction": -5,
+   "TechPowerGain": 35,
+   "TechPowerReduction": -35
   }
  },
  "upgrade_melee_charge": {
@@ -10896,6 +11530,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "MeleeDistanceScale": 30,
+   "BulletResist": 12,
+   "BonusHeavyMeleeDamage": 15
   }
  },
  "upgrade_crushing_fists": {
@@ -11030,6 +11669,13 @@
     "Key": "HeavyMeleeMultiplier",
     "Value": 2
    }
+  },
+  "PropertyUpgrades": {
+   "MeleeDistanceScale": 40,
+   "BulletResist": 12,
+   "BonusMeleeDamagePercent": 15,
+   "BulletResistReduction": -4,
+   "BonusHeavyMeleeDamage": 15
   }
  },
  "upgrade_diviners_kevlar": {
@@ -11120,6 +11766,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusAbilityDurationPercent": 15,
+   "TechPower": 55,
+   "CombatBarrier": 500,
+   "AbilityCooldown": -14
   }
  },
  "upgrade_resonant_healing": {
@@ -11234,6 +11886,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "Regeneration": 9,
+   "HealingPerCast": 60,
+   "BonusHealth": 110,
+   "BonusMoveSpeed": "1m"
   }
  },
  "upgrade_boundless_spirit": {
@@ -11307,6 +11965,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "TechPower": 25,
+   "TechPowerPercent": 10,
+   "OutOfCombatHealthRegen": 4,
+   "BonusHealth": 100
   }
  },
  "upgrade_burst_fire": {
@@ -11400,6 +12064,13 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "SlideScale": 50,
+   "ActivatedFireRate": 15,
+   "BonusMoveSpeed": "1.5m",
+   "BonusFireRate": 14,
+   "AbilityCooldown": -1
   }
  },
  "upgrade_endurance": {
@@ -11454,6 +12125,9 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusHealthRegen": 9
   }
  },
  "upgrade_magic_storm": {
@@ -11543,6 +12217,11 @@
     "Type": "move_speed",
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "ImbuedTechPower": 32,
+   "FireRateBonus": 18,
+   "BonusMoveSpeed": "2m"
   }
  },
  "upgrade_suppressor": {
@@ -11620,6 +12299,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "TechPower": 12,
+   "BulletResist": 16,
+   "FireRateSlow": 20
   }
  },
  "upgrade_quick_silver": {
@@ -11696,6 +12380,12 @@
     "Key": "BuffDuration",
     "Value": 12
    }
+  },
+  "PropertyUpgrades": {
+   "BonusFireRate": 20,
+   "Damage": 56,
+   "AbilityChargeUpTime": -4,
+   "AbilityCooldown": -4
   }
  },
  "upgrade_ethereal_bullets": {
@@ -11806,6 +12496,13 @@
     "Key": "BuffDuration",
     "Value": 12
    }
+  },
+  "PropertyUpgrades": {
+   "BonusFireRate": 20,
+   "BonusClipSizePercent": 60,
+   "Damage": 120,
+   "BulletsBonusMagicDamage": 20,
+   "TechPower": 15
   }
  },
  "upgrade_intensifying_clip": {
@@ -11878,6 +12575,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusClipSizePercent": 40,
+   "BaseAttackDamagePercentAtMaxDuration": 55
   }
  },
  "upgrade_reinforcing_casings": {
@@ -11972,6 +12673,13 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletResistPerStack": 2,
+   "MaxArmorStacks": 20,
+   "BonusClipSizePercent": 30,
+   "BonusHealth": 125,
+   "WeaponPower": 10
   }
  },
  "upgrade_blitz_bullets": {
@@ -12028,6 +12736,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusFireRate": 15,
+   "BonusSprintSpeed": "4m"
   }
  },
  "upgrade_veil_walker": {
@@ -12167,6 +12879,16 @@
     "Value": "0m",
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "SpiritPower": 25,
+   "InvisMoveSpeedMod": "6m",
+   "HealOnVeil": 250,
+   "AbilityCooldown": -9,
+   "InvisDuration": 4,
+   "BonusMoveSpeed": "4m",
+   "OutOfCombatHealthRegen": 8,
+   "BonusSprintSpeed": "12m"
   }
  },
  "upgrade_vex_barrier": {
@@ -12244,6 +12966,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "VexBarrierCombatBarrier": 375,
+   "AbilityCooldown": -15
   }
  },
  "upgrade_auto_cleanse": {
@@ -12346,6 +13072,12 @@
     "Value": 20,
     "Type": "cooldown"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletResist": 14,
+   "TechResist": 14,
+   "AbilityCooldown": -35,
+   "VexBarrierCombatBarrier": 450
   }
  },
  "upgrade_medic_bullets": {
@@ -12426,6 +13158,10 @@
     "Key": "ProcChance",
     "Value": 100
    }
+  },
+  "PropertyUpgrades": {
+   "HealFromHero": 100,
+   "HealFromNPC": 40
   }
  },
  "upgrade_titan_round": {
@@ -12482,6 +13218,10 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BaseAttackDamagePercent": 18,
+   "BonusClipSizePercent": 70
   }
  },
  "upgrade_split_shot": {
@@ -12557,6 +13297,11 @@
     "Key": "SpreadAngleDegrees",
     "Value": 45
    }
+  },
+  "PropertyUpgrades": {
+   "BulletSplitShot": 4,
+   "WeaponDamagePerStack": 8,
+   "AbilityCooldown": -8
   }
  },
  "upgrade_active_reload": {
@@ -12639,6 +13384,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusFireRate": 15,
+   "BonusMoveSpeed": "3m",
+   "BulletLifestealPercent": 12,
+   "BonusClipSizePercent": 10
   }
  },
  "upgrade_magic_carpet": {
@@ -12749,6 +13500,13 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "TechPower": 46,
+   "AbilityDuration": 8,
+   "BonusAbilityDurationPercent": 15,
+   "FlyMoveSpeed": "6m",
+   "SummonDuration": -0.3
   }
  },
  "upgrade_spirit_burn": {
@@ -12882,6 +13640,13 @@
     "Key": "DamagePctVsNonHeroes",
     "Value": 50
    }
+  },
+  "PropertyUpgrades": {
+   "ExplosionDamage": 160,
+   "TechRadiusMultiplier": 12,
+   "TechRangeMultiplier": 12,
+   "DPS": 20,
+   "ImmunityDuration": -6
   }
  },
  "upgrade_ultimate_burst": {
@@ -13019,6 +13784,12 @@
     "Type": "slow",
     "UsageFlags": "ConditionallyApplied"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusHealth": 100,
+   "Damage": 100,
+   "BonusSprintSpeed": "5m",
+   "StunDuration": 0.75
   }
  },
  "upgrade_absorbing_armor": {
@@ -13104,6 +13875,11 @@
     "Key": "CooldownReduction",
     "Value": 7
    }
+  },
+  "PropertyUpgrades": {
+   "TechPower": 26,
+   "CooldownReductionPerHit": 2,
+   "TechResist": 5
   }
  },
  "upgrade_healbuff": {
@@ -13219,6 +13995,14 @@
     "Key": "HealAmpRegenPercent",
     "Value": 25
    }
+  },
+  "PropertyUpgrades": {
+   "HealAmpRegenPercent": 10,
+   "HealAmpCastPercent": 10,
+   "TechResist": 10,
+   "BonusMoveSpeed": "2m",
+   "BonusFireRate": 20,
+   "BonusHealthRegen": 6
   }
  },
  "upgrade_aprounds": {
@@ -13293,6 +14077,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusBulletSpeedPercent": 55,
+   "ProcChance": 20,
+   "BaseAttackDamagePercent": 30
   }
  },
  "upgrade_deflecting_armor": {
@@ -13375,6 +14164,10 @@
     "Key": "DeflectionRandomness",
     "Value": 1
    }
+  },
+  "PropertyUpgrades": {
+   "DeflectionPercent": 15,
+   "BulletProcDeflectionPercent": 15
   }
  },
  "upgrade_spellbreaker": {
@@ -13465,6 +14258,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "TechResist": 15,
+   "StatusResistancePercent": 15,
+   "AbilityCooldown": -3
   }
  },
  "upgrade_juggernaut": {
@@ -13562,6 +14360,13 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "BonusMoveSpeed": "3.5m",
+   "MeleeResistPercent": 15,
+   "FireRateSlow": 20,
+   "SlowResistancePercent": 15,
+   "BonusHealthRegen": 8
   }
  },
  "upgrade_enchanted_holsters": {
@@ -13649,6 +14454,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "ReloadSpeedMultipler": -3,
+   "BonusFireRate": 6,
+   "CooldownReduction": 8
   }
  },
  "upgrade_weapon_backstabber": {
@@ -13756,6 +14566,12 @@
     "Type": "distance",
     "LocTokenOverride": "BackstabberRadius"
    }
+  },
+  "PropertyUpgrades": {
+   "BulletResistReduction": -10,
+   "BonusMoveSpeed": "2m",
+   "DPS": 20,
+   "ReduceFootstepSound": -50
   }
  },
  "upgrade_express_shot": {
@@ -13866,6 +14682,12 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "ProcBaseAttackDamagePercent": 75,
+   "ProcBaseAttackDamagePercentAltFire": 25,
+   "BonusBulletSpeedPercent": 45,
+   "BaseAttackDamagePercent": 15
   }
  },
  "upgrade_bulletshredimbue": {
@@ -13953,6 +14775,11 @@
     "Value": 22,
     "Type": "distance"
    }
+  },
+  "PropertyUpgrades": {
+   "WeaponPowerPerStack": 15,
+   "TechRangeMultiplier": 15,
+   "TechRadiusMultiplier": 15
   }
  },
  "upgrade_rechargingbullets": {
@@ -14025,6 +14852,11 @@
     "Value": -1,
     "Type": "move_speed"
    }
+  },
+  "PropertyUpgrades": {
+   "AbilityCooldown": -12,
+   "BonusClipSizePercent": 30,
+   "BaseAttackDamagePercent": 30
   }
  },
  "upgrade_goose_egg": {
@@ -14117,6 +14949,12 @@
     "Key": "BonusBuffsPerGold",
     "Value": 80
    }
+  },
+  "PropertyUpgrades": {
+   "BonusSprintSpeed": 5,
+   "OutOfCombatHealthRegen": 10,
+   "BonusBuffsPerGold": -50,
+   "OutgoingDamagePenaltyPercent": 20
   }
  }
 }

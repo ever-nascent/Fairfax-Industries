@@ -61,6 +61,12 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "BonusAbilityCharges": 2,
+   "BonusSpiritForChargedAbilities": 30,
+   "CooldownBetweenChargeReduction": 5,
+   "CooldownReductionOnChargedAbilities": 10
   }
  },
  "upgrade_shrink_ray": {
@@ -123,6 +129,13 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "ModelScaleGrowth": -0.15,
+   "ModelScaleGrowthTooltip": -15,
+   "BonusMoveSpeed": "2m",
+   "BonusFireRate": 20,
+   "AbilityCooldown": -15
   }
  },
  "upgrade_infinite_rounds": {
@@ -181,6 +194,11 @@
    "ChargeUp": null,
    "Main": [],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "BonusBulletSpeedPercent": 100,
+   "BonusFireRate": 20,
+   "ProcChance": 10
   }
  },
  "upgrade_icarus_wings": {
@@ -252,6 +270,11 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "AirBonusDamageGiven": 10,
+   "AirBonusDamageTaken": -10,
+   "StaminaCooldownReduction": 30
   }
  },
  "upgrade_mystical_piano": {
@@ -293,6 +316,10 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "AbilityCooldown": -15,
+   "Radius": "3m"
   }
  },
  "upgrade_nullification_aura": {
@@ -368,6 +395,12 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "EndRadius": "6m",
+   "BonusHealth": 300,
+   "StatusResistancePercent": 20,
+   "Damage": 200
   }
  },
  "upgrade_celestial_guidance": {
@@ -423,6 +456,11 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "AbilityCooldown": -20,
+   "BuffDuration": 2,
+   "MinHeal": 200
   }
  },
  "upgrade_eternal_gift": {
@@ -473,6 +511,9 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "BuffFrequency": -0.5
   }
  },
  "upgrade_patrons_blessing": {
@@ -565,6 +606,11 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "TechRadiusMultiplier": 10,
+   "TechRangeMultiplier": 10,
+   "CooldownReduction": 10
   }
  },
  "upgrade_eldritch_shot": {
@@ -641,6 +687,15 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "GroundDashReductionPercent": -9,
+   "HealthPctDamage": 5,
+   "MovementSpeedSlow": 8,
+   "HealAmpReceivePenaltyPercent": -15,
+   "HealAmpRegenPenaltyPercent": -15,
+   "OutgoingDamagePenaltyPercent": -15,
+   "AbilityCooldown": -1
   }
  },
  "upgrade_cloak_of_opportunity": {
@@ -696,6 +751,11 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "BonusMoveSpeed": "4m",
+   "AbilityCooldown": -4,
+   "CombatBarrier": 300
   }
  },
  "upgrade_runed_gauntlets": {
@@ -776,6 +836,11 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "MeleeDistanceScale": 50,
+   "MeleeResistPercent": 15,
+   "CooldownReductionOnHitPct": 6
   }
  },
  "upgrade_electric_slippers": {
@@ -854,6 +919,12 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "Stamina": 2,
+   "EvasionWhileSliding": 15,
+   "Damage": 50,
+   "FireRateWhileSliding": 20
   }
  },
  "upgrade_prism_blast": {
@@ -899,6 +970,10 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "AbilityDuration": 2,
+   "AbilityCooldown": -10
   }
  },
  "upgrade_unstable_concoction": {
@@ -975,6 +1050,12 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "StunDuration": 0.5,
+   "BaseAttackDamagePercent": 50,
+   "TechPower": 50,
+   "BonusHealth": 1300
   }
  },
  "upgrade_shivas_bracelet": {
@@ -1023,6 +1104,13 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "AbilityCooldown": -2,
+   "ImbuedCooldownReduction": 15,
+   "ImbuedTechPower": 40,
+   "Damage": 100,
+   "FreezeDuration": 0.3
   }
  },
  "upgrade_shadow_strike": {
@@ -1105,6 +1193,13 @@
     }
    ],
    "Alt": []
+  },
+  "PropertyUpgrades": {
+   "Stamina": 1,
+   "BonusHealth": 250,
+   "ResistStealAmount": 20,
+   "DPS": 125,
+   "AbilityDuration": 3
   }
  }
 }
