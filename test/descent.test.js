@@ -180,6 +180,31 @@ test('picks: an upgrade replaces its part in place, a full build needs an item g
   assert.strictEqual(d.offer, null);
 });
 
+test('rerolls: 3 a floor, the same new offer every time for a seed, never below 0, boss rewards stay, a boss win refills them', () => {
+  const win = (d, room) => { d.room = room; D.afterWin(d, { spec: D.roomSpec(d.seed, room, 'Haze'), health: 1, rejuvsUsed: 0, kept: {} }); };
+  const a = D.newRun('Haze', 21);
+  const b = D.newRun('Haze', 21);
+  assert.strictEqual(a.rerolls, D.REROLLS_PER_FLOOR);
+  win(a, 1); win(b, 1);
+  const first = a.offer;
+  assert.deepStrictEqual(D.rerollChoice(a), { ok: true });
+  D.rerollChoice(b);
+  assert.deepStrictEqual(a.offer, b.offer, 'the rerolled offer comes from the seed, so a restart cannot farm it');
+  assert.notDeepStrictEqual(a.offer.choices, first.choices);
+  assert.strictEqual(a.offer.room, 1);
+  D.rerollChoice(a); D.rerollChoice(a);
+  assert.strictEqual(a.rerolls, 0);
+  const kept = JSON.stringify(a.offer);
+  assert.deepStrictEqual(D.rerollChoice(a), { error: 'empty' });
+  assert.strictEqual(a.rerolls, 0, 'never below 0');
+  assert.strictEqual(JSON.stringify(a.offer), kept, 'an empty reroll changes nothing');
+  win(a, 4);
+  assert.strictEqual(a.rerolls, 0, 'rerolls do not refill mid-floor');
+  win(a, 5);
+  assert.strictEqual(a.rerolls, D.REROLLS_PER_FLOOR, 'the boss ends the floor: the next one starts with 3');
+  assert.deepStrictEqual(D.rerollChoice(a), { error: 'none' }, 'a boss reward (buffs or legendaries) is not rerolled');
+});
+
 test('an imbue item pauses Descend until an unlocked ability is chosen', () => {
   const d = D.newRun('Haze', 1);
   d.level = 2; // abilities one and two are unlocked after the room clear
