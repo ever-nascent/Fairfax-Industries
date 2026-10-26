@@ -83,14 +83,14 @@ function hexagon(g, x, y, r, turn = 0) {
 }
 // A chamber's bore, like the game's: a six-pointed star of two triangles (an upright one and an upside-down one) crossing inside it. `dark` draws it as
 // shaded lines (a tinted pick's chamber), else faint light ones (an empty chamber).
-function bore(g, x, y, r, dark) {
+function bore(g, x, y, r, tint) {
   g.save();
   g.lineJoin = 'round';
   for (const turn of [0, 180]) {
     g.beginPath();
-    for (let k = 0; k < 3; k++) { const [px, py] = polar(turn - 90 + 120 * k, r * 0.93); if (k) g.lineTo(x + px, y + py); else g.moveTo(x + px, y + py); }
+    for (let k = 0; k < 3; k++) { const [px, py] = polar(turn - 90 + 120 * k, r * 0.86); if (k) g.lineTo(x + px, y + py); else g.moveTo(x + px, y + py); }
     g.closePath();
-    if (dark) { g.strokeStyle = 'rgba(0,0,0,0.34)'; g.lineWidth = 5; g.stroke(); g.strokeStyle = 'rgba(255,255,255,0.07)'; g.lineWidth = 1.2; g.stroke(); }
+    if (tint) { g.globalAlpha = 0.34; g.strokeStyle = tint; g.lineWidth = 6.5; g.stroke(); } // thick bands in the kind's colour, like the game's
     else { g.strokeStyle = 'rgba(255,255,255,0.09)'; g.lineWidth = 2; g.stroke(); }
   }
   g.restore();
@@ -139,7 +139,7 @@ function drawBody() {
     well.addColorStop(0, '#0b0b0d');
     well.addColorStop(1, '#27272c');
     g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = well; g.fill();
-    bore(g, x, y, r, false);
+    bore(g, x, y, r, null);
     g.strokeStyle = 'rgba(206,206,212,0.8)';
     g.lineWidth = 5;
     g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke();
@@ -206,23 +206,23 @@ function slanted(g, text, x, y, px, fill, outline, turn = 0) {
 }
 // The blue ENHANCED badge with the game's upgrade mark (a sharp lightning zigzag that ends in an arrowhead), centred at (x, y).
 function enhancedBadge(g, x, y) {
-  const px = 13;
+  const px = 14;
   g.save();
   g.font = `italic bold ${px}px sans-serif`;
   const w = g.measureText('ENHANCED').width;
   g.restore();
-  slanted(g, 'ENHANCED', x - 6, y, px, '#45acce', '#1d527e', -5);
+  slanted(g, 'ENHANCED', x - 7, y, px, '#45acce', '#1d527e', 0);
   g.save();
-  g.translate(x + w / 2 + 2, y - 15);
-  g.rotate(rad(-5));
+  g.translate(x + w / 2 - 1, y - 14.5);
+  g.scale(0.78, 0.78);
   g.lineJoin = 'miter';
   g.miterLimit = 10;
   const bolt = () => { // the zigzag, then the head on its last stroke
-    g.beginPath(); g.moveTo(1, 20); g.lineTo(9, 12); g.lineTo(3.5, 10.5); g.lineTo(10.5, 4); g.stroke();
-    g.beginPath(); g.moveTo(13.5, -1); g.lineTo(6.5, 3.5); g.lineTo(13, 8); g.closePath();
+    g.beginPath(); g.moveTo(1, 22); g.lineTo(8, 14.5); g.lineTo(3, 12.5); g.lineTo(10.5, 5); g.stroke();
+    g.beginPath(); g.moveTo(13, 0); g.lineTo(7, 4.5); g.lineTo(12.5, 8.5); g.closePath();
   };
-  g.strokeStyle = '#1d527e'; g.lineWidth = 5.5; bolt(); g.stroke();
-  g.strokeStyle = '#45acce'; g.lineWidth = 2.4; bolt(); g.stroke(); g.fillStyle = '#45acce'; g.fill();
+  g.strokeStyle = '#1d527e'; g.lineWidth = 4.6; bolt(); g.stroke();
+  g.strokeStyle = '#45acce'; g.lineWidth = 1.9; bolt(); g.stroke(); g.fillStyle = '#45acce'; g.fill();
   g.restore();
 }
 
@@ -250,14 +250,14 @@ async function card(g, { picture, kind, tier, active, upgrade, enhanced }, cx, c
     g.fillStyle = hue;
     g.fillRect(x, x, size, size);
   }
-  if (active) {
-    const th = Math.round(size * 0.14);
-    g.fillStyle = active === 'IMBUE' ? 'rgba(90,58,138,0.92)' : 'rgba(14,14,14,0.88)';
-    g.fillRect(x + size * 0.16, x + size - th, size * 0.68, th);
-    g.fillStyle = active === 'IMBUE' ? '#d4b8f0' : 'rgba(255,239,215,0.92)';
-    g.font = `bold ${Math.max(6, Math.round(size * 0.1))}px sans-serif`;
+  if (active) { // a dark pill at the bottom, centred
+    const th = Math.round(size * 0.15), tw = size * (active === 'IMBUE' ? 0.5 : 0.46);
+    g.fillStyle = active === 'IMBUE' ? 'rgba(90,58,138,0.95)' : 'rgba(16,16,18,0.92)';
+    g.beginPath(); g.roundRect(-tw / 2, x + size - th - size * 0.05, tw, th, th * 0.3); g.fill();
+    g.fillStyle = active === 'IMBUE' ? '#d4b8f0' : 'rgba(240,232,218,0.95)';
+    g.font = `bold ${Math.max(6, Math.round(size * 0.105))}px sans-serif`;
     g.textAlign = 'center';
-    g.fillText(active, 0, x + size - th * 0.26);
+    g.fillText(active, 0, x + size - size * 0.05 - th * 0.27);
   }
   if (upgrade) { // the game's teal ribbon across the top-right corner
     g.strokeStyle = UPGRADE;
@@ -267,16 +267,21 @@ async function card(g, { picture, kind, tier, active, upgrade, enhanced }, cx, c
     g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(-x - size * 0.5 - 4, x - 2); g.lineTo(-x + 2, x + size * 0.5 + 4); g.stroke();
   }
-  if (tier) { // tier marks: a bar for each tier, in the corner
-    const bw = size * 0.035, bh = size * 0.12, gap = bw * 1.7;
-    g.fillStyle = 'rgba(8,8,10,0.75)';
-    g.beginPath(); g.roundRect(-x - (tier * gap + bw * 1.6), x + 2, tier * gap + bw * 1.1, bh + 5, 2); g.fill();
-    g.fillStyle = '#f2ece0';
-    for (let t = 0; t < tier; t++) g.fillRect(-x - tier * gap - bw * 0.9 + t * gap, x + 4.5, bw, bh);
+  if (tier) { // the corner is cut in the border's colour, the tier marks (a bar for each tier) on it
+    const c = size * 0.2;
+    g.fillStyle = KIND[kind];
+    g.beginPath(); g.moveTo(-x - c, x); g.lineTo(-x, x); g.lineTo(-x, x + c); g.closePath(); g.fill();
+    const bw = size * 0.02, bh = size * 0.055, gap = bw * 1.9;
+    g.save();
+    g.translate(-x - c * 0.3, x + c * 0.3);
+    g.rotate(rad(45));
+    g.fillStyle = '#2a1c06';
+    for (let t = 0; t < tier; t++) g.fillRect((t - (tier - 1) / 2) * gap - bw / 2, -bh / 2, bw, bh);
+    g.restore();
   }
   g.restore();
   g.strokeStyle = KIND[kind];
-  g.lineWidth = 2;
+  g.lineWidth = 3;
   g.beginPath(); g.roundRect(x, x, size, size, 4); g.stroke();
   g.restore();
 }
@@ -295,7 +300,11 @@ async function choiceIn(g, choice, deg, grow = 1) {
   well.addColorStop(0.5, mid);
   well.addColorStop(1, rim);
   g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = well; g.fill();
-  bore(g, x, y, r, true);
+  bore(g, x, y, r, KIND[kind]);
+  const shade = g.createRadialGradient(x, y, r * 0.55, x, y, r); // dark again at the rim
+  shade.addColorStop(0, 'rgba(0,0,0,0)');
+  shade.addColorStop(1, 'rgba(0,0,0,0.7)');
+  g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = shade; g.fill();
   // the ring
   const ring = g.createLinearGradient(x - r, y + r, x + r, y - r);
   ring.addColorStop(0, RING_FROM[kind] ?? KIND[kind]);
@@ -311,7 +320,7 @@ async function choiceIn(g, choice, deg, grow = 1) {
   const size = Math.round(r * 2 * 0.45) * (0.5 + grow / 2);
   const lines = wrap(g, choice.name, 160);
   const rows = lines.length + (choice.enhanced ? 0.8 : 0);
-  const top = y - (size + 8 + rows * 21) / 2 - 3;
+  const top = y - (size + 8 + rows * 21) / 2 + 2;
   const cy = top + size / 2;
   await card(g, choice, x, cy, size);
   if (choice.bonus) { // a smaller card tilted over the top left, "BONUS!" above it
