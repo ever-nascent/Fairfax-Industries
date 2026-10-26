@@ -57,17 +57,22 @@ function duel(heroName, kit, rivalName, theirs, { rng = Math.random, rejuvs = 0 
   const frames = [];
   let seen = 0;
   let asleep = false; // the rival was asleep at some moment since the last snapshot
+  let lastWarp;
   const snapshot = () => ({
     t: fight.time, stage: 0,
     hero: { hp: hero.health, max: hero.stats.maxHealth, respawning: hero.has('rejuv') }, rejuvs: hero.rejuvs,
     enemies: [{ name: rivalName, hp: rival.health, max: rival.stats.maxHealth, asleep: asleep || rival.has('sleep'), ...(rivalName === 'Silver' && isWolf(rival) && { wolf: true }) }],
     abilities: hero.abilities.filter((a) => !a.hidden).map((a) => ({ name: a.name, status: a.status(fight) })),
-    log: log.slice(-4),
+    log: lastWarp && !log.slice(-4).includes(lastWarp) ? [lastWarp, ...log.slice(-3)] : log.slice(-4),
   });
   frames.push(snapshot());
   for (let steps = 1; fight.time < DUEL_SECONDS && hero.alive && rival.alive; steps++) {
     fight.step();
-    for (; seen < fight.log.length; seen++) log.push([fight.log[seen].t, `${fight.log[seen].who} used ${fight.log[seen].what === 'Rejuvenated' ? `a ${rejuvIcon()}Rejuv` : fight.log[seen].what}`]);
+    for (; seen < fight.log.length; seen++) {
+      const l = fight.log[seen];
+      log.push([l.t, l.warped ? `${l.who} warped away from ${l.from}'s ${l.what}` : `${l.who} used ${l.what === 'Rejuvenated' ? `a ${rejuvIcon()}Rejuv` : l.what}`]);
+      if (l.warped) lastWarp = log.at(-1);
+    }
     if (rival.has('sleep')) asleep = true;
     if (steps % FRAME_STEPS === 0) { frames.push(snapshot()); asleep = false; }
   }

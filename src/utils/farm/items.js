@@ -634,7 +634,7 @@ const PARRY_VULNERABLE = 0.25;
 define('Rebuttal', {
   get cooldown() { return Math.max(1, PARRY_COOLDOWN - this.innate('ParryCooldownReduction')); },
   on(event, fight, hit) {
-    if (!hitOnMe(this, event, hit) || !hit.opts.attack || hit.source !== fight.foes[0] || UNPARRYABLE.has(hit.source.name) || !this.fire()) return;
+    if (!hitOnMe(this, event, hit) || hit.amount <= 0 || !hit.opts.attack || hit.source !== fight.foes[0] || UNPARRYABLE.has(hit.source.name) || !this.fire()) return;
     const amount = hit.amount;
     hit.amount = 0;
     fight.heal(this.unit, amount * this.pct('ParrySuccessHealPercentage'));
@@ -646,7 +646,7 @@ define('Rebuttal', {
 // Counterspell (his call, Oct 3): parries the next enemy blast: no damage, no curse; heals and gives spirit power and speed.
 define('Counterspell', {
   on(event, fight, p) {
-    if (event !== 'blast' || p.target !== this.unit || p.parried || !this.fire()) return;
+    if (event !== 'blast' || p.target !== this.unit || p.parried || p.dodged || !this.fire()) return;
     p.parried = true;
     fight.heal(this.unit, this.value('HealOnSuccess'));
     this.buff(fight, 'parry', this.value('BuffDuration'), { spirit: this.value('SpiritPower'), moveSpeed: this.value('BonusMoveSpeed') });
@@ -761,7 +761,23 @@ define('Dispel Magic', ACTIVE, {
     if (removed) { fight.heal(this.unit, this.value('HealOnActivate')); this.buff(fight, 'speed', this.value('BuffDuration'), { moveSpeed: this.value('ActiveBonusMoveSpeed') }); }
   },
 });
-define('Warp Stone', ACTIVE, hurtActive(0.8, function (fight) { this.buff(fight, 'resist', this.value('CasterBuffDuration'), { bulletResist: this.pct('BulletResist') }); }));
+define('Warp Stone', ACTIVE, {
+  want() { return false; }, // his call, Oct 24: teleport out of an incoming hit, regardless of health
+  cast(fight) { this.buff(fight, 'resist', this.value('CasterBuffDuration'), { bulletResist: this.pct('BulletResist') }); },
+  on(event, fight, p) {
+    if (p.target !== this.unit || p.source === this.unit || !this.ready() || this.unit.has('noItems') || this.unit.has('stun') || this.unit.has('blind')) return;
+    if (event === 'blast') {
+      if (p.parried || p.dodged) return;
+      p.dodged = p.warped = true;
+    } else if (hitOnMe(this, event, p) && p.amount > 0) {
+      p.amount = 0;
+      p.opts.dodged = true;
+    } else return;
+    fight.useItem(this);
+    fight.log.push({ t: +fight.time.toFixed(1), who: this.unit.name, what: p.what ?? (p.opts?.melee ? 'melee' : p.opts?.special ? p.source.stats.special?.name ?? 'attack' : 'attack'),
+      from: p.source.name, warped: true });
+  },
+});
 // Colossus: bigger: resists and melee damage, and enemies near are slowed.
 define('Colossus', ACTIVE, hurtActive(0.75, function (fight) {
   this.buff(fight, 'resist', this.value('AbilityDuration'), { bulletResist: this.pct('BuffBulletResist'), spiritResist: this.pct('BuffTechResist'), meleeDamage: this.pct('BonusMeleeDamagePercent') });

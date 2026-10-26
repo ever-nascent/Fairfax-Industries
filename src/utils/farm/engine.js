@@ -168,8 +168,12 @@ class Fight {
     const only = !OWN_EVENTS.has(event) ? null : this.views.has(payload.source) ? payload.source : payload.target; // a blast's source is an NPC: its target hears it
     for (const [hero, view] of this.views) {
       if (only && hero !== only) continue;
+      if (event === 'attacked') { // a reactive active can dodge before Bloodletting or other hit reactions
+        for (const it of hero.items) if (it.active) view.as(it, () => it.on(event, view, payload));
+        if (payload.opts.dodged) return;
+      }
       for (const a of hero.abilities) view.as(a, () => a.on(event, view, payload));
-      for (const it of hero.items) view.as(it, () => it.on(event, view, payload));
+      for (const it of hero.items) if (event !== 'attacked' || !it.active) view.as(it, () => it.on(event, view, payload));
     }
   }
 
@@ -179,10 +183,10 @@ class Fight {
   // opts.attack / opts.blast mark an enemy's hit and blast (items may parry or soften them first: the 'attacked' hook), opts.ability is the ability
   // that dealt it (set by the engine while one is running).
   damage(source, target, amount, type = 'spirit', opts = {}) {
-    if (!target.alive) return 0;
+    if (!target.alive || opts.dodged) return 0;
     if (source.team === 'hero' && target.team === 'hero' && source !== target) amount *= DUEL.damage; // a duel
     if (source.team === 'hero' && this.casting) opts.ability ??= this.casting;
-    if (opts.attack || opts.blast || opts.special) { // Rebuttal, Plated Armor, Spellbreaker: change or stop the hit before it lands (only an `attack` can be parried)
+    if (opts.attack || opts.blast || opts.special || opts.melee) { // defensive items hear rival melee too; only an `attack` can be parried
       const hit = { source, target, amount, type, opts };
       this.emit('attacked', hit);
       amount = hit.amount;
@@ -342,8 +346,9 @@ class Fight {
     hero.closeUntil = this.time + MELEE.closeFor;
     const bonus = hero.items.reduce((sum, it) => sum + it.meleeBonus(this, target), 0);
     const amount = (hero.stats.heavyMelee ?? 0) * (1 + hero.stat('meleeDamage') + bonus);
-    const dealt = this.damage(hero, target, amount, 'melee', { melee: true });
-    this.emit('melee', { source: hero, target, amount, dealt });
+    const opts = { melee: true };
+    const dealt = this.damage(hero, target, amount, 'melee', opts);
+    if (!opts.dodged) this.emit('melee', { source: hero, target, amount, dealt });
   }
 
   // Stamina and moving (his call, Oct 3): a dash-jump whenever a stamina charge is in hand (airborne a moment after), a slide now and then.
@@ -426,8 +431,9 @@ class Fight {
           enemy.swing -= ATTACK_EVERY;
           const hit = (enemy.stats.dps + (enemy.stats.dpsMaxHealthPct || 0) * target.stats.maxHealth) * ATTACK_EVERY;
           if (enemy.stats.damageType === 'mixed') { // half weapon damage, half spirit damage (the Patron): each half meets its own resist
-            this.damage(enemy, target, hit / 2, 'bullet', { attack: true });
-            this.damage(enemy, target, hit / 2, 'spirit', { attack: true });
+            const opts = { attack: true }; // one attack: a warp dodges both halves
+            this.damage(enemy, target, hit / 2, 'bullet', opts);
+            this.damage(enemy, target, hit / 2, 'spirit', opts);
           } else this.damage(enemy, target, hit, enemy.stats.damageType, { attack: true });
           // a Haunt's special attack (haunts.js): a chance each second, on top of the hit; a silenced one can't
           const special = enemy.stats.special;
@@ -450,7 +456,7 @@ class Fight {
           this.damage(enemy, target, blast.damage + blast.maxHealthPct * target.stats.maxHealth, blast.type ?? 'true', { blast: true });
           if (target.alive) this.cc(target, { id: what, duration: blast.curse, tags: ['sleep'] });
         }
-        this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what, dodged, parried: event.parried, enemy: true });
+        if (!event.warped) this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what, dodged, parried: event.parried, enemy: true });
       }
     }
   }

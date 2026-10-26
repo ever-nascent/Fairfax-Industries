@@ -206,6 +206,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
   const kills = []; // enemies killed in each stage (legendary drops)
   let steps = 0;
   let downLogged = false;
+  let lastWarp; // keep the latest dodge visible even when casts/kills fill the four-line replay
   const slept = new Set(); // enemies that were asleep at any moment since the last snapshot (a sleep is shorter than a frame)
   const label = (fight, i) => (fight.enemies.length > 1 ? `${fight.enemies[i].name} ${i + 1}` : fight.enemies[i].name);
   const snapshot = (fight, stage) => ({
@@ -213,7 +214,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     hero: { hp: hero.health, max: hero.stats.maxHealth, respawning: hero.has('rejuv') }, rejuvs: hero.rejuvs,
     enemies: fight.enemies.map((e, i) => ({ name: label(fight, i), hp: e.health, max: e.stats.maxHealth, asleep: slept.has(i) || e.has('sleep') })),
     abilities: hero.abilities.filter((a) => !a.hidden).map((a) => ({ name: a.name, status: a.status(fight) })), // hidden: an ultimate Sinclair copied
-    log: log.slice(-4),
+    log: lastWarp && !log.slice(-4).includes(lastWarp) ? [lastWarp, ...log.slice(-3)] : log.slice(-4),
   });
   const watch = (fight, stage, phase) => {
     if (phase === 'start') {
@@ -222,7 +223,8 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     }
     for (; seen < fight.log.length; seen++) {
       const l = fight.log[seen];
-      log.push([l.t, l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.special ? `${l.who} used ${l.what}` : `${l.who} ${l.what === 'stomp' ? 'stomped' : 'cursed'} ${hero.name}`) : `${l.who} used ${l.what}`]); // (a rival hero's casts are its own)
+      log.push([l.t, l.warped ? `${l.who} warped away from ${l.from}'s ${l.what}` : l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.special ? `${l.who} used ${l.what}` : `${l.who} ${l.what === 'stomp' ? 'stomped' : 'cursed'} ${hero.name}`) : `${l.who} used ${l.what}`]); // (a rival hero's casts are its own)
+      if (l.warped) lastWarp = log.at(-1);
     }
     fight.enemies.forEach((e, i) => { if (!e.alive && !dead.has(i)) { dead.add(i); kills[stage]++; log.push([+fight.time.toFixed(1), `${label(fight, i)} went down`]); } });
     if (!hero.alive && !downLogged) { downLogged = true; log.push([+fight.time.toFixed(1), `${hero.name} went down`]); }
