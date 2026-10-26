@@ -230,16 +230,14 @@ async function overView(member, run) {
   const how = run.timedOut ? `${d.hero} ran out of time in Room ${spec.room}.` : spec.kind === 'rival' ? `${spec.rival} won the duel in Room ${spec.room}.${voiceLine(spec.rival, d.hero)}`
     : `${d.hero} fell in Room ${spec.room} to ${D.roomLine(spec)}.`;
   e.setDescription(how);
-  const items = [...SLOTS.flatMap((s) => d.items[s]), ...(d.legendary ? [`${d.legendary} (Legendary)`] : [])];
   const lines = run.log.slice(-5);
   e.addFields(
     { name: 'Reached', value: `Floor ${spec.floor} of ${D.FLOORS}, Room ${spec.room}`, inline: true },
     { name: 'Level', value: `${d.level}`, inline: true },
     { name: 'Your Best', value: bestText(run.best), inline: true },
-    { name: 'Build', value: items.length ? items.join(', ').slice(0, 1024) : 'No items' },
     { name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' },
-  ).setFooter({ text: 'Every run starts again from level 0. Your hero keeps nothing from it, and loses nothing.' });
-  return { embeds: [e], components: [row(button(`${DAGAIN_ID}:${member.id}`, 'Descend Again', ButtonStyle.Success))], files: [soulsFile(), await roomFile(spec, spec.kind === 'rival' ? 'gloat' : null, false, run.cleared)], attachments: [] };
+  ).setImage('attachment://hero.png').setFooter({ text: 'Every run starts again from level 0. Your hero keeps nothing from it, and loses nothing.' });
+  return { embeds: [e], components: [row(button(`${DAGAIN_ID}:${member.id}`, 'Descend Again', ButtonStyle.Success))], files: [soulsFile(), await roomFile(spec, spec.kind === 'rival' ? 'gloat' : null, false, run.cleared), new AttachmentBuilder(await runCard(d), { name: 'hero.png' })], attachments: [] };
 }
 
 // ---- the descent cleared: the Patron and the Weakened Patron beaten in the last room (his call, Oct 24: nothing more than this and the leaderboard) ----
