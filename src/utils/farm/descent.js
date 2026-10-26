@@ -32,6 +32,7 @@ const FLOORS = 8; // his call, Oct 24
 const LAST_ROOM = FLOORS * ROOMS_PER_FLOOR; // the Patron, then the Weakened Patron
 const TOKEN_ROOM = 25; // the end of floor 5: a Character Unlock Token, once per member (my pick from the plan's example; his call)
 const SKIP_HEAL = 0.25; // skipping a pick heals this share of max health (his open question; my pick)
+const SKIP_BUFFS = 3; // his call Oct 26: every skipped reward also grants three permanent buffs
 const REST = 0.15; // a breather between two rooms, like waves'
 const BOSS_BUFFS = 3; // a boss's buff pick gives this many of that permanent buff
 const LITTLE_BUFF_CHANCE = 0.10; // his call, Oct 25: a won fight or rival may turn up one permanent stack
@@ -345,10 +346,14 @@ function rerollChoice(d) {
 }
 function skipChoice(d) {
   if (d.phase !== 'offer') return { error: 'none' };
+  const rng = dice(d.seed, d.offer.room, 'skip-buffs');
+  const buffs = Array.from({ length: SKIP_BUFFS }, () => rollAnyBuff(rng));
+  d.buffs ??= {};
+  for (const key of buffs) d.buffs[key] = (d.buffs[key] ?? 0) + 1;
   d.health = Math.min(1, d.health + SKIP_HEAL);
   d.offer = null;
   d.phase = 'ready';
-  return { ok: true };
+  return { ok: true, buffs };
 }
 // One ability point into ability `slot`. Returns { ok, tier } or { error: 'locked' | 'max' | 'points' }.
 function spendPoint(d, slot) {
@@ -470,7 +475,7 @@ async function leaderboard() {
 }
 
 module.exports = {
-  ROOMS_PER_FLOOR, FLOORS, LAST_ROOM, TOKEN_ROOM, SKIP_HEAL, BOSS_BUFFS, LITTLE_BUFF_CHANCE, BIG_BUFF_CHANCE, REROLLS_PER_FLOOR, ENHANCED_CHANCE, ENHANCED_STEP, REST, TUNE, BOSS, RIVAL, ARCHETYPES, AFFIXES, BOSSES, TIER_WEIGHTS, NO_RUN_ITEMS, NO_RUN_LEGENDARIES,
+  ROOMS_PER_FLOOR, FLOORS, LAST_ROOM, TOKEN_ROOM, SKIP_HEAL, SKIP_BUFFS, BOSS_BUFFS, LITTLE_BUFF_CHANCE, BIG_BUFF_CHANCE, REROLLS_PER_FLOOR, ENHANCED_CHANCE, ENHANCED_STEP, REST, TUNE, BOSS, RIVAL, ARCHETYPES, AFFIXES, BOSSES, TIER_WEIGHTS, NO_RUN_ITEMS, NO_RUN_LEGENDARIES,
   dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, rollFind, addItem, takeChoice, skipChoice, rerollChoice, spendPoint, afterWin, newRun,
   startRun, getRun, fight, walkPast, choose, skip, reroll, spend, abandon, leaderboard,
 };

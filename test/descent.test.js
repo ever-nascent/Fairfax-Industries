@@ -153,8 +153,11 @@ test('picks: an upgrade replaces its part in place, a full build needs an item g
   d.health = 0.5;
   d.phase = 'offer';
   d.offer = { kind: 'items', choices: ['Extra Spirit'], room: 6 };
-  assert.ok(D.skipChoice(d).ok);
+  const skipped = D.skipChoice(d);
+  assert.ok(skipped.ok);
   assert.strictEqual(d.health, 0.5 + D.SKIP_HEAL);
+  assert.strictEqual(skipped.buffs.length, D.SKIP_BUFFS);
+  assert.strictEqual(Object.values(d.buffs).reduce((sum, count) => sum + count, 0), D.BOSS_BUFFS + D.SKIP_BUFFS);
   assert.strictEqual(d.offer, null);
 });
 
@@ -375,12 +378,13 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
     const resultEmbed = result.embeds[0].toJSON();
     assert.equal(resultEmbed.author.name, 'Descend - Room 1 Cleared');
     assert.equal(resultEmbed.title, undefined);
-    assert.match(resultEmbed.description, /reached \*\*Level 1\*\*\.(?:\n\nFound .+)?\n\nPick \*\*1 of 3\*\* items, or Skip to heal \*\*25%\*\*\./);
+    assert.match(resultEmbed.description, /reached \*\*Level 1\*\*\.(?:\n\nFound .+)?\n\nPick \*\*1 of 3\*\* items, or Skip: Heal \*\*25%\*\* and \*\*3 Perma-Buffs\*\*\./);
     assert.equal(resultEmbed.fields.find((field) => field.name === 'Level').value, '**1**');
     assert.ok(result.files.some((f) => f.name === 'pick.gif'), 'the cylinder spins the first time');
     const rows = result.components.map((r) => r.toJSON().components.map((c) => c.label).filter(Boolean));
-    assert.ok(rows.some((labels) => labels.length === 5 && labels.some((label) => label.startsWith('Skip')) && labels.includes('Reroll (3 left)')), 'the three picks, Skip and Reroll share a row');
-    assert.ok(rows.some((labels) => labels.includes('Build') && labels.includes('Damage Breakdown')), 'Build and Damage Breakdown share a row');
+    assert.ok(rows.some((labels) => labels.length === 3 && !labels.some((label) => label.startsWith('Skip'))), 'the three item picks share the first row');
+    assert.ok(rows.some((labels) => labels.includes('Skip: Heal 25%') && labels.includes('Build') && labels.includes('Reroll (3 left)')), 'Skip, Build and Reroll share the second row');
+    assert.ok(go.log.some(([kind, payload]) => kind === 'editReply' && payload.components?.some((r) => r.toJSON().components.some((c) => c.label === 'Damage Breakdown'))), 'the completed fight holds Damage Breakdown');
     const reroll = fake(id, `farm_dreroll:${id}:1`);
     await route('Descend reroll button').execute(reroll);
     assert.ok(reroll.log.at(-1)[1].files.some((f) => f.name === 'pick.gif'), 'a reroll spins the cylinder again');

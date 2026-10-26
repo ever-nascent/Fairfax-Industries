@@ -176,14 +176,15 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   }
   if (d.find?.room === offer.room) addEvent(d.find.kind === 'little'
     ? `Found a Buff.\n**${buffText(d.find.key)}**\nPermanent for this run.`
-    : `Found a Buff.\n**${BRIDGE[d.find.key].name} Bridge Buff**\n${BRIDGE[d.find.key].text}. Lasts through Floor **${spec.floor}**.`);
+    : `Found a Buff.\n**${BRIDGE[d.find.key].name} Bridge Buff**\n${BRIDGE[d.find.key].text}\nLasts through Floor **${spec.floor}**.`);
   const upgrades = new Set(offer.kind === 'items' ? offer.choices.filter((n) => priceFor(itemByName(n), d.items).used.length) : []);
+  const skipText = `Skip: Heal **${D.SKIP_HEAL * 100}%** and **${D.SKIP_BUFFS} Perma-Buffs**.`;
   if (replace != null) {
     const name = offer.choices[replace];
     addEvent(`Your build is full (**${MAX_ITEMS}** items). Choose an item to give up for **${name}**: it is lost, there are no souls in a run.`);
-  } else if (offer.kind === 'buffs') addEvent(`Pick a permanent buff for this run (**${D.BOSS_BUFFS}** of it), or Skip to heal **${D.SKIP_HEAL * 100}%**.`);
-  else if (offer.kind === 'legendaries') addEvent(`Pick a legendary for the legendary slot${d.legendary ? ` (it replaces ${d.legendary})` : ''}, or Skip to heal **${D.SKIP_HEAL * 100}%**.`);
-  else addEvent(`Pick **1 of 3** items, or Skip to heal **${D.SKIP_HEAL * 100}%**.${countItems(d.items) >= MAX_ITEMS ? ' Your build is full: an upgrade takes its part\'s place, anything else replaces an item.' : ''}`);
+  } else if (offer.kind === 'buffs') addEvent(`Pick a permanent buff for this run (**${D.BOSS_BUFFS}** of it), or ${skipText}`);
+  else if (offer.kind === 'legendaries') addEvent(`Pick a legendary for the legendary slot${d.legendary ? ` (it replaces ${d.legendary})` : ''}, or ${skipText}`);
+  else addEvent(`Pick **1 of 3** items, or ${skipText}${countItems(d.items) >= MAX_ITEMS ? ' Your build is full: an upgrade takes its part\'s place, anything else replaces an item.' : ''}`);
   e.setDescription(lines.join('\n'));
   // what each choice does
   const about = offer.choices.map((n, i) => {
@@ -222,10 +223,9 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     if (points) components.push(points);
     const short = (n) => (offer.kind === 'buffs' ? buffText(n, D.BOSS_BUFFS) : n);
     const picks = offer.choices.map((n, i) => button(`${DTAKE_ID}:${member.id}:${offer.room}:${i}`, short(n), ButtonStyle.Primary));
-    picks.push(button(`${DSKIP_ID}:${member.id}:${offer.room}`, `Skip (Heal ${D.SKIP_HEAL * 100}%)`));
-    if (offer.kind === 'items') picks.push(button(`${DREROLL_ID}:${member.id}:${offer.room}`, `Reroll (${d.rerolls ?? D.REROLLS_PER_FLOOR} left)`).setDisabled((d.rerolls ?? D.REROLLS_PER_FLOOR) <= 0));
-    components.push(row(...picks));
-    components.push(row(button(`${DBUILD_ID}:${member.id}`, 'Build')));
+    const actions = [button(`${DSKIP_ID}:${member.id}:${offer.room}`, `Skip: Heal ${D.SKIP_HEAL * 100}%`), button(`${DBUILD_ID}:${member.id}`, 'Build')];
+    if (offer.kind === 'items') actions.push(button(`${DREROLL_ID}:${member.id}:${offer.room}`, `Reroll (${d.rerolls ?? D.REROLLS_PER_FLOOR} left)`).setDisabled((d.rerolls ?? D.REROLLS_PER_FLOOR) <= 0));
+    components.push(row(...picks), row(...actions));
   }
   return { embeds: [e], components, files: [soulsFile(), await heroPicture(d.hero), file] };
 }
