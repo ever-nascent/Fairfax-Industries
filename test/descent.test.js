@@ -323,6 +323,7 @@ test('every /descend screen fits the Discord limits and attaches what it points 
   checkLimits(replace, 'replace');
   assert.strictEqual(replace.embeds[0].toJSON().image.url, 'attachment://hero.png');
   assert.ok(replace.files.some((f) => f.name === 'hero.png'), 'replacement screen shows the current build card');
+  assert.equal(replace.components[0].toJSON().components[0].options.length, MAX_ITEMS, 'replacement lists all twelve held items');
   const animated = await dviews.offerView(member(id), d, { animate: true });
   checkLimits(animated, 'animated offer');
   assert.strictEqual(animated.embeds[0].toJSON().image.url, 'attachment://pick.gif');

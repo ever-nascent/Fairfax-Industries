@@ -242,8 +242,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   e.setImage(`attachment://${replace != null ? 'hero.png' : pic.gif ? 'pick.gif' : 'pick.png'}`).setFooter({ text: `Floor ${spec.floor} of ${D.FLOORS}  -  ${plural(d.room - 1, 'room')} of ${D.LAST_ROOM} cleared  -  one death ends the run` });
   const components = [];
   if (replace != null) {
-    const used = priceFor(itemByName(offer.choices[replace]), d.items).used;
-    const all = SLOTS.flatMap((s) => d.items[s]).filter((n) => !used.includes(n));
+    const all = SLOTS.flatMap((s) => d.items[s]);
     components.push(row(new StringSelectMenuBuilder().setCustomId(`${DSWAP_ID}:${member.id}:${offer.room}:${replace}`).setPlaceholder(titleCase(`Give up an item for ${offer.choices[replace]}`).slice(0, 150))
       .addOptions(all.map((n) => ({ label: n, value: n, description: `${KIND_NAME[itemByName(n).Slot]}, Tier ${itemByName(n).Tier}` })))));
     components.push(row(button(`${DBACK_ID}:${member.id}`, 'Back')));
