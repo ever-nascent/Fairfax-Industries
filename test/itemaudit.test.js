@@ -1396,7 +1396,7 @@ test('Ethereal Shift: 4 s where nothing can hurt the hero, then +20 spirit, +30%
   near(a.mods.spirit, 20); near(a.mods.spiritResist, 0.3); near(a.mods.moveSpeed, 3); assert.ok(Math.abs(a.until - fight.time - 5) < 0.11);
 });
 
-test('Cursed Relic: a 0.3 s stun, then 3.25 s silenced, disarmed and no items, and its buffs gone (not its ultimate\'s, none if unstoppable); the holder deals 25% less; every 55 s', () => {
+test('Cursed Relic: a 0.3 s stun, then a 3.25 s curse, and its buffs gone (not its ultimate\'s, none if unstoppable); the holder deals 25% less; every 55 s', () => {
   const rival = buildHero('Abrams', {});
   const { hero, fight, it } = setup(['Cursed Relic']);
   fight.enemies = [rival];
@@ -1409,7 +1409,7 @@ test('Cursed Relic: a 0.3 s stun, then 3.25 s silenced, disarmed and no items, a
   assert.ok(status(rival, `${ult}:buff`) && status(rival, 'Other:slow'), 'its ultimate\'s and the debuffs stay');
   near(status(rival, 'Cursed Relic:stun').until - fight.time, 0.3);
   const c = status(rival, 'Cursed Relic:curse');
-  assert.deepStrictEqual(c.tags, ['silence', 'disarm', 'noItems']); near(c.until - fight.time, 3.25);
+  assert.deepStrictEqual(c.tags, ['curse']); near(c.until - fight.time, 3.25);
   near(status(hero, 'Cursed Relic:penalty').mods.damageDealt, -0.25); near(it().cooldown, 55);
   const tough = buildHero('Abrams', {});
   const t = setup(['Cursed Relic']);
