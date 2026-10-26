@@ -112,6 +112,12 @@ test('items: upgrade paths: owning a component makes the upgrade cost the differ
   await chooseHero('it-up2', 'Haze');
   await giveSouls('it-up2', 100000);
   assert.strictEqual((await buyItem('it-up2', 'Sharpshooter')).paid, price('Sharpshooter'));
+  // The intermediate item is optional: a held first component still upgrades directly into tier 4.
+  await chooseHero('it-up3', 'Haze');
+  await giveSouls('it-up3', 100000);
+  await buyItem('it-up3', 'Compress Cooldown');
+  assert.deepStrictEqual(await buyItem('it-up3', 'Transcendent Cooldown'), { ok: true, paid: price('Transcendent Cooldown') - price('Compress Cooldown'), used: ['Compress Cooldown'] });
+  assert.deepStrictEqual((await getFarmUser('it-up3')).items.spirit, ['Transcendent Cooldown']);
 });
 
 test('items: buys at the same moment cannot overfill the build or buy an item twice, and the losers get their souls back', async () => {
