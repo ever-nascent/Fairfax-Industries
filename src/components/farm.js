@@ -31,7 +31,10 @@ function withBreakdown(view, run, ownerId) {
   const id = shortId();
   breakdowns.set(id, { hero: run.hero, rival: run.encounter ? run.rival : null, seconds: run.seconds, damage: run.damage ?? [] });
   if (breakdowns.size > MAX_BREAKDOWNS) breakdowns.delete(breakdowns.keys().next().value);
-  view.components.push(damageButton(ownerId, id));
+  const damage = damageButton(ownerId, id);
+  const buildRow = view.components.find((r) => r.toJSON().components.some((c) => c.label === 'Build'));
+  if (buildRow) buildRow.addComponents(damage.components[0]);
+  else view.components.push(damage);
   return view;
 }
 // The result's buttons once its rival is fought or let go: the Damage Breakdown stays.
