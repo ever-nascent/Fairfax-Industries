@@ -6,7 +6,7 @@ const { AttachmentBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder }
 const { HEROES: HERO_DATA, ABILITIES, itemByName } = require('./stats');
 const { buildHero } = require('./hero');
 const { heroCard } = require('./heroCard');
-const { buffText } = require('./buffs');
+const { buffText, BRIDGE } = require('./buffs');
 const { MAX_ITEMS, countItems, priceFor, SLOTS, MAX_TIER, TIER_COSTS, MAX_LEVEL, UNLOCKS } = require('./levels');
 const { MAX_REJUVS, hasHero } = require('./play');
 const D = require('./descent');
@@ -148,6 +148,9 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     const unlocked = UNLOCKS(d.level) > UNLOCKS(d.level - 1) ? ` and unlocked **${abilityName(d.hero, UNLOCKS(d.level))}**` : '';
     lines.push(`${d.hero} reached **Level ${d.level}**${d.level >= MAX_LEVEL ? ' (the most)' : ''}${unlocked}.${spec.kind === 'boss' ? ` +${rejuvIcon()}1 Rejuv.` : ''}`);
   }
+  if (d.find?.room === offer.room) lines.push(d.find.kind === 'little'
+    ? `Found a little buff: **${buffText(d.find.key)}** (permanent for this run).`
+    : `Found a big buff: **${BRIDGE[d.find.key].name} Bridge Buff** — ${BRIDGE[d.find.key].text}. Lasts through Floor ${spec.floor}.`);
   const upgrades = new Set(offer.kind === 'items' ? offer.choices.filter((n) => priceFor(itemByName(n), d.items).used.length) : []);
   if (replace != null) {
     const name = offer.choices[replace];
@@ -202,6 +205,7 @@ async function buildView(member, d) {
   const e = dembed().setTitle(`${d.hero}  -  Level ${d.level}  -  This Run`).setImage('attachment://hero.png').setThumbnail('attachment://thumb.png');
   const buffs = Object.entries(d.buffs);
   if (buffs.length) e.addFields({ name: 'Permanent Buffs (This Run)', value: buffs.map(([k, n]) => buffText(k, n)).join('\n'), inline: true });
+  if (d.bridge?.length) e.addFields({ name: 'Big Buffs (This Floor)', value: d.bridge.map((k) => `${BRIDGE[k].name} — ${BRIDGE[k].text}`).join('\n'), inline: true });
   const imbued = Object.keys(d.imbues);
   if (imbued.length) e.addFields({ name: 'Imbued', value: imbued.map((n) => `${n} into ${abilityName(d.hero, d.imbues[n])}`).join('\n'), inline: true });
   e.setFooter({ text: 'This build is the run\'s own. Your hero\'s farm items, level and souls are untouched.' });
