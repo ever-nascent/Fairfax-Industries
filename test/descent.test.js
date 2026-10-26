@@ -311,7 +311,10 @@ test('every /descend screen fits the Discord limits and attaches what it points 
   d.legendary = LEGENDARY_NAMES[0];
   d.buffs = { fireRate: 3 };
   d.offer = { kind: 'items', choices: [POOL.vitality[10], POOL.weapon[10], POOL.spirit[10]], room: 15 };
-  checkLimits(await dviews.offerView(member(id), d, { replace: 1 }), 'replace');
+  const replace = await dviews.offerView(member(id), d, { replace: 1 });
+  checkLimits(replace, 'replace');
+  assert.strictEqual(replace.embeds[0].toJSON().image.url, 'attachment://hero.png');
+  assert.ok(replace.files.some((f) => f.name === 'hero.png'), 'replacement screen shows the current build card');
   const animated = await dviews.offerView(member(id), d, { animate: true });
   checkLimits(animated, 'animated offer');
   assert.strictEqual(animated.embeds[0].toJSON().image.url, 'attachment://pick.gif');
