@@ -2506,7 +2506,7 @@ test('Sleep Dagger picks any awake enemy at random, never a sleeping or downed o
   assert.ok(!haze.abilities[0].want(f), 'everyone is down or asleep: nothing to throw at');
 });
 
-test('the Patron: half weapon and half spirit damage, and a true-damage blast that curses; the Shrines are spirit only', () => {
+test('the Patron: half weapon and half spirit damage, and a true-damage blast that curses; the Shrines silence', () => {
   const kinds = SIEGE.stages.map((s) => { const e = s.enemies()[0].stats; return [e.damageType, !!e.blast]; });
   assert.deepStrictEqual(kinds, [['bullet', false], ['spirit', true], ['spirit', true], ['mixed', false], ['mixed', true]]);
   // mixed damage: each resist only takes its half
@@ -2525,18 +2525,18 @@ test('the Patron: half weapon and half spirit damage, and a true-damage blast th
   close(taken({ bulletResist: 0.5 }, { dps: 100, damageType: 'mixed' }).lost, plain * 0.75, 0.01);
   close(taken({ spiritResist: 0.5 }, { dps: 100, damageType: 'mixed' }).lost, plain * 0.75, 0.01);
   // the blast: true damage (no resist helps), every `every` seconds, and the hero is cursed (can't act) after it
-  const blast = { every: 8, damage: 300, maxHealthPct: 0.001, curse: 1.5 };
+  const blast = { every: 8, damage: 300, maxHealthPct: 0.001, curse: 1.5, tags: ['curse'] };
   const hit = taken({ bulletResist: 0.9, spiritResist: 0.9 }, { dps: 0, blast }, 8.3);
   close(hit.lost, 300 + 0.001 * 1e6, 0.001);
-  assert.ok(hit.hero.has('sleep') && hit.fight.log.some((l) => l.enemy && l.what === 'curse'));
+  assert.ok(hit.hero.has('curse') && !hit.hero.has('sleep') && hit.fight.log.some((l) => l.enemy && l.what === 'curse'));
   hit.fight.run(2);
-  assert.ok(!hit.hero.has('sleep'), 'the curse wears off');
+  assert.ok(!hit.hero.has('curse'), 'the curse wears off');
   // the siege tuning scales the blast like the rest of the damage
   const shrine = SIEGE.stages[1].enemies()[0].stats;
   close(shrine.blast.damage, 300 * HARDNESS.siege, 0.001);
   assert.strictEqual(shrine.blast.every, 8);
   const run = require('../src/utils/farm/play').simulate('Haze', 'siege', { boons: 35, rejuvs: 3 });
-  assert.ok(run.log.some(([, text]) => /cursed Haze/.test(text)), 'the battle log says who cursed the hero');
+  assert.ok(run.log.some(([, text]) => /silenced Haze/.test(text)), 'the battle log says who silenced the hero');
 });
 
 test('ability range and movement speed: area abilities reach further back, and a fast hero dodges blasts', () => {
