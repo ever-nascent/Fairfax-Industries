@@ -326,10 +326,11 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
 // away early); each message's buttons name their own rival. A rival already waiting, or already unlocked, never shows up again.
 const OFFER_MS = 5 * 60 * 1000;
 const offers = new Map(); // user id -> Map(rival -> ms timestamp it leaves)
+const rivalKits = new Map(); // `${user id}:${rival}` -> the kit that rival will fight with (rolled when it shows up, so View Enemy Build shows the real one)
 // The member's waiting rivals (the ones whose 5 minutes ran out are dropped).
 function waiting(userId, now = Date.now()) {
   const mine = offers.get(userId) ?? new Map();
-  for (const [rival, until] of mine) if (until <= now) mine.delete(rival);
+  for (const [rival, until] of mine) if (until <= now) { mine.delete(rival); rivalKits.delete(`${userId}:${rival}`); }
   if (mine.size) offers.set(userId, mine); else offers.delete(userId);
   return mine;
 }
@@ -337,11 +338,12 @@ function meet(userId, r, run, rng = Math.random, now = Date.now()) {
   if (!run.won || run.siege) return null;
   const mine = waiting(userId, now);
   const rival = rollRival((name) => hasHero(r, name) || mine.has(name), rng, cooldownsOn ? ENCOUNTER_CHANCE : 1);
-  if (rival) offers.set(userId, mine.set(rival, now + OFFER_MS));
+  if (rival) { offers.set(userId, mine.set(rival, now + OFFER_MS)); rivalKits.set(`${userId}:${rival}`, rivalKit(fightKit(r), rng)); }
   return rival;
 }
 // Is `rival` still waiting for this member? Returns the rival, or null.
 const offerFor = (userId, rival, now = Date.now()) => (waiting(userId, now).has(rival) ? rival : null);
+const rivalKitOf = (userId, rival) => rivalKits.get(`${userId}:${rival}`) ?? null;
 // The 5 minutes start again when the fight's result is shown (the offer is made at Send, before the replay). Returns the rival, or null if it is gone.
 function holdOffer(userId, rival, now = Date.now()) {
   if (!offerFor(userId, rival, now)) return null;
@@ -352,6 +354,7 @@ function holdOffer(userId, rival, now = Date.now()) {
 function walkAway(userId, rival, now = Date.now()) {
   const mine = waiting(userId, now);
   const was = mine.delete(rival) ? rival : null;
+  rivalKits.delete(`${userId}:${rival}`);
   if (!mine.size) offers.delete(userId);
   return was;
 }
@@ -359,12 +362,13 @@ function walkAway(userId, rival, now = Date.now()) {
 // the member's Rejuvs work in a duel and are used up). Uses up the offer.
 // Nothing else changes: no cooldown, souls, bridge buffs or item time. Returns { run } or { error: 'gone' | 'owned' | 'no-hero' }.
 async function fightRival(userId, rival, { rng = Math.random, now = Date.now() } = {}) {
+  const rolled = rivalKitOf(userId, rival);
   if (!walkAway(userId, rival, now)) return { error: 'gone' };
   const r = await getFarmUser(userId);
   if (!r.hero) return { error: 'no-hero' };
   if (hasHero(r, rival)) return { error: 'owned' }; // unlocked meanwhile (a token)
   const kit = fightKit(r);
-  const run = duel(r.hero, kit, rival, rivalKit(kit, rng), { rng, rejuvs: r.rejuvs });
+  const run = duel(r.hero, kit, rival, rolled ?? rivalKit(kit, rng), { rng, rejuvs: r.rejuvs });
   if (run.won || run.rejuvsUsed || Object.keys(run.kept).length) await updateHero(userId, r.hero, (h, rec) => { Object.assign(h.kept, run.kept); h.rejuvs = Math.max(0, h.rejuvs - run.rejuvsUsed); if (run.won && !hasHero(rec, rival)) rec.heroes[rival] = { earned: 0, tiers: {}, items: {} }; }); // the Rejuvs of the hero that duelled
   return { run };
 }
@@ -546,4 +550,21 @@ async function hatchEgg(userId, rng = Math.random) {
   return done;
 }
 
-module.exports = { TRAITS, heroOf, offerFor, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, equipLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, hasHero, unlockHero, switchHero, updateFarmUser, updateHero, OLD_OWNER, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, hauntFile, campFamilies, CAMP_SIZE, simulate, play };
+// What a target's fight is made of for this member (View Enemy Build): { sections: [{ label?, units }], note }. A camp's family is the one its screen showed;
+// its traits are rolled when the fight starts, so they are not shown. Everything grows with the member's clears and a Walker with the Walkers down, like simulate.
+function targetEnemies(record, key, { family, now = Date.now() } = {}) {
+  const clears = record.clears?.[key] ?? 0;
+  if (key === 'siege') return { sections: SIEGE.stages.map((s) => ({ label: s.name, units: s.enemies().map((e) => strengthen(e, clears, key)) })), note: 'Every stage in one go; health carries on.' };
+  if (key === 'waves') return { sections: [{ label: 'Wave 1', units: WAVES.stages[0].enemies() }], note: 'Each wave is stronger than the last.' };
+  const size = CAMP_SIZE[key];
+  const fam = size ? (campFamilies(key).includes(family) ? family : campFamilies(key)[0]) : null;
+  const fallen = key === 'walker' ? walkersDown(record, now) : 0;
+  const units = TARGETS[key].enemies().map((e) => {
+    if (fallen) e.stats.maxHealth += WALKER_STEP * fallen;
+    if (fam) { e.stats.special = specialFor(fam, e.name === 'Small Haunt'); e.name = `${familyName(fam)} (${e.name.split(' ')[0]})`; }
+    return strengthen(e, clears, key);
+  });
+  return { sections: [{ units }], note: fam ? 'Every Haunt rolls a trait when the fight starts (Armored, Warded, Ironclad, Brittle or none), which moves its resists.' : null };
+}
+
+module.exports = { TRAITS, heroOf, offerFor, rivalKitOf, targetEnemies, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, equipLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, hasHero, unlockHero, switchHero, updateFarmUser, updateHero, OLD_OWNER, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, hauntFile, campFamilies, CAMP_SIZE, simulate, play };

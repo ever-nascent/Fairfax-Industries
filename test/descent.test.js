@@ -481,7 +481,7 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
     assert.ok(result.files.some((f) => f.name === 'pick.gif'), 'the cylinder spins the first time');
     const rows = result.components.map((r) => r.toJSON().components.map((c) => c.label).filter(Boolean));
     assert.ok(rows.some((labels) => labels.length === 3 && !labels.some((label) => label.startsWith('Skip'))), 'the three item picks share the first row');
-    assert.ok(rows.some((labels) => labels.includes('Skip + 3 Buffs') && labels.includes('Build') && labels.includes('Reroll (3 left)')), 'Skip, Build and Reroll share the second row');
+    assert.ok(rows.some((labels) => labels.includes('Skip + 3 Buffs') && labels.includes('Your Build') && labels.includes('Reroll (3 left)')), 'Skip, Build and Reroll share the second row');
     assert.ok(go.log.some(([kind, payload]) => kind === 'editReply' && payload.components?.some((r) => r.toJSON().components.some((c) => c.label === 'Damage Breakdown'))), 'the completed fight holds Damage Breakdown');
     const reroll = fake(id, `farm_dreroll:${id}:1`);
     await route('Descend reroll button').execute(reroll);
@@ -543,4 +543,36 @@ test('a full-build upgrade with a BONUS and an imbue item walks through its scre
   assert.strictEqual(d.pendingBonus, undefined);
   checkLimits(await dviews.screen(member(id), await getFarmUser(id)), 'the next room');
   await D.abandon(id);
+});
+
+test('View Enemy Build in a room: Fight / Flee / Your Build, then View Enemy Build / Abandon Run; each room kind answers privately', async () => {
+  const id = 'd-enemy';
+  await chooseHero(id, 'Haze');
+  await route('Descend begin button').execute(fake(id, `farm_dbegin:${id}:Haze`));
+  const room = await dviews.roomView(member(id), await D.getRun(id));
+  assert.deepStrictEqual(room.components.map((r) => r.toJSON().components.map((c) => c.label)), [['Fight', 'Your Build'], ['View Enemy Build', 'Abandon Run']]);
+  const ask = async (customId) => { const i = fake(id, customId); await route('Descend enemy build button').execute(i); return i.log.find(([k]) => k === 'editReply')[1]; };
+  const fight = await ask(`farm_denemy:${id}:1`);
+  checkLimits(fight, 'fight room build');
+  assert.match(fight.embeds[0].toJSON().title, /^Enemy Build {2}- {2}Room 1/);
+  assert.ok(fight.embeds[0].toJSON().fields.every((f) => /Health \*\*/.test(f.value)));
+  const stranger = fake('someone', `farm_denemy:${id}:1`);
+  await route('Descend enemy build button').execute(stranger);
+  assert.ok(stranger.log.some(([k]) => k === 'reply'), 'not theirs');
+  // a boss room and a rival room (found by walking the seed): the boss lists its crowd control, the rival draws its card
+  const seed = Array.from({ length: 500 }, (_, i) => i + 1).find((n) => Array.from({ length: 12 }, (_, r) => D.roomSpec(n, r + 3, 'Haze')).some((sp) => sp.kind === 'rival')); // a seed with a rival early
+  await updateFarmUser(id, (r) => { r.descent.seed = seed; });
+  const roomOfKind = (kind) => Array.from({ length: 40 }, (_, i) => i + 1).find((r) => D.roomSpec(seed, r, 'Haze').kind === kind);
+  for (const kind of ['boss', 'rival']) {
+    const n = roomOfKind(kind);
+    assert.ok(n, `this seed has a ${kind} room`);
+    await updateFarmUser(id, (r) => { r.descent.room = n; });
+    const view = await ask(`farm_denemy:${id}:${n}`);
+    checkLimits(view, `${kind} room build`);
+    if (kind === 'boss') assert.match(view.embeds[0].toJSON().title, /^Enemy Build {2}- {2}The /);
+    else assert.ok(view.files.some((f) => f.name === 'rival-build.png'), 'a rival shows its drawn card');
+  }
+  // a room that has moved on is out of date
+  await updateFarmUser(id, (r) => { r.descent.room = 2; });
+  assert.strictEqual((await ask(`farm_denemy:${id}:1`)).content, 'That screen is out of date. Here is where your run stands.');
 });

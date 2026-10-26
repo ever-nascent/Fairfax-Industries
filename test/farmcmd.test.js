@@ -113,8 +113,8 @@ test('the commands: /base, /jungle (camp, roam, midboss), /lane (guardian, walke
   assert.deepStrictEqual(lane.data.toJSON().options[0].options[0].choices.map((c) => c.value), ['york', 'broadway', 'park']);
   assert.strictEqual(await title(siegeCommand), 'Base Siege');
   const details = await open(lane, 'walker', 'york');
-  assert.deepStrictEqual(details.components.at(-1).toJSON().components.map((b) => [b.label, !!b.disabled]), [['Send', true], ['Back', false]], "locked: York's Guardian is still up");
-  assert.strictEqual(details.components.at(-1).toJSON().components[0].custom_id, `farm_send:${id}:walker:york`);
+  assert.deepStrictEqual(details.components.at(-2).toJSON().components.map((b) => [b.label, !!b.disabled]), [['Send', true], ['Your Build', false], ['Back', false]], "locked: York's Guardian is still up");
+  assert.strictEqual(details.components.at(-2).toJSON().components[0].custom_id, `farm_send:${id}:walker:york`);
   assert.match(details.embeds[0].toJSON().footer.text, /^Locked: York's Guardian Must Fall First\./);
 });
 
@@ -376,7 +376,7 @@ test('a camp screen: the triangle is the author icon, a Haunt is in the corner, 
   assert.strictEqual(j.footer.text, 'If Haze Dies, Nothing Is Paid and the Cooldown Still Starts.');
   const value = (name) => j.fields.find((f) => f.name === name).value;
   assert.deepStrictEqual([value('Enemies'), value('Health'), value('Cooldown'), value('Grown Stronger')], ['3 Small Haunts', '129 Each', 'Every Hour', '0%  (0 / 10 Clears)']);
-  const sendId = view.components.at(-1).toJSON().components[0].custom_id;
+  const sendId = view.components.at(-2).toJSON().components[0].custom_id;
   assert.strictEqual(sendId, `farm_send:${id}:small-camp:gutter_ghoul`);
   const sent = fake(id, sendId);
   await route('Send button').execute(sent);
@@ -473,7 +473,7 @@ test('lane screens: the dropdown lists every lane, a Walker shows its lane, heal
   const j = york.embeds[0].toJSON();
   const value = (name) => j.fields.find((f) => f.name === name).value;
   assert.deepStrictEqual([j.title, value('Lane'), value('Health'), value('Cooldown')], ['York Walker', 'York (Yellow)', '9,000', 'Once a Day']);
-  assert.deepStrictEqual(york.components.at(-1).toJSON().components.map((b) => [b.custom_id, !!b.disabled])[0], [`farm_send:${id}:walker:york`, false]);
+  assert.deepStrictEqual(york.components.at(-2).toJSON().components.map((b) => [b.custom_id, !!b.disabled])[0], [`farm_send:${id}:walker:york`, false]);
   const down = (await views.targetView(member(id), 'guardian', record, now, 'york')).embeds[0].toJSON();
   assert.match(down.footer.text, /^Down: Back in 12h 0m\./);
   const siege = (await views.targetView(member(id), 'siege', record, now)).embeds[0].toJSON();
@@ -529,7 +529,7 @@ test('waves: an endless run down a lane, every wave cleared pays, once a day per
   const j = details.embeds[0].toJSON();
   assert.deepStrictEqual([j.title, j.author.icon_url], ['York Waves', 'attachment://icon.png']);
   assert.match(j.fields.find((f) => f.name === 'Best Run').value, new RegExp(`^${out.run.cleared} Waves?`));
-  assert.strictEqual(details.components.at(-1).toJSON().components[0].custom_id, `farm_send:${id}:waves:york`);
+  assert.strictEqual(details.components.at(-2).toJSON().components[0].custom_id, `farm_send:${id}:waves:york`);
   for (const frame of out.run.frames) checkLimits(views.fightView(out.run, frame), 'waves live');
   assert.match(details.files.at(-1).attachment, /trooper\.png$/, 'the corner picture is a trooper');
   assert.match(views.fightView(out.run, out.run.frames[0]).files.at(-1).attachment, /trooper\.png$/);
@@ -630,7 +630,7 @@ test('encounters: a rival shows on the result with Fight / Walk Away, the duel i
     checkLimits(result, 'result with a rival');
     const offer = result.embeds[1].toJSON(); // its own embed, with the rival's picture
     const rival = buttons(result)[0].replace('Fight ', '');
-    assert.ok(offer.title === 'A Rival Appears' && offer.description.includes(rival) && buttons(result)[1] === 'Walk Away' && rival !== 'Lady Geist');
+    assert.ok(offer.title === 'A Rival Appears' && offer.description.includes(rival) && buttons(result)[1] === 'Flee' && rival !== 'Lady Geist');
     assert.ok(offer.thumbnail.url === 'attachment://rival.png' && result.files.some((f) => f.name === 'rival.png'));
 
     // someone else can't press it
@@ -731,4 +731,52 @@ test('voice lines: a hero with lines says one of them, a hero without says nothi
   assert.strictEqual(views.voiceLine('Haze', 'Wraith', () => 0), `\n\n**Haze:** *"${haze.kills.heroes.Wraith[0]}"*`, 'a duel: a kill line about that hero');
   assert.strictEqual(views.voiceLine('Haze', 'Nobody', () => 0), `\n\n**Haze:** *"${haze.kills.any[0]}"*`, 'no lines about them: a generic kill line');
   assert.strictEqual(views.voiceLine('Nobody'), '');
+});
+
+test('View Enemy Build: target screens, the siege, a camp and a waiting rival each answer privately with what they fight with', async () => {
+  const { setCooldowns, rivalKitOf } = require('../src/utils/farm/play');
+  const id = 'enemy-ui';
+  await chooseHero(id, 'Lady Geist');
+  const record = await getFarmUser(id);
+  // the rows: dropdown, Send / Your Build / Back, View Enemy Build
+  const details = await views.targetView(member(id), 'guardian', record);
+  assert.deepStrictEqual(details.components.map((r) => r.toJSON().components.map((c) => c.label ?? 'dropdown')), [['dropdown'], ['Send', 'Your Build', 'Back'], ['View Enemy Build']]);
+  const ask = async (customId) => { const i = fake(id, customId); await route('View Enemy Build button').execute(i); return i; };
+  const text = (i) => JSON.stringify(i.log.find(([k]) => k === 'editReply')[1].embeds[0].toJSON());
+  const guardian = await ask(`farm_enemy:${id}:guardian:york`);
+  checkLimits(guardian.log.find(([k]) => k === 'editReply')[1], 'guardian build');
+  assert.match(text(guardian), /Enemy Build {2}- {2}York Guardian/);
+  assert.match(text(guardian), /\*\*Stuns\*\* every 10 s/, 'its stun is listed with the timing');
+  const siege = await ask(`farm_enemy:${id}:siege`);
+  checkLimits(siege.log.find(([k]) => k === 'editReply')[1], 'siege build');
+  assert.match(text(siege), /Enemy Build {2}- {2}Base Siege/);
+  const camp = await ask(`farm_enemy:${id}:large-camp:gutter_ghoul`);
+  assert.match(text(camp), /Gutter Ghoul \(Large\)/);
+  assert.match(text(camp), /Toxic Waste/, 'a large Haunt shows its family special');
+  const stranger = fake('someone', `farm_enemy:${id}:guardian:york`);
+  await route('View Enemy Build button').execute(stranger);
+  assert.ok(stranger.log.some(([k, p]) => k === 'reply' && /not your farm/.test(p.content)));
+  // a waiting rival: Fight / Flee, then View Enemy Build; its drawn card is the kit it will fight with
+  await changeRecord(id, (r) => { r.earned = 1e6; r.tiers = { 1: 3, 2: 3, 3: 3, 4: 3 }; });
+  setCooldowns(false);
+  try {
+    const sent = fake(id, `farm_send:${id}:small-camp`);
+    await route('Send button').execute(sent);
+    const result = sent.log.at(-1)[1];
+    assert.deepStrictEqual(result.components.map((r) => r.toJSON().components.map((c) => c.label)).slice(0, 2), [[result.components[0].toJSON().components[0].label, 'Flee'], ['View Enemy Build']]);
+    const rival = result.components[0].toJSON().components[0].label.replace('Fight ', '');
+    const kit = rivalKitOf(id, rival);
+    assert.ok(kit && kit.items.length >= 0, 'the kit was rolled when the rival showed up');
+    const view = await ask(`farm_enemy:${id}:rival:${rival}`);
+    const reply = view.log.find(([k]) => k === 'editReply')[1];
+    checkLimits(reply, 'rival build');
+    assert.ok(text(view).includes(`Enemy Build  -  ${rival}`));
+    assert.ok(reply.files.some((f) => f.name === 'rival-build.png'));
+    const flee = fake(id, `farm_walk:${id}:${rival}`);
+    await route('Rival Walk Away button').execute(flee);
+    const rows = flee.log.find(([k]) => k === 'editReply')[1].components;
+    assert.ok(!rows.some((r) => r.components.some((c) => c.customId?.startsWith('farm_enemy:'))), 'the build button goes with the rival');
+    const late = await ask(`farm_enemy:${id}:rival:${rival}`);
+    assert.strictEqual(late.log.find(([k]) => k === 'editReply')[1].content, 'That rival has already left.');
+  } finally { setCooldowns(true); }
 });

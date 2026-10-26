@@ -29,6 +29,7 @@ const DSWAP_ID = 'farm_dswap'; // select (a full build): farm_dswap:<user id>:<r
 const DPOINT_ID = 'farm_dpoint'; // select: farm_dpoint:<user id>, value = ability slot
 const DBUILD_ID = 'farm_dbuild'; // button "Build": farm_dbuild:<user id>
 const DBACK_ID = 'farm_dback'; // button "Back": farm_dback:<user id> (the run's current screen)
+const DENEMY_ID = 'farm_denemy'; // button "View Enemy Build": farm_denemy:<user id>:<room> (a private message)
 const DQUIT_ID = 'farm_dquit'; // button "Abandon Run": farm_dquit:<user id>, then farm_dquit:<user id>:yes
 const DAGAIN_ID = 'farm_dagain'; // button "Descend Again" (the end of a run): farm_dagain:<user id>
 const DIMBUE_ID = 'farm_dimbue'; // select: farm_dimbue:<user id>, value = ability slot for the pending item
@@ -158,7 +159,8 @@ async function roomView(member, d, { note = null, quit = false } = {}) {
     const points = pointMenu(member.id, d);
     if (points) components.push(points);
     const fight = button(`${DFIGHT_ID}:${member.id}:${d.room}`, spec.kind === 'rival' ? `Fight ${spec.rival}` : spec.final ? 'Fight the Patron' : spec.kind === 'boss' ? `Fight the ${D.BOSSES[spec.boss].name}` : 'Fight', ButtonStyle.Danger);
-    components.push(row(fight, ...(spec.kind === 'rival' ? [button(`${DWALK_ID}:${member.id}:${d.room}`, 'Walk Away')] : []), button(`${DBUILD_ID}:${member.id}`, 'Build'), button(`${DQUIT_ID}:${member.id}`, 'Abandon Run')));
+    components.push(row(fight, ...(spec.kind === 'rival' ? [button(`${DWALK_ID}:${member.id}:${d.room}`, 'Flee')] : []), button(`${DBUILD_ID}:${member.id}`, 'Your Build')),
+      row(button(`${DENEMY_ID}:${member.id}:${d.room}`, 'View Enemy Build'), button(`${DQUIT_ID}:${member.id}`, 'Abandon Run')));
   }
   return { embeds: [e], components, files: [soulsFile(), await roomFile(spec)] };
 }
@@ -254,7 +256,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     if (points) components.push(points);
     const short = (n) => (offer.kind === 'buffs' ? buffText(n, D.BOSS_BUFFS) : n);
     const picks = offer.choices.map((n, i) => button(`${DTAKE_ID}:${member.id}:${offer.room}:${i}`, short(n), ButtonStyle.Primary));
-    const actions = [button(`${DSKIP_ID}:${member.id}:${offer.room}`, `Skip + ${D.SKIP_BUFFS} Buffs`), button(`${DBUILD_ID}:${member.id}`, 'Build')];
+    const actions = [button(`${DSKIP_ID}:${member.id}:${offer.room}`, `Skip + ${D.SKIP_BUFFS} Buffs`), button(`${DBUILD_ID}:${member.id}`, 'Your Build')];
     if (offer.kind === 'items') actions.push(button(`${DREROLL_ID}:${member.id}:${offer.room}`, `Reroll (${d.rerolls ?? D.REROLLS_PER_FLOOR} left)`).setDisabled((d.rerolls ?? D.REROLLS_PER_FLOOR) <= 0));
     components.push(row(...picks), row(...actions));
   }
@@ -371,6 +373,6 @@ const screen = async (member, record, opts = {}) => (!record.descent ? startView
       : record.descent.phase === 'bonus' ? bonusView(member, record.descent) : roomView(member, record.descent, opts));
 
 module.exports = {
-  DHERO_ID, DBEGIN_ID, DFIGHT_ID, DWALK_ID, DTAKE_ID, DSKIP_ID, DREROLL_ID, DSWAP_ID, DPOINT_ID, DBUILD_ID, DBACK_ID, DQUIT_ID, DAGAIN_ID, DIMBUE_ID, DBONUSSWAP_ID,
+  DHERO_ID, DBEGIN_ID, DFIGHT_ID, DWALK_ID, DENEMY_ID, DTAKE_ID, DSKIP_ID, DREROLL_ID, DSWAP_ID, DPOINT_ID, DBUILD_ID, DBACK_ID, DQUIT_ID, DAGAIN_ID, DIMBUE_ID, DBONUSSWAP_ID,
   startView, roomView, fightView, runCard, offerView, buildView, imbueView, bonusView, overView, completeView, tokenView, leaderboardView, screen, buffLine: (key) => buffText(key, D.BOSS_BUFFS),
 };

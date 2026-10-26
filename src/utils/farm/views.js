@@ -34,6 +34,7 @@ const WALK_ID = 'farm_walk'; // button: farm_walk:<user id>:<rival> (let it go)
 const HERO_ID = 'farm_hero'; // select: farm_hero:<user id> (the second dropdown of a split list: farm_hero:<user id>:1)
 const PICK_ID = 'farm_pick'; // button "Select": farm_pick:<user id>:<hero>
 const TARGET_ID = 'farm_target'; // select: farm_target:<user id>
+const ENEMY_ID = 'farm_enemy'; // button "View Enemy Build": farm_enemy:<user id>:<target>[:<camp family | lane>], or farm_enemy:<user id>:rival:<rival> (a private message)
 const SEND_ID = 'farm_send'; // button "Send": farm_send:<user id>:<target>
 const BACK_ID = 'farm_back'; // button "Back": farm_back:<user id>
 const HEROCARD_ID = 'farm_herocard'; // button "Hero": farm_herocard:<user id>
@@ -566,17 +567,19 @@ async function targetView(member, key, record, now = Date.now(), variant = null)
   e.setDescription(cased(e.data.description)).setFields(e.data.fields.map((f) => ({ ...f, value: cased(f.value) }))).setFooter({ text: titleCase(text) });
   const send = new ButtonBuilder().setCustomId(`${SEND_ID}:${member.id}:${key}${family || lane ? `:${family || lane}` : ''}`).setLabel('Send').setStyle(ButtonStyle.Success).setDisabled(left > 0 || !!by);
   const back = new ButtonBuilder().setCustomId(`${BACK_ID}:${member.id}`).setLabel('Back').setStyle(ButtonStyle.Secondary);
+  const build = new ButtonBuilder().setCustomId(`${HEROCARD_ID}:${member.id}`).setLabel('Your Build').setStyle(ButtonStyle.Secondary);
+  const enemy = new ButtonBuilder().setCustomId(`${ENEMY_ID}:${member.id}:${key}${family || lane ? `:${family || lane}` : ''}`).setLabel('View Enemy Build').setStyle(ButtonStyle.Secondary);
   if (family) { // the camp's triangle moves to the author line, the Haunt takes the corner
     e.setAuthor({ name: 'Hero Farming', iconURL: 'attachment://icon.png' });
-    return { embeds: [e], components: [row(targetMenu(member.id, record, now, key)), row(send, back)], files: [new AttachmentBuilder(await trimmed(pic), { name: 'icon.png' }), picture(hauntFile(family, CAMP_SIZE[key]))] };
+    return { embeds: [e], components: [row(targetMenu(member.id, record, now, key)), row(send, build, back), row(enemy)], files: [new AttachmentBuilder(await trimmed(pic), { name: 'icon.png' }), picture(hauntFile(family, CAMP_SIZE[key]))] };
   }
   if (lane) { // a lane's Guardian or Walker: the lane's badge is the author icon
     e.setAuthor({ name: 'Hero Farming', iconURL: 'attachment://icon.png' });
-    return { embeds: [e], components: [row(targetMenu(member.id, record, now, slotOf(key, lane))), row(send, back)], files: [new AttachmentBuilder(LANES[lane].icon, { name: 'icon.png' }), picture(pic)] };
+    return { embeds: [e], components: [row(targetMenu(member.id, record, now, slotOf(key, lane))), row(send, build, back), row(enemy)], files: [new AttachmentBuilder(LANES[lane].icon, { name: 'icon.png' }), picture(pic)] };
   }
   const files = [soulsFile(), picture(pic)];
   if (key === 'siege') files.push(new AttachmentBuilder(await siegeCard(siegeCardData(record, now)), { name: 'siege.png' }));
-  return { embeds: [e], components: [row(targetMenu(member.id, record, now, key)), row(send, back)], files };
+  return { embeds: [e], components: [row(targetMenu(member.id, record, now, key)), row(send, build, back), row(enemy)], files };
 }
 
 // ---- a fight, live and finished ----
@@ -693,8 +696,8 @@ async function withRival(view, rival, ownerId) {
   view.files.push((await heroPicture(rival)).setName('rival.png'));
   view.components.push(row(
     new ButtonBuilder().setCustomId(`${DUEL_ID}:${ownerId}:${rival}`).setLabel(`Fight ${rival}`).setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId(`${WALK_ID}:${ownerId}:${rival}`).setLabel('Walk Away').setStyle(ButtonStyle.Secondary),
-  ));
+    new ButtonBuilder().setCustomId(`${WALK_ID}:${ownerId}:${rival}`).setLabel('Flee').setStyle(ButtonStyle.Secondary),
+  ), row(new ButtonBuilder().setCustomId(`${ENEMY_ID}:${ownerId}:rival:${rival}`).setLabel('View Enemy Build').setStyle(ButtonStyle.Secondary)));
   return view;
 }
 
@@ -810,7 +813,7 @@ const notReady = (what, left) => `${what} isn't ready yet. Ready in ${timeLeft(l
 
 module.exports = {
   titleCase,
-  HERO_ID, PICK_ID, TARGET_ID, SEND_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, LABELS,
+  HERO_ID, PICK_ID, TARGET_ID, SEND_ID, ENEMY_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, LABELS,
   IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, LEGEND_ID, ROOM_ID, DUEL_ID, WALK_ID, DAMAGE_ID, damageButton, damageView, withRival, duelView, duelResultView, voiceLine, rivalMood,
   pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, roamView, notReady, timeLeft, every, clock, heroPicture,
   // shared with /descend (descentViews.js)

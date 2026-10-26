@@ -72,7 +72,7 @@ const take = (list, n, rng) => { const a = [...list]; const out = []; while (out
 
 // ---- the enemies ----
 // A medic heals everyone standing: a chance each second (the engine's `special`, like a Haunt's).
-const MEND = { name: 'Mend', chance: 0.3, use(fight) { for (const e of fight.enemies) if (e.alive && e.team === 'enemy') e.health = Math.min(e.stats.maxHealth, e.health + e.stats.maxHealth * 0.06); } };
+const MEND = { name: 'Mend', text: 'heals every enemy for 6% of its health.', chance: 0.3, use(fight) { for (const e of fight.enemies) if (e.alive && e.team === 'enemy') e.health = Math.min(e.stats.maxHealth, e.health + e.stats.maxHealth * 0.06); } };
 const ICONS = path.join(ASSETS, 'farm', 'icons');
 // The archetypes a fight room's budget is spent on (room 1 numbers): cost in threat points, count per pick, picture (the trooper renders).
 const ARCHETYPES = {
@@ -195,13 +195,16 @@ const pointsLeft = (d) => POINTS(d.level) - pointsSpent(d.tiers);
 
 // A rival rolls its kit around the hero's (encounter.js) but RIVAL.levels lower and with RIVAL.health of its health: a fair duel would end half the runs.
 const RIVAL = { levels: 2, health: 0.7 };
+const rivalKitFor = (spec, d, kit = runKit(d)) => rivalKit({ ...kit, boons: Math.max(0, kit.boons - RIVAL.levels), points: POINTS(Math.max(0, d.level - RIVAL.levels)), unlocked: UNLOCKS(Math.max(0, d.level - RIVAL.levels)) }, dice(d.seed, spec.room, 'rival'));
 function rivalFor(spec, d, kit) {
-  const theirs = rivalKit({ ...kit, boons: Math.max(0, kit.boons - RIVAL.levels), points: POINTS(Math.max(0, d.level - RIVAL.levels)), unlocked: UNLOCKS(Math.max(0, d.level - RIVAL.levels)) }, dice(d.seed, spec.room, 'rival'));
-  const unit = buildHero(spec.rival, theirs);
+  const unit = buildHero(spec.rival, rivalKitFor(spec, d, kit));
   unit.stats.maxHealth *= RIVAL.health;
   unit.health = unit.stats.maxHealth;
   return unit;
 }
+// What room `spec` holds, for View Enemy Build: { units } (the enemies, as the fight will build them) or { rival, kit, health } (a rival hero's kit is rolled from the run's seed, so it is the one it fights with).
+const enemiesOf = (d, spec) => (spec.kind === 'rival' ? { rival: spec.rival, kit: rivalKitFor(spec, d), health: RIVAL.health }
+  : { units: spec.final ? FINAL.map((key) => bossFor(key, spec.room)) : spec.kind === 'boss' ? [bossFor(spec.boss, spec.room)] : unitsOf(spec) });
 
 // Plays room `spec` with the run `d` (nothing saved). Returns play.js simulate's run, with `spec`.
 function fightRoom(d, spec, rng = Math.random) {
@@ -518,6 +521,6 @@ async function leaderboard() {
 
 module.exports = {
   ROOMS_PER_FLOOR, FLOORS, LAST_ROOM, TOKEN_ROOM, SKIP_HEAL, SKIP_BUFFS, BOSS_BUFFS, LITTLE_BUFF_CHANCE, BIG_BUFF_CHANCE, REROLLS_PER_FLOOR, ENHANCED_CHANCE, ENHANCED_STEP, REST, TUNE, BOSS, RIVAL, ARCHETYPES, AFFIXES, BOSSES, TIER_WEIGHTS, NO_RUN_ITEMS, NO_RUN_LEGENDARIES,
-  dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, rollFind, addItem, takeChoice, takeBonus, skipChoice, rerollChoice, spendPoint, setImbue, afterWin, newRun,
+  dice, power, floorOf, roomSpec, unitsOf, bossFor, roomLine, roomPicture, runKit, pointsLeft, fightRoom, itemOffer, rollOffer, rollFind, enemiesOf, addItem, takeChoice, takeBonus, skipChoice, rerollChoice, spendPoint, setImbue, afterWin, newRun,
   startRun, getRun, fight, walkPast, choose, skip, reroll, spend, imbue, takeBonusItem, abandon, leaderboard,
 };

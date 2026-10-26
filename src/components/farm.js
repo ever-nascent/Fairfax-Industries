@@ -1,11 +1,13 @@
 const { setTimeout: sleep } = require('node:timers/promises');
 const { MessageFlags } = require('discord.js');
-const { getFarmUser, chooseHero, play, upgradeAbility, buyItem, sellItem, equipLegendary, unlockHero, switchHero, corruptItem, setImbue, hatchEgg, fightRival, walkAway, holdOffer } = require('../utils/farm/play');
+const { getFarmUser, chooseHero, play, upgradeAbility, buyItem, sellItem, equipLegendary, unlockHero, switchHero, corruptItem, setImbue, hatchEgg, fightRival, walkAway, holdOffer, rivalKitOf, targetEnemies } = require('../utils/farm/play');
+const { npcBuildView, rivalBuildView } = require('../utils/farm/enemyBuild');
+const { TARGETS, LANES } = require('../utils/farm/targets');
 const { drawbackLine } = require('../utils/farm/corruption');
 const { buffText } = require('../utils/farm/buffs');
 const { fmt } = require('../utils/format');
 const { shortId } = require('../utils/random');
-const { DAMAGE_ID, damageButton, damageView, DUEL_ID, WALK_ID, withRival, duelView, duelResultView, HERO_ID, PICK_ID, TARGET_ID, SEND_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, LEGEND_ID, ROOM_ID, titleCase, timeLeft, pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, notReady } = require('../utils/farm/views');
+const { DAMAGE_ID, damageButton, damageView, DUEL_ID, WALK_ID, withRival, duelView, duelResultView, HERO_ID, PICK_ID, TARGET_ID, SEND_ID, ENEMY_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, LEGEND_ID, ROOM_ID, titleCase, timeLeft, pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, notReady } = require('../utils/farm/views');
 
 const descent = require('../utils/farm/descent');
 const dviews = require('../utils/farm/descentViews');
@@ -32,13 +34,13 @@ function withBreakdown(view, run, ownerId) {
   breakdowns.set(id, { hero: run.hero, rival: run.encounter ? run.rival : null, seconds: run.seconds, damage: run.damage ?? [] });
   if (breakdowns.size > MAX_BREAKDOWNS) breakdowns.delete(breakdowns.keys().next().value);
   const damage = damageButton(ownerId, id);
-  const buildRow = view.components.find((r) => r.toJSON().components.some((c) => c.label === 'Build'));
+  const buildRow = view.components.find((r) => r.toJSON().components.some((c) => c.label === 'Your Build'));
   if (buildRow) buildRow.addComponents(damage.components[0]);
   else view.components.push(damage);
   return view;
 }
 // The result's buttons once its rival is fought or let go: the Damage Breakdown stays.
-const withoutRival = (interaction) => (interaction.message?.components ?? []).filter((r) => !r.components.some((c) => c.customId?.startsWith(`${DUEL_ID}:`)));
+const withoutRival = (interaction) => (interaction.message?.components ?? []).filter((r) => !r.components.some((c) => c.customId?.startsWith(`${DUEL_ID}:`) || c.customId?.startsWith(`${ENEMY_ID}:${interaction.user.id}:rival:`)));
 
 // Replays the fight the member just paid for (already settled when they pressed Send), then sends the result as a new message
 // (his call, Oct 16): the fight message stays on its last moment.
@@ -249,6 +251,41 @@ const descentRoutes = [
       const result = await descent.spend(interaction.user.id, Number(interaction.values[0]));
       return { locked: { say: "That ability isn't unlocked yet." }, max: { say: 'That ability is fully upgraded.' }, points: { say: "You don't have enough ability points for that tier." }, none: STALE }[result.error];
     }),
+  },
+  {
+    name: 'farm',
+    label: 'View Enemy Build button', // a private message: a target's enemies, or the rival waiting
+    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${ENEMY_ID}:`),
+    async execute(interaction) {
+      if (!(await mine(interaction))) return;
+      const [, , key, ...rest] = interaction.customId.split(':');
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      if (key === 'rival') {
+        const kit = rivalKitOf(interaction.user.id, rest.join(':'));
+        return interaction.editReply(kit ? await rivalBuildView(rest.join(':'), kit, { note: 'The kit it will fight with.' }) : { content: 'That rival has already left.' });
+      }
+      const record = await getFarmUser(interaction.user.id);
+      const variant = rest.join(':');
+      const { sections, note } = targetEnemies(record, key, { family: variant });
+      const name = key === 'siege' ? 'Base Siege' : key === 'waves' ? 'Waves' : TARGETS[key]?.name ?? key;
+      return interaction.editReply(npcBuildView(LANES[variant] ? `${LANES[variant].name} ${name}` : name, sections, note));
+    },
+  },
+  {
+    name: 'farm',
+    label: 'Descend enemy build button', // a private message: what is in this room
+    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DENEMY_ID}:`),
+    async execute(interaction) {
+      if (!(await mine(interaction))) return;
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      const d = (await getFarmUser(interaction.user.id)).descent;
+      if (!d || d.room !== roomOf(interaction) || d.phase === 'offer') return interaction.editReply({ content: STALE.say });
+      const spec = descent.roomSpec(d.seed, d.room, d.hero);
+      const held = descent.enemiesOf(d, spec);
+      return interaction.editReply(held.rival
+        ? await rivalBuildView(held.rival, held.kit, { health: held.health, note: 'The kit it will fight with, two levels under yours and at 70% health.' })
+        : npcBuildView(spec.final ? 'The Patron' : spec.kind === 'boss' ? `The ${descent.BOSSES[spec.boss].name}` : `Room ${spec.room}`, [{ units: held.units }], 'Exactly the enemies you will fight.'));
+    },
   },
   {
     name: 'farm',
