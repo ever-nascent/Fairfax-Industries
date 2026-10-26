@@ -170,8 +170,8 @@ test('Arctic Blast stuns: enemies stop hitting for its freeze', () => {
   const before = hero.health;
   for (let i = 0; i < 8; i++) fight.step();
   assert.strictEqual(hero.health, before, 'frozen enemies do nothing');
-  for (let i = 0; i < 14; i++) fight.step(); // a second after it wears off, the next hit lands
-  assert.ok(hero.health < before, 'and hit again when it wears off');
+  for (let i = 0; i < 30; i++) fight.step(); // the slow remains after the freeze, so the next hit takes longer
+  assert.ok(hero.health < before, 'and the slowed enemy eventually hits again');
 });
 
 test('Berserker, Spellslinger and Glass Cannon stack', () => {

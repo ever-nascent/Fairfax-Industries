@@ -1913,9 +1913,10 @@ test('Vyper: each ability does its job', () => {
   assert.ok(stoned[0].has('stun') && !stoned[0].targetable && fb.foes[0] === stoned[1]);
   const hp = b.health;
   fb.run(1);
-  assert.strictEqual(hp - b.health, 100, 'the stone one does not attack');
+  assert.strictEqual(hp - b.health, 0, 'the stone one cannot attack and the others are slowed');
   fb.run(1.5);
   assert.ok(stoned[0].targetable);
+  assert.ok(b.health < hp, 'the slowed enemies eventually attack');
 });
 
 test('Warden: each ability does its job', () => {
