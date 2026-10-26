@@ -260,15 +260,15 @@ test('camp Haunts roll a random trait that moves their resists, and bosses resis
   assert.ok(Math.abs(boss.statuses.find((x) => x.id === 'sleep').until - 1) < 1e-9, 'a 4 s sleep lasts 1 s on a boss that shrugs off 75%');
 });
 
-test('legendaries: 1% a kill in a won fight, their own slot on top of the 12, every one kept, and the slot changed at will', async () => {
+test('legendaries: 0.5% a kill in a won fight, their own slot on top of the 12, every one kept, and the slot changed at will', async () => {
   const { rollLegendary, LEGENDARY_NAMES, POOL, MAX_ITEMS } = require('../src/utils/farm/levels');
   const { dropLegendary, equipLegendary, updateFarmUser, switchHero } = require('../src/utils/farm/play');
   const { itemByName } = require('../src/utils/farm/stats');
   assert.strictEqual(LEGENDARY_NAMES.length, 17);
   assert.ok(LEGENDARY_NAMES.every((n) => itemByName(n)?.Tier === 5));
   assert.strictEqual(rollLegendary(0, () => 0), null, 'no kills, no roll');
-  assert.strictEqual(rollLegendary(1000, () => 0.01), null, 'just above the chance');
-  assert.strictEqual(rollLegendary(1, () => 0.0099), LEGENDARY_NAMES[0], 'just below the chance');
+  assert.strictEqual(rollLegendary(1000, () => 0.005), null, 'at the exclusive upper edge');
+  assert.strictEqual(rollLegendary(1, () => 0.0049), LEGENDARY_NAMES[0], 'just below the chance');
   assert.strictEqual(rollLegendary(1, () => 0, [LEGENDARY_NAMES[0]]), LEGENDARY_NAMES[1], 'never one the hero has');
   assert.strictEqual(rollLegendary(5, () => 0, LEGENDARY_NAMES), null, 'a hero with all 17 gets no more');
   assert.strictEqual(rollLegendary(1, () => 0.049, [], 0.05), LEGENDARY_NAMES[0], 'a won siege: just below 5%');
