@@ -134,16 +134,17 @@ async function descendFight(interaction) {
     return interaction.followUp({ content: say, flags: MessageFlags.Ephemeral });
   }
   const { run } = result;
-  for (const frame of run.frames) {
-    await interaction.editReply(await dviews.fightView(run, frame));
+  for (const [index, frame] of run.frames.entries()) {
+    const view = await dviews.fightView(run, frame);
+    await interaction.editReply(index === run.frames.length - 1 ? withBreakdown(view, run, interaction.user.id) : view);
     await sleep(FRAME_MS);
   }
-  if (run.over) return interaction.followUp(withBreakdown(await dviews.overView(interaction.member, run), run, interaction.user.id));
+  if (run.over) return interaction.followUp(await dviews.overView(interaction.member, run));
   if (run.complete) {
-    await interaction.followUp(withBreakdown(await dviews.completeView(interaction.member, run), run, interaction.user.id));
+    await interaction.followUp(await dviews.completeView(interaction.member, run));
     return run.token ? interaction.followUp({ ...dviews.tokenView(run.hero), flags: MessageFlags.Ephemeral }) : null;
   }
-  await interaction.followUp(withBreakdown(await dviews.offerView(interaction.member, run.next, { run, animate: true }), run, interaction.user.id));
+  await interaction.followUp(await dviews.offerView(interaction.member, run.next, { run, animate: true }));
   if (run.token) await interaction.followUp({ ...dviews.tokenView(run.hero), flags: MessageFlags.Ephemeral });
 }
 
@@ -218,7 +219,7 @@ const descentRoutes = [
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DSKIP_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
       const result = await descent.skip(interaction.user.id, roomOf(interaction));
-      return result.ok ? { note: `You skipped the pick and healed ${descent.SKIP_HEAL * 100}%.` } : STALE;
+      return result.ok ? { note: `Skip: Heal **${descent.SKIP_HEAL * 100}%** and **${descent.SKIP_BUFFS} Perma-Buffs**.` } : STALE;
     }),
   },
   {
