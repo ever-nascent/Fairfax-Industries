@@ -194,7 +194,7 @@ for (const [key, target] of Object.entries(TARGETS)) target.icon = path.join(ICO
 const PATRON_BEAM = { dps: 440, dpsMaxHealthPct: 0.05, damageType: 'spirit' }; // as it defends a Shrine; the Patron's own is 'mixed' (below)
 // The blast (the wiki's Shrine Defense and Pit Explosion: 300 + 20% of max health): true damage, and it curses.
 // The wiki gives no interval and no curse length: every 8 s and 1.5 s cursed are his call (Oct 3); HARDNESS.siege was retuned for them.
-const PATRON_BLAST = { every: 8, damage: 300, maxHealthPct: 0.2, curse: 1.5 };
+const PATRON_BLAST = { every: 8, damage: 300, maxHealthPct: 0.2, curse: 1.5, tags: ['curse'] };
 const SIEGE = {
   cooldown: 24 * HOUR,
   stages: [

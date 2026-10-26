@@ -2524,12 +2524,12 @@ test('the Patron: half weapon and half spirit damage, and a true-damage blast th
   close(taken({ bulletResist: 0.5 }, { dps: 100, damageType: 'mixed' }).lost, plain * 0.75, 0.01);
   close(taken({ spiritResist: 0.5 }, { dps: 100, damageType: 'mixed' }).lost, plain * 0.75, 0.01);
   // the blast: true damage (no resist helps), every `every` seconds, and the hero is cursed (can't act) after it
-  const blast = { every: 8, damage: 300, maxHealthPct: 0.001, curse: 1.5 };
+  const blast = { every: 8, damage: 300, maxHealthPct: 0.001, curse: 1.5, tags: ['curse'] };
   const hit = taken({ bulletResist: 0.9, spiritResist: 0.9 }, { dps: 0, blast }, 8.3);
   close(hit.lost, 300 + 0.001 * 1e6, 0.001);
-  assert.ok(hit.hero.has('sleep') && hit.fight.log.some((l) => l.enemy && l.what === 'curse'));
+  assert.ok(hit.hero.has('curse') && !hit.hero.has('sleep') && hit.fight.log.some((l) => l.enemy && l.what === 'curse'));
   hit.fight.run(2);
-  assert.ok(!hit.hero.has('sleep'), 'the curse wears off');
+  assert.ok(!hit.hero.has('curse'), 'the curse wears off');
   // the siege tuning scales the blast like the rest of the damage
   const shrine = SIEGE.stages[1].enemies()[0].stats;
   close(shrine.blast.damage, 300 * HARDNESS.siege, 0.001);

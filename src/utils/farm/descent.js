@@ -75,7 +75,7 @@ const ARCHETYPES = {
   glass: { name: 'Sharpshooter', plural: 'Sharpshooters', cost: 3, icon: 'trooper', stats: { maxHealth: 260, dps: 15, distance: 30 }, text: 'hits hard from far away, little health' },
   healer: { name: 'Medic', plural: 'Medics', cost: 3, icon: 'trooper-medic', stats: { maxHealth: 350, dps: 3, distance: 18 }, special: MEND, text: 'heals the others' },
   bruiser: { name: 'Bruiser', plural: 'Bruisers', cost: 3, icon: 'trooper-melee', stats: { maxHealth: 600, dps: 11, distance: 4 }, text: 'close in, hits hard' },
-  caster: { name: 'Hexer', plural: 'Hexers', cost: 4, icon: 'trooper-medic', stats: { maxHealth: 400, dps: 6, distance: 18, damageType: 'spirit', blast: { every: 8, damage: 45, maxHealthPct: 0, curse: 1, type: 'spirit' } }, text: 'spirit damage and a curse' },
+  caster: { name: 'Hexer', plural: 'Hexers', cost: 4, icon: 'trooper-medic', stats: { maxHealth: 400, dps: 6, distance: 18, damageType: 'spirit', blast: { every: 8, damage: 45, maxHealthPct: 0, curse: 1, type: 'spirit', tags: ['curse'] } }, text: 'spirit damage and a curse' },
   disruptor: { name: 'Disruptor', plural: 'Disruptors', cost: 4, icon: 'trooper-medic', stats: { maxHealth: 420, dps: 7, distance: 18, controls: [{ id: 'silence', every: 9, duration: 1.2, tags: ['silence'], verb: 'silenced' }] }, text: 'silences abilities' },
   grappler: { name: 'Grappler', plural: 'Grapplers', cost: 4, icon: 'trooper-melee', stats: { maxHealth: 550, dps: 9, distance: 5, controls: [{ id: 'grapple', every: 10, duration: 1, tags: ['stun', 'immobilize'], verb: 'grappled' }] }, text: 'grapples and interrupts' },
 };
@@ -89,7 +89,7 @@ const AFFIXES = {
   Regenerating: { text: 'heals itself', apply(e) { e.stats.healthRegen += e.stats.maxHealth * 0.015; } },
   Vampiric: { text: 'heals from its hits', apply(e) { e.stats.drain = 0.4; } },
   Withering: { text: 'its hits cut healing', apply(e) { e.stats.antiHeal = { cut: 0.4, seconds: 3 }; } },
-  Cursing: { text: 'curses now and then', apply(e) { e.stats.blast ??= { every: 9, damage: e.stats.dps * 2, maxHealthPct: 0, curse: 1, type: 'spirit' }; } },
+  Cursing: { text: 'curses now and then', apply(e) { e.stats.blast ??= { every: 9, damage: e.stats.dps * 2, maxHealthPct: 0, curse: 1, type: 'spirit', tags: ['curse'] }; } },
   Stunning: { text: 'stuns now and then', apply(e) { e.stats.controls.push({ id: 'stun', every: 10, duration: 0.8, tags: ['stun'], verb: 'stunned' }); } },
   Silencing: { text: 'silences abilities', apply(e) { e.stats.controls.push({ id: 'silence', every: 10, duration: 1, tags: ['silence'], verb: 'silenced' }); } },
   Grappling: { text: 'grapples and interrupts', apply(e) { e.stats.controls.push({ id: 'grapple', every: 11, duration: 1, tags: ['stun', 'immobilize'], verb: 'grappled' }); } },

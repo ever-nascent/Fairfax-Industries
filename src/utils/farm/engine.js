@@ -38,8 +38,8 @@ const headshotChance = (unit) => clamp(unit.stat('precision') / 100, 0, 1);
 const pelletChance = (distance, precision = PRECISION.base) => clamp(1 - (1 - PELLETS.far) * clamp((distance - PELLETS.full) / (PELLETS.at - PELLETS.full), 0, 1) + (precision - PRECISION.base) / 100, 0, 1);
 const { stackResist } = require('./buffs');
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
-const CC_TAGS = ['sleep', 'stun', 'disarm', 'silence', 'immobilize'];
-const CANT_ACT = ['sleep', 'void', 'hold']; // asleep / cursed, in a void state (Ethereal Shift, Prism Blast, Magic Carpet), lying low (Shadow Weave)
+const CC_TAGS = ['sleep', 'curse', 'stun', 'disarm', 'silence', 'immobilize'];
+const CANT_ACT = ['sleep', 'curse', 'void', 'hold']; // sleep and curse are separate: both stop actions, but only sleep wakes on damage and curse cannot be cleansed
 const OWN_EVENTS = new Set(['dash', 'slide', 'reloadStart', 'reloadEnd', 'cast', 'melee', 'unstealth', 'heal', 'cc', 'ccLanded', 'blast']); // heard only by the hero they are about
 const HELPLESS =['stun', 'sleep', 'immobilize']; // an enemy that can't hit back: worth walking up to and meleeing
 // Ability Range (his call, Oct 3): the enemies of a group stand one behind the other, SPREAD metres apart on average (each gap is rolled, half to one and a
@@ -142,9 +142,9 @@ class Fight {
     unit.statuses.push({ mods: {}, tags: [], ...status, until: this.time + duration });
   }
   removeStatus(unit, id) { unit.statuses = unit.statuses.filter((s) => s.id !== id); }
-  // Shortens the debuffs on a unit by `share` (1 = removes them). `stuns` false leaves crowd control alone (the "non-stun debuffs" cleanses).
+  // Shortens the debuffs on a unit by `share` (1 = removes them). A curse can expire, but nothing can cleanse it.
   cleanse(unit, share = 1, { stuns = true } = {}) {
-    for (const s of unit.statuses.filter((st) => st.debuff && (stuns || !st.tags.some((t) => CC_TAGS.includes(t))))) s.until = this.time + (s.until - this.time) * (1 - share);
+    for (const s of unit.statuses.filter((st) => st.debuff && !st.tags.includes('curse') && (stuns || !st.tags.some((t) => CC_TAGS.includes(t))))) s.until = this.time + (s.until - this.time) * (1 - share);
   }
 
   // Crowd control on a hero (an enemy blast's curse or stomp). Unstoppable ignores it, an item may block it (Cloak of Opportunity), debuff resist
@@ -216,7 +216,7 @@ class Fight {
     if (!target.alive && target.rejuvs > 0) this.rejuvenate(target);
     this.dealt.set(source, (this.dealt.get(source) || 0) + dealt);
     if (dealt > 0 && this.views.has(source)) { // a hero's damage, by what dealt it
-      const what = this.by?.name ?? (type === 'melee' ? 'Heavy Melee' : type === 'bullet' ? 'Gun' : 'Other');
+      const what = this.by?.name ?? (type === 'melee' ? `${opts.meleeType === 'light' ? 'Light' : 'Heavy'} Melee` : type === 'bullet' ? 'Gun' : 'Other');
       if (!this.breakdown.has(source)) this.breakdown.set(source, new Map());
       const mine = this.breakdown.get(source);
       mine.set(what, (mine.get(what) || 0) + dealt);
@@ -335,16 +335,18 @@ class Fight {
       || hero.items.some((it) => it.wantsMelee(this, target)) || hero.abilities.some((a) => a.wantsMelee?.(this, target)));
   }
 
-  // A heavy melee at `target`: the hero's wiki melee damage, more with melee items. Nothing on a farm resists it.
-  melee(hero, target) {
+  // A light or heavy melee at `target`. The automatic farming swing is heavy; abilities may request a light one.
+  melee(hero, target, kind = 'heavy') {
+    kind = kind === 'light' ? 'light' : 'heavy';
     hero.meleeAt = this.time + MELEE.every;
     if (!(hero.weapon.reloadLeft > 0)) hero.busyUntil = this.time + MELEE.busy;
     hero.close = target;
     hero.closeUntil = this.time + MELEE.closeFor;
     const bonus = hero.items.reduce((sum, it) => sum + it.meleeBonus(this, target), 0);
-    const amount = (hero.stats.heavyMelee ?? 0) * (1 + hero.stat('meleeDamage') + bonus);
-    const dealt = this.damage(hero, target, amount, 'melee', { melee: true });
-    this.emit('melee', { source: hero, target, amount, dealt });
+    const amount = (hero.stats[kind === 'light' ? 'lightMelee' : 'heavyMelee'] ?? 0) * (1 + hero.stat('meleeDamage') + bonus);
+    const dealt = this.damage(hero, target, amount, 'melee', { melee: true, meleeType: kind });
+    this.log.push({ t: +this.time.toFixed(1), who: hero.name, what: `${kind === 'light' ? 'Light' : 'Heavy'} Melee`, target: target.name, melee: true });
+    this.emit('melee', { source: hero, target, amount, dealt, kind });
   }
 
   // Stamina and moving (his call, Oct 3): a dash-jump whenever a stamina charge is in hand (airborne a moment after), a slide now and then.
