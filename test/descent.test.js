@@ -367,7 +367,11 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
   await route('Descend fight button').execute(go);
   const [, result] = go.log.findLast(([k]) => k === 'followUp');
   if ((await D.getRun(id))?.phase === 'offer') {
-    assert.match(result.embeds[0].toJSON().title, /Room 1 Cleared/);
+    const resultEmbed = result.embeds[0].toJSON();
+    assert.equal(resultEmbed.author.name, 'Descend - Room 1 Cleared');
+    assert.equal(resultEmbed.title, undefined);
+    assert.match(resultEmbed.description, /reached \*\*Level 1\*\*\.\n\nPick \*\*1 of 3\*\* items, or Skip to heal \*\*25%\*\*\./);
+    assert.equal(resultEmbed.fields.find((field) => field.name === 'Level').value, '**1**');
     assert.ok(result.files.some((f) => f.name === 'pick.gif'), 'the cylinder spins the first time');
     const rows = result.components.map((r) => r.toJSON().components.map((c) => c.label).filter(Boolean));
     assert.ok(rows.some((labels) => labels.length === 5 && labels.some((label) => label.startsWith('Skip')) && labels.includes('Reroll (3 left)')), 'the three picks, Skip and Reroll share a row');
