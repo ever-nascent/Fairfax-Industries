@@ -892,6 +892,17 @@ test('Vampiric Burst: +13% lifesteal, +10% bullet resist, +100 health, +6% weapo
   near(it().cooldown, 30);
 });
 
+test('healing actives wait until their owner is below half health', () => {
+  for (const name of ['Healing Nova', 'Rescue Beam', 'Healing Rite', 'Restorative Locket', 'Vampiric Burst']) {
+    const { hero, fight, it } = setup([name]);
+    if (name === 'Restorative Locket') it().stacks = 5;
+    hero.health = hero.stats.maxHealth * 0.5;
+    assert.ok(!it().want(fight), `${name} is held at half health`);
+    hero.health -= 1;
+    assert.ok(it().want(fight), `${name} is ready below half health`);
+  }
+});
+
 test("Diviner's Kevlar: +15% ability duration, +10% ultimate cooldown cut; casting the ultimate gives a 1000 barrier and +40 spirit power for 20 s, every 40 s", () => {
   const s = sheet(["Diviner's Kevlar"]);
   near(s.durationMult - BASE.durationMult, 0.15); near(s.ultCdr, 0.1);
@@ -909,6 +920,7 @@ test('Indomitable: +10% bullet and spirit resist, +2 out-of-combat regen; the ne
   assert.strictEqual(landed, false, 'cleansed before it takes hold');
   near(status(hero, 'Indomitable:barrier').barrier, 325); near(status(hero, 'Indomitable:barrier').until - fight.time, 10);
   near(hero.abilities[0].cdLeft, 8); near(it().cdLeft, 55);
+  assert.deepStrictEqual(fight.log.at(-1), { t: 0, who: hero.name, what: 'stun', ccBlocked: 'Indomitable' });
 });
 
 test('Witchmail: +22% spirit resist, +14 spirit power, 7% cooldown reduction; a spirit hit of 75+ (before resists) takes 4 s off a running ability cooldown, at most every 1 s', () => {

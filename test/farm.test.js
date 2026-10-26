@@ -45,6 +45,27 @@ test('a hero shoots, reloads and the gun matches its wiki DPS', () => {
   close(dps, sustained, 0.06);
 });
 
+test('reloads, duel parries, and crowd-control immunity are recorded in the Battle Log', () => {
+  const attacker = buildHero('Haze');
+  const defender = buildHero('Abrams');
+  const f = new Fight({ heroes: [attacker], enemies: [defender], rng: () => 0 });
+  f.reload(attacker);
+  assert.deepStrictEqual(f.log.at(-1), { t: 0, who: 'Haze', reload: true });
+  const before = defender.health;
+  f.melee(attacker, defender, 'heavy');
+  assert.strictEqual(defender.health, before, 'the heavy melee is parried');
+  assert.ok(attacker.has('stun'), 'the attacker is stunned for two melee cycles');
+  assert.deepStrictEqual(f.log.at(-1), { t: 0, who: 'Abrams', target: 'Haze', parry: true });
+  const noRebuttal = buildHero('Abrams');
+  const parryWithRebuttal = buildHero('Abrams', { items: ['Rebuttal'] });
+  const plain = new Fight({ heroes: [attacker], enemies: [noRebuttal], rng: () => 0.3 });
+  plain.melee(attacker, noRebuttal, 'heavy');
+  assert.ok(noRebuttal.health < noRebuttal.stats.maxHealth, '30% misses the base parry chance');
+  const rebuttal = new Fight({ heroes: [buildHero('Haze')], enemies: [parryWithRebuttal], rng: () => 0.3 });
+  rebuttal.melee(rebuttal.heroes[0], parryWithRebuttal, 'heavy');
+  assert.ok(rebuttal.heroes[0].has('stun'), 'Rebuttal raises the parry chance');
+});
+
 test('resists, evasion and lifesteal go through Fight.damage', () => {
   const haze = buildHero('Haze');
   const foe = enemy('Tank', { bulletResist: 0.5, spiritResist: 0.25 });

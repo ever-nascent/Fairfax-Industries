@@ -168,6 +168,22 @@ test('picks: an upgrade replaces its part in place, a full build needs an item g
   assert.strictEqual(d.offer, null);
 });
 
+test('an imbue item pauses Descend until an unlocked ability is chosen', () => {
+  const d = D.newRun('Haze', 1);
+  d.level = 2; // abilities one and two are unlocked after the room clear
+  d.phase = 'offer';
+  d.offer = { kind: 'items', choices: ['Mystic Expansion'], room: 2 };
+  const taken = D.takeChoice(d, 0);
+  assert.ok(taken.ok);
+  assert.strictEqual(d.phase, 'imbue');
+  assert.strictEqual(d.imbuing, 'Mystic Expansion');
+  assert.strictEqual(d.imbues['Mystic Expansion'], undefined, 'never silently assigned to ability one');
+  assert.deepStrictEqual(D.setImbue(d, 3), { error: 'locked' });
+  assert.deepStrictEqual(D.setImbue(d, 2), { ok: true, name: 'Mystic Expansion', slot: 2, more: undefined });
+  assert.strictEqual(d.phase, 'ready');
+  assert.strictEqual(d.imbues['Mystic Expansion'], 2);
+});
+
 test('ability points follow the level: unlocks at 0 / 2 / 4 / 7, tier costs 1 / 2 / 5', () => {
   const d = D.newRun('Haze', 1);
   assert.deepStrictEqual(D.spendPoint(d, 1), { error: 'points' }, 'level 0 has no points');
