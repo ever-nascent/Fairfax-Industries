@@ -205,6 +205,37 @@ test('rerolls: 3 a floor, the same new offer every time for a seed, never below 
   assert.deepStrictEqual(D.rerollChoice(a), { error: 'none' }, 'a boss reward (buffs or legendaries) is not rerolled');
 });
 
+test('buff finds: a seeded roll after a fight (about 10% little, 5% big), none after a boss, little ones stay, big ones last the floor', () => {
+  const finds = { little: 0, big: 0, none: 0 };
+  const firstSeed = {};
+  for (let seed = 1; seed <= 2000; seed++) {
+    const d = D.newRun('Haze', seed);
+    const spec = D.roomSpec(seed, 1, 'Haze');
+    const find = D.rollFind(d, spec);
+    assert.deepStrictEqual(find, D.rollFind(d, spec), 'the same seed finds the same thing, so a restart cannot reroll it');
+    finds[find?.kind ?? 'none']++;
+    if (find) firstSeed[find.kind] ??= seed;
+  }
+  assert.ok(finds.little > 140 && finds.little < 260, `little finds ${finds.little} of 2000`);
+  assert.ok(finds.big > 55 && finds.big < 145, `big finds ${finds.big} of 2000`);
+  const boss = D.newRun('Haze', 3);
+  assert.strictEqual(D.rollFind(boss, D.roomSpec(3, 5, 'Haze')), null, 'a boss gives its own reward, not a find');
+  // a little find is a permanent stack
+  const little = D.newRun('Haze', firstSeed.little);
+  D.afterWin(little, { spec: D.roomSpec(firstSeed.little, 1, 'Haze'), health: 1, rejuvsUsed: 0, kept: {} });
+  assert.strictEqual(little.buffs[little.find.key], 1);
+  // a big find is held, never twice, in the fight kit, and used up by the floor's boss
+  const big = D.newRun('Haze', firstSeed.big);
+  D.afterWin(big, { spec: D.roomSpec(firstSeed.big, 1, 'Haze'), health: 1, rejuvsUsed: 0, kept: {} });
+  assert.deepStrictEqual(big.bridge, [big.find.key]);
+  assert.deepStrictEqual(D.runKit(big).bridge, big.bridge);
+  const again = D.rollFind({ ...big, seed: firstSeed.big }, D.roomSpec(firstSeed.big, 1, 'Haze'));
+  assert.ok(!again || again.kind !== 'big' || again.key !== big.find.key, 'a Bridge type already held is not found again');
+  big.room = 5;
+  D.afterWin(big, { spec: D.roomSpec(firstSeed.big, 5, 'Haze'), health: 1, rejuvsUsed: 0, kept: {} });
+  assert.deepStrictEqual(big.bridge, [], 'the boss uses the floor Bridge buffs up');
+});
+
 test('an imbue item pauses Descend until an unlocked ability is chosen', () => {
   const d = D.newRun('Haze', 1);
   d.level = 2; // abilities one and two are unlocked after the room clear
