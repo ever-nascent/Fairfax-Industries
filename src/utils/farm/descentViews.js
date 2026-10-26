@@ -134,6 +134,17 @@ async function fightView(run, frame) {
   return { embeds: [e], components: [], files: [soulsFile(), await roomFile(spec, spec.kind === 'rival' ? rivalMood(frame) : null, false, frame.stage)], attachments: [] };
 }
 
+// The run's current build, shared by the Build and item-replacement screens.
+async function runCard(d) {
+  const hero = buildHero(d.hero, D.runKit(d));
+  const abilities = Object.keys(HERO_DATA[d.hero].BoundAbilities).map(Number).map((slot) => ({ slot, name: abilityName(d.hero, slot), tier: d.tiers[slot] ?? 0, locked: slot > UNLOCKS(d.level) }));
+  return heroCard({
+    hero: d.hero, progress: { level: d.level, into: (d.room - 1) % D.ROOMS_PER_FLOOR, needed: D.ROOMS_PER_FLOOR, max: d.level >= MAX_LEVEL },
+    pointsLeft: Math.max(0, D.pointsLeft(d)), abilities, stats: statsFor(hero.stats), items: d.items, souls: 0, legendary: d.legendary ?? undefined,
+    counter: { top: `FLOOR ${D.floorOf(d.room)}`, amount: `${d.room - 1}`, label: 'ROOMS CLEARED' },
+  });
+}
+
 // ---- the pick: after a won room (with `run`, the fight's result on top), or redrawn while picking ----
 // `animate`: the cylinder spins (the first time it is shown); `replace`: the choice the member picked with a full build (which item to give up).
 async function offerView(member, d, { run = null, animate = false, replace = null } = {}) {
@@ -174,8 +185,9 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     title: offer.kind === 'buffs' ? 'SELECT A BUFF' : offer.kind === 'legendaries' ? 'SELECT A LEGENDARY' : 'SELECT ITEMS',
     line: `${cleared.toUpperCase().replace(/[^A-Z0-9 ]/g, '')}`, hubText: ['PICK ONE', `OR SKIP`],
   });
-  const file = pic.gif ? new AttachmentBuilder(pic.gif, { name: 'pick.gif' }) : new AttachmentBuilder(pic.png, { name: 'pick.png' });
-  e.setImage(`attachment://${pic.gif ? 'pick.gif' : 'pick.png'}`).setFooter({ text: `Floor ${spec.floor} of ${D.FLOORS}  -  ${plural(d.room - 1, 'room')} of ${D.LAST_ROOM} cleared  -  one death ends the run` });
+  const file = replace != null ? new AttachmentBuilder(await runCard(d), { name: 'hero.png' })
+    : pic.gif ? new AttachmentBuilder(pic.gif, { name: 'pick.gif' }) : new AttachmentBuilder(pic.png, { name: 'pick.png' });
+  e.setImage(`attachment://${replace != null ? 'hero.png' : pic.gif ? 'pick.gif' : 'pick.png'}`).setFooter({ text: `Floor ${spec.floor} of ${D.FLOORS}  -  ${plural(d.room - 1, 'room')} of ${D.LAST_ROOM} cleared  -  one death ends the run` });
   const components = [];
   if (replace != null) {
     const all = SLOTS.flatMap((s) => d.items[s]);
@@ -194,14 +206,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
 
 // ---- the run's build: the hero card (heroCard.js) with the run's level, abilities, items and stats ----
 async function buildView(member, d) {
-  const hero = buildHero(d.hero, D.runKit(d));
-  const left = D.pointsLeft(d);
-  const abilities = Object.keys(HERO_DATA[d.hero].BoundAbilities).map(Number).map((slot) => ({ slot, name: abilityName(d.hero, slot), tier: d.tiers[slot] ?? 0, locked: slot > UNLOCKS(d.level) }));
-  const card = await heroCard({
-    hero: d.hero, progress: { level: d.level, into: (d.room - 1) % D.ROOMS_PER_FLOOR, needed: D.ROOMS_PER_FLOOR, max: d.level >= MAX_LEVEL },
-    pointsLeft: Math.max(0, left), abilities, stats: statsFor(hero.stats), items: d.items, souls: 0, legendary: d.legendary ?? undefined,
-    counter: { top: `FLOOR ${D.floorOf(d.room)}`, amount: `${d.room - 1}`, label: 'ROOMS CLEARED' },
-  });
+  const card = await runCard(d);
   const e = dembed().setTitle(`${d.hero}  -  Level ${d.level}  -  This Run`).setImage('attachment://hero.png').setThumbnail('attachment://thumb.png');
   const buffs = Object.entries(d.buffs);
   if (buffs.length) e.addFields({ name: 'Permanent Buffs (This Run)', value: buffs.map(([k, n]) => buffText(k, n)).join('\n'), inline: true });
@@ -279,5 +284,5 @@ const screen = async (member, record, opts = {}) => (!record.descent ? startView
 
 module.exports = {
   DHERO_ID, DBEGIN_ID, DFIGHT_ID, DWALK_ID, DTAKE_ID, DSKIP_ID, DSWAP_ID, DPOINT_ID, DBUILD_ID, DBACK_ID, DQUIT_ID, DAGAIN_ID,
-  startView, roomView, fightView, offerView, buildView, overView, completeView, tokenView, leaderboardView, screen, buffLine: (key) => buffText(key, D.BOSS_BUFFS),
+  startView, roomView, fightView, runCard, offerView, buildView, overView, completeView, tokenView, leaderboardView, screen, buffLine: (key) => buffText(key, D.BOSS_BUFFS),
 };
