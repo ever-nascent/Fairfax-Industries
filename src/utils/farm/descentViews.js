@@ -164,35 +164,43 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   const cleared = spec.kind === 'boss' ? `${D.BOSSES[spec.boss].name} Defeated` : spec.kind === 'rival' ? `${spec.rival} Defeated` : `Room ${spec.room} Cleared`;
   const e = dembed(run ? WIN : undefined).setAuthor({ name: `Descend - Room ${spec.room} Cleared`, iconURL: 'attachment://souls.png' }).setThumbnail('attachment://thumb.png');
   const lines = [];
+  const addEvent = (text) => {
+    if (lines.length) lines.push('');
+    lines.push(text);
+  };
   if (run) {
     const voice = voiceLine(d.hero, spec.kind === 'rival' ? spec.rival : null).trim();
-    if (voice) lines.push(voice, '');
+    if (voice) addEvent(voice);
     const unlocked = UNLOCKS(d.level) > UNLOCKS(d.level - 1) ? ` and unlocked **${abilityName(d.hero, UNLOCKS(d.level))}**` : '';
-    lines.push(`${d.hero} reached **Level ${d.level}**${d.level >= MAX_LEVEL ? ' (the most)' : ''}${unlocked}.${spec.kind === 'boss' ? ` +${rejuvIcon()}1 Rejuv.` : ''}`);
+    addEvent(`${d.hero} reached **Level ${d.level}**${d.level >= MAX_LEVEL ? ' (the most)' : ''}${unlocked}.${spec.kind === 'boss' ? ` +${rejuvIcon()}1 Rejuv.` : ''}`);
   }
-  if (d.find?.room === offer.room) lines.push(d.find.kind === 'little'
+  if (d.find?.room === offer.room) addEvent(d.find.kind === 'little'
     ? `Found a little buff: **${buffText(d.find.key)}** (permanent for this run).`
     : `Found a big buff: **${BRIDGE[d.find.key].name} Bridge Buff** — ${BRIDGE[d.find.key].text}. Lasts through Floor **${spec.floor}**.`);
   const upgrades = new Set(offer.kind === 'items' ? offer.choices.filter((n) => priceFor(itemByName(n), d.items).used.length) : []);
   if (replace != null) {
     const name = offer.choices[replace];
-    lines.push(`Your build is full (**${MAX_ITEMS}** items). Choose an item to give up for **${name}**: it is lost, there are no souls in a run.`);
-  } else if (offer.kind === 'buffs') lines.push('', `Pick a permanent buff for this run (**${D.BOSS_BUFFS}** of it), or Skip to heal **${D.SKIP_HEAL * 100}%**.`);
-  else if (offer.kind === 'legendaries') lines.push('', `Pick a legendary for the legendary slot${d.legendary ? ` (it replaces ${d.legendary})` : ''}, or Skip to heal **${D.SKIP_HEAL * 100}%**.`);
-  else lines.push('', `Pick **1 of 3** items, or Skip to heal **${D.SKIP_HEAL * 100}%**.${countItems(d.items) >= MAX_ITEMS ? ' Your build is full: an upgrade takes its part\'s place, anything else replaces an item.' : ''}`);
+    addEvent(`Your build is full (**${MAX_ITEMS}** items). Choose an item to give up for **${name}**: it is lost, there are no souls in a run.`);
+  } else if (offer.kind === 'buffs') addEvent(`Pick a permanent buff for this run (**${D.BOSS_BUFFS}** of it), or Skip to heal **${D.SKIP_HEAL * 100}%**.`);
+  else if (offer.kind === 'legendaries') addEvent(`Pick a legendary for the legendary slot${d.legendary ? ` (it replaces ${d.legendary})` : ''}, or Skip to heal **${D.SKIP_HEAL * 100}%**.`);
+  else addEvent(`Pick **1 of 3** items, or Skip to heal **${D.SKIP_HEAL * 100}%**.${countItems(d.items) >= MAX_ITEMS ? ' Your build is full: an upgrade takes its part\'s place, anything else replaces an item.' : ''}`);
   e.setDescription(lines.join('\n'));
   // what each choice does
   const about = offer.choices.map((n, i) => {
     if (offer.kind === 'buffs') return `**${buffText(n, D.BOSS_BUFFS)}**`;
     const base = itemByName(n);
-    const c = offer.enhanced?.includes(n) ? enhancedCard(base) : base;
+    const enhanced = offer.enhanced?.includes(n);
+    const c = enhanced ? enhancedCard(base) : base;
     const used = priceFor(base, d.items).used;
-    const enhanced = offer.enhanced?.includes(n) ? '  -  **ENHANCED**' : '';
-    const bonus = offer.bonuses?.[i] ? `\n**BONUS:** ${offer.bonuses[i]} (Tier ${itemByName(offer.bonuses[i]).Tier})` : '';
-    const head = `**${n}**  -  ${offer.kind === 'legendaries' ? 'Legendary' : `${KIND_NAME[c.Slot]}, Tier ${c.Tier}`}${used.length ? `  -  upgrades ${used.join(' + ')}` : ''}${enhanced}`;
-    return `${itemStats(c) ? `${head}\n${itemStats(c)}` : head}${bonus}`;
+    const normalStats = itemStats(base);
+    const enhancedStats = itemStats(c);
+    const effect = enhanced ? `${normalStats || 'Effect'} → ${enhancedStats || 'Improved effect'}` : normalStats;
+    const head = `${enhanced ? '[Enhanced] ' : ''}**${n}** ; **${offer.kind === 'legendaries' ? 'Legendary' : KIND_NAME[c.Slot]}** ; __Tier ${c.Tier}__`;
+    const upgrades = used.length ? `Upgrades **${used.join(' + ')}**` : '';
+    const bonus = offer.bonuses?.[i] ? `**BONUS:** ${offer.bonuses[i]} ; __Tier ${itemByName(offer.bonuses[i]).Tier}__` : '';
+    return [head, upgrades, effect, bonus].filter(Boolean).join('\n');
   });
-  e.addFields({ name: 'The Choices', value: about.join('\n').slice(0, 1024) }, ...runFields(d));
+  e.addFields({ name: offer.kind === 'buffs' ? 'Buff Choices' : 'Item Choices', value: about.join('\n\n').slice(0, 1024) }, ...runFields(d));
   if (run) e.addFields({ name: 'Fight Time', value: `**${clock(run.seconds)}**`, inline: true });
   const pic = await pickPicture({
     choices: choicesOf(offer, upgrades, D.BOSS_BUFFS), animate: animate && replace == null,

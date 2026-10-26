@@ -323,6 +323,11 @@ test('every /descend screen fits the Discord limits and attaches what it points 
   const animated = await dviews.offerView(member(id), d, { animate: true });
   checkLimits(animated, 'animated offer');
   assert.strictEqual(animated.embeds[0].toJSON().image.url, 'attachment://pick.gif');
+  const enhancedOffer = await dviews.offerView(member(id), { ...d, offer: { kind: 'items', choices: ['Extra Health'], enhanced: ['Extra Health'], room: 1 } });
+  const itemChoices = enhancedOffer.embeds[0].toJSON().fields.find((field) => field.name === 'Item Choices');
+  assert.match(itemChoices.value, /^\[Enhanced\] \*\*Extra Health\*\* ; \*\*Vitality\*\* ; __Tier 1__\n.+ → .+$/);
+  const buffOffer = await dviews.offerView(member(id), { ...d, offer: { kind: 'buffs', choices: ['maxHealth'], room: 5 } });
+  assert.ok(buffOffer.embeds[0].toJSON().fields.some((field) => field.name === 'Buff Choices'));
   checkLimits(await dviews.offerView(member(id), { ...d, offer: { kind: 'legendaries', choices: LEGENDARY_NAMES.slice(0, 3), room: 15 } }), 'legendaries');
   checkLimits(await dviews.buildView(member(id), d), 'build');
   checkLimits(await dviews.roomView(member(id), { ...d, phase: 'ready' }, { quit: true, note: 'Took **X**.' }), 'abandon');
@@ -370,7 +375,7 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
     const resultEmbed = result.embeds[0].toJSON();
     assert.equal(resultEmbed.author.name, 'Descend - Room 1 Cleared');
     assert.equal(resultEmbed.title, undefined);
-    assert.match(resultEmbed.description, /reached \*\*Level 1\*\*\.\n\nPick \*\*1 of 3\*\* items, or Skip to heal \*\*25%\*\*\./);
+    assert.match(resultEmbed.description, /reached \*\*Level 1\*\*\.(?:\n\nFound .+)?\n\nPick \*\*1 of 3\*\* items, or Skip to heal \*\*25%\*\*\./);
     assert.equal(resultEmbed.fields.find((field) => field.name === 'Level').value, '**1**');
     assert.ok(result.files.some((f) => f.name === 'pick.gif'), 'the cylinder spins the first time');
     const rows = result.components.map((r) => r.toJSON().components.map((c) => c.label).filter(Boolean));
