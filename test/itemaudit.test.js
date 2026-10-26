@@ -700,9 +700,13 @@ test('Rescue Beam: +0.75 m/s, +6% ability range; heals 20% of max health over it
   near(regen.regen * 2.5, 0.2 * hero.stats.maxHealth); near(regen.until - fight.time, 2.5); near(it().cooldown, 60);
 });
 
-test('Warp Stone: +30% bullet resist for 6 s, every 16 s', () => {
-  const { hero, fight, it } = setup(['Warp Stone']);
-  it().cast(fight);
+test('Warp Stone: dodges an incoming hit, then +30% bullet resist for 6 s, every 16 s', () => {
+  const { hero, enemies, fight, it } = setup(['Warp Stone']);
+  const health = hero.health;
+  near(fight.damage(enemies[0], hero, 100, 'bullet', { attack: true }), 0);
+  near(hero.health, health);
+  near(it().cdLeft, 16);
+  assert.strictEqual(it().want(fight), false, 'waits for a hit instead of a health threshold');
   const buff = status(hero, 'Warp Stone:resist');
   near(buff.mods.bulletResist, 0.3); near(buff.until - fight.time, 6); near(it().cooldown, 16);
 });

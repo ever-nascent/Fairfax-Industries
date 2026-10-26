@@ -8,7 +8,7 @@ const CHANCE = 0.1; // each second, on top of the normal hit (the game data's Ab
 const TICK = 0.5; // seconds between two ticks of a burn
 
 const worth = (haunt, seconds) => haunt.stats.dps * seconds;
-const hit = (fight, haunt, hero, seconds, type = 'spirit', opts = {}) => fight.damage(haunt, hero, worth(haunt, seconds), type, { special: true, ...opts });
+const hit = (fight, haunt, hero, seconds, type = 'spirit', opts = {}) => fight.damage(haunt, hero, worth(haunt, seconds), type, Object.assign(opts, { special: true }));
 // a debuff that hurts every TICK while it lasts; each Haunt keeps its own, so two Haunts' burns add up
 const burn = (fight, haunt, hero, id, seconds, share, mods = {}) => fight.debuff(hero, {
   id: `${id}:${fight.enemies.indexOf(haunt)}`, duration: seconds, mods,
@@ -18,7 +18,7 @@ const burn = (fight, haunt, hero, id, seconds, share, mods = {}) => fight.debuff
 // family -> { name (the Battle Log), text (the camp's details screen), use(fight, haunt, hero) | onDeath(fight, haunt, hero) }
 const SPECIALS = {
   past_due: { name: 'Book Barrage', text: 'A barrage of books: damage, then asleep for a moment.',
-    use(fight, haunt, hero) { hit(fight, haunt, hero, 2); if (hero.alive) fight.cc(hero, { id: 'book_sleep', duration: 2, tags: ['sleep'] }); } },
+    use(fight, haunt, hero) { const opts = {}; hit(fight, haunt, hero, 2, 'spirit', opts); if (hero.alive && !opts.dodged) fight.cc(hero, { id: 'book_sleep', duration: 2, tags: ['sleep'] }); } },
   slum_shroom: { name: 'Spore Mines', text: 'Spore mines: damage over time, a slow, and healing halved.',
     use(fight, haunt, hero) { burn(fight, haunt, hero, 'spores', 6, 0.75, { healAmp: -0.5, slow: 0.4 }); } },
   stage_hand: { name: 'Laser', text: 'A laser that leaves fire behind: a burn.',
