@@ -347,7 +347,9 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
   if ((await D.getRun(id))?.phase === 'offer') {
     assert.match(result.embeds[0].toJSON().title, /Room 1 Cleared/);
     assert.ok(result.files.some((f) => f.name === 'pick.gif'), 'the cylinder spins the first time');
-    assert.ok(result.components.some((r) => r.toJSON().components.some((c) => c.label === 'Damage Breakdown')));
+    const rows = result.components.map((r) => r.toJSON().components.map((c) => c.label).filter(Boolean));
+    assert.ok(rows.some((labels) => labels.length === 4 && labels.some((label) => label.startsWith('Skip'))), 'the three picks and Skip share a row');
+    assert.ok(rows.some((labels) => labels.includes('Build') && labels.includes('Damage Breakdown')), 'Build and Damage Breakdown share a row');
     const take = fake(id, `farm_dtake:${id}:1:1`);
     await route('Descend pick button').execute(take);
     assert.match(take.log.at(-1)[1].embeds[0].toJSON().description, /^Took \*\*/);
