@@ -63,3 +63,20 @@ test('a rival hero CC status goes through the same gate', () => {
   fight.as({ unit: rival }, () => fight.addStatus(hero, { id: 'rival_stun', duration: 1, tags: ['stun'], debuff: true }));
   assert.equal(hero.has('stun'), false);
 });
+
+test('curse is separate from sleep, disables everything and cannot be cleansed', () => {
+  const { hero, fight } = setup([]);
+  fight.cc(hero, { id: 'curse', duration: 2, tags: ['curse'] });
+  assert.ok(hero.has('curse') && hero.cantAct);
+  assert.equal(hero.has('sleep'), false);
+  fight.cleanse(hero);
+  assert.ok(hero.has('curse'), 'a cleanse cannot remove or shorten curse');
+});
+
+test('light and heavy melees identify themselves in the Battle Log', () => {
+  const { hero, foe, fight } = setup([]);
+  fight.melee(hero, foe, 'light');
+  fight.melee(hero, foe, 'heavy');
+  assert.deepStrictEqual(fight.log.map((line) => line.what), ['Light Melee', 'Heavy Melee']);
+  assert.ok(fight.log.every((line) => line.melee && line.target === 'Controller'));
+});

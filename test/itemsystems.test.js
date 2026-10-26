@@ -160,7 +160,7 @@ test('imbued procs: Frostbite Charm freezes on the imbued ability\'s hit, Mystic
 // ---- crowd control on the hero (the blast's curse) ----
 const blaster = (items, opts = {}) => {
   const s = setup(items, { ...opts });
-  const boss = enemy('Boss', { maxHealth: 1e6, dps: 0, blast: { every: 1, damage: 50, maxHealthPct: 0, curse: 2 } });
+  const boss = enemy('Boss', { maxHealth: 1e6, dps: 0, blast: { every: 1, damage: 50, maxHealthPct: 0, curse: 2, tags: ['curse'] } });
   s.fight.enemies = [boss];
   s.hero.stats.moveSpeed = 0; // no dodging
   return { ...s, boss };
@@ -173,17 +173,17 @@ test('curse: debuff resist shortens it, Unstoppable and Cloak of Opportunity blo
   const u = blaster(['Unstoppable']);
   u.boss.blastAt = 1.2; // Unstoppable is used just before a blast
   steps(u.fight, 15);
-  assert.ok(!u.hero.has('sleep') && u.fight.log.some((l) => l.what === 'Unstoppable'), 'Unstoppable');
+  assert.ok(!u.hero.has('curse') && u.fight.log.some((l) => l.what === 'Unstoppable'), 'Unstoppable');
   const cloak = blaster(['Cloak of Opportunity']);
   steps(cloak.fight, 13);
-  assert.ok(!cloak.hero.has('sleep') && cloak.hero.statuses.some((st) => st.barrier > 0), 'Cloak blocks and gives a barrier');
+  assert.ok(!cloak.hero.has('curse') && cloak.hero.statuses.some((st) => st.barrier > 0), 'Cloak blocks and gives a barrier');
   const rb = blaster(['Reactive Barrier']);
   steps(rb.fight, 13);
-  assert.ok(rb.hero.has('sleep') && rb.hero.statuses.some((st) => st.barrier > 0), 'Reactive Barrier');
+  assert.ok(rb.hero.has('curse') && rb.hero.statuses.some((st) => st.barrier > 0), 'Reactive Barrier');
   const cs = blaster(['Counterspell']);
   const before = cs.hero.health;
   steps(cs.fight, 13);
-  assert.ok(!cs.hero.has('sleep') && cs.hero.health >= before && cs.fight.log.some((l) => l.parried), 'Counterspell parries');
+  assert.ok(!cs.hero.has('curse') && cs.hero.health >= before && cs.fight.log.some((l) => l.parried), 'Counterspell parries');
 });
 
 test('silence holds an enemy\'s blast; a slow makes its blast easier to dodge (Mystic Slow); stun and disarm stop its attacks', () => {
