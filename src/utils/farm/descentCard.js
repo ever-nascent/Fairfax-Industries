@@ -207,7 +207,7 @@ function slanted(g, text, x, y, px, fill, outline, turn = 0) {
 // The blue ENHANCED badge with the game's upgrade mark (a solid lightning bolt with an arrowhead on top, leaning right, outlined), centred at (x, y).
 // a lightning bolt (traced from a plain bolt icon), squeezed to 55% wide round its middle; the arrowhead above it, a little bigger and still centred on the bolt's top
 const BOLT = [[113, 48], [162, 48], [136, 98], [172, 98], [88, 210], [117, 128], [60, 128]].map(([x, y]) => [116 + (x - 116) * 0.55, y]);
-const BOLT_HEAD = [[96, 52], [178, 52], [140, -10]].map(([x, y]) => [128 + (x - 137) * 1.15, 52 + (y - 52) * 1.12]);
+const BOLT_HEAD = [[96, 52], [178, 52], [140, -10]].map(([x, y]) => [128 + (x - 137) * 1.07, 52 + (y - 52) * 1.05]);
 function enhancedBadge(g, x, y) {
   const px = 13;
   g.save();
