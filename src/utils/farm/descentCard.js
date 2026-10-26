@@ -1,171 +1,323 @@
-// /descend's pick screen (his ask, Oct 24: like Street Brawl's "Select Items"): a revolver cylinder over a dark, blurred backdrop, "SELECT ITEMS" top
-// left. The cylinder spins, slows, clicks into place, then the 3 choices show in its top chambers (vitality left, weapon top, spirit right, like
-// the game): a ring in the kind's colour, the item's picture and name, "UPGRADE" under an upgrade of a held item (the game's "ENHANCED").
-// A boss's reward uses the same screen with buffs or legendaries. The first time an offer is shown it is a GIF that plays once and stays on the
-// picks; any redraw after that is the still PNG (the spin doesn't replay). Our own drawing in the game's style, not its art.
+// /descend's pick screen (his ask, Oct 24; redrawn Oct 26 to match the game's "Select Items" almost 1 to 1): a blurred street behind a line-drawn
+// revolver cylinder (6 chambers 60 degrees apart, a scalloped shell with flutes between them), "SELECT ITEMS" top left with a pink line under it.
+// The cylinder spins, slows, clicks into place, then the 3 choices show in its top chambers (vitality left, weapon top, spirit right, like the game):
+// the chamber is tinted by the item's kind and glows inward, the item sits in a framed card (tier marks top right, ACTIVE along the bottom) with its
+// name under it; ENHANCED is the blue badge under the name, UPGRADE (an item that upgrades one the hero holds) the game's teal ribbon across the
+// card's corner, and a BONUS item is a smaller tilted card over the corner with "BONUS!" above it. Left out on purpose: what makes no sense in
+// Discord (the timer, the hero portraits, the bottom bar, the item tooltip: the stats are in the embed). A boss's reward uses the same screen with
+// buffs or legendaries. The first time an offer is shown it is a GIF that plays once and stays on the picks; any redraw after that is the still PNG
+// (the spin doesn't replay). Our own drawing in the game's style, not its art.
 const path = require('node:path');
-const { createCanvas } = require('@napi-rs/canvas');
-const { grain, grainAndVignette } = require('../art'); // (also registers the Retail font)
+const { createCanvas, Path2D, PathOp } = require('@napi-rs/canvas');
+const { grain, grainAndVignette } = require('../art'); // (also registers the Retail and Radiance fonts)
 const { image, FARM } = require('./roamCard');
 const { itemFile } = require('./itemArt');
 const { itemByName } = require('./stats');
-const { write, measure } = require('./shopCard');
 const { encodeGif } = require('../gif');
 const { buffText } = require('./buffs');
 
 const W = 800;
 const H = 460;
-const C = [400, 332]; // the cylinder's centre
-const SPOKE = 160; // centre to a chamber
-const CHAMBER = 70; // a chamber's radius
-const BODY = 238; // the cylinder's outer radius
-const TOP = [-90 - 72, -90, -90 + 72]; // the three chambers that hold the picks: left, top, right (degrees)
-const KIND = { weapon: '#ee9a2e', vitality: '#74d13c', spirit: '#b763ec', legendary: '#f0c34a' };
+const C = [400, 375]; // the cylinder's hub (low, below the picture's middle like the game's)
+const SPOKE = 200; // hub to a chamber
+const RING = 75; // a chamber's ring radius
+const RING_TOP = 80; // the top chamber is about 7% bigger
+const SHELL = 292; // the shell's outer radius
+const TOP = [-150, -90, -30]; // the three chambers that hold the picks: left, top, right (degrees)
+const FONT = 'Radiance, sans-serif';
+// the ring's colour, the chamber's inside from its rim to its middle, and the card's border, by kind
+const KIND = { weapon: '#ce9425', vitality: '#8cc63a', spirit: '#b695d9', legendary: '#e6bc4a' };
+const RING_FROM = { vitality: '#6b8730' }; // vitality's ring is a gradient, dark to light
+const INSIDE = { weapon: ['#6b4311', '#1c1209'], vitality: ['#273306', '#101b03'], spirit: ['#4e355d', '#28222d'], legendary: ['#5e4a12', '#211a08'] };
+const UPGRADE = '#56b6b0';
 // A permanent buff's ring colour: the stat's side of the game's three (weapon, vitality, spirit).
 const BUFF_KIND = { fireRate: 'weapon', maxAmmo: 'weapon', weaponDamage: 'weapon', precision: 'weapon', maxHealth: 'vitality', bulletResist: 'vitality', spiritResist: 'vitality', moveSpeed: 'vitality', spiritPower: 'spirit', cooldownReduction: 'spirit', abilityRange: 'spirit' };
 const SLOT_KIND = { Weapon: 'weapon', Armor: 'vitality', Tech: 'spirit' };
 const rad = (deg) => (deg * Math.PI) / 180;
-const at = (deg, r) => [C[0] + Math.cos(rad(deg)) * r, C[1] + Math.sin(rad(deg)) * r];
+const polar = (deg, r) => [Math.cos(rad(deg)) * r, Math.sin(rad(deg)) * r];
+const at = (deg, r) => { const [x, y] = polar(deg, r); return [C[0] + x, C[1] + y]; };
+const ringOf = (deg) => (deg === -90 ? RING_TOP : RING);
+// the same pseudo-random numbers every time, so a redraw never moves anything
+const rng = (seed) => () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
 
-// The dark, out-of-focus room behind the cylinder (kept once).
+// The blurred game street behind the cylinder (kept once): warm brown low on the left, cool grey light streaks high up, soft diagonal shafts of light.
 let backdrop;
 function drawBackdrop() {
   if (backdrop) return backdrop;
-  backdrop = createCanvas(W, H);
-  const g = backdrop.getContext('2d');
-  const bg = g.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#2a2622');
-  bg.addColorStop(0.5, '#1a1b1e');
-  bg.addColorStop(1, '#0e1012');
-  g.fillStyle = bg;
+  const s = createCanvas(W, H);
+  const g = s.getContext('2d');
+  const base = g.createLinearGradient(0, H, W, 0);
+  base.addColorStop(0, '#6e4c36');
+  base.addColorStop(0.4, '#4d4540');
+  base.addColorStop(0.75, '#3f434a');
+  base.addColorStop(1, '#585c64');
+  g.fillStyle = base;
   g.fillRect(0, 0, W, H);
-  for (const [x, y, r, color] of [[90, 250, 140, 'rgba(196,150,90,0.22)'], [690, 90, 170, 'rgba(120,130,150,0.16)'], [560, 380, 120, 'rgba(150,70,60,0.14)'], [250, 40, 110, 'rgba(210,190,150,0.12)'], [760, 300, 90, 'rgba(90,140,120,0.12)']]) {
-    const glow = g.createRadialGradient(x, y, 0, x, y, r);
-    glow.addColorStop(0, color);
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = glow;
-    g.fillRect(0, 0, W, H);
+  const blob = (x, y, r, color) => { const b = g.createRadialGradient(x, y, 0, x, y, r); b.addColorStop(0, color); b.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = b; g.fillRect(0, 0, W, H); };
+  blob(60, 330, 260, 'rgba(176,112,64,0.55)'); // the warm street low on the left
+  blob(700, 60, 260, 'rgba(170,176,190,0.40)'); // cool light high on the right
+  blob(330, 20, 200, 'rgba(190,190,196,0.30)');
+  blob(760, 400, 200, 'rgba(120,56,44,0.40)'); // a red sign low on the right
+  blob(400, 250, 200, 'rgba(18,16,18,0.45)'); // the dark the cylinder sits in
+  g.globalCompositeOperation = 'lighter';
+  for (const [x0, w, a] of [[30, 90, 0.07], [180, 60, 0.05], [330, 120, 0.07], [520, 70, 0.06], [650, 100, 0.07]]) { // diagonal light shafts
+    g.fillStyle = `rgba(240,240,250,${a})`;
+    g.beginPath(); g.moveTo(x0, 0); g.lineTo(x0 + w, 0); g.lineTo(x0 + w - 240, H); g.lineTo(x0 - 240, H); g.closePath(); g.fill();
   }
-  grainAndVignette(g, W, H, grain(W, H, 2410, 40), { grainAlpha: 0.35, inner: 180, outer: 520, dark: 0.6 });
+  g.globalCompositeOperation = 'source-over';
+  const soft = createCanvas(W, H);
+  const k = soft.getContext('2d');
+  k.filter = 'blur(16px)';
+  k.drawImage(s, -20, -20, W + 40, H + 40);
+  k.filter = 'none';
+  grainAndVignette(k, W, H, grain(W, H, 2410, 30), { grainAlpha: 0.22, inner: 260, outer: 620, dark: 0.55 });
+  backdrop = soft;
   return backdrop;
 }
 
-// The cylinder at rest (chambers empty), drawn once on its own square; a frame turns it.
+// A hexagon of radius r at (x, y) as a path.
+function hexagon(g, x, y, r, turn = 0) {
+  g.beginPath();
+  for (let k = 0; k < 6; k++) { const [px, py] = polar(turn - 90 + 60 * k, r); if (k) g.lineTo(x + px, y + py); else g.moveTo(x + px, y + py); }
+  g.closePath();
+}
+// A chamber's bore: six facets under a hexagon, drawn faint (a pick's tint makes them show).
+function bore(g, x, y, r, alpha) {
+  g.save();
+  g.strokeStyle = `rgba(255,255,255,${alpha})`;
+  g.lineWidth = 1.5;
+  hexagon(g, x, y, r * 0.58);
+  g.stroke();
+  for (let k = 0; k < 6; k++) {
+    const [a, b] = polar(-90 + 60 * k, r * 0.58);
+    const [c, d] = polar(-90 + 60 * k, r * 0.93);
+    g.beginPath(); g.moveTo(x + a, y + b); g.lineTo(x + c, y + d); g.stroke();
+  }
+  g.restore();
+}
+
+// The cylinder at rest (chambers empty), drawn once on its own square round the hub; a frame turns it. Lines only, worn grey, no spokes.
 let body;
 function drawBody() {
   if (body) return body;
-  const S = BODY * 2 + 20;
+  const S = 680;
   body = createCanvas(S, S);
   const g = body.getContext('2d');
   g.translate(S / 2, S / 2);
-  const pt = (deg, r) => [Math.cos(rad(deg)) * r, Math.sin(rad(deg)) * r];
-  // the outer shell, with a flute cut between every two chambers
-  g.beginPath();
-  g.arc(0, 0, BODY, 0, Math.PI * 2);
-  g.fillStyle = 'rgba(150,152,160,0.16)';
-  g.fill();
-  g.globalCompositeOperation = 'destination-out';
-  for (let i = 0; i < 5; i++) { const [x, y] = pt(-90 + 36 + 72 * i, BODY + 6); g.beginPath(); g.arc(x, y, 50, 0, Math.PI * 2); g.fill(); }
-  g.globalCompositeOperation = 'source-over';
-  g.strokeStyle = 'rgba(214,214,220,0.75)';
-  g.lineWidth = 4;
-  g.beginPath();
-  for (let i = 0; i < 5; i++) { // the rim: arcs between the flutes, the flutes curving in
-    const a0 = -90 + 36 + 72 * i;
-    const half = (Math.asin(50 / (BODY + 6)) * 180) / Math.PI;
-    g.arc(0, 0, BODY, rad(a0 + half), rad(a0 + 72 - half));
-  }
-  g.stroke();
-  for (let i = 0; i < 5; i++) { const [x, y] = pt(-90 + 36 + 72 * i, BODY + 6); g.beginPath(); g.arc(x, y, 50, rad(-90 + 36 + 72 * i + 180 - 62), rad(-90 + 36 + 72 * i + 180 + 62)); g.stroke(); }
-  // an inner dashed ring
-  g.setLineDash([26, 14]);
+  // the scalloped shell: one big round with a flute (a round notch) cut between every two chambers
+  let shell = new Path2D();
+  shell.arc(0, 0, SHELL, 0, Math.PI * 2);
+  for (let i = 0; i < 6; i++) { const [x, y] = polar(-60 + 60 * i, SHELL + 8); const p = new Path2D(); p.arc(x, y, 46, 0, Math.PI * 2); shell = shell.op(p, PathOp.Difference); }
+  g.fillStyle = 'rgba(12,12,16,0.30)';
+  g.fill(shell);
+  g.lineJoin = 'round';
+  g.strokeStyle = 'rgba(210,210,216,0.25)';
+  g.lineWidth = 10;
+  g.stroke(shell);
+  g.strokeStyle = 'rgba(222,222,228,0.92)';
+  g.lineWidth = 4.5;
+  g.stroke(shell);
+  // the big rim arc behind the top chamber
+  g.strokeStyle = 'rgba(222,222,228,0.9)';
+  g.lineWidth = 4.5;
+  const [tx, ty] = polar(-90, SPOKE);
+  g.beginPath(); g.arc(tx, ty, 112, rad(-90 - 78), rad(-90 + 78)); g.stroke();
+  g.lineWidth = 2.5;
+  g.strokeStyle = 'rgba(206,206,212,0.4)';
+  g.beginPath(); g.arc(tx, ty, 122, rad(-90 - 55), rad(-90 + 55)); g.stroke();
+  // short arcs linking neighbours, on the circle between the chambers and the hub
+  g.lineCap = 'round';
+  g.strokeStyle = 'rgba(222,222,228,0.75)';
+  g.lineWidth = 10;
+  for (let i = 0; i < 6; i++) { const mid = -60 + 60 * i; g.beginPath(); g.arc(0, 0, 173, rad(mid - 6), rad(mid + 6)); g.stroke(); }
+  g.lineCap = 'butt';
+  // the hub, low and quiet
+  g.strokeStyle = 'rgba(206,206,212,0.4)';
   g.lineWidth = 3;
-  g.strokeStyle = 'rgba(214,214,220,0.4)';
-  g.beginPath();
-  g.arc(0, 0, BODY - 22, 0, Math.PI * 2);
-  g.stroke();
-  g.setLineDash([]);
-  // the spokes from the hub to each chamber
-  for (let i = 0; i < 5; i++) {
-    const deg = -90 + 72 * i;
-    g.save();
-    g.rotate(rad(deg));
-    g.fillStyle = 'rgba(170,172,180,0.18)';
-    g.fillRect(56, -22, SPOKE - 56, 44);
-    g.strokeStyle = 'rgba(214,214,220,0.5)';
-    g.lineWidth = 2;
-    g.strokeRect(56, -22, SPOKE - 56 - CHAMBER, 44);
-    g.restore();
-  }
-  // the chambers: dark wells with a faint hexagram, a pale rim
-  for (let i = 0; i < 5; i++) {
-    const [x, y] = pt(-90 + 72 * i, SPOKE);
-    const well = g.createRadialGradient(x, y - 10, 4, x, y, CHAMBER);
-    well.addColorStop(0, '#26272b');
-    well.addColorStop(1, '#0b0b0d');
-    g.beginPath();
-    g.arc(x, y, CHAMBER, 0, Math.PI * 2);
-    g.fillStyle = well;
-    g.fill();
-    g.strokeStyle = 'rgba(255,255,255,0.07)';
-    g.lineWidth = 2;
-    for (const turn of [0, 180]) {
-      g.beginPath();
-      for (let k = 0; k < 3; k++) { const a = rad(turn - 90 + 120 * k); const px = x + Math.cos(a) * CHAMBER * 0.78; const py = y + Math.sin(a) * CHAMBER * 0.78; if (k) g.lineTo(px, py); else g.moveTo(px, py); }
-      g.closePath();
-      g.stroke();
-    }
-    g.beginPath();
-    g.arc(x, y, CHAMBER, 0, Math.PI * 2);
-    g.strokeStyle = 'rgba(200,200,206,0.8)';
+  g.beginPath(); g.arc(0, 0, 38, 0, Math.PI * 2); g.stroke();
+  // the chambers: a dark well, its bore, a worn ring, a thin broken ring round it
+  for (let i = 0; i < 6; i++) {
+    const deg = -90 + 60 * i;
+    const [x, y] = polar(deg, SPOKE);
+    const r = i === 0 ? RING_TOP : RING;
+    const well = g.createRadialGradient(x, y, 4, x, y, r);
+    well.addColorStop(0, '#0b0b0d');
+    well.addColorStop(1, '#27272c');
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = well; g.fill();
+    bore(g, x, y, r, 0.1);
+    g.strokeStyle = 'rgba(206,206,212,0.8)';
     g.lineWidth = 5;
-    g.stroke();
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = 'rgba(206,206,212,0.5)';
+    g.lineWidth = 2.5;
+    g.setLineDash([70, 18, 120, 24, 40, 20]);
+    g.beginPath(); g.arc(x, y, r + 14, rad(deg + 20), rad(deg + 20) + Math.PI * 2); g.stroke();
+    g.setLineDash([]);
   }
-  // the hub
-  g.beginPath();
-  g.arc(0, 0, 58, 0, Math.PI * 2);
-  g.fillStyle = 'rgba(20,20,24,0.75)';
-  g.fill();
-  g.strokeStyle = 'rgba(214,214,220,0.7)';
-  g.lineWidth = 3;
-  g.stroke();
+  // worn: tiny nicks taken out of the lines
+  const rand = rng(77);
+  g.globalCompositeOperation = 'destination-out';
+  for (let n = 0; n < 700; n++) { g.fillStyle = `rgba(0,0,0,${0.25 + rand() * 0.5})`; g.fillRect((rand() - 0.5) * S, (rand() - 0.5) * S, 1 + rand() * 3, 1 + rand() * 1.5); }
+  g.globalCompositeOperation = 'source-over';
   return body;
 }
 
-// Text that fits `width`, on one or two lines, centred at (x, y).
-function label(g, text, x, y, px, width) {
-  let size = px;
-  while (size > 11 && measure(g, text, size) > width) size -= 1;
-  if (measure(g, text, size) <= width) return write(g, text, x, y, size);
+// `text` in one line when it fits `width`, else the two most even lines.
+function wrap(g, text, width) {
+  g.font = `19px ${FONT}`;
+  if (g.measureText(text).width <= width) return [text];
   const words = text.split(' ');
-  const cut = Math.ceil(words.length / 2);
-  write(g, words.slice(0, cut).join(' '), x, y - size * 0.55, Math.max(11, px - 2));
-  write(g, words.slice(cut).join(' '), x, y + size * 0.55, Math.max(11, px - 2));
+  if (words.length < 2) return [text];
+  let best = null;
+  for (let cut = 1; cut < words.length; cut++) {
+    const lines = [words.slice(0, cut).join(' '), words.slice(cut).join(' ')];
+    const widest = Math.max(...lines.map((l) => g.measureText(l).width));
+    if (!best || widest < best.widest) best = { lines, widest };
+  }
+  return best.lines;
+}
+// Cream lettering with a dark outline and a shadow, centred at (x, y).
+function lettering(g, text, x, y, px = 19, fill = '#f0e8da') {
+  g.save();
+  g.font = `${px}px ${FONT}`;
+  g.textAlign = 'center';
+  g.textBaseline = 'alphabetic';
+  g.lineJoin = 'round';
+  g.shadowColor = 'rgba(0,0,0,0.7)';
+  g.shadowBlur = 6;
+  g.shadowOffsetY = 2;
+  g.strokeStyle = '#17120e';
+  g.lineWidth = 4.5;
+  g.strokeText(text, x, y);
+  g.shadowColor = 'transparent';
+  g.fillStyle = fill;
+  g.fillText(text, x, y);
+  g.restore();
+}
+// "BONUS!" / "ENHANCED": bold italic caps, white (or the badge's blue) with a dark outline.
+function slanted(g, text, x, y, px, fill, outline, turn = 0) {
+  g.save();
+  g.translate(x, y);
+  g.rotate(rad(turn));
+  g.font = `italic bold ${px}px sans-serif`;
+  g.textAlign = 'center';
+  g.lineJoin = 'round';
+  g.strokeStyle = outline;
+  g.lineWidth = px * 0.36;
+  g.strokeText(text, 0, 0);
+  g.fillStyle = fill;
+  g.fillText(text, 0, 0);
+  g.restore();
+}
+// The blue ENHANCED badge with its lightning mark, centred at (x, y).
+function enhancedBadge(g, x, y) {
+  const px = 13;
+  g.save();
+  g.font = `italic bold ${px}px sans-serif`;
+  const w = g.measureText('ENHANCED').width;
+  g.restore();
+  slanted(g, 'ENHANCED', x - 5, y, px, '#45acce', '#1d527e', -5);
+  g.save();
+  g.translate(x + w / 2 + 3, y - 8);
+  g.rotate(rad(-5));
+  g.beginPath(); // a small lightning bolt
+  g.moveTo(5, 0); g.lineTo(0, 7); g.lineTo(4, 7); g.lineTo(1, 14); g.lineTo(9, 5); g.lineTo(5, 5); g.lineTo(8, 0); g.closePath();
+  g.lineJoin = 'round';
+  g.lineWidth = 3;
+  g.strokeStyle = '#1d527e';
+  g.stroke();
+  g.fillStyle = '#45acce';
+  g.fill();
+  g.restore();
+}
+
+// One framed item card (the picture, its border in the kind's colour, tier marks top right, ACTIVE / IMBUE along the bottom, the UPGRADE ribbon)
+// centred at (cx, cy), `size` square, turned by `turn` degrees.
+async function card(g, { picture, kind, tier, active, upgrade }, cx, cy, size, turn = 0) {
+  const x = -size / 2;
+  g.save();
+  g.translate(cx, cy);
+  g.rotate(rad(turn));
+  g.shadowColor = 'rgba(0,0,0,0.7)';
+  g.shadowBlur = 12;
+  g.shadowOffsetY = 4;
+  g.fillStyle = '#101214';
+  g.beginPath(); g.roundRect(x, x, size, size, 4); g.fill();
+  g.shadowColor = 'transparent';
+  g.save();
+  g.beginPath(); g.roundRect(x, x, size, size, 4); g.clip();
+  try { g.drawImage(await image(picture), x, x, size, size); } catch { /* no picture: the name says what it is */ }
+  if (active) {
+    const th = Math.round(size * 0.14);
+    g.fillStyle = active === 'IMBUE' ? 'rgba(90,58,138,0.92)' : 'rgba(14,14,14,0.88)';
+    g.fillRect(x + size * 0.16, x + size - th, size * 0.68, th);
+    g.fillStyle = active === 'IMBUE' ? '#d4b8f0' : 'rgba(255,239,215,0.92)';
+    g.font = `bold ${Math.max(6, Math.round(size * 0.1))}px sans-serif`;
+    g.textAlign = 'center';
+    g.fillText(active, 0, x + size - th * 0.26);
+  }
+  if (upgrade) { // the game's teal ribbon across the top-right corner
+    g.strokeStyle = UPGRADE;
+    g.lineWidth = size * 0.17;
+    g.beginPath(); g.moveTo(-x - size * 0.5, x - 2); g.lineTo(-x + 2, x + size * 0.5); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,0.35)';
+    g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(-x - size * 0.5 - 4, x - 2); g.lineTo(-x + 2, x + size * 0.5 + 4); g.stroke();
+  }
+  if (tier) { // tier marks: a bar for each tier, in the corner
+    const bw = size * 0.035, bh = size * 0.12, gap = bw * 1.7;
+    g.fillStyle = 'rgba(8,8,10,0.75)';
+    g.beginPath(); g.roundRect(-x - (tier * gap + bw * 1.6), x + 2, tier * gap + bw * 1.1, bh + 5, 2); g.fill();
+    g.fillStyle = '#f2ece0';
+    for (let t = 0; t < tier; t++) g.fillRect(-x - tier * gap - bw * 0.9 + t * gap, x + 4.5, bw, bh);
+  }
+  g.restore();
+  g.strokeStyle = KIND[kind];
+  g.lineWidth = 2;
+  g.beginPath(); g.roundRect(x, x, size, size, 4); g.stroke();
+  g.restore();
 }
 
 // One pick in its chamber: `grow` 0-1 as it pops in.
 async function choiceIn(g, choice, deg, grow = 1) {
   const [x, y] = at(deg, SPOKE);
-  const color = KIND[choice.kind];
+  const r = ringOf(deg);
+  const kind = choice.kind;
+  const [rim, mid] = INSIDE[kind];
   g.save();
   g.globalAlpha = Math.min(1, grow * 1.4);
-  g.shadowColor = color;
-  g.shadowBlur = 22 * grow;
-  g.beginPath();
-  g.arc(x, y, CHAMBER, 0, Math.PI * 2);
-  g.strokeStyle = color;
-  g.lineWidth = 7;
+  // the inside, tinted by the kind and glowing inward
+  const well = g.createRadialGradient(x, y, 6, x, y, r);
+  well.addColorStop(0, mid);
+  well.addColorStop(1, rim);
+  g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = well; g.fill();
+  bore(g, x, y, r, 0.16);
+  // the ring
+  const ring = g.createLinearGradient(x - r, y + r, x + r, y - r);
+  ring.addColorStop(0, RING_FROM[kind] ?? KIND[kind]);
+  ring.addColorStop(1, KIND[kind]);
+  g.shadowColor = KIND[kind];
+  g.shadowBlur = 14 * grow;
+  g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2);
+  g.strokeStyle = ring;
+  g.lineWidth = 5;
   g.stroke();
   g.shadowBlur = 0;
-  const pic = await image(choice.picture);
-  const s = 64 * (0.5 + grow / 2);
-  g.drawImage(pic, x - s / 2, y - 16 - s / 2, s, s);
+  // the card, then the name and the badge under it (the block is centred a little high in the ring)
+  const size = Math.round(r * 2 * 0.45) * (0.5 + grow / 2);
+  const lines = wrap(g, choice.name, 160);
+  const rows = lines.length + (choice.enhanced ? 0.8 : 0);
+  const top = y - (size + 8 + rows * 21) / 2 - 3;
+  const cy = top + size / 2;
+  await card(g, choice, x, cy, size);
+  if (choice.bonus) { // a smaller card tilted over the top left, "BONUS!" above it
+    await card(g, choice.bonus, x - size * 0.6, cy - size * 0.48, size * 0.75, -15);
+    if (grow >= 1) slanted(g, 'BONUS!', x - size * 0.6 - 4, cy - size * 0.48 - size * 0.75 / 2 - 9, 15, '#ffffff', '#15110d', -15);
+  }
   if (grow >= 1) {
-    g.fillStyle = '#f4efe6';
-    g.shadowColor = 'rgba(0,0,0,0.9)';
-    g.shadowBlur = 6;
-    label(g, choice.name, x, y + 38, 17, CHAMBER * 1.7);
-    if (choice.tag) { g.fillStyle = '#5ab8ff'; write(g, choice.tag, x, y + 62, 13); }
+    const base = top + size + 8 + 15;
+    lines.forEach((l, i) => lettering(g, l, x, base + i * 21));
+    if (choice.enhanced) enhancedBadge(g, x, base + lines.length * 21 + 1);
   }
   g.restore();
 }
@@ -173,24 +325,30 @@ async function choiceIn(g, choice, deg, grow = 1) {
 // The still part of every frame: backdrop and title.
 function frameBase(g, title, line) {
   g.drawImage(drawBackdrop(), 0, 0);
-  g.fillStyle = '#ece6da';
+  g.save();
+  g.textBaseline = 'alphabetic';
   g.shadowColor = 'rgba(0,0,0,0.6)';
   g.shadowBlur = 8;
-  write(g, title, 40, 92, 46, false);
-  g.fillStyle = '#d65fe0';
-  write(g, line, 42, 122, 18, false);
-  g.shadowBlur = 0;
-}
-function hub(g, hubText) {
-  g.fillStyle = '#ece6da';
-  write(g, hubText[0], C[0], C[1] + 2, 16);
-  g.fillStyle = 'rgba(236,230,218,0.6)';
-  write(g, hubText[1], C[0], C[1] + 22, 11);
+  let px = 30; // the title is about 200 px wide, like the game's at this size
+  g.font = `${px}px ${FONT}`;
+  g.letterSpacing = '1px';
+  while (g.measureText(title).width > 215 && px > 18) { px -= 1; g.font = `${px}px ${FONT}`; }
+  g.fillStyle = '#dbd1c2';
+  g.strokeStyle = '#dbd1c2';
+  g.lineWidth = 1.3; // a touch heavier, like the game's
+  g.lineJoin = 'round';
+  g.strokeText(title, 28, 108);
+  g.fillText(title, 28, 108);
+  g.letterSpacing = '0.5px';
+  g.font = `14px ${FONT}`;
+  g.fillStyle = '#c070b0';
+  g.fillText(line, 29, 134);
+  g.restore();
 }
 
-// choices: [{ name, kind: weapon | vitality | spirit | legendary, picture (file), tag? }], in chamber order (left, top, right).
-// Returns { gif } (animate) or { png }.
-async function pickPicture({ choices, title = 'SELECT ITEMS', line = '', hubText = ['PICK ONE', 'OR SKIP'], animate = true }) {
+// choices: [{ name, kind: weapon | vitality | spirit | legendary, picture (file), tier?, active?, upgrade?, enhanced?, bonus? }], in chamber order (left, top, right).
+// Returns { gif } (animate) or { png }. hubText is accepted and ignored (the game's hub has no words).
+async function pickPicture({ choices, title = 'SELECT ITEMS', line = '', animate = true }) {
   const cyl = drawBody();
   const draw = async (angle, grow, blur = 0) => {
     const c = createCanvas(W, H);
@@ -205,13 +363,12 @@ async function pickPicture({ choices, title = 'SELECT ITEMS', line = '', hubText
       g.restore();
     }
     if (grow > 0) for (const [i, ch] of choices.entries()) await choiceIn(g, ch, TOP[i], grow);
-    hub(g, hubText);
     return c;
   };
   if (!animate) return { png: (await draw(0, 1)).toBuffer('image/png') };
   // two and a half turns, slowing to a stop (ease out), a small kick back as it locks, then the picks pop in
   const SPIN = 22;
-  const turns = 720 + 72 * 2;
+  const turns = 720 + 60 * 2;
   const frames = [];
   for (let f = 0; f < SPIN; f++) {
     const t = (f + 1) / SPIN;
@@ -222,15 +379,22 @@ async function pickPicture({ choices, title = 'SELECT ITEMS', line = '', hubText
   frames.push({ c: await draw(0, 0), delay: 160 });
   for (const grow of [0.35, 0.7, 1]) frames.push({ c: await draw(0, grow), delay: grow < 1 ? 50 : 1000 });
   const rgba = frames.map((f) => ({ delay: f.delay, rgba: f.c.getContext('2d').getImageData(0, 0, W, H).data }));
-  return { gif: encodeGif(rgba, W, H, { picks: [0, Math.floor(SPIN / 2), frames.length - 1] }) };
+  return { gif: encodeGif(rgba, W, H, { picks: [0, Math.floor(SPIN / 2), frames.length - 1], dither: true }) };
 }
 
-// What an offer looks like in the chambers: items (their kind's colour, "UPGRADE" for one that upgrades a held item), buffs (`stacks` of each), legendaries.
+// What an offer looks like in the chambers: items (their kind's colour; an upgrade of a held item gets the teal ribbon, an enhanced one the blue badge,
+// a BONUS item its own small card), buffs (`stacks` of each), legendaries.
 const BUFF_DIR = path.join(FARM, 'buffs');
+function itemChoice(name, kind) {
+  const item = itemByName(name);
+  return { name, kind: kind ?? SLOT_KIND[item.Slot], picture: itemFile(name), tier: item.Tier, active: item.IsImbue ? 'IMBUE' : item.Activation !== 'Passive' ? 'ACTIVE' : null };
+}
 function choicesOf(offer, upgrades = new Set(), stacks = 1) {
   if (offer.kind === 'buffs') return offer.choices.map((key) => ({ name: buffText(key, stacks), kind: BUFF_KIND[key] ?? 'legendary', picture: path.join(BUFF_DIR, `${key}.png`) }));
-  if (offer.kind === 'legendaries') return offer.choices.map((name) => ({ name, kind: 'legendary', picture: itemFile(name) }));
-  return offer.choices.map((name) => ({ name, kind: SLOT_KIND[itemByName(name).Slot], picture: itemFile(name), tag: upgrades.has(name) ? 'UPGRADE' : null }));
+  if (offer.kind === 'legendaries') return offer.choices.map((name) => itemChoice(name, 'legendary'));
+  return offer.choices.map((name, i) => ({
+    ...itemChoice(name), upgrade: upgrades.has(name), enhanced: !!offer.enhanced?.includes(name), bonus: offer.bonuses?.[i] ? itemChoice(offer.bonuses[i]) : null,
+  }));
 }
 
 module.exports = { pickPicture, choicesOf, KIND };

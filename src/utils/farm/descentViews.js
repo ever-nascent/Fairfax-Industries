@@ -238,7 +238,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   const pic = await pickPicture({
     choices: choicesOf(offer, upgrades, D.BOSS_BUFFS), animate: animate && replace == null,
     title: offer.kind === 'buffs' ? 'SELECT A BUFF' : offer.kind === 'legendaries' ? 'SELECT A LEGENDARY' : 'SELECT ITEMS',
-    line: `${cleared.toUpperCase().replace(/[^A-Z0-9 ]/g, '')}`, hubText: ['PICK ONE', `OR SKIP`],
+    line: `${cleared.toUpperCase().replace(/[^A-Z0-9 ]/g, '')}`,
   });
   const file = replace != null ? new AttachmentBuilder(await runCard(d), { name: 'hero.png' })
     : pic.gif ? new AttachmentBuilder(pic.gif, { name: 'pick.gif' }) : new AttachmentBuilder(pic.png, { name: 'pick.png' });
