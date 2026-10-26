@@ -213,7 +213,7 @@ function retainedWarp(run) {
 }
 
 test('a busy farm result keeps the dodge after four later kills would push it out', () => {
-  const run = simulate('Mina', 'medium-camp', { ...busyKit, rng: seeded(1) });
+  const run = simulate('Mina', 'medium-camp', { ...busyKit, rng: seeded(14) });
   const latest = retainedWarp(run);
   assert.ok(run.log.length - run.log.indexOf(latest) - 1 >= 4, 'the fixture exercises four-line log eviction');
 });

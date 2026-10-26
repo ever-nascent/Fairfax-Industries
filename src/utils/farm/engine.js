@@ -38,8 +38,8 @@ const headshotChance = (unit) => clamp(unit.stat('precision') / 100, 0, 1);
 const pelletChance = (distance, precision = PRECISION.base) => clamp(1 - (1 - PELLETS.far) * clamp((distance - PELLETS.full) / (PELLETS.at - PELLETS.full), 0, 1) + (precision - PRECISION.base) / 100, 0, 1);
 const { stackResist } = require('./buffs');
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
-const CC_TAGS = ['sleep', 'stun', 'disarm', 'silence', 'immobilize'];
-const CANT_ACT = ['sleep', 'void', 'hold']; // asleep / cursed, in a void state (Ethereal Shift, Prism Blast, Magic Carpet), lying low (Shadow Weave)
+const CC_TAGS = ['sleep', 'curse', 'stun', 'disarm', 'silence', 'immobilize'];
+const CANT_ACT = ['sleep', 'curse', 'void', 'hold']; // sleep and curse are separate: both stop actions, but only sleep wakes on damage and curse cannot be cleansed
 const OWN_EVENTS = new Set(['dash', 'slide', 'reloadStart', 'reloadEnd', 'cast', 'melee', 'unstealth', 'heal', 'cc', 'ccLanded', 'blast']); // heard only by the hero they are about
 const HELPLESS =['stun', 'sleep', 'immobilize']; // an enemy that can't hit back: worth walking up to and meleeing
 // Ability Range (his call, Oct 3): the enemies of a group stand one behind the other, SPREAD metres apart on average (each gap is rolled, half to one and a
@@ -134,6 +134,7 @@ class Fight {
   distance(hero, target) { return hero.close === target && hero.closeUntil > this.time ? MELEE.closeDistance : target.stats.distance ?? 15; }
 
   addStatus(unit, status) {
+    if (!status.ccApplied && unit.team === 'hero' && status.debuff && status.tags?.some((t) => CC_TAGS.includes(t)) && this.by?.unit && this.by.unit !== unit) return this.cc(unit, status);
     let { id, duration } = status;
     if (unit.stats.ccResist && status.tags?.some((t) => CC_TAGS.includes(t))) duration *= 1 - unit.stats.ccResist; // bosses shrug off part of a stun, sleep or disarm
     if (duration <= 0) return;
@@ -141,9 +142,9 @@ class Fight {
     unit.statuses.push({ mods: {}, tags: [], ...status, until: this.time + duration });
   }
   removeStatus(unit, id) { unit.statuses = unit.statuses.filter((s) => s.id !== id); }
-  // Shortens the debuffs on a unit by `share` (1 = removes them). `stuns` false leaves crowd control alone (the "non-stun debuffs" cleanses).
+  // Shortens the debuffs on a unit by `share` (1 = removes them). A curse can expire, but nothing can cleanse it.
   cleanse(unit, share = 1, { stuns = true } = {}) {
-    for (const s of unit.statuses.filter((st) => st.debuff && (stuns || !st.tags.some((t) => CC_TAGS.includes(t))))) s.until = this.time + (s.until - this.time) * (1 - share);
+    for (const s of unit.statuses.filter((st) => st.debuff && !st.tags.includes('curse') && (stuns || !st.tags.some((t) => CC_TAGS.includes(t))))) s.until = this.time + (s.until - this.time) * (1 - share);
   }
 
   // Crowd control on a hero (an enemy blast's curse or stomp). Unstoppable ignores it, an item may block it (Cloak of Opportunity), debuff resist
@@ -153,7 +154,7 @@ class Fight {
     const event = { target: unit, status, blocked: false };
     this.emit('cc', event);
     if (event.blocked) return false;
-    this.addStatus(unit, { ...status, duration: status.duration * (1 - clamp(unit.stat('statusResist'), 0, 0.9)), debuff: true });
+    this.addStatus(unit, { ...status, duration: status.duration * (1 - clamp(unit.stat('statusResist'), 0, 0.9)), debuff: true, ccApplied: true });
     this.emit('ccLanded', event);
     return true;
   }
@@ -219,7 +220,7 @@ class Fight {
     if (!target.alive && target.rejuvs > 0) this.rejuvenate(target);
     this.dealt.set(source, (this.dealt.get(source) || 0) + dealt);
     if (dealt > 0 && this.views.has(source)) { // a hero's damage, by what dealt it
-      const what = this.by?.name ?? (type === 'melee' ? 'Heavy Melee' : type === 'bullet' ? 'Gun' : 'Other');
+      const what = this.by?.name ?? (type === 'melee' ? `${opts.meleeType === 'light' ? 'Light' : 'Heavy'} Melee` : type === 'bullet' ? 'Gun' : 'Other');
       if (!this.breakdown.has(source)) this.breakdown.set(source, new Map());
       const mine = this.breakdown.get(source);
       mine.set(what, (mine.get(what) || 0) + dealt);
@@ -338,17 +339,21 @@ class Fight {
       || hero.items.some((it) => it.wantsMelee(this, target)) || hero.abilities.some((a) => a.wantsMelee?.(this, target)));
   }
 
-  // A heavy melee at `target`: the hero's wiki melee damage, more with melee items. Nothing on a farm resists it.
-  melee(hero, target) {
+  // A light or heavy melee at `target`. The automatic farming swing is heavy; abilities may request a light one.
+  melee(hero, target, kind = 'heavy') {
+    kind = kind === 'light' ? 'light' : 'heavy';
     hero.meleeAt = this.time + MELEE.every;
     if (!(hero.weapon.reloadLeft > 0)) hero.busyUntil = this.time + MELEE.busy;
     hero.close = target;
     hero.closeUntil = this.time + MELEE.closeFor;
     const bonus = hero.items.reduce((sum, it) => sum + it.meleeBonus(this, target), 0);
-    const amount = (hero.stats.heavyMelee ?? 0) * (1 + hero.stat('meleeDamage') + bonus);
-    const opts = { melee: true };
+    const amount = (hero.stats[kind === 'light' ? 'lightMelee' : 'heavyMelee'] ?? 0) * (1 + hero.stat('meleeDamage') + bonus);
+    const opts = { melee: true, meleeType: kind };
     const dealt = this.damage(hero, target, amount, 'melee', opts);
-    if (!opts.dodged) this.emit('melee', { source: hero, target, amount, dealt });
+    if (!opts.dodged) {
+      this.log.push({ t: +this.time.toFixed(1), who: hero.name, what: `${kind === 'light' ? 'Light' : 'Heavy'} Melee`, target: target.name, melee: true });
+      this.emit('melee', { source: hero, target, amount, dealt, kind });
+    }
   }
 
   // Stamina and moving (his call, Oct 3): a dash-jump whenever a stamina charge is in hand (airborne a moment after), a slide now and then.
@@ -414,8 +419,8 @@ class Fight {
         const mods = it.dynamicMods(view); // conditional stats, re-read every step
         if (mods) { const { tags = [], ...m } = mods; view.addStatus(hero, { id: `item:${it.name}`, duration: DT * 1.5, mods: m, tags }); }
       }
-      if (hero.cantAct || hero.has('stun') || hero.has('blind') || !hero.alive) continue; // a stun, disarm or silence on a hero only ever comes from a rival hero
-      view.move(hero);
+      if (hero.cantAct || hero.has('stun') || hero.has('blind') || !hero.alive) continue;
+      if (!hero.has('immobilize')) view.move(hero);
       const target = view.foes[0];
       if (target && view.wantMelee(hero, target)) view.melee(hero, target);
       if (target && hero.alive && !hero.has('disarm')) view.fireWeapon(hero, target);
@@ -452,11 +457,20 @@ class Fight {
         const event = { source: enemy, target, what, parried: false, dodged: false };
         this.emit('blast', event); // Counterspell parries it; Restorative Locket counts it; Mina's Sanguine Retreat slips it (dodged)
         const dodged = event.dodged || (!event.parried && !target.has('sleep') && this.rng() < dodgeChance(target, enemy));
+        let landed = false;
         if (!event.parried && !dodged) {
           this.damage(enemy, target, blast.damage + blast.maxHealthPct * target.stats.maxHealth, blast.type ?? 'true', { blast: true });
-          if (target.alive) this.cc(target, { id: what, duration: blast.curse, tags: ['sleep'] });
+          if (target.alive) landed = this.cc(target, { id: what, duration: blast.curse, tags: blast.tags ?? ['sleep'] });
         }
-        if (!event.warped) this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what, dodged, parried: event.parried, enemy: true });
+        if (!event.warped) this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what, verb: landed ? blast.verb : null, dodged, parried: event.parried, enemy: true });
+      }
+      for (const control of enemy.stats.controls ?? []) {
+        control.nextAt ??= this.time + control.every;
+        if (!target.alive || enemy.has('silence') || this.time < control.nextAt) continue;
+        control.nextAt = this.time + control.every;
+        if (this.cc(target, { id: `enemy:${control.id}`, duration: control.duration, tags: control.tags })) {
+          this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: control.verb, enemy: true, cc: true });
+        }
       }
     }
   }
@@ -482,8 +496,8 @@ class Fight {
 // damageType = what its attack is ('bullet' | 'spirit' | 'mixed' = half each): which of the hero's resists takes the edge off it,
 // blast = { every (s), damage, maxHealthPct, curse (s the hero can't act), type = 'true', what = 'curse' }: the Patron's cursing blast, the Walker's stomp,
 // souls = what it is worth on its own (Cultist Sacrifice). A Haunt's `special` (haunts.js) is put on its stats by play.js.
-const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', blast = null, souls = 0 } = {}) =>
-  new Unit({ name, team: 'enemy', stats: { maxHealth, dps, dpsMaxHealthPct, damageType, blast: blast && { ...blast }, bulletResist, spiritResist, distance, healthRegen, lifesteal: 0, souls } });
+const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', blast = null, controls = [], souls = 0 } = {}) =>
+  new Unit({ name, team: 'enemy', stats: { maxHealth, dps, dpsMaxHealthPct, damageType, blast: blast && { ...blast }, controls: controls.map((c) => ({ ...c, tags: [...c.tags] })), bulletResist, spiritResist, distance, healthRegen, lifesteal: 0, souls } });
 
 // A hero's damage over one or more fights, by what dealt it (the Damage Breakdown button): [{ name, kind: 'weapon' | 'ability' | 'item', dealt }], most first.
 function damageBreakdown(hero, fights) {

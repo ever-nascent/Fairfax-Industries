@@ -77,11 +77,13 @@ const ARCHETYPES = {
   glass: { name: 'Sharpshooter', plural: 'Sharpshooters', cost: 3, icon: 'trooper', stats: { maxHealth: 260, dps: 15, distance: 30 }, text: 'hits hard from far away, little health' },
   healer: { name: 'Medic', plural: 'Medics', cost: 3, icon: 'trooper-medic', stats: { maxHealth: 350, dps: 3, distance: 18 }, special: MEND, text: 'heals the others' },
   bruiser: { name: 'Bruiser', plural: 'Bruisers', cost: 3, icon: 'trooper-melee', stats: { maxHealth: 600, dps: 11, distance: 4 }, text: 'close in, hits hard' },
-  caster: { name: 'Hexer', plural: 'Hexers', cost: 4, icon: 'trooper-medic', stats: { maxHealth: 400, dps: 6, distance: 18, damageType: 'spirit', blast: { every: 8, damage: 45, maxHealthPct: 0, curse: 1, type: 'spirit' } }, text: 'spirit damage and a curse' },
+  caster: { name: 'Hexer', plural: 'Hexers', cost: 4, icon: 'trooper-medic', stats: { maxHealth: 400, dps: 6, distance: 18, damageType: 'spirit', blast: { every: 8, damage: 45, maxHealthPct: 0, curse: 1, type: 'spirit', tags: ['curse'] } }, text: 'spirit damage and a curse' },
+  disruptor: { name: 'Disruptor', plural: 'Disruptors', cost: 4, icon: 'trooper-medic', stats: { maxHealth: 420, dps: 7, distance: 18, controls: [{ id: 'silence', every: 9, duration: 1.2, tags: ['silence'], verb: 'silenced' }] }, text: 'silences abilities' },
+  grappler: { name: 'Grappler', plural: 'Grapplers', cost: 4, icon: 'trooper-melee', stats: { maxHealth: 550, dps: 9, distance: 5, controls: [{ id: 'grapple', every: 10, duration: 1, tags: ['stun', 'immobilize'], verb: 'grappled' }] }, text: 'grapples and interrupts' },
 };
 for (const a of Object.values(ARCHETYPES)) a.icon = path.join(ICONS, `${a.icon}.png`);
 // Affixes (the Isaac "champion" idea): the four camp traits plus a few the engine already knows (regen, lifesteal, a heal cut, a curse, more health).
-// ponytail: Berserk / Silencing / Armor-breaking from the plan need engine work; left out until he wants them.
+// ponytail: Berserk / Armor-breaking from the plan still need engine work; left out until he wants them.
 const resist = (x) => Math.max(0, Math.min(0.9, x));
 const AFFIXES = {
   ...Object.fromEntries(TRAITS.filter((t) => t.name).map((t) => [t.name, { text: t.bullet > 0 && t.spirit > 0 ? 'resists everything' : t.bullet > 0 ? 'resists bullets' : t.spirit > 0 ? 'resists spirit' : 'takes more of everything',
@@ -89,7 +91,10 @@ const AFFIXES = {
   Regenerating: { text: 'heals itself', apply(e) { e.stats.healthRegen += e.stats.maxHealth * 0.015; } },
   Vampiric: { text: 'heals from its hits', apply(e) { e.stats.drain = 0.4; } },
   Withering: { text: 'its hits cut healing', apply(e) { e.stats.antiHeal = { cut: 0.4, seconds: 3 }; } },
-  Cursing: { text: 'curses now and then', apply(e) { e.stats.blast ??= { every: 9, damage: e.stats.dps * 2, maxHealthPct: 0, curse: 1, type: 'spirit' }; } },
+  Cursing: { text: 'curses now and then', apply(e) { e.stats.blast ??= { every: 9, damage: e.stats.dps * 2, maxHealthPct: 0, curse: 1, type: 'spirit', tags: ['curse'] }; } },
+  Stunning: { text: 'stuns now and then', apply(e) { e.stats.controls.push({ id: 'stun', every: 10, duration: 0.8, tags: ['stun'], verb: 'stunned' }); } },
+  Silencing: { text: 'silences abilities', apply(e) { e.stats.controls.push({ id: 'silence', every: 10, duration: 1, tags: ['silence'], verb: 'silenced' }); } },
+  Grappling: { text: 'grapples and interrupts', apply(e) { e.stats.controls.push({ id: 'grapple', every: 11, duration: 1, tags: ['stun', 'immobilize'], verb: 'grappled' }); } },
   Shielded: { text: 'half again the health', apply(e) { e.stats.maxHealth *= 1.5; e.health = e.stats.maxHealth; } },
 };
 const affixChance = (room) => Math.min(0.6, 0.15 + 0.03 * (room - AFFIX_FROM));

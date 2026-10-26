@@ -722,7 +722,7 @@ define('Indomitable', {
 });
 // Unstoppable: used just before a blast lands: immune to its curse or stomp for a while, and existing debuffs end.
 define('Unstoppable', ACTIVE, {
-  want(fight) { return fight.foes.some((e) => e.stats.blast && (e.blastAt ?? Infinity) - fight.time < 1.5 && !e.has('silence')) && !this.unit.has('unstoppable'); },
+  want(fight) { return fight.foes.some((e) => !e.has('silence') && ((e.stats.blast && (e.blastAt ?? Infinity) - fight.time < 1.5) || e.stats.controls?.some((c) => (c.nextAt ?? Infinity) - fight.time < 1.5))) && !this.unit.has('unstoppable'); },
   cast(fight) { this.buff(fight, 'unstoppable', this.value('AbilityDuration'), {}, ['unstoppable']); fight.cleanse(this.unit); },
 });
 // Frenzy: below half health, a burst of speed, fire rate and debuff resist (and existing debuffs are shortened by as much).
@@ -918,7 +918,7 @@ const purgeBuffs = (e, keepUlt) => {
 define('Cursed Relic', ACTIVE, oneTarget(function (fight, e) {
   if (!e.has('unstoppable')) purgeBuffs(e, true);
   this.debuff(fight, e, 'stun', CURSE_STUN, {}, ['stun']);
-  this.debuff(fight, e, 'curse', this.value('AbilityDuration'), {}, ['silence', 'disarm', 'noItems']);
+  this.debuff(fight, e, 'curse', this.value('AbilityDuration'), {}, ['curse']);
   this.buff(fight, 'penalty', this.value('AbilityDuration'), { damageDealt: this.pct('OutgoingDamagePenaltyPercent') });
 }, function (fight) { return fight.foes.find((e) => e.stats.blast) ?? this.biggest(fight); }));
 // Focus Lens: silences the biggest enemy, then hits it with a share of all the damage it took meanwhile; its spirit resist and spirit power drop.
