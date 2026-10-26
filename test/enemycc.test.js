@@ -80,3 +80,13 @@ test('light and heavy melees identify themselves in the Battle Log', () => {
   assert.deepStrictEqual(fight.log.map((line) => line.what), ['Light Melee', 'Heavy Melee']);
   assert.ok(fight.log.every((line) => line.melee && line.target === 'Controller'));
 });
+
+test('the Battle Log bolds the effect an enemy lands on the hero', () => {
+  const { simulate } = require('../src/utils/farm/play');
+  let s = 7;
+  const rng = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const run = simulate('Haze', 'guardian', { rng, boons: 6 });
+  const line = run.log.find(([, text]) => /\*\*Stunned\*\*/.test(text));
+  assert.ok(line, `no stun line in: ${run.log.map(([, t]) => t).join(' | ')}`);
+  assert.match(line[1], /^Guardian \*\*Stunned\*\* Haze$/);
+});
