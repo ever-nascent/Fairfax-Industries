@@ -69,7 +69,7 @@ test('big finds boost the remaining floor fights, then expire after its boss', a
   const nextFight = D.fightRoom(d, fightSpec(seed, 4), () => 0.5);
   assert.equal(nextFight.frames[0].hero.max, buildHero('Haze', D.runKit(d)).stats.maxHealth);
   const result = await views.offerView(member, d, { run: { seconds: 2 } });
-  assert.match(result.embeds[0].toJSON().description, /Found a big buff:.*Survival Bridge Buff.*Floor 1/);
+  assert.match(result.embeds[0].toJSON().description, /Found a big buff:.*Survival Bridge Buff.*Floor \*\*1\*\*/);
   const build = await views.buildView(member, d);
   assert.match(build.embeds[0].toJSON().fields.find((f) => f.name === 'Big Buffs (This Floor)').value, new RegExp(BRIDGE.survival.name));
   D.afterWin(d, won({ room: 5, floor: 1, kind: 'boss', boss: 'guardian' }));

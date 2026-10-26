@@ -39,6 +39,7 @@ const slugOf = (name) => HEROES.find((h) => h.name === name).slug;
 const abilityName = (hero, slot) => ABILITIES[HERO_DATA[hero].BoundAbilities[slot].Key].Name;
 const roomTitle = (spec) => `Floor ${spec.floor}  -  Room ${spec.room}${spec.final ? '  -  The Bottom' : spec.kind === 'boss' ? '  -  Boss' : spec.kind === 'rival' ? '  -  Rival' : ''}`;
 const healthLine = (d, hero = buildHero(d.hero, D.runKit(d))) => barLine(d.health * hero.stats.maxHealth, hero.stats.maxHealth);
+const boldHealthLine = (d) => healthLine(d).replace(/(\d[\d,]* \/ \d[\d,]*)$/, '**$1**');
 const bestText = (best) => (best?.rooms ? `${plural(best.rooms, 'room')} (${best.hero})` : 'None yet');
 const sentence = (text) => `${text[0].toUpperCase()}${text.slice(1)}${/[.!?]$/.test(text) ? '' : '.'}`;
 
@@ -46,12 +47,12 @@ const sentence = (text) => `${text[0].toUpperCase()}${text.slice(1)}${/[.!?]$/.t
 function runFields(d) {
   const left = D.pointsLeft(d);
   return [
-    { name: d.hero, value: healthLine(d) },
-    { name: 'Level', value: `${d.level}`, inline: true },
-    { name: 'Items', value: `${countItems(d.items)} / ${MAX_ITEMS}${d.legendary ? ' + 1' : ''}`, inline: true },
-    { name: 'Rejuvs', value: `${rejuvIcon()}${d.rejuvs} / ${MAX_REJUVS}`, inline: true },
-    ...(left > 0 ? [{ name: 'Ability Points', value: `${left} to spend`, inline: true }] : []),
-    { name: 'Rooms Cleared', value: `${d.room - 1}`, inline: true },
+    { name: d.hero, value: boldHealthLine(d) },
+    { name: 'Level', value: `**${d.level}**`, inline: true },
+    { name: 'Items', value: `**${countItems(d.items)} / ${MAX_ITEMS}${d.legendary ? ' + 1' : ''}**`, inline: true },
+    { name: 'Rejuvs', value: `${rejuvIcon()}**${d.rejuvs} / ${MAX_REJUVS}**`, inline: true },
+    ...(left > 0 ? [{ name: 'Ability Points', value: `**${left}** to spend`, inline: true }] : []),
+    { name: 'Rooms Cleared', value: `**${d.room - 1}**`, inline: true },
   ];
 }
 
@@ -161,7 +162,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   const { offer } = d;
   const spec = D.roomSpec(d.seed, offer.room, d.hero);
   const cleared = spec.kind === 'boss' ? `${D.BOSSES[spec.boss].name} Defeated` : spec.kind === 'rival' ? `${spec.rival} Defeated` : `Room ${spec.room} Cleared`;
-  const e = dembed(run ? WIN : undefined).setTitle(cleared).setThumbnail('attachment://thumb.png');
+  const e = dembed(run ? WIN : undefined).setAuthor({ name: `Descend - Room ${spec.room} Cleared`, iconURL: 'attachment://souls.png' }).setThumbnail('attachment://thumb.png');
   const lines = [];
   if (run) {
     const voice = voiceLine(d.hero, spec.kind === 'rival' ? spec.rival : null).trim();
@@ -171,14 +172,14 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   }
   if (d.find?.room === offer.room) lines.push(d.find.kind === 'little'
     ? `Found a little buff: **${buffText(d.find.key)}** (permanent for this run).`
-    : `Found a big buff: **${BRIDGE[d.find.key].name} Bridge Buff** — ${BRIDGE[d.find.key].text}. Lasts through Floor ${spec.floor}.`);
+    : `Found a big buff: **${BRIDGE[d.find.key].name} Bridge Buff** — ${BRIDGE[d.find.key].text}. Lasts through Floor **${spec.floor}**.`);
   const upgrades = new Set(offer.kind === 'items' ? offer.choices.filter((n) => priceFor(itemByName(n), d.items).used.length) : []);
   if (replace != null) {
     const name = offer.choices[replace];
-    lines.push(`Your build is full (${MAX_ITEMS} items). Choose an item to give up for **${name}**: it is lost, there are no souls in a run.`);
-  } else if (offer.kind === 'buffs') lines.push(`Pick a permanent buff for this run (${D.BOSS_BUFFS} of it), or Skip to heal ${D.SKIP_HEAL * 100}%.`);
-  else if (offer.kind === 'legendaries') lines.push(`Pick a legendary for the legendary slot${d.legendary ? ` (it replaces ${d.legendary})` : ''}, or Skip to heal ${D.SKIP_HEAL * 100}%.`);
-  else lines.push(`Pick 1 of 3 items, or Skip to heal ${D.SKIP_HEAL * 100}%.${countItems(d.items) >= MAX_ITEMS ? ' Your build is full: an upgrade takes its part\'s place, anything else replaces an item.' : ''}`);
+    lines.push(`Your build is full (**${MAX_ITEMS}** items). Choose an item to give up for **${name}**: it is lost, there are no souls in a run.`);
+  } else if (offer.kind === 'buffs') lines.push('', `Pick a permanent buff for this run (**${D.BOSS_BUFFS}** of it), or Skip to heal **${D.SKIP_HEAL * 100}%**.`);
+  else if (offer.kind === 'legendaries') lines.push('', `Pick a legendary for the legendary slot${d.legendary ? ` (it replaces ${d.legendary})` : ''}, or Skip to heal **${D.SKIP_HEAL * 100}%**.`);
+  else lines.push('', `Pick **1 of 3** items, or Skip to heal **${D.SKIP_HEAL * 100}%**.${countItems(d.items) >= MAX_ITEMS ? ' Your build is full: an upgrade takes its part\'s place, anything else replaces an item.' : ''}`);
   e.setDescription(lines.join('\n'));
   // what each choice does
   const about = offer.choices.map((n, i) => {
@@ -192,7 +193,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     return `${itemStats(c) ? `${head}\n${itemStats(c)}` : head}${bonus}`;
   });
   e.addFields({ name: 'The Choices', value: about.join('\n').slice(0, 1024) }, ...runFields(d));
-  if (run) e.addFields({ name: 'Fight Time', value: clock(run.seconds), inline: true });
+  if (run) e.addFields({ name: 'Fight Time', value: `**${clock(run.seconds)}**`, inline: true });
   const pic = await pickPicture({
     choices: choicesOf(offer, upgrades, D.BOSS_BUFFS), animate: animate && replace == null,
     title: offer.kind === 'buffs' ? 'SELECT A BUFF' : offer.kind === 'legendaries' ? 'SELECT A LEGENDARY' : 'SELECT ITEMS',
