@@ -7,7 +7,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
 const { flushPending } = require('../src/storage/jsonAdapter');
-const { addXp } = require('../src/utils/xp');
+const { addXp } = require('../src/utils/economy/xp');
 
 const file = (name) => path.join(process.env.DATA_DIR, `${name}.json`);
 

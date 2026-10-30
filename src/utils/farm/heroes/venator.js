@@ -108,6 +108,7 @@ class IraDomini extends Ability {
 
   want(fight) { return fight.foes.length > 0; }
   status(fight) { return fight && fight.time < this.until ? 'Crossbow' : super.status(fight); }
+  get lockout() { return DRAW + (this.data.StakeCount - 1) * RELOAD + DRAW; } // no other cast while the crossbow is out (his call, Oct 28)
 
   cast(fight) {
     const stakes = this.data.StakeCount;
@@ -116,7 +117,7 @@ class IraDomini extends Ability {
     if (this.value('BonusMoveSpeed')) fight.addStatus(this.unit, { id: 'ira_domini', duration: this.until - fight.time, mods: { moveSpeed: this.value('BonusMoveSpeed') } });
     for (let i = 0; i < stakes; i++) {
       fight.at(DRAW + i * RELOAD, () => fight.running(this, () => {
-        if (!this.unit.alive || this.unit.cantAct || this.unit.has('disarm')) return;
+        if (!this.unit.alive || this.unit.cantAct || this.unit.has('disarm') || fight.time > this.until + 1e-9) return; // interrupted: until was cut short
         const blessed = i === stakes - 1 || this.value('AllStakesBlessed') > 0;
         for (const e of fight.foes) {
           fight.damage(this.unit, e, this.value('Damage'), 'bullet');

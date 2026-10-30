@@ -1,3 +1,4 @@
+// /siege: the Base Siege details screen. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
 const { SlashCommandBuilder } = require('discord.js');
 const { openTarget } = require('../../utils/farm/commands');
 

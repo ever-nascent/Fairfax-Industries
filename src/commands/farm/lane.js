@@ -1,3 +1,5 @@
+// /lane guardian|walker|wave lane:<lane>. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// The lanes are LANES in utils/farm/targets.js.
 const { SlashCommandBuilder } = require('discord.js');
 const { openTarget } = require('../../utils/farm/commands');
 const { LANES } = require('../../utils/farm/targets');

@@ -25,7 +25,9 @@ const ALIASES = {
   'The Doorman': ['Doorman'],
 };
 // Sections of a "<Hero>/Voice lines" page that aren't the hero talking (or aren't in the game).
-const SKIP_SECTIONS = ['conversation', 'other character', 'removed', 'unused', 'navigation'];
+// 'hero-specific' (Oct 29, his ask): lines said about one other hero ("Thanks for the assist, Ivy", "Fern", "the Sandman") are
+// not general lines; kills about a hero are kept separately by killLines.
+const SKIP_SECTIONS = ['conversation', 'other character', 'hero-specific', 'removed', 'unused', 'navigation'];
 const SLOTS = { Weapon: 'Weapon', Armor: 'Vitality', Tech: 'Spirit' };
 
 const fileOf = (name) => `${name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}.png`;

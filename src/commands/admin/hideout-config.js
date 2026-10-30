@@ -1,7 +1,9 @@
+// /hideout-config (staff): the category Hideouts are made in. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// Hideouts themselves: utils/shop/hideout.js.
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 const { requirePermission } = require('../../utils/permissions');
 const { privateReply } = require('../../utils/embeds');
-const { setCategory, removeHideout } = require('../../utils/hideout');
+const { setCategory, removeHideout } = require('../../utils/shop/hideout');
 
 module.exports = {
   data: new SlashCommandBuilder()

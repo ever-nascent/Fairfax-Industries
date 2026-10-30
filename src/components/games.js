@@ -1,18 +1,18 @@
-// Buttons of the soul-betting games (the shared handling is in utils/casino.js).
+// Buttons of the soul-betting games (the shared handling is in utils/games/casino.js).
 // Each game's buttons carry the game id, then what was pressed.
-const { gameButtons } = require('../utils/casino');
-const doorman = require('../utils/doorman');
-const blackjack = require('../utils/blackjack');
-const sinclair = require('../utils/sinclair');
-const paradox = require('../utils/paradox');
-const bebop = require('../utils/bebop');
-const pocket = require('../utils/pocket');
-const holliday = require('../utils/holliday');
-const yamato = require('../utils/yamato');
-const silver = require('../utils/silver');
-const rem = require('../utils/rem');
-const paige = require('../utils/paige');
-const abrams = require('../utils/abrams');
+const { gameButtons } = require('../utils/games/casino');
+const doorman = require('../utils/games/doorman');
+const blackjack = require('../utils/games/blackjack');
+const sinclair = require('../utils/games/sinclair');
+const paradox = require('../utils/games/paradox');
+const bebop = require('../utils/games/bebop');
+const pocket = require('../utils/games/pocket');
+const holliday = require('../utils/games/holliday');
+const yamato = require('../utils/games/yamato');
+const silver = require('../utils/games/silver');
+const rem = require('../utils/games/rem');
+const paige = require('../utils/games/paige');
+const abrams = require('../utils/games/abrams');
 
 module.exports = [
   // Room 1-3 (pick), then Stay / Switch

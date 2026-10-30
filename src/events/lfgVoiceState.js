@@ -1,4 +1,4 @@
-const { onVoiceChange } = require('../utils/lfg');
+const { onVoiceChange } = require('../utils/server/lfg');
 
 // Fires when someone joins, leaves or moves between voice channels.
 module.exports = {

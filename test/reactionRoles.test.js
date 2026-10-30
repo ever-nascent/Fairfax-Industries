@@ -3,15 +3,15 @@
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('node:test');
 const assert = require('node:assert');
-const rr = require('../src/utils/reactionRoles');
+const rr = require('../src/utils/server/reactionRoles');
 
 test('drafts are saved to storage (survive a restart)', async () => {
   await rr.startDraft('g', 'u', { title: 'T', channelId: 'c', mode: 'single' });
   const draft = await rr.getDraft('g', 'u');
   rr.addPair(draft, '🔥', { id: 'r1' });
   await rr.saveDraft('g', 'u', draft);
-  delete require.cache[require.resolve('../src/utils/reactionRoles')]; // fresh module, like a restart
-  const again = await require('../src/utils/reactionRoles').getDraft('g', 'u');
+  delete require.cache[require.resolve('../src/utils/server/reactionRoles')]; // fresh module, like a restart
+  const again = await require('../src/utils/server/reactionRoles').getDraft('g', 'u');
   assert.deepStrictEqual(again.pairs, [{ key: '🔥', display: '🔥', roleId: 'r1' }]);
   await rr.clearDraft('g', 'u');
   assert.strictEqual(await rr.getDraft('g', 'u'), null);

@@ -13,7 +13,7 @@ const descend = require('../src/commands/farm/descend');
 
 const guild = { emojis: { cache: { find: () => undefined } } };
 const STREAK = ['left', 'mid', 'right'].flatMap((p) => ['on', 'off'].map((s) => `streak_${p}_${s}`));
-require('../src/utils/trivia').loadStreakEmojis({
+require('../src/utils/games/trivia').loadStreakEmojis({
   emojis: { cache: { find: (fn) => STREAK.map((name) => ({ name, toString: () => `<:${name}:1554307832742940715>` })).find(fn) } },
 });
 const member = (id) => ({ id, guild, toString: () => `<@${id}>` });
@@ -71,7 +71,7 @@ test('rooms come from the seed: the same seed gives the same rooms and offers', 
 test('every 5th room is a boss, rivals come from room 3, a room holds at most 6 enemies, the Patron is the last', () => {
   let rivals = 0;
   for (let seed = 1; seed <= 40; seed++) {
-    assert.deepStrictEqual(D.roomSpec(seed, D.LAST_ROOM, 'Haze'), { room: 40, floor: 8, kind: 'boss', boss: 'patron', final: true });
+    assert.deepStrictEqual(D.roomSpec(seed, D.LAST_ROOM, 'Haze'), { room: 40, floor: 8, ascension: 0, kind: 'boss', boss: 'patron', final: true });
     for (let room = 1; room < D.LAST_ROOM; room++) {
       const spec = D.roomSpec(seed, room, 'Haze');
       assert.strictEqual(spec.kind === 'boss', room % 5 === 0, `room ${room}`);
@@ -147,18 +147,27 @@ test('picks: an upgrade replaces its part in place, a full build needs an item g
   assert.strictEqual(swap.replaced, fill[0]);
   assert.ok(d.items.spirit.includes('Mystic Burst') && !d.items.vitality.includes(fill[0]));
   assert.strictEqual(countItems(d.items), MAX_ITEMS);
-  // At a full build, an upgrade takes its component immediately. Only its BONUS
-  // needs a replacement choice, so the main item never looks like a swap.
+  // At a full build an upgrade takes its component's place and there is no BONUS (no question asked); with room left, the BONUS comes too.
   d.items = { weapon: POOL.weapon.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4), vitality: POOL.vitality.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4), spirit: ['Compress Cooldown', ...POOL.spirit.filter((n) => !D.NO_RUN_ITEMS.has(n) && n !== 'Compress Cooldown').slice(0, 3)] };
   d.phase = 'offer';
   d.offer = { kind: 'items', choices: ['Transcendent Cooldown'], bonuses: { 0: 'Mystic Burst' }, room: 4 };
-  const upgradeWithBonus = D.takeChoice(d, 0);
-  assert.ok(upgradeWithBonus.ok && upgradeWithBonus.bonusPending);
-  assert.strictEqual(d.phase, 'bonus');
-  assert.ok(d.items.spirit.includes('Transcendent Cooldown') && !d.items.spirit.includes('Compress Cooldown'));
-  const bonus = D.takeBonus(d, d.items.weapon[0]);
-  assert.ok(bonus.ok && d.items.spirit.includes('Mystic Burst'));
+  d.items.spirit = d.items.spirit.filter((n) => n !== 'Mystic Burst').concat('Spirit Strike'); // keep the fill clear of the BONUS
+  const upgradeFull = D.takeChoice(d, 0);
+  assert.ok(upgradeFull.ok && !upgradeFull.bonus && d.phase === 'ready');
+  assert.ok(d.items.spirit.includes('Transcendent Cooldown') && !d.items.spirit.includes('Compress Cooldown') && !d.items.spirit.includes('Mystic Burst'));
   assert.strictEqual(countItems(d.items), MAX_ITEMS);
+  d.items.weapon.pop(); // room for the BONUS
+  d.items.spirit = ['Compress Cooldown', ...d.items.spirit.filter((n) => n !== 'Transcendent Cooldown')];
+  d.phase = 'offer';
+  d.offer = { kind: 'items', choices: ['Transcendent Cooldown'], bonuses: { 0: 'Mystic Burst' }, room: 4 };
+  assert.strictEqual(D.takeChoice(d, 0).bonus, 'Mystic Burst');
+  assert.strictEqual(countItems(d.items), MAX_ITEMS);
+  // an offer never carries a BONUS the build has no room for
+  for (let seed = 1; seed <= 60; seed++) {
+    const run = D.newRun('Haze', seed);
+    run.items = { weapon: POOL.weapon.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4), vitality: POOL.vitality.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4), spirit: ['Compress Cooldown', ...POOL.spirit.filter((n) => !D.NO_RUN_ITEMS.has(n) && n !== 'Compress Cooldown').slice(0, 3)] }; // 12 items: an upgrade (-1 +1) leaves no room
+    assert.deepStrictEqual(D.itemOffer(run, D.dice(run.seed, 1, 'offer'), 3, 20).bonuses, {}, 'no room, no BONUS');
+  }
   // a boss's buff pick and a legendary
   d.phase = 'offer';
   d.offer = { kind: 'buffs', choices: ['fireRate', 'maxHealth', 'spiritPower'], room: 5 };
@@ -178,6 +187,14 @@ test('picks: an upgrade replaces its part in place, a full build needs an item g
   assert.strictEqual(skipped.buffs.length, D.SKIP_BUFFS);
   assert.strictEqual(Object.values(d.buffs).reduce((sum, count) => sum + count, 0), D.BOSS_BUFFS + D.SKIP_BUFFS);
   assert.strictEqual(d.offer, null);
+  // skipping a boss's buff pick only heals: no buffs, or skipping would beat taking it
+  const before = Object.values(d.buffs).reduce((sum, count) => sum + count, 0);
+  d.health = 0.5;
+  d.phase = 'offer';
+  d.offer = { kind: 'buffs', choices: ['fireRate', 'maxHealth', 'spiritPower'], room: 10 };
+  assert.deepStrictEqual(D.skipChoice(d).buffs, []);
+  assert.strictEqual(d.health, 0.5 + D.SKIP_HEAL);
+  assert.strictEqual(Object.values(d.buffs).reduce((sum, count) => sum + count, 0), before);
 });
 
 test('rerolls: 3 a floor, the same new offer every time for a seed, never below 0, boss rewards stay, a boss win refills them', () => {
@@ -327,7 +344,7 @@ test('the run on the member\'s record: start, fight, pick, the end, the best, ab
   assert.deepStrictEqual(await D.fight(id), { error: 'busy' });
   assert.ok((await D.fight(id, { now: Date.now() + 2 * 60 * 1000 })).run, 'a stale claim (the bot stopped mid-fight) can be fought again');
   const rows = await D.leaderboard();
-  assert.deepStrictEqual(rows[0], { id, rooms: 38, hero: 'Haze', clears: 0 });
+  assert.deepStrictEqual(rows[0], { id, rooms: 38, hero: 'Haze', ascension: 0, clears: 0 });
 });
 
 test('the token: clearing room 25 pays one Character Unlock Token, once per member', async () => {
@@ -370,7 +387,7 @@ test('the last room: the Patron then the Weakened Patron in one fight; beating i
     assert.strictEqual(r.descent, undefined, 'the run is over');
     assert.deepStrictEqual([r.bestDescent.rooms, r.descentClears], [D.LAST_ROOM, 1]);
     const top = (await D.leaderboard()).find((row) => row.id === id);
-    assert.deepStrictEqual(top, { id, rooms: 40, hero: 'Haze', clears: 1 });
+    assert.deepStrictEqual(top, { id, rooms: 40, hero: 'Haze', ascension: 0, clears: 1 });
     checkLimits(await dviews.completeView(member(id), run), 'cleared');
     for (const frame of run.frames) checkLimits(await dviews.fightView(run, frame), 'last room');
   } finally { Object.assign(D.TUNE, saved); }
@@ -389,6 +406,7 @@ test('every /descend screen fits the Discord limits and attaches what it points 
       d.level = room;
       checkLimits(await dviews.roomView(member(id), d), `room ${room}`);
       const spec = D.roomSpec(seed, room, 'Haze');
+      if (spec.kind === 'broker') continue; // (a stall has no fight: its own test below)
       const run = D.fightRoom(d, spec, seeded(seed));
       for (const frame of run.frames) checkLimits(await dviews.fightView(run, frame), `fight ${room}`);
       if (run.won && spec.final) checkLimits(await dviews.completeView(member(id), { ...run, complete: { ...d, clears: 1 } }), 'cleared');
@@ -407,26 +425,30 @@ test('every /descend screen fits the Discord limits and attaches what it points 
   d.offer = { kind: 'items', choices: [POOL.vitality[10], POOL.weapon[10], POOL.spirit[10]], room: 15 };
   const over = await dviews.overView(member(id), { over: d, spec: D.roomSpec(d.seed, d.room, d.hero), best: { rooms: 15, hero: d.hero }, log: [], cleared: 0 });
   checkLimits(over, 'over build card');
-  assert.strictEqual(over.embeds[0].toJSON().image.url, 'attachment://hero.png');
-  assert.ok(over.files.some((f) => f.name === 'hero.png'), 'run-over screen shows the build card');
+  assert.strictEqual(over.embeds[0].toJSON().image.url, 'attachment://hero.jpg');
+  assert.ok(over.files.some((f) => f.name === 'hero.jpg'), 'run-over screen shows the build card');
   assert.ok(!(over.embeds[0].toJSON().fields ?? []).some((f) => f.name === 'Build'), 'run-over screen drops the text build');
   const replace = await dviews.offerView(member(id), d, { replace: 1 });
   checkLimits(replace, 'replace');
-  assert.strictEqual(replace.embeds[0].toJSON().image.url, 'attachment://hero.png');
-  assert.ok(replace.files.some((f) => f.name === 'hero.png'), 'replacement screen shows the current build card');
+  assert.strictEqual(replace.embeds[0].toJSON().image.url, 'attachment://hero.jpg');
+  assert.ok(replace.files.some((f) => f.name === 'hero.jpg'), 'replacement screen shows the current build card');
   assert.equal(replace.components[0].toJSON().components[0].options.length, MAX_ITEMS, 'replacement lists all twelve held items');
   const animated = await dviews.offerView(member(id), d, { animate: true });
   checkLimits(animated, 'animated offer');
   assert.strictEqual(animated.embeds[0].toJSON().image.url, 'attachment://pick.gif');
   const enhancedOffer = await dviews.offerView(member(id), { ...d, offer: { kind: 'items', choices: ['Extra Health'], enhanced: ['Extra Health'], room: 1 } });
-  const itemChoices = enhancedOffer.embeds[0].toJSON().fields.find((field) => field.name === 'Item Choices');
-  assert.match(itemChoices.value, /^\[Enhanced\] \*\*Extra Health\*\*\n\*\*Vitality\*\* ; __Tier 1__/);
-  assert.doesNotMatch((await dviews.offerView(member(id), { ...d, offer: { kind: 'items', choices: ['Diviner\'s Kevlar'], room: 1 } })).embeds[0].toJSON().fields.find((field) => field.name === 'Item Choices').value, /\*\*Enhanced:\*\*/);
-  const ballisticOffer = await dviews.offerView(member(id), { ...d, offer: { kind: 'items', choices: ['Ballistic Enchantment'], enhanced: ['Ballistic Enchantment'], room: 1 } });
-  const ballisticChoices = ballisticOffer.embeds[0].toJSON().fields.find((field) => field.name === 'Item Choices');
-  assert.match(ballisticChoices.value, /Weapon Damage per Hero Hit: \*\*\+20% → \+35%\*\*/);
-  assert.match(ballisticChoices.value, /Ability Range: \*\*\+22% → \+37%\*\*/);
-  assert.doesNotMatch(ballisticChoices.value, /Improved effect/);
+  assert.strictEqual(enhancedOffer.embeds[0].toJSON().fields.find((field) => field.name === 'Item Choices').value, 'Select an Item in the drop\ndown below to view its effect.');
+  const viewMenu = enhancedOffer.components.map((r) => r.toJSON().components[0]).find((c) => c.custom_id?.startsWith(dviews.DVIEW_ID));
+  assert.deepStrictEqual(viewMenu.options.map((o) => o.label), ['[Enhanced] Extra Health'], 'View Item lists the choices');
+  assert.ok(enhancedOffer.components.findIndex((r) => r.toJSON().components[0].custom_id === viewMenu.custom_id) <enhancedOffer.components.findIndex((r) => r.toJSON().components[0].custom_id?.startsWith(dviews.DTAKE_ID)), 'View Item sits above the picks');
+  const about = (offer, i = 0) => dviews.choiceAbout({ ...d, offer }, i);
+  assert.match(about({ kind: 'items', choices: ['Extra Health'], enhanced: ['Extra Health'], room: 1 }), /^\[Enhanced\] \*\*Extra Health\*\*\n\*\*Vitality\*\* ; __Tier 1__/);
+  assert.doesNotMatch(about({ kind: 'items', choices: ['Diviner\'s Kevlar'], room: 1 }), /\*\*Enhanced:\*\*/);
+  const ballisticChoices = about({ kind: 'items', choices: ['Ballistic Enchantment'], enhanced: ['Ballistic Enchantment'], room: 1 });
+  assert.match(ballisticChoices, /Weapon Damage per Hero Hit: \*\*\+20% → \+35%\*\*/);
+  assert.match(ballisticChoices, /Ability Range: \*\*\+22% → \+37%\*\*/);
+  assert.doesNotMatch(ballisticChoices, /Improved effect/);
+  assert.ok(require('../src/utils/farm/descentCard').choicesOf({ kind: 'legendaries', choices: LEGENDARY_NAMES.slice(0, 2), enhanced: [LEGENDARY_NAMES[1]] }).map((c) => c.enhanced).join() === 'false,true', 'an enhanced legendary is drawn enhanced');
   const buffOffer = await dviews.offerView(member(id), { ...d, offer: { kind: 'buffs', choices: ['maxHealth'], room: 5 } });
   assert.ok(buffOffer.embeds[0].toJSON().fields.some((field) => field.name === 'Buff Choices'));
   checkLimits(await dviews.offerView(member(id), { ...d, offer: { kind: 'legendaries', choices: LEGENDARY_NAMES.slice(0, 3), room: 15 } }), 'legendaries');
@@ -440,7 +462,7 @@ test('the start screen uses the requested paragraphs and separates the best run 
   const record = { bestDescent: { hero: 'Vyper', rooms: 29 }, descentBest: { Vyper: 29, Haze: 18, Abrams: 7 }, hero: 'Vyper', heroes: {} };
   const view = await dviews.startView(member('start-format'), record);
   const e = view.embeds[0].toJSON();
-  assert.match(e.description, /\*\*8 Floors,\*\*\n\*\*40 Rooms,\*\*/);
+  assert.match(e.description, /\*\*8 Floors, 40 Rooms,\*\* starting/);
   assert.match(e.description, /Room\*\* is \*\*Cleared/);
   assert.match(e.description, /\*\*The Patron\*\* waits at the bottom/);
   assert.deepStrictEqual(e.fields.map((f) => [f.name, f.value]), [
@@ -461,7 +483,7 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
   assert.strictEqual(start.log.at(-1)[1].embeds[0].toJSON().footer.text, 'Pick a Hero that you have unlocked.');
   const sel = fake(id, `farm_dhero:${id}`, { values: ['Haze'] });
   await route('Descend hero select').execute(sel);
-  assert.strictEqual(sel.log.at(-1)[1].components.at(-1).toJSON().components[0].custom_id, `farm_dbegin:${id}:Haze`);
+  assert.strictEqual(sel.log.at(-1)[1].components.at(-1).toJSON().components[0].custom_id, `farm_dbegin:${id}:Haze:0`);
   const begin = fake(id, `farm_dbegin:${id}:Haze`);
   await route('Descend begin button').execute(begin);
   assert.match(begin.log.at(-1)[1].embeds[0].toJSON().title, /^Floor 1 {2}- {2}Room 1/);
@@ -481,7 +503,7 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
     assert.ok(result.files.some((f) => f.name === 'pick.gif'), 'the cylinder spins the first time');
     const rows = result.components.map((r) => r.toJSON().components.map((c) => c.label).filter(Boolean));
     assert.ok(rows.some((labels) => labels.length === 3 && !labels.some((label) => label.startsWith('Skip'))), 'the three item picks share the first row');
-    assert.ok(rows.some((labels) => labels.includes('Skip + 3 Buffs') && labels.includes('Your Build') && labels.includes('Reroll (3 left)')), 'Skip, Build and Reroll share the second row');
+    assert.ok(rows.some((labels) => labels.includes('Skip ; Heal 25% and gain 3 Buffs') && labels.includes('Your Build') && labels.includes('Reroll (3 left)')), 'Skip, Build and Reroll share the second row');
     assert.ok(go.log.some(([kind, payload]) => kind === 'editReply' && payload.components?.some((r) => r.toJSON().components.some((c) => c.label === 'Damage Breakdown'))), 'the completed fight holds Damage Breakdown');
     const reroll = fake(id, `farm_dreroll:${id}:1`);
     await route('Descend reroll button').execute(reroll);
@@ -508,30 +530,21 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
   assert.strictEqual(board.log.at(-1)[1].embeds[0].toJSON().title, 'Descend Leaderboard');
 });
 
-test('a full-build upgrade with a BONUS and an imbue item walks through its screens and selects without stranding the run', async () => {
+test('an upgrade with room for its BONUS, an imbue item: the screens and selects walk through without stranding the run', async () => {
   const id = 'd9';
   await chooseHero(id, 'Haze');
   await D.startRun(id, 'Haze', 3);
-  const keep = POOL.weapon.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4);
   await updateFarmUser(id, (r) => {
     const d = r.descent;
     d.level = 2;
     d.phase = 'offer';
-    d.items = { weapon: keep, vitality: POOL.vitality.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4), spirit: ['Compress Cooldown', ...POOL.spirit.filter((n) => !D.NO_RUN_ITEMS.has(n) && n !== 'Compress Cooldown').slice(0, 3)] };
+    d.items = { weapon: POOL.weapon.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 3), vitality: POOL.vitality.filter((n) => !D.NO_RUN_ITEMS.has(n)).slice(0, 4), spirit: ['Compress Cooldown', ...POOL.spirit.filter((n) => !D.NO_RUN_ITEMS.has(n) && n !== 'Compress Cooldown').slice(0, 3)] };
     d.offer = { kind: 'items', choices: ['Transcendent Cooldown'], bonuses: { 0: 'Mystic Expansion' }, enhanced: [], room: 1 };
   });
-  assert.ok((await D.choose(id, 1, 0)).bonusPending);
+  const taken = await D.choose(id, 1, 0);
+  assert.ok(taken.ok && taken.bonus === 'Mystic Expansion');
   let d = await D.getRun(id);
-  assert.strictEqual(d.phase, 'bonus', 'the upgrade was taken; only the BONUS is still open');
-  checkLimits(await dviews.screen(member(id), await getFarmUser(id)), 'the bonus swap screen');
-  // a stale Fight button can't start a room while the bonus waits
-  assert.deepStrictEqual(await D.fight(id), { error: 'offer' });
-  // the select takes an item out for the bonus; it is an imbue item, so the imbue choice comes next
-  const swap = fake(id, `farm_dbonusswap:${id}`, { values: [keep[0]] });
-  await route('Descend bonus replacement select').execute(swap);
-  d = await D.getRun(id);
-  assert.strictEqual(d.phase, 'imbue');
-  assert.ok(!SLOTS.flatMap((s) => d.items[s]).includes(keep[0]) && SLOTS.flatMap((s) => d.items[s]).includes('Mystic Expansion'));
+  assert.strictEqual(d.phase, 'imbue', 'both are in; the imbue item asks for its ability');
   assert.strictEqual(countItems(d.items), MAX_ITEMS);
   checkLimits(await dviews.screen(member(id), await getFarmUser(id)), 'the imbue screen');
   assert.deepStrictEqual(await D.fight(id), { error: 'offer' });
@@ -540,7 +553,6 @@ test('a full-build upgrade with a BONUS and an imbue item walks through its scre
   d = await D.getRun(id);
   assert.strictEqual(d.phase, 'ready');
   assert.strictEqual(d.imbues['Mystic Expansion'], 2);
-  assert.strictEqual(d.pendingBonus, undefined);
   checkLimits(await dviews.screen(member(id), await getFarmUser(id)), 'the next room');
   await D.abandon(id);
 });
@@ -555,10 +567,14 @@ test('View Enemy Build in a room: Fight / Flee / Your Build, then View Enemy Bui
   const fight = await ask(`farm_denemy:${id}:1`);
   checkLimits(fight, 'fight room build');
   assert.match(fight.embeds[0].toJSON().title, /^Enemy Build {2}- {2}Room 1/);
-  assert.ok(fight.embeds[0].toJSON().fields.every((f) => /Health \*\*/.test(f.value)));
-  const stranger = fake('someone', `farm_denemy:${id}:1`);
+  assert.ok(fight.embeds[0].toJSON().fields.filter((f) => f.name !== 'Counters').every((f) => /^- \*\*Health:\*\* /.test(f.value)), 'each enemy is bullet points, health first');
+  const stranger = fake('someone', `farm_denemy:${id}:1`); // anyone may look: the owner's room, privately
   await route('Descend enemy build button').execute(stranger);
-  assert.ok(stranger.log.some(([k]) => k === 'reply'), 'not theirs');
+  assert.match(stranger.log.find(([k]) => k === 'editReply')[1].embeds[0].toJSON().title, /^Enemy Build {2}- {2}Room 1/);
+  const theirBuild = fake('someone', `farm_dbuild:${id}`);
+  await route('Descend build button').execute(theirBuild);
+  const built = theirBuild.log.find(([k]) => k === 'editReply')[1];
+  assert.ok(theirBuild.log[0][0] === 'deferReply' && built.components.length === 0 && built.content === `<@${id}>'s run.`);
   // a boss room and a rival room (found by walking the seed): the boss lists its crowd control, the rival draws its card
   const seed = Array.from({ length: 500 }, (_, i) => i + 1).find((n) => Array.from({ length: 12 }, (_, r) => D.roomSpec(n, r + 3, 'Haze')).some((sp) => sp.kind === 'rival')); // a seed with a rival early
   await updateFarmUser(id, (r) => { r.descent.seed = seed; });
@@ -570,9 +586,180 @@ test('View Enemy Build in a room: Fight / Flee / Your Build, then View Enemy Bui
     const view = await ask(`farm_denemy:${id}:${n}`);
     checkLimits(view, `${kind} room build`);
     if (kind === 'boss') assert.match(view.embeds[0].toJSON().title, /^Enemy Build {2}- {2}The /);
-    else assert.ok(view.files.some((f) => f.name === 'rival-build.png'), 'a rival shows its drawn card');
+    else assert.ok(view.files.some((f) => f.name === 'rival-build.jpg'), 'a rival shows its drawn card');
   }
   // a room that has moved on is out of date
   await updateFarmUser(id, (r) => { r.descent.room = 2; });
   assert.strictEqual((await ask(`farm_denemy:${id}:1`)).content, 'That screen is out of date. Here is where your run stands.');
+});
+
+test('an upgrade of an enhanced item stays enhanced', () => {
+  const d = D.newRun('Haze', 1);
+  d.items.spirit = ['Compress Cooldown'];
+  d.enhanced = ['Compress Cooldown'];
+  assert.ok(D.addItem(d, 'Transcendent Cooldown').ok);
+  assert.deepStrictEqual(d.items.spirit, ['Transcendent Cooldown']);
+  assert.deepStrictEqual(d.enhanced, ['Transcendent Cooldown']);
+  const plain = D.newRun('Haze', 1);
+  plain.items.spirit = ['Compress Cooldown'];
+  D.addItem(plain, 'Transcendent Cooldown');
+  assert.deepStrictEqual(plain.enhanced, []);
+});
+
+test('View Item: the owner\'s Item Choices text becomes that item; anyone else sees it privately', async () => {
+  const id = 'view-item';
+  await chooseHero(id, 'Haze');
+  await updateFarmUser(id, (r) => {
+    r.descent = D.newRun('Haze', 7);
+    r.descent.phase = 'offer';
+    r.descent.offer = { kind: 'items', choices: ['Extra Health', 'Extra Spirit', 'Close Quarters'], enhanced: [], room: 1 };
+  });
+  const view = await dviews.offerView(member(id), (await getFarmUser(id)).descent);
+  // as Discord hands the message back: the embed's pictures are CDN links to the message's attachments
+  const sent = view.embeds[0].toJSON();
+  const pic = sent.image.url.replace('attachment://', '');
+  sent.image.url = `https://cdn.discordapp.com/attachments/1/2/${pic}?ex=1`;
+  const message = { embeds: [{ toJSON: () => structuredClone(sent) }], components: view.components, attachments: view.files.map((f) => ({ name: f.name, url: `https://cdn.discordapp.com/attachments/1/2/${f.name}?ex=1` })) };
+  const customId = `${dviews.DVIEW_ID}:${id}:1`;
+  const select = route('Descend view item select');
+  const owner = fake(id, customId, { isStringSelectMenu: () => true, values: ['1'], message });
+  assert.ok(select.matches(owner));
+  await select.execute(owner);
+  assert.strictEqual(owner.log[0][0], 'deferUpdate');
+  const [kind, p] = owner.log[1];
+  assert.strictEqual(kind, 'editReply');
+  // an edit's attachment:// only reaches files uploaded with it (Oct 29: the pictures showed loose above the embed)
+  assert.deepStrictEqual(p.files.map((f) => f.name), view.files.map((f) => f.name), "the message's own files go up again");
+  assert.deepStrictEqual(p.attachments, [], 'replacing the old ones');
+  assert.strictEqual(p.embeds[0].image.url, `attachment://${pic}`, 'and stays inside the embed');
+  assert.match(p.embeds[0].fields.find((f) => f.name === 'Item Choices').value, /^\*\*Extra Spirit\*\*/);
+  const menu = p.components.flatMap((r) => r.components).find((c) => c.custom_id === customId);
+  assert.deepStrictEqual(menu.options.map((o) => !!o.default), [false, true, false]);
+  const other = fake('someone-else', customId, { isStringSelectMenu: () => true, values: ['2'], message });
+  await select.execute(other);
+  assert.strictEqual(other.log[0][0], 'reply');
+  assert.match(other.log[0][1].content, /^\*\*Close Quarters\*\*/);
+});
+
+test('floors (his calls, Oct 29): 1 lane troopers, 2 small Haunts, 3 medium and small, 4 large and medium, 5 camps and troopers, 6 the base, 7 the base and troopers, 8 everything', () => {
+  const seen = Array.from({ length: D.FLOORS }, () => new Set());
+  for (let seed = 1; seed <= 150; seed++) for (let room = 1; room < D.LAST_ROOM; room++) {
+    const spec = D.roomSpec(seed, room, 'Haze');
+    if (spec.kind !== 'fight') continue;
+    for (const g of spec.groups) {
+      seen[spec.floor - 1].add(g.type);
+      assert.ok(D.FLOOR_ENEMIES[spec.floor - 1].includes(g.type), `room ${room}: ${g.type}`);
+      if (D.ARCHETYPES[g.type].size) assert.ok(D.FAMILIES[D.ARCHETYPES[g.type].size].includes(g.family), 'a Haunt has a family of its size');
+      else assert.strictEqual(g.family, undefined);
+    }
+  }
+  assert.deepStrictEqual([...seen[0]].sort(), ['medicTrooper', 'meleeTrooper', 'trooper']);
+  assert.deepStrictEqual([...seen[1]], ['small']);
+  assert.deepStrictEqual([...seen[2]].sort(), ['medium', 'small']);
+  assert.deepStrictEqual([...seen[3]].sort(), ['large', 'medium']);
+  // a Haunt fights as its family: the name, the picture, its special (medium and large only, like the game)
+  const [sleepy] = D.unitsOf({ room: 12, floor: 3, ascension: 0, groups: [{ type: 'medium', family: 'past_due', affix: null }] });
+  assert.strictEqual(sleepy.name, 'Medium Past Due');
+  assert.strictEqual(sleepy.stats.special.name, 'Book Barrage');
+  const [small] = D.unitsOf({ room: 7, floor: 2, ascension: 0, groups: [{ type: 'small', family: 'past_due', affix: null }] });
+  assert.ok(!small.stats.special, 'small Haunts have no special');
+  const spec = { room: 12, floor: 3, ascension: 0, kind: 'fight', groups: [{ type: 'medium', family: 'past_due', affix: null }, { type: 'medium', family: 'past_due', affix: null }, { type: 'small', family: 'specimen', affix: null }] };
+  assert.strictEqual(D.roomLine(spec), '2 Medium Past Dues, 1 Small Specimen');
+  assert.match(D.roomPicture(spec), /past_due_medium\.png$/);
+  assert.match(D.groupSpecial(spec.groups[0]), /^Book Barrage: .*asleep/);
+  assert.ok(require('node:fs').existsSync(D.roomPicture(spec)));
+  for (const [size, families] of Object.entries(D.FAMILIES)) for (const f of families) assert.ok(require('node:fs').existsSync(D.groupPicture({ type: size, family: f })), `${f} ${size}`);
+});
+
+test('a beaten rival offers any one of its own items from a dropdown (his ask, Oct 29), no reroll; nothing it can take: the usual 3', async () => {
+  const d = { ...D.newRun('Haze', 7), room: 4, level: 3, phase: 'offer' };
+  d.items.weapon.push('Headshot Booster');
+  const spec = { room: 3, floor: 1, kind: 'rival', rival: 'Abrams' };
+  const theirs = { boons: 1, unlocked: 2, tiers: {}, items: ['Headshot Booster', 'Extra Health', 'Mystic Burst', 'Extra Health'], buffs: {} };
+  d.offer = D.rollOffer(d, spec, 0, theirs);
+  assert.deepStrictEqual([d.offer.rival, d.offer.choices], ['Abrams', ['Extra Health', 'Mystic Burst']], 'what it carried, minus what the hero holds');
+  assert.strictEqual(D.rerollChoice(d).error, 'none');
+  const view = await dviews.offerView(member('rival-offer'), d);
+  checkLimits(view, 'rival offer');
+  const take = view.components.map((r) => r.toJSON().components[0]).find((c) => c.custom_id === `${dviews.DTAKE_ID}:rival-offer:3`);
+  assert.deepStrictEqual(take.options.map((o) => o.label), ['Extra Health', 'Mystic Burst']);
+  assert.ok(view.files.some((f) => f.name === 'pick.png'), 'its build card is the picture');
+  assert.strictEqual(D.takeChoice(d, 1).name, 'Mystic Burst');
+  assert.strictEqual(D.rollOffer({ ...d, offer: null }, spec, 0, { ...theirs, items: ['Headshot Booster'] }).rival, undefined);
+});
+
+test('a rival has as many enhanced items as the hero; a beaten rival\'s enhanced item is offered, and taken, enhanced', () => {
+  const d = { ...D.newRun('Haze', 7), room: 4, level: 9, phase: 'offer', enhanced: ['Headshot Booster', 'Extra Health'] };
+  d.items.weapon.push('Headshot Booster'); d.items.vitality.push('Extra Health');
+  const spec = { room: 3, floor: 1, kind: 'rival', rival: 'Abrams' };
+  const theirs = D.enemiesOf(d, spec).kit;
+  assert.strictEqual(theirs.enhanced.length, 2, 'two, like the hero');
+  assert.ok(theirs.enhanced.every((n) => theirs.items.includes(n)), 'on its own items');
+  assert.deepStrictEqual(D.enemiesOf(d, spec).kit, theirs, 'rolled from the seed');
+  assert.strictEqual(D.enemiesOf({ ...d, enhanced: [] }, spec).kit.enhanced, undefined, 'none when the hero has none');
+  const offer = D.rollOffer({ ...d, items: { weapon: [], vitality: [], spirit: [] } }, spec, 0, { ...theirs, items: ['Extra Health', 'Mystic Burst'], enhanced: ['Mystic Burst'] });
+  assert.deepStrictEqual(offer.enhanced, ['Mystic Burst']);
+  const e = { ...d, items: { weapon: [], vitality: [], spirit: [] }, enhanced: [], offer };
+  assert.deepStrictEqual([D.takeChoice(e, 1).enhanced, e.enhanced], [true, ['Mystic Burst']]);
+});
+
+test('the Broker\'s stall (his ask, Oct 30): from room 6, never a boss room or beside a rival or another stall, at most 3 a run; corrupting costs health and can be done again', async () => {
+  const stalls = [];
+  let most = 0;
+  for (let seed = 1; seed <= 400; seed++) {
+    const kinds = Array.from({ length: D.LAST_ROOM }, (_, i) => D.roomSpec(seed, i + 1, 'Haze').kind);
+    most = Math.max(most, kinds.filter((k) => k === 'broker').length);
+    kinds.forEach((kind, i) => {
+      if (kind !== 'broker') return;
+      stalls.push([seed, i + 1]);
+      assert.ok(i + 1 >= D.BROKER_FROM && (i + 1) % D.ROOMS_PER_FLOOR !== 0, 'not before room 6, not a boss room');
+      assert.ok(kinds[i - 1] !== 'rival' && kinds[i - 1] !== 'broker', 'not right after a rival or a stall');
+    });
+  }
+  assert.ok(stalls.length > 0, 'stalls turn up');
+  assert.strictEqual(most, D.BROKER_MAX, 'some runs hit the cap, none pass it');
+  assert.ok(D.LAST_ROOM - 1 - D.BROKER_MAX >= 35 && D.LAST_ROOM - D.FLOORS - D.BROKER_MAX >= 12, 'the cap leaves rooms for level 35 and 12 items');
+  const [seed, room] = stalls[0];
+
+  const eligible = POOL.weapon.concat(POOL.vitality, POOL.spirit).filter((n) => itemByName(n).CorruptedUpgrades);
+  const [name, other] = eligible;
+  const d = { ...D.newRun('Haze', seed), room, level: 6 };
+  assert.deepStrictEqual(D.corrupt(d, name), { error: 'item' }, 'it has to be held');
+  const slot = (n) => ({ Weapon: 'weapon', Armor: 'vitality', Tech: 'spirit' }[itemByName(n).Slot]);
+  d.items[slot(name)].push(name);
+  d.items[slot(other)].push(other);
+  const view = await dviews.roomView(member('stall'), d);
+  checkLimits(view, 'the stall');
+  const json = view.embeds[0].toJSON();
+  assert.strictEqual(json.description, 'The Broker\'s stall calls to you. The Broker can corrupt one of your items, but it\'ll cost ya...');
+  assert.ok(json.footer.text.length > 0 && !json.footer.text.startsWith('Floor'), 'a line in his voice');
+  const ids = view.components.flatMap((r) => r.toJSON().components.map((c) => c.custom_id));
+  assert.deepStrictEqual(ids.filter((id) => id.startsWith('farm_dfight')), [], 'no Fight button');
+  assert.ok(ids.includes(`${dviews.DCORRUPT_ID}:stall:${room}`) && ids.includes(`${dviews.DWALK_ID}:stall:${room}`), 'a dropdown to corrupt and Leave');
+  assert.ok(ids.includes(`${dviews.DBVIEW_ID}:stall:${room}`), 'a View Item dropdown');
+  const about = (v) => v.embeds[0].toJSON().fields.find((f) => f.name === 'Corrupted Effects').value;
+  assert.match(about(view), /Select an item/, 'nothing is listed until one is picked');
+  const picked = await dviews.roomView(member('stall'), d, { viewing: name });
+  checkLimits(picked, 'the stall viewing an item');
+  assert.ok(about(picked).startsWith(`**${name}**`), 'the picked item effects');
+
+  const hurt = { ...structuredClone(d), health: D.BROKER_COST };
+  assert.deepStrictEqual(D.corrupt(hurt, name), { error: 'health' }, 'too hurt to pay');
+  const result = D.corrupt(d, name);
+  assert.ok(result.ok && result.drawback && result.amount > 0);
+  assert.deepStrictEqual([d.room, d.health, d.corrupted.map((c) => c.name)], [room + 1, 1 - D.BROKER_COST, [name]]);
+  assert.deepStrictEqual(D.runKit(d).corrupted, d.corrupted, 'the run fights with it');
+  checkLimits(await dviews.roomView(member('stall'), d), 'the next room with a corrupted item');
+  checkLimits(await dviews.buildView(member('stall'), d), 'the build with a corrupted item');
+
+  d.room = room; // a second visit: the corrupted one is not offered again, the other can be corrupted too
+  assert.deepStrictEqual(D.corruptibles(d), [other]);
+  assert.deepStrictEqual(D.corrupt(d, name), { error: 'item' });
+  assert.ok(D.corrupt(d, other).ok);
+  assert.deepStrictEqual(D.corruptedOf(d).map((c) => c.name), [name, other], 'a run can carry several');
+  assert.strictEqual(D.runKit(d).corrupted.length, 2);
+  checkLimits(await dviews.roomView(member('stall'), d), 'two corrupted items');
+  assert.ok(require('../src/utils/farm/hero').buildHero('Haze', { ...D.runKit(d), boons: 6 }).stats.maxHealth > 0, 'the hero builds with both');
+  d.room = room;
+  assert.strictEqual(D.corrupt(d, name).error, 'item', 'nothing left to corrupt');
 });

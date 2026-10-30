@@ -2,7 +2,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const { isAllowedGuild } = require('../utils/guild');
 const { replyEmbed } = require('../utils/embeds');
 const { pickRandom } = require('../utils/random');
-const { WARN_LINES, findPhrase, getPhrases } = require('../utils/censor');
+const { WARN_LINES, findPhrase, getPhrases } = require('../utils/server/censor');
 
 const WARNING_LIFETIME_MS = 15_000; // the warning cleans itself up so it doesn't clutter the channel
 

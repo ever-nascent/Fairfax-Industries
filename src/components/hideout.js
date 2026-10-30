@@ -2,7 +2,7 @@
 // Only the owner can use them. Custom ids: hideout:<owner id>:<action>.
 const { MessageFlags } = require('discord.js');
 const { replyEmbed } = require('../utils/embeds');
-const hideout = require('../utils/hideout');
+const hideout = require('../utils/shop/hideout');
 
 const reply = (interaction, text) => interaction.reply({ embeds: [replyEmbed(text)], flags: MessageFlags.Ephemeral });
 

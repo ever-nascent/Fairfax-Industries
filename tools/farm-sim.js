@@ -334,21 +334,30 @@ function best() {
 // /descend (descent.js): whole runs from room 1 until the hero falls. The random bot picks any choice (a full build gives up its cheapest item). The good
 // bot plays like a member who knows the game: it takes the item worth the most to its hero over what it replaces (`worth`), gives up its least useful item
 // when full, skips to heal when low with nothing much on offer, and for a boss's buff or legendary plays each choice on the next room and keeps the best.
+// It flees a rival it loses to in two of three tries (Flee passes the room with nothing).
 // Both spend ability points in order (tier 1s, then 2s, then 3s).
 function descend() {
   const D = require(path.join(ROOT, 'descent'));
+  const ASCENSION = Math.max(0, Math.min(D.MAX_ASCENSION, Number(opt('ascension', 0)) || 0)); // --ascension=N plays every run at that level
   const { SLOTS, countItems, priceFor } = require(path.join(ROOT, 'levels'));
   const runs = arg('seeds', 20);
   for (const k of ['health', 'dps', 'growth', 'knee', 'late']) if (opt(k)) D.TUNE[k] = Number(opt(k)); // try other numbers without editing descent.js
   for (const k of ['boss-health', 'boss-dps']) if (opt(k)) D.BOSS[k.slice(5)] = Number(opt(k));
-  const spendAll = (d) => { for (const tier of [0, 1, 2]) for (let slot = 1; slot <= 4; slot++) if ((d.tiers[slot] ?? 0) === tier) D.spendPoint(d, slot); };
+  // A build to try (his ask, Oct 29): --build=Item,Item takes those whenever offered (else the bot's own picks), --focus=<slot> puts ability points into that ability first,
+  // --legendary=Name takes that legendary when offered.
+  const BUILD = String(opt('build', '')).split(',').map((x) => x.trim()).filter(Boolean);
+  const FOCUS = arg('focus', 0);
+  const LEGENDARY = opt('legendary', '');
+  const ALL_ENHANCED = !!opt('all-enhanced'); // --all-enhanced=1: every item and legendary offered is the enhanced one (the best case, for trying a build)
+  const spendAll = (d) => { if (FOCUS) for (const tier of [0, 1, 2]) if ((d.tiers[FOCUS] ?? 0) === tier) D.spendPoint(d, FOCUS); for (const tier of [0, 1, 2]) for (let slot = 1; slot <= 4; slot++) if ((d.tiers[slot] ?? 0) === tier) D.spendPoint(d, slot); };
   const cheapest = (d) => SLOTS.flatMap((s) => d.items[s]).sort((a, b) => itemByName(a).Cost - itemByName(b).Cost)[0];
   const apply = (d, i) => { if (i < 0) return D.skipChoice(d); const r = D.takeChoice(d, i); if (r.error === 'full') D.takeChoice(d, i, cheapest(d)); return r; };
   const score = (d, i, rng) => { // how the next room goes after taking choice i (-1: skip)
     const copy = structuredClone(d);
     apply(copy, i);
     spendAll(copy);
-    const spec = D.roomSpec(copy.seed, copy.room, copy.hero);
+    const spec = D.specOf(copy);
+    if (spec.kind === 'broker') return 0; // no fight to score
     let total = 0;
     for (let t = 0; t < 3; t++) { const run = D.fightRoom(copy, spec, rng); total += run.won ? 1 + run.health : 0; }
     return total;
@@ -356,14 +365,15 @@ function descend() {
   // What one item is worth to this hero (a member who knows the game): how much more damage it deals and how much longer it lasts with it alone,
   // at level 12, against weapon and spirit damage (log-scaled, so a 10% gain in either counts the same). Kept per hero.
   const values = new Map();
-  const worth = (hero, name) => {
-    const key = `${hero}|${name}`;
+  const worth = (hero, name, enhanced = false) => { // `enhanced`: the offered copy is the enhanced one (Oct 29: the good bot takes those into account)
+    const key = `${hero}|${name}${enhanced ? '|e' : ''}`;
     if (!values.has(key)) {
-      const deal = (items) => { let t = 0; for (let s = 1; s <= 2; s++) { const h = buildHero(hero, { items, boons: 12 }); const f = new Fight({ heroes: [h], enemies: [enemy('Dummy', { maxHealth: 1e6, dps: 0, bulletResist: 0.15, spiritResist: 0.15, distance: 15 })], rng: seeded(s * 7919) }); f.run(30); t += f.dealt.get(h) || 0; } return t; };
-      const last = (items) => { let t = 0; for (const damageType of ['bullet', 'spirit']) { const h = buildHero(hero, { items, boons: 12 }); const f = new Fight({ heroes: [h], enemies: [enemy('Brute', { maxHealth: 1e7, dps: 60, damageType, distance: 15 })], rng: seeded(31) }); f.run(120); t += f.time; } return t; };
+      const deal = (items, enh = []) => { let t = 0; for (let s = 1; s <= 2; s++) { const h = buildHero(hero, { items, boons: 12, enhanced: enh }); const f = new Fight({ heroes: [h], enemies: [enemy('Dummy', { maxHealth: 1e6, dps: 0, bulletResist: 0.15, spiritResist: 0.15, distance: 15 })], rng: seeded(s * 7919) }); f.run(30); t += f.dealt.get(h) || 0; } return t; };
+      const last = (items, enh = []) => { let t = 0; for (const damageType of ['bullet', 'spirit']) { const h = buildHero(hero, { items, boons: 12, enhanced: enh }); const f = new Fight({ heroes: [h], enemies: [enemy('Brute', { maxHealth: 1e7, dps: 60, damageType, distance: 15 })], rng: seeded(31) }); f.run(120); t += f.time; } return t; };
       if (!values.has(`${hero}|`)) values.set(`${hero}|`, { deal: deal([]), last: last([]) });
       const base = values.get(`${hero}|`);
-      values.set(key, Math.log(Math.max(1e-3, deal([name]) / base.deal)) + Math.log(Math.max(1e-3, last([name]) / base.last)));
+      const enh = enhanced ? [name] : [];
+      values.set(key, Math.log(Math.max(1e-3, deal([name], enh) / base.deal)) + Math.log(Math.max(1e-3, last([name], enh) / base.last)));
     }
     return values.get(key);
   };
@@ -376,25 +386,29 @@ function descend() {
     let pick = -1;
     d.offer.choices.forEach((n, i) => {
       const used = priceFor(itemByName(n), d.items).used;
-      const gain = worth(d.hero, n) - (used.length ? used.reduce((s, u) => s + worth(d.hero, u), 0) : countItems(d.items) >= 12 ? worth(d.hero, weakest(d)) : 0);
+      const gain = (BUILD.includes(n) ? 5 : 0) + worth(d.hero, n, d.offer.enhanced?.includes(n)) - (used.length ? used.reduce((s, u) => s + worth(d.hero, u), 0) : countItems(d.items) >= D.rules(d).maxItems ? worth(d.hero, weakest(d)) : 0);
       if (gain > best) { best = gain; pick = i; }
     });
     return d.health < 0.35 && best < 0.1 ? -1 : pick;
   }
-  function one(hero, seed, good) {
-    const d = D.newRun(hero, seed);
+  function one(hero, seed, good, ascension = ASCENSION) {
+    const d = D.newRun(hero, seed, ascension);
     const rng = seeded(seed * 7919 + (good ? 1 : 0));
     for (;;) {
-      const spec = D.roomSpec(d.seed, d.room, d.hero);
+      const spec = D.specOf(d);
+      if (spec.kind === 'broker') { const [name] = D.corruptibles(d); if (good && name) D.corrupt(d, name); else d.room += 1; continue; } // a good bot corrupts its first tier 3-4 item, as a player would
+      if (good && spec.kind === 'rival' && [0, 1, 2].filter(() => D.fightRoom(structuredClone(d), spec, rng).won).length < 2) { D.walkAway(d); continue; } // Flee a duel it would usually lose, as a player can (from Ascension 3 it costs health)
       const run = D.fightRoom(d, spec, rng);
       if (!run.won) return { rooms: d.room - 1, end: spec.kind, level: d.level };
       D.afterWin(d, run);
+      if (LEGENDARY && opt('always') && d.offer?.kind === 'legendaries' && !d.offer.choices.includes(LEGENDARY)) d.offer.choices[0] = LEGENDARY; // --always=1: the legendary is in every legendary offer
+      if (ALL_ENHANCED && d.offer?.choices && d.offer.kind !== 'buffs') d.offer.enhanced = [...d.offer.choices];
       if (spec.final) return { rooms: D.LAST_ROOM, end: 'cleared', level: d.level };
       spendAll(d);
       let choice = Math.floor(rng() * d.offer.choices.length);
       if (good && d.offer.kind === 'items') choice = itemPick(d);
-      else if (good) { let best = -1; choice = -1; for (let i = -1; i < d.offer.choices.length; i++) { const sc = score(d, i, rng); if (sc > best) { best = sc; choice = i; } } }
-      if (good && choice >= 0 && d.offer.kind === 'items' && countItems(d.items) >= 12 && !priceFor(itemByName(d.offer.choices[choice]), d.items).used.length) {
+      else if (good) { let best = -1; choice = -1; for (let i = -1; i < d.offer.choices.length; i++) { const sc = score(d, i, rng); if (sc > best) { best = sc; choice = i; } } if (LEGENDARY && d.offer.kind === 'legendaries' && d.offer.choices.includes(LEGENDARY)) choice = d.offer.choices.indexOf(LEGENDARY); }
+      if (good && choice >= 0 && d.offer.kind === 'items' && countItems(d.items) >= D.rules(d).maxItems && !priceFor(itemByName(d.offer.choices[choice]), d.items).used.length) {
         D.takeChoice(d, choice, weakest(d)); // a full build gives up its least useful item, not its cheapest
       } else apply(d, choice);
       spendAll(d);
@@ -402,17 +416,27 @@ function descend() {
   }
   const stat = (list) => { const r = list.map((x) => x.rooms).sort((a, b) => a - b); const q = (f) => r[Math.min(r.length - 1, Math.floor(f * r.length))]; return { med: q(0.5), lo: q(0.25), hi: q(0.75), max: r.at(-1) }; };
   const floor = (rooms) => `room ${rooms} (floor ${Math.min(D.FLOORS, D.floorOf(rooms + 1))})`;
-  const heroes = String(opt('hero', 'Haze')).toLowerCase() === 'all' ? roster() : [HERO];
-  if (heroes.length > 1) {
-    console.log(`${runs} runs each, rooms cleared: median random / good`);
-    for (const hero of heroes) {
-      const r = stat(Array.from({ length: runs }, (_, i) => one(hero, i + 1, false)));
-      const g = stat(Array.from({ length: Math.max(4, Math.round(runs / 4)) }, (_, i) => one(hero, i + 1, true)));
-      console.log(`${hero.padEnd(16)}${String(r.med).padEnd(6)}${g.med}`);
+  // --ascension=all: how many good-pick runs clear the descent at each ascension (the bar, his ask Oct 26: every level still beatable)
+  if (String(opt('ascension', '')).toLowerCase() === 'all') {
+    console.log(`${runs} good-pick runs per ascension: cleared, median rooms`);
+    for (let a = 0; a <= D.MAX_ASCENSION; a++) {
+      const list = Array.from({ length: runs }, (_, i) => one(HERO, i + 1, true, a));
+      console.log(`A${String(a).padEnd(4)}${String(list.filter((x) => x.end === 'cleared').length).padStart(3)} / ${runs}   median ${stat(list).med}`);
     }
     return;
   }
-  for (const good of [false, true]) {
+  const heroes = String(opt('hero', 'Haze')).toLowerCase() === 'all' ? roster() : [HERO];
+  if (heroes.length > 1) {
+    console.log(`${runs} runs each${ASCENSION ? ` at Ascension ${ASCENSION}` : ''}, rooms cleared: median random / good (good runs that cleared)`);
+    for (const hero of heroes) {
+      const r = stat(Array.from({ length: runs }, (_, i) => one(hero, i + 1, false)));
+      const goods = Array.from({ length: Math.max(4, Math.round(runs / 4)) }, (_, i) => one(hero, i + 1, true));
+      const g = stat(goods);
+      console.log(`${hero.padEnd(16)}${String(r.med).padEnd(6)}${String(g.med).padEnd(6)}(${goods.filter((x) => x.end === 'cleared').length} / ${goods.length})`);
+    }
+    return;
+  }
+  for (const good of opt('good-only') ? [true] : [false, true]) { // --good-only=1: just the good bot (half the time)
     const list = Array.from({ length: runs }, (_, i) => one(HERO, i + 1, good));
     const s2 = stat(list);
     const ends = {};

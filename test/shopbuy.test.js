@@ -4,10 +4,10 @@ const test = require('node:test');
 const assert = require('node:assert');
 const { MessageFlags } = require('discord.js');
 const { getStore } = require('../src/storage');
-const { getUser } = require('../src/utils/xp');
-const { BOOST_PRICE, REJUV_PRICE, REJUV_MAX } = require('../src/utils/xp');
-const { STYLES } = require('../src/utils/shop');
-const { HIDEOUT_PRICE } = require('../src/utils/hideout');
+const { getUser } = require('../src/utils/economy/xp');
+const { BOOST_PRICE, REJUV_PRICE, REJUV_MAX } = require('../src/utils/economy/xp');
+const { STYLES } = require('../src/utils/shop/shop');
+const { HIDEOUT_PRICE } = require('../src/utils/shop/hideout');
 const routes = require('../src/components/shop');
 
 const route = (name) => routes.find((r) => r.name === name);

@@ -3,9 +3,9 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { AuditLogEvent: A, EmbedBuilder, Collection } = require('discord.js');
-const audit = require('../src/utils/auditLog');
-const { handleEntry, permDiff } = require('../src/utils/auditEntries');
-const memory = require('../src/utils/auditMessages');
+const audit = require('../src/utils/audit/auditLog');
+const { handleEntry, permDiff } = require('../src/utils/audit/auditEntries');
+const memory = require('../src/utils/audit/auditMessages');
 
 // A server with the log channel, #general inside a category, and a fake Discord audit log.
 const sent = [];

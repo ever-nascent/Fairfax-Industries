@@ -1,11 +1,14 @@
+// The entry point: `npm start` / Start Bot.bat runs this file. In order: back up the souls files, run the one-time economy migrations,
+// load every command (src/commands) and event (src/events), register the slash commands with Discord, then log in.
+// Nothing feature-specific lives here; to add a feature, add a command/event/component file and it is picked up on its own.
 try { process.loadEnvFile(); } catch {} // .env (missing = the DISCORD_TOKEN check below says so)
 const { Client, GatewayIntentBits, Partials, REST } = require('discord.js');
 const { loadCommands } = require('./handlers/loadCommands');
 const { loadEvents } = require('./handlers/loadEvents');
 const { getStore } = require('./storage');
 const { deployCommands } = require('./deploy-commands');
-const { backupToday } = require('./utils/backup');
-const { migrate, moveToHeroes } = require('./utils/economy');
+const { backupToday } = require('./utils/economy/backup');
+const { migrate, moveToHeroes } = require('./utils/economy/economy');
 
 async function main() {
   if (!process.env.DISCORD_TOKEN) {
@@ -14,8 +17,8 @@ async function main() {
   }
 
   // Data work that needs no Discord runs before the bot logs in, so nothing can touch souls half-way through:
-  // today's backup first (utils/backup.js, then hourly in case the bot runs past midnight UTC), then the souls
-  // scale migration (utils/economy.js; does nothing unless SCALE was raised) and the one-time move of farm souls to heroes.
+  // today's backup first (utils/economy/backup.js, then hourly in case the bot runs past midnight UTC), then the souls
+  // scale migration (utils/economy/economy.js; does nothing unless SCALE was raised) and the one-time move of farm souls to heroes.
   const backup = () => {
     try {
       const dir = backupToday();

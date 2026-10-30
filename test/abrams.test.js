@@ -4,11 +4,11 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { getUser } = require('../src/utils/xp');
-const { expireGames } = require('../src/utils/casino');
+const { getUser } = require('../src/utils/economy/xp');
+const { expireGames } = require('../src/utils/games/casino');
 const { HEROES } = require('../src/utils/heroes');
-const { QUESTIONS, ANSWERS, answer } = require('../src/utils/abramsCase');
-const abrams = require('../src/utils/abrams');
+const { QUESTIONS, ANSWERS, answer } = require('../src/utils/games/abramsCase');
+const abrams = require('../src/utils/games/abrams');
 
 const START = 100_000;
 const BET = 1000;
@@ -161,7 +161,7 @@ test('odds: always asking the most even split returns a little over 100%, on pur
 });
 
 test('the case board: the same case draws the same picture, and every clue gets its sticky note', async () => {
-  const { renderBoard } = require('../src/utils/abramsBoard');
+  const { renderBoard } = require('../src/utils/games/abramsBoard');
   const board = { left: ['Haze', 'Shiv', 'Wraith', 'Paige'], caseNo: 4821, clues: QUESTIONS.slice(0, 6).map((_, q) => [q, q % 2 === 0]) };
   const a = await renderBoard(board);
   assert.ok(a.equals(await renderBoard(board)), 'redrawing a case must not move its clutter');

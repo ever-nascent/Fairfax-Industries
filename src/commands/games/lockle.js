@@ -1,5 +1,7 @@
+// /lockle daily|practice: guess the hero from a real ranked build. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// Game logic and picture: utils/games/lockle.js; the guess dropdowns: components/lockle.js.
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { startPractice, startDaily, view } = require('../../utils/lockle');
+const { startPractice, startDaily, view } = require('../../utils/games/lockle');
 
 const FAILED = "Couldn't get a build from the match data right now (deadlock-api.com). Try again in a bit.";
 

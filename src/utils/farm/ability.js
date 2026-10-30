@@ -47,10 +47,12 @@ class Ability {
       // an upgrade's scale adds to the base one, or multiplies it ("Multiply": Apollo's Flawless Advance T3, x1.15 spirit scaling)
       for (const sc of [].concat(n.Scale || [])) scales[sc.Type] = sc.Multiply ? (scales[sc.Type] || 0) * sc.Value : (scales[sc.Type] || 0) + sc.Value;
     }
-    if (!Object.keys(scales).length) return v;
+    if (!Object.keys(scales).length) { if (/Damage/.test(field)) this.sShare = 0; return v; }
     const u = this.unit;
     const im = this.imbued();
-    if (scales.spirit) v += scales.spirit * this.spirit(im); // only when asked: spirit() reads `charged`, which reads value('AbilityCharges') (scaled by max_charges)
+    const base = v;
+    if (scales.spirit) v += scales.spirit * this.spirit(im);
+    if (scales.spirit || /Damage/.test(field)) this.sShare = v > 0 ? (v - base) / v : 0; // the share of a damage number that is spirit power (the Damage Breakdown's lines; weapon-damage scaling counts as base) // only when asked: spirit() reads `charged`, which reads value('AbilityCharges') (scaled by max_charges)
     v += (scales.weapon_damage_increase || 0) * (u.stats.weaponDamageMult - 1) * 100;
     if (scales.melee) v += scales.melee * (u.stats.lightMelee ?? 0) * (1 + u.stat('meleeDamage')); // x the hero's light melee damage
     if (scales.heavy_melee) v += scales.heavy_melee * (u.stats.heavyMelee ?? 0) * (1 + u.stat('meleeDamage')); // x its heavy melee damage (Billy's Bashdown T3)
@@ -63,6 +65,17 @@ class Ability {
   // The spirit power this ability scales with: the hero's, temporary spirit (Infuser ...), imbued spirit and, for a charged ability, charged spirit.
   spirit(im = this.imbued()) {
     return this.unit.stats.spirit + (this.unit.mod('spirit') + (im.spirit ?? 0) + (this.charged ? this.unit.stat('chargedSpirit') : 0)) * (this.unit.stats.spiritMult ?? 1); // Boundless Spirit's % takes in every source (the wiki)
+  }
+
+  // Seconds after its cast delay that the hero casts no other ability (his call, Oct 28: Bullet Dance can't be cut short by a cast). The game's
+  // flags: a channelled ultimate holds the hero for its channel (9999 = until it ends itself: the hero's file handles those), an exclusive one
+  // (Bullet Dance, Heavy Barrage, Last Stand) for its duration. A stun or anything else that stops the hero ends it (engine.js step).
+  get lockout() {
+    if (!this.ultimate) return 0;
+    const bits = this.data.BehaviourBits ?? [];
+    const channel = this.data.AbilityChannelTime === undefined ? 0 : this.value('AbilityChannelTime');
+    if (bits.includes('BehaviorChannelled') && channel > 0 && channel < 100) return channel;
+    return bits.includes('BehaviorExclusiveUse') ? this.value('AbilityDuration') : 0;
   }
 
   get cooldown() { return this.value('AbilityCooldown'); }
@@ -102,11 +115,30 @@ class Ability {
   // Back to full: every charge, no cooldown (Refresher).
   refresh() { this.cdLeft = 0; this.gapLeft = 0; this.charges = this.maxCharges; }
 
-  // What the live fight message shows next to the ability: its cooldown, or "Ready"; passives override it.
+  // What the live fight message shows next to the ability: its cooldown, or "Ready"; a charged one with a charge in hand says how many ("Ready x2")
+  // and, while one is still coming back, how long ("Ready x1  -  4s"); passives override it.
   status() {
-    const left = Math.max(this.maxCharges > 1 && this.charges > 0 ? 0 : this.cdLeft, this.gapLeft);
+    if (this.maxCharges > 1 && this.charges > 0) {
+      const back = this.charges < this.maxCharges && this.cdLeft > 0 ? `  -  ${Math.ceil(this.cdLeft)}s` : '';
+      return `Ready x${this.charges}${back}`;
+    }
+    const left = Math.max(this.cdLeft, this.gapLeft);
     return left > 0 ? `${Math.ceil(left)}s` : 'Ready';
   }
+
+  // Whether any of its numbers scale with melee damage (engine.js damage gives such an ability 50% of the Weapon Damage bonus, the wiki).
+  get meleeScaled() { return (this._meleeScaled ??= /"Type":"(heavy_)?melee"/.test(JSON.stringify(this.data))); }
+
+  // Stacks the game keeps for good (Sticky Bomb, Combo, Guided Owl, Nox Nostra, Still Life, Bloodscent, Leech Therapy). His call, Oct 28: in
+  // Descend they last the whole run (descent.js puts them in the run's `kept`, by ability name); on the farm every fight starts without them.
+  // Such an ability reads what it brings in with carried(), and has keep() (what it leaves) and stackText() (the screens' Stacks line).
+  carried(fallback = 0) { return this.unit.kept?.[this.data.Name] ?? fallback; }
+
+  // Timing for an ability whose stack needs the enemy dead soon after it lands (Assassinate, Guided Owl, Combo; his ask, Oct 29: "the hero
+  // should try to use it at that specific time"). The hero's damage per second so far this fight (gun, abilities, items: engine.js `dealt`;
+  // nothing to go on in the first second), and whether `e` would die within `seconds` of taking `burst` at that rate.
+  dps(fight) { return fight.time > 1 ? (fight.dealt.get(this.unit) ?? 0) / fight.time : 0; }
+  diesWithin(fight, e, burst, seconds) { return e.health <= burst + this.dps(fight) * seconds; }
 
   ready() {
     if (this.passive || !(this.cooldown > 0) || this.unit.cantAct) return false;
@@ -138,4 +170,7 @@ function spinUp(state, weapon, fight, dt) {
   if (state.spin) fight.addStatus(u, { id: 'spin_up', duration: dt * 1.5, mods: { fireRate: state.spin * (weapon.RoundsPerSecondAtMaxSpin / weapon.RoundsPerSecond - 1) } });
 }
 
-module.exports = { Ability, Unimplemented, Locked, MIN_COOLDOWN, spinUp };
+// What a fight leaves of the hero's ability stacks: { ability name: what its keep() gives }.
+const abilityStacks = (hero) => Object.fromEntries(hero.abilities.filter((a) => a.keep).map((a) => [a.data.Name, a.keep()]));
+
+module.exports = { Ability, Unimplemented, Locked, MIN_COOLDOWN, spinUp, abilityStacks };

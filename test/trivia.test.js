@@ -1,11 +1,11 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const { SCALE } = require('../src/utils/economy');
+const { SCALE } = require('../src/utils/economy/economy');
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { getUser } = require('../src/utils/xp');
-const tv = require('../src/utils/trivia');
+const { getUser } = require('../src/utils/economy/xp');
+const tv = require('../src/utils/games/trivia');
 const { HEROES } = require('../src/utils/heroes');
 
 test('the trivia data covers every hero: lines, and 4 abilities with icons', () => {

@@ -556,7 +556,7 @@ test('Drifter: each ability does its job', () => {
   assert.ok(!pack[0].has('blind'));
 });
 
-test('shotguns: every pellet lands up close, about 70% of them from 15 m on; a hit-once gun has nothing to miss', () => {
+test('shotguns: every pellet lands up close, about 70% of them from 15 m on; a hit-once gun misses MISS.npc (10%) of its shots at base Precision', () => {
   const { pelletChance, PELLETS } = require('../src/utils/farm/engine');
   assert.deepStrictEqual([pelletChance(3), pelletChance(5), pelletChance(10), pelletChance(15), pelletChance(20)].map((x) => +x.toFixed(2)), [1, 1, 0.85, 0.7, 0.7]);
   let seed = 3;
@@ -576,8 +576,8 @@ test('shotguns: every pellet lands up close, about 70% of them from 15 m on; a h
   close(shoot('Abrams', 4), 1, 0.001);
   close(shoot('Abrams', 15), PELLETS.far, 0.03);
   close(shoot('Calico', 10), 0.85, 0.03);
-  close(shoot('Drifter', 15), 1, 0.001);
-  close(shoot('Haze', 15), 1, 0.001);
+  close(shoot('Drifter', 15), 0.9, 0.03); // his ask, Oct 28: single bullets miss too (engine.js MISS.npc at base Precision)
+  close(shoot('Haze', 15), 0.9, 0.03);
   // Precision (his call, Oct 22): every point above the base 25 adds a percentage point to the far hit chance, up to all of them
   assert.deepStrictEqual([pelletChance(15, 25), pelletChance(15, 35), pelletChance(15, 80), pelletChance(10, 35)].map((x) => +x.toFixed(2)), [0.7, 0.8, 1, 0.95]);
 });
@@ -1841,14 +1841,21 @@ test('Vindicta: each ability does its job', () => {
   const fa = new Fight({ heroes: [a], enemies: [healthy, weak], rng: () => 0.5 });
   fa.run(2);
   assert.ok(!fa.log.length);
-  weak.health = 500; // a quarter left: half way down from half health
+  assert.strictEqual(a.abilities[3].shot({ health: 500, stats: { maxHealth: 2000 } }), 90 + 45); // a quarter left: half way down from half health
+  weak.health = 500; // the shot can't kill it and the hero deals nothing else, so the kill wouldn't count: it waits (his call, Oct 29)
   fa.run(1.3);
-  assert.strictEqual(500 - weak.health, 90 + 45);
-  assert.strictEqual(a.abilities[3].charges, 1);
-  weak.health = 100;
+  assert.strictEqual(weak.health, 500);
+  weak.health = 120; // now the shot kills it: it fires
   fa.run(2.5);
-  assert.ok(!weak.alive && a.abilities[3].kills === 1);
+  assert.ok(!weak.alive && a.abilities[3].kills === 1 && a.abilities[3].charges === 1);
   close(a.mod('weaponDamage'), 0.06);
+  // the last enemy's kill counts too (the fight ends as it dies); both charges count towards the kill, each shot after its resist
+  const b = quiet(buildHero('Vindicta', { unlocked: 4 }), 1, 2, 3);
+  const last = dummy({ spiritResist: 0.5 });
+  last.health = 130; // one shot (~90 after resist) can't, two can
+  const fb = new Fight({ heroes: [b], enemies: [last], rng: () => 0.5 });
+  fb.run(10);
+  assert.ok(!last.alive && b.abilities[3].kills === 1, 'one kill, counted though the fight ended on it');
 });
 
 test('Viscous: each ability does its job', () => {
@@ -2397,22 +2404,40 @@ test('buffs: the wiki drop rates add up, each type is level 1, and they change t
   assert.strictEqual(buildHero('Haze', { buffs: { maxHealth: 1 } }).stats.maxHealth, base.maxHealth + 15);
 });
 
-test('Precision: 25 flat points to start, a permanent buff adds 1, and a headshot chance is the points in percent', () => {
+test('Precision and Headshot Precision: 25 flat points each to start, a permanent buff adds 1 to both, and a headshot chance is Headshot Precision in percent', () => {
   const { headshotChance } = require('../src/utils/farm/engine');
   const base = buildHero('Haze');
   assert.strictEqual(base.stats.precision, 25);
+  assert.strictEqual(base.stats.headshot, 25);
   assert.strictEqual(headshotChance(base), 0.25);
   const buffed = buildHero('Haze', { buffs: { precision: 15 } });
   assert.strictEqual(buffed.stats.precision, 40);
+  assert.strictEqual(buffed.stats.headshot, 40);
   assert.strictEqual(headshotChance(buffed), 0.4);
   assert.strictEqual(buffText('precision', 3), '+3 Precision');
   assert.strictEqual(headshotChance({ stat: () => 250 }), 1, 'never above every bullet');
-  // items (my picks, his ask Oct 22): the bullet-speed / zoom items and the headshot items add flat points; nothing else does
+  const danny = buildHero('Deadman Danny', { items: ['Headshot Booster'] }); // the wiki: neither of his fire modes can headshot (CanCrit false)
+  assert.strictEqual(headshotChance(danny), 0);
+  // items (his calls, Oct 29): the headshot items add Headshot Precision only; bullet velocity adds a lot of Precision and a little Headshot Precision
   const { heroStats: stats, itemByName } = require('../src/utils/farm/stats');
-  assert.strictEqual(stats(HEROES.Haze, { items: ['Headshot Booster', 'Headhunter'] }).precision, 25 + 5 + 5);
-  assert.strictEqual(stats(HEROES.Haze, { items: ['High-Velocity Rounds'] }).precision, 30);
-  assert.strictEqual(stats(HEROES.Haze, { items: ['Extra Health'] }).precision, 25);
-  assert.ok(itemByName('Infinite Rounds').Info1.Main.some((l) => l.Key === 'Precision' && l.Value === 20), 'a legendary shows it too');
+  const headshot = stats(HEROES.Haze, { items: ['Headshot Booster', 'Headhunter'] });
+  assert.deepStrictEqual([headshot.headshot, headshot.precision], [25 + 5 + 5, 25]);
+  const speed = stats(HEROES.Haze, { items: ['High-Velocity Rounds'] });
+  assert.deepStrictEqual([speed.precision, speed.headshot], [35, 28], '+60% velocity: +10 and +3');
+  const sharp = stats(HEROES.Haze, { items: ['Sharpshooter'] });
+  assert.deepStrictEqual([sharp.precision, sharp.headshot], [35, 28], 'Sharpshooter from its velocity only');
+  assert.deepStrictEqual([stats(HEROES.Haze, { items: ['Extra Health'] }).precision, stats(HEROES.Haze, { items: ['Extra Health'] }).headshot], [25, 25]);
+  assert.ok(itemByName('Infinite Rounds').Info1.Main.some((l) => l.Key === 'Precision' && l.Value === 33), 'a legendary shows it too (+200% velocity)');
+  // overflow (his call, Oct 29): Precision past full accuracy pushes weapon falloff out (and adds to a duel's parry chance)
+  const { overflow, PRECISION, Fight, enemy: foe } = require('../src/utils/farm/engine');
+  const sharpEye = buildHero('Haze', { buffs: { precision: PRECISION.full - 25 + 20 } });
+  assert.deepStrictEqual([overflow(base), overflow(sharpEye)], [0, 20]);
+  const far = foe('Far', { distance: 30 });
+  const fo = new Fight({ heroes: [base, sharpEye], enemies: [far], rng: () => 0.5 });
+  assert.ok(fo.shotDamage(sharpEye, far) > fo.shotDamage(base, far), 'less falloff at 30 m');
+  const near = foe('Near', { distance: 10 });
+  assert.strictEqual(fo.shotDamage(sharpEye, near), fo.shotDamage(base, near), 'nothing changes inside the falloff range');
+  assert.deepStrictEqual([stats(HEROES.Haze, { items: ['Infinite Rounds'] }).headshot, stats(HEROES.Haze, { items: ['Crippling Headshot'] }).headshot], [25 + 25, 25 + 15], 'Infinite Rounds beats every headshot item (his call)');
 });
 
 test("buffs rotate daily: the same day gives the same buffs, other days differ, and drops come from today's buffs", () => {
@@ -2475,10 +2500,22 @@ test('base siege: stages in order, shrines hit like the Patron, one death restar
 
 test("Patron's beam takes a share of max health, so tanking by raw health only gets you so far", () => {
   const haze = buildHero('Haze');
+  haze.stats.stamina = haze.stamina = 0; // no dash-jump dodges (engine.js MOVE.dodge): this is about the beam's numbers
   const f = new Fight({ heroes: [haze], enemies: [SIEGE.stages[1].enemies()[0]], rng: () => 0.99 });
   const before = haze.health;
   for (let i = 0; i < 10; i++) f.step(); // enemies hit once a second
   close(before - haze.health, (440 + 0.05 * haze.stats.maxHealth) * HARDNESS.siege * (1 - haze.stats.bulletResist), 0.05);
+});
+
+test('stamina dodges (his call, Oct 28): a dash-jump makes the next enemy attack within 1 s miss, then the dodge is used up', () => {
+  const haze = buildHero('Haze', { unlocked: 0 });
+  const brute = enemy('Brute', { maxHealth: 1e6, dps: 0 });
+  const f = new Fight({ heroes: [haze], enemies: [brute], rng: () => 0.99 });
+  f.step(); // the hero dash-jumps as soon as it has a stamina charge
+  assert.ok(haze.dodgeUntil > f.time, 'a dodge is up');
+  assert.strictEqual(f.damage(brute, haze, 100, 'bullet', { attack: true }), 0, 'dodged');
+  assert.ok(f.damage(brute, haze, 100, 'bullet', { attack: true }) > 0, 'used up');
+  assert.ok(f.damage(brute, haze, 100, 'spirit') > 0, 'damage that is not an attack (a burn) is never dodged');
 });
 
 test('Rejuv: a hero who dies comes back at full health after 3 s and fights on', () => {
@@ -2540,7 +2577,8 @@ test('the Patron: half weapon and half spirit damage, and a true-damage blast th
   // mixed damage: each resist only takes its half
   const taken = (stats, foe, seconds = 8.05) => {
     const hero = buildHero('Haze', { unlocked: 0 });
-    Object.assign(hero.stats, { healthRegen: 0, maxHealth: 1e6 }, stats);
+    Object.assign(hero.stats, { healthRegen: 0, maxHealth: 1e6, stamina: 0 }, stats); // no dash-jump dodges: this is about the damage numbers
+    hero.stamina = 0;
     hero.health = hero.stats.maxHealth;
     hero.healPool = 0;
     hero.weapon.reloadLeft = 1e9;
@@ -2990,4 +3028,14 @@ test('Haunt specials: what each family does to the hero, and what stops it', () 
   const logs = (key, family) => Array.from({ length: 30 }, (_, i) => simulate('Haze', key, { family, boons: 6, rng: seeded(i + 1) }).log.map(([, text]) => text)).flat();
   assert.ok(logs('medium-camp', 'slum_shroom').some((text) => /^Slum Shroom Used Spore Mines|^w+ Slum Shroom Used Spore Mines/.test(text)), 'the Battle Log names the special');
   assert.ok(!logs('small-camp', 'gutter_ghoul').some((text) => /Toxic Waste/.test(text)));
+});
+
+test("Deadman Danny can't die from his own damage (Kami-Labs), anyone else's still kills", () => {
+  const danny = buildHero('Deadman Danny', { boons: 0 });
+  const f = fight(danny);
+  f.damage(danny, danny, 1e6, 'spirit', { events: false, nonLethal: true });
+  assert.ok(danny.alive);
+  assert.strictEqual(Math.round(danny.health), 1);
+  f.damage(f.enemies?.[0] ?? f.foes[0], danny, 1e6, 'true');
+  assert.ok(!danny.alive);
 });

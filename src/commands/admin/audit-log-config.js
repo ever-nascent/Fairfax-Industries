@@ -1,8 +1,10 @@
+// /audit-log-config (Administrator): which events #audit-log records, ignored channels/members, the channel itself. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// The logging itself is utils/audit/.
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const { requirePermission } = require('../../utils/permissions');
 const { REPLY_COLOR } = require('../../config');
 const { privateReply } = require('../../utils/embeds');
-const { EVENTS, getSettings, updateSettings, getHistory, ts, clip } = require('../../utils/auditLog');
+const { EVENTS, getSettings, updateSettings, getHistory, ts, clip } = require('../../utils/audit/auditLog');
 
 const ALL = 'all';
 

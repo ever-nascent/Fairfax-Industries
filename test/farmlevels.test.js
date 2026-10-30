@@ -3,7 +3,7 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 process.env.FARM_FRAME_MS = '0';
 const test = require('node:test');
 const assert = require('node:assert');
-const { getUser } = require('../src/utils/xp');
+const { getUser } = require('../src/utils/economy/xp');
 const { getFarmUser, chooseHero, play, simulate, upgradeAbility, buyItem, sellItem, updateFarmUser: changeRecord } = require('../src/utils/farm/play');
 const { progress, pointsSpent, campMultiplier, THRESHOLDS, MAX_LEVEL } = require('../src/utils/farm/levels');
 const { PAYOUT_SCALE } = require('../src/utils/farm/targets');
@@ -68,7 +68,7 @@ test('items: 12 of any kind, wiki prices from the hero\'s own souls, sell for ha
   const id = 'it1';
   await chooseHero(id, 'Haze');
   assert.strictEqual((await buyItem(id, 'Extra Health')).error, 'souls');
-  await require('../src/utils/xp').changeSouls(id, 100000, 'staff');
+  await require('../src/utils/economy/xp').changeSouls(id, 100000, 'staff');
   assert.strictEqual((await buyItem(id, 'Extra Health')).error, 'souls', 'the server balance buys nothing here');
   await giveSouls(id, 100000);
   const price = (n) => itemByName(n).Cost;
@@ -167,7 +167,7 @@ test('a trip adds its souls to the hero (levels), and the hero screen fits Disco
       const shop = await views.shopView(member(id), { ...record, souls: 5 }, kind, Date.now(), tier);
       assert.strictEqual(shop.components.length, 4, `${kind}: tabs, price buttons, the buy menu, Back / Hero`);
       assert.deepStrictEqual(shop.components[1].toJSON().components.map((b) => b.label), ['800', '1,600', '3,200', '6,400']);
-      assert.ok(shop.files.some((f) => f.name === 'shop.png'));
+      assert.ok(shop.files.some((f) => f.name === 'shop.jpg'));
       const ids = shop.components.flatMap((r) => r.toJSON().components.map((c) => c.custom_id));
       assert.strictEqual(new Set(ids).size, ids.length, `${kind} ${tier}: Discord refuses duplicate custom ids`);
       menus.push(shop.components[2].toJSON().components[0].options);
@@ -178,7 +178,7 @@ test('a trip adds its souls to the hero (levels), and the hero screen fits Disco
       for (const o of options) assert.ok(o.description.length <= 100 && o.label.length <= 100);
     }
   }
-  assert.ok(view.files.some((f) => f.name === 'hero.png'));
+  assert.ok(view.files.some((f) => f.name === 'hero.jpg'));
   const j = view.embeds[0].toJSON();
   assert.match(j.title, /Level/);
 });
@@ -369,4 +369,20 @@ test('the item shop keeps the price picked when the tab changes', async () => {
   assert.ok(ids.includes(`${views.SHOPTAB_ID}:${id}:spirit:4`));
   const spirit = await views.shopView(member(id), await getFarmUser(id), 'spirit', Date.now(), 4);
   assert.match(spirit.embeds[0].data.title, /Spirit\s+-\s+6,400/);
+});
+
+test('Deadman Danny can not buy Ricochet (the wiki), in the shop or in a rival kit; other heroes can', async () => {
+  const { canBuy } = require('../src/utils/farm/levels');
+  const { rivalKit } = require('../src/utils/farm/encounter');
+  assert.strictEqual(canBuy('Deadman Danny', 'Ricochet'), false);
+  assert.strictEqual(canBuy('Haze', 'Ricochet'), true);
+  assert.strictEqual(canBuy('Deadman Danny', 'Extra Health'), true);
+  await chooseHero('rico', 'Deadman Danny');
+  await giveSouls('rico', 100000);
+  assert.strictEqual((await buyItem('rico', 'Ricochet')).error, 'banned');
+  await chooseHero('rico2', 'Haze');
+  await giveSouls('rico2', 100000);
+  assert.strictEqual((await buyItem('rico2', 'Ricochet')).ok, true);
+  const kit = { boons: 0, unlocked: 1, points: 0, items: ['Ricochet', 'Ricochet'].slice(0, 1), buffs: {} };
+  for (let i = 1; i < 40; i++) assert.ok(!rivalKit(kit, seeded(i), 'Deadman Danny').items.includes('Ricochet'));
 });

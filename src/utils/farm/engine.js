@@ -21,7 +21,7 @@ const ATTACK_EVERY = 1;
 const MELEE = { every: 1.5, busy: 0.8, closeDistance: 3, closeFor: 3 };
 // Movement (his call, Oct 3): the hero dash-jumps whenever it has stamina (the wiki's stamina and recharge), is airborne a moment after each,
 // and slides now and then. ponytail: the gap, air time and slide timing are placeholders.
-const MOVE = { dashGap: 1, airTime: 1, slideEvery: 6, slideTime: 1 };
+const MOVE = { dashGap: 1, airTime: 1, slideEvery: 6, slideTime: 1, dodge: 1 }; // dodge (his call, Oct 28: stamina helps dodge): a dash-jump makes the next enemy attack or blast within this many seconds miss
 // Hero against hero (an encounter's duel; his call, Oct 3: "half damage plus 25% miss"): heroes deal `damage` of their damage to each other and
 // `miss` of their gun shots at a hero miss, so a duel lasts about half a minute instead of ten seconds and no pairing is decided before it starts.
 // Nothing here touches a fight against NPCs.
@@ -39,13 +39,22 @@ const PELLETS = { full: 5, at: 15, far: 0.7 };
 // Precision (his call, Oct 22: a flat stat, 25 to start, +1% a point, raised by permanent buffs): a bullet is a headshot with `precision` percent
 // chance, and every point above the base adds a percentage point to a spread pellet landing (never above all of them). ponytail: the base adds
 // nothing to pellets, so shotguns are as accurate as before until something raises it; his to say otherwise.
-const PRECISION = { base: 25 };
-const headshotChance = (unit) => clamp(unit.stat('precision') / 100, 0, 1);
+// Overflow (his call, Oct 29): past `full` (every pellet lands at 15 m, no single shot misses, a duel's misses are gone) each point adds `parry` to a
+// duel's parry chance on top and pushes weapon falloff out by `range` (like attack range). ponytail: both amounts are my placeholders.
+const PRECISION = { base: 25, full: 55, parry: 0.01, range: 0.01, maxParry: 0.8 }; // maxParry: a duel's parry chance never above it (my pick)
+const overflow = (unit) => Math.max(0, unit.stat('precision') - PRECISION.full);
+const headshotChance = (unit) => (unit.stats?.noHeadshot ? 0 : clamp(unit.stat('headshot') / 100, 0, 1)); // Headshot Precision (his call, Oct 28: its own stat)
+// Misses (his ask, Oct 28: "Single bullet guns never missing is a big problem, same with Melees"; the numbers left to me: "a good mix of balance and
+// challenge"): a single bullet or a melee misses MISS.npc of the time against an NPC (big, slow targets) and MISS.hero against a hero (a duel),
+// at the base Precision; each point above it takes a percentage point off. A shotgun's pellets against an NPC have their own spread instead.
+const MISS = { npc: 0.1, hero: DUEL.miss };
+const missChance = (unit, target) => clamp((target.team === 'hero' ? MISS.hero : MISS.npc) - (unit.stat('precision') - PRECISION.base) / 100, 0, 1);
 const pelletChance = (distance, precision = PRECISION.base) => clamp(1 - (1 - PELLETS.far) * clamp((distance - PELLETS.full) / (PELLETS.at - PELLETS.full), 0, 1) + (precision - PRECISION.base) / 100, 0, 1);
 const { stackResist } = require('./buffs');
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const CC_TAGS = ['sleep', 'curse', 'stun', 'disarm', 'silence', 'immobilize'];
-const CANT_ACT = ['sleep', 'curse', 'void', 'hold']; // sleep and curse are separate: both stop actions, but only sleep wakes on damage and curse cannot be cleansed
+const STOPS = ['sleep', 'curse', 'stun']; // what interrupts a lasting ultimate
+const CANT_ACT = ['sleep', 'curse', 'stun', 'void', 'hold']; // sleep and curse are separate: both stop actions, but only sleep wakes on damage and curse cannot be cleansed; a stun also interrupts a cast or channel (Oct 28, his call)
 const OWN_EVENTS = new Set(['dash', 'slide', 'reloadStart', 'reloadEnd', 'cast', 'melee', 'unstealth', 'heal', 'cc', 'ccLanded', 'blast']); // heard only by the hero they are about
 const HELPLESS =['stun', 'sleep', 'immobilize']; // an enemy that can't hit back: worth walking up to and meleeing
 // Ability Range (his call, Oct 3): the enemies of a group stand one behind the other, SPREAD metres apart on average (each gap is rolled, half to one and a
@@ -80,6 +89,7 @@ class Unit {
     this.nextSlide = MOVE.slideEvery;
     this.meleeAt = 0; // when it may melee again
     this.busyUntil = 0; // a melee swing holds the gun
+    this.lockedUntil = 0; // a lasting ultimate: no other ability is cast until then (ability.js lockout)
     this.close = null; // the enemy it stands next to after a melee, until closeUntil
     this.closeUntil = 0;
   }
@@ -109,6 +119,12 @@ class Fight {
     this.log = []; // [{ t, who, what }] casts, for tests and later a recap
     this.dealt = new Map(); // unit -> damage it dealt
     this.breakdown = new Map(); // hero -> Map(what dealt it: 'Gun' | 'Heavy Melee' | an ability or item name -> damage) (the Damage Breakdown button)
+    this.taken = new Map(); // NPC enemy -> Map(what it dealt the hero with: 'Attack' | its blast | its special -> damage) (the breakdown's Enemy Damage, his ask Oct 26)
+    this.enemyMove = null; // the special an NPC is using right now (what its damage is counted under)
+    this.healed = new Map(); // hero -> Map(what healed it -> health) (the breakdown's Healing, his ask Oct 26)
+    this.healedBy = new Map(); // hero -> Map(what -> Map(the item or ability behind a lifesteal heal -> health)): the lines under Bullet / Spirit Lifesteal
+    this.madeOf = new Map(); // hero -> Map(what dealt it -> Map(item or 'Base' -> damage)): the lines under Gun and under spirit-scaled abilities and items
+    this.healLog = []; // [{ t (whole seconds), unit, what, amount }]: when each heal landed (one entry per source per second; plain regen left out)
     this.by = null; // the ability or item whose hook, tick, cast or delayed effect is running right now (what its damage is counted under)
     this.bonusSouls = 0; // souls items earned in this fight (wiki souls; a won trip pays them at the payout scale)
     this.casting = null; // the ability whose effect is running right now (its damage is tagged with it)
@@ -125,6 +141,7 @@ class Fight {
     enemies.forEach((e, i) => { e.offset = i ? (at += SPREAD * (0.5 + rng())) : 0; });
   }
 
+  asMove(name, fn) { const before = this.enemyMove; this.enemyMove = name; try { return fn(); } finally { this.enemyMove = before; } }
   at(delay, fn) { const by = this.by; this.queue.push({ t: this.time + delay, fn: () => this.as(by, fn) }); } // a delayed effect counts for what scheduled it
   // Runs `fn` with `by` (an ability or item) as what deals its damage.
   as(by, fn) {
@@ -136,6 +153,13 @@ class Fight {
   get foes() { return this.enemies.filter((e) => e.alive && e.targetable); } // enemies still standing (and in sight: a rival hero can hide)
   // The enemies an area of `radius` metres reaches: the front one (the hero is on it) and those standing close enough behind it.
   near(radius) { const foes = this.foes; return foes.filter((e) => (e.offset ?? 0) - (foes[0].offset ?? 0) <= radius); }
+  // A dash-jump in the last MOVE.dodge seconds dodges this hit, and is used up by it (a hero that can't act isn't dodging anything).
+  dashDodge(unit) {
+    if (!(unit.dodgeUntil > this.time) || unit.cantAct) return false;
+    unit.dodgeUntil = 0;
+    return true;
+  }
+
   // How far the hero is from a target: right next to it for a moment after meleeing it, else where it stands.
   distance(hero, target) { return hero.close === target && hero.closeUntil > this.time ? MELEE.closeDistance : target.stats.distance ?? 15; }
 
@@ -145,7 +169,18 @@ class Fight {
     if (unit.stats.ccResist && status.tags?.some((t) => CC_TAGS.includes(t))) duration *= 1 - unit.stats.ccResist; // bosses shrug off part of a stun, sleep or disarm
     if (duration <= 0) return;
     unit.statuses = unit.statuses.filter((s) => s.id !== id); // same id refreshes
-    unit.statuses.push({ mods: {}, tags: [], ...status, until: this.time + duration });
+    unit.statuses.push({ mods: {}, tags: [], from: this.casting, ...status, until: this.time + duration }); // from: the ability that put it on (interrupt)
+  }
+
+  // A stun, sleep or curse cuts the hero's lasting ultimate short (his call, Oct 28): what it put on the hero ends, and so does its own clock.
+  interrupt(hero) {
+    const ult = hero.locking;
+    hero.lockedUntil = 0;
+    hero.locking = null;
+    if (!ult) return;
+    hero.statuses = hero.statuses.filter((s) => s.from !== ult);
+    if (ult.until > this.time) ult.until = this.time;
+    this.log.push({ t: +this.time.toFixed(1), who: hero.name, what: ult.name, interrupted: true });
   }
   removeStatus(unit, id) { unit.statuses = unit.statuses.filter((s) => s.id !== id); }
   // Shortens the debuffs on a unit by `share` (1 = removes them). A curse can expire, but nothing can cleanse it.
@@ -174,6 +209,7 @@ class Fight {
 
   // A debuff that isn't crowd control (a burn, a slow, a heal cut from a Haunt's special): debuff resist shortens it, a cleanse removes it.
   debuff(unit, status) {
+    if (status.dot && this.enemyMove) status = { ...status, dot: { ...status.dot, move: this.enemyMove } };
     this.addStatus(unit, { ...status, duration: status.duration * (1 - clamp(unit.stat('statusResist'), 0, 0.9)), debuff: true });
   }
 
@@ -192,7 +228,7 @@ class Fight {
   }
 
   // A status may carry a `barrier` (damage it soaks before health; `raw: true` = it ignores its owner's resists).
-  // The one place damage happens. type: 'bullet' | 'spirit' | 'melee' (nothing here resists it) | 'true' (no resist takes anything off it: the Patron's
+  // The one place damage happens. type: 'bullet' | 'spirit' | 'melee' (only melee resist takes it down) | 'true' (no resist takes anything off it: the Patron's
   // blast). opts.events = false skips the hooks (extra damage that must not trigger itself), opts.keepsStealth marks hits that don't break invisibility,
   // opts.attack / opts.blast mark an enemy's hit and blast (items may parry or soften them first: the 'attacked' hook), opts.ability is the ability
   // that dealt it (set by the engine while one is running).
@@ -200,16 +236,22 @@ class Fight {
     if (!target.alive || opts.dodged) return 0;
     if (source.team === 'hero' && target.team === 'hero' && source !== target) amount *= DUEL.damage; // a duel
     if (source.team === 'hero' && this.casting) opts.ability ??= this.casting;
+    // the wiki (Close Quarters' page, Oct 28): an ability that scales with melee damage gets 50% of the Weapon Damage bonus (Bebop's Uppercut, Yamato's Flying Slash ...)
+    if (type === 'melee' && source.team === 'hero' && this.by?.meleeScaled) amount *= Math.max(0, 1 + 0.5 * this.weaponBonus(source, target));
     if (opts.attack || opts.blast || opts.special || opts.melee) { // defensive items hear rival melee too; only an `attack` can be parried
       const hit = { source, target, amount, type, opts };
       this.emit('attacked', hit);
       amount = hit.amount;
       if (amount <= 0) return 0;
     }
-    if (type === 'bullet' && !opts.unavoidable && !opts.noEvade && this.rng() < target.mod('evasion')) return 0; // unavoidable (Armor Piercer), noEvade (Lucky Shot's bonus)
+    // a dash-jump's dodge (MOVE.dodge) takes the next attack: both halves of a mixed one (they share opts), never a hit that can't miss
+    // an enemy's `accuracy` (0-1, /descend's, his ask Oct 29: "hit harder and more accurately") is the share of its hits a dodge or evasion would have taken that land anyway
+    const sure = !opts.unavoidable && source.team === 'enemy' && source.stats.accuracy > 0 && this.rng() < source.stats.accuracy;
+    if ((opts.attack || opts.special) && !opts.unavoidable && !sure && this.dashDodge(target)) { opts.dodged = true; return 0; }
+    if (type === 'bullet' && !opts.unavoidable && !sure && !opts.noEvade && this.rng() < target.mod('evasion')) return 0; // unavoidable (Armor Piercer), noEvade (Lucky Shot's bonus)
     const npcOnly = source.team === 'hero' ? target.stats.npcBulletResist ?? 0 : 0; // Monster Rounds' "vs. NPCs" resist: taken back out of the stack against a rival hero
     const bulletResist = npcOnly ? 1 - (1 - target.stats.bulletResist) / (1 - npcOnly) : target.stats.bulletResist;
-    const resist = type === 'true' || type === 'melee' ? 0 : type === 'bullet' ? (opts.ignoreBulletResist ? 0 : stackResist(bulletResist, target.mod('bulletResist')))
+    const resist = type === 'true' ? 0 : type === 'melee' ? stackResist(target.stats.meleeResist ?? 0, target.mod('meleeResist')) : type === 'bullet' ? (opts.ignoreBulletResist ? 0 : stackResist(bulletResist, target.mod('bulletResist')))
       : opts.ignoreSpiritResist ? 0 : stackResist(target.stats.spiritResist, target.mod('spiritResist')); // temporary resists and shreds multiply with the unit's own too
     let incoming = amount * Math.max(0, 1 + (source.stats.damageDealt ?? 0) + source.mod('damageDealt')) * (1 - clamp(resist, -1, 0.9)) * Math.max(0, 1 + target.mod('damageTaken'));
     if (type === 'bullet') incoming *= Math.max(0, 1 + target.mod('bulletTaken')); // Metal Skin
@@ -227,7 +269,7 @@ class Fight {
       incoming -= soaked;
     }
     let dealt = Math.min(target.health, incoming);
-    if (dealt >= target.health && (target.abilities.some((a) => a.preventDeath?.(this)) || target.items.some((it) => it.preventDeath?.(this)))) dealt = Math.max(0, target.health - 1); // Victor's Shocking Reanimation first (the wiki), then Cheat Death
+    if (dealt >= target.health && (opts.nonLethal || target.abilities.some((a) => a.preventDeath?.(this)) || target.items.some((it) => it.preventDeath?.(this)))) dealt = Math.max(0, target.health - 1); // a hit that can't kill (Danny's own), Victor's Shocking Reanimation (the wiki), then Cheat Death
     target.health -= dealt;
     if (dealt > 0) target.lastHit = this.time;
     if (!target.alive && target.rejuvs > 0) this.rejuvenate(target);
@@ -237,11 +279,22 @@ class Fight {
       if (!this.breakdown.has(source)) this.breakdown.set(source, new Map());
       const mine = this.breakdown.get(source);
       mine.set(what, (mine.get(what) || 0) + dealt);
+      const parts = this.madeOfParts(source, target, type, dealt);
+      if (parts) {
+        if (!this.madeOf.has(source)) this.madeOf.set(source, new Map());
+        const sums = this.madeOf.get(source).get(what) ?? this.madeOf.get(source).set(what, new Map()).get(what);
+        for (const [name, n] of parts) sums.set(name, (sums.get(name) || 0) + n);
+      }
+    } else if (dealt > 0 && source.team === 'enemy') {
+      const what = opts.blast ? capital(source.stats.blast?.what ?? 'curse') : opts.attack ? 'Attack' : this.enemyMove ?? 'Other';
+      if (!this.taken.has(source)) this.taken.set(source, new Map());
+      const theirs = this.taken.get(source);
+      theirs.set(what, (theirs.get(what) || 0) + dealt);
     }
     // lifestealOn / spiritLifestealOn: lifesteal against this one target (Apollo's Riposte, Celeste's Light Eater)
     const hero = target.team === 'hero'; // full strength off a rival hero
-    if (type === 'bullet' || type === 'melee') { const steal = (type === 'bullet' ? source.stat('lifesteal') : 0) + target.mod('lifestealOn'); if (steal > 0) this.heal(source, dealt * steal * (hero ? 1 : BULLET_LIFESTEAL_VS_NPC), 'lifesteal'); }
-    else if (type === 'spirit') { const steal = source.stat('spiritLifesteal') + target.mod('spiritLifestealOn'); if (steal > 0) this.heal(source, dealt * steal * (hero ? 1 : SPIRIT_LIFESTEAL_VS_NPC), 'lifesteal'); }
+    if (type === 'bullet' || type === 'melee') { const steal = (type === 'bullet' ? source.stat('lifesteal') : 0) + target.mod('lifestealOn'); if (steal > 0) this.lifesteal(source, dealt * steal * (hero ? 1 : BULLET_LIFESTEAL_VS_NPC), type === 'bullet' ? 'lifesteal' : null, target.mod('lifestealOn'), 'Bullet Lifesteal'); }
+    else if (type === 'spirit') { const steal = source.stat('spiritLifesteal') + target.mod('spiritLifestealOn'); if (steal > 0) this.lifesteal(source, dealt * steal * (hero ? 1 : SPIRIT_LIFESTEAL_VS_NPC), 'spiritLifesteal', target.mod('spiritLifestealOn'), 'Spirit Lifesteal'); }
     // The siege's own sustain (targets.js siegeSustain): it heals for a share of every hit that lands, blasts too (the hero's heal cuts
     // shrink it through heal()'s healAmp), and each hit cuts the hero's healing for a few seconds (a debuff: resist shortens it, a cleanse ends it).
     if (source.team === 'enemy' && dealt > 0) {
@@ -265,7 +318,8 @@ class Fight {
     if (!target.alive && target.stats.special?.onDeath && !target.burst) { // a Haunt that goes off as it dies (the Specimen)
       target.burst = true;
       const victim = this.heroes.find((h) => h.alive);
-      if (victim) { this.log.push({ t: +this.time.toFixed(1), who: target.name, what: target.stats.special.name, enemy: true, special: true }); target.stats.special.onDeath(this, target, victim); }
+      const what = target.stats.special.deathName ?? target.stats.special.name; // a death effect may have its own name (/descend's Medic Pack)
+      if (victim) { this.log.push({ t: +this.time.toFixed(1), who: target.name, what, enemy: true, special: true, ...(target.stats.special.deathName ? { drop: true } : {}) }); this.asMove(what, () => target.stats.special.onDeath(this, target, victim)); }
     }
     return dealt;
   }
@@ -279,22 +333,96 @@ class Fight {
     this.log.push({ t: +this.time.toFixed(1), who: unit.name, what: 'Rejuvenated' });
   }
 
+  // What one hit of a hero's was made of, for the Damage Breakdown: the Gun's bonus weapon damage by item (each adds its share of the bonus on top
+  // of the base), and an ability's or item's spirit-scaled part by where the spirit power came from (items, levels, buffs, what a status gave). An
+  // estimate: the spirit share is read off the last damage number the ability or item worked out (`sShare`). Returns Map(name -> damage) or null.
+  madeOfParts(hero, target, type, dealt) {
+    const parts = new Map();
+    const add = (name, v) => { if (v > 1e-9) parts.set(name, (parts.get(name) ?? 0) + v); };
+    const s = hero.stats;
+    if (type === 'bullet' && !this.by) {
+      const sheet = s.weaponBy ?? {};
+      let rest = s.weaponDamageMult - 1 - (target.team === 'hero' ? s.npcWeapon ?? 0 : 0);
+      for (const [name, v] of Object.entries(sheet)) { add(name, v); rest -= v; }
+      add('Buffs', rest);
+      for (const st of hero.statuses) add(statusName(st), st.mods?.weaponDamage);
+      for (const it of hero.items) add(it.name, it.weaponBonus(this, target));
+      parts.set('Base', 1);
+    } else if (type === 'spirit' && this.by?.sShare > 0) {
+      const by = this.by;
+      const mult = s.spiritMult ?? 1;
+      let rest = s.spirit;
+      for (const [name, v] of Object.entries(s.spiritBy ?? {})) { add(name, v); rest -= v; }
+      add('Buffs', rest);
+      for (const st of hero.statuses) add(statusName(st), (st.mods?.spirit ?? 0) * mult);
+      let known = 0;
+      for (const v of parts.values()) known += v;
+      const total = by.spirit ? by.spirit() : s.spirit + hero.mod('spirit') * mult;
+      add('Other', total - known);
+      known = Math.max(known, total);
+      for (const [name, v] of parts) parts.set(name, (dealt * by.sShare * v) / known);
+      parts.set('Base', dealt * (1 - by.sShare));
+      return parts;
+    } else return this.by ? new Map([['Base', dealt]]) : null; // a melee hit or a flat one of an ability or item: all base, so the lines add up to its total
+    let total = 0;
+    for (const v of parts.values()) total += v;
+    for (const [name, v] of parts) parts.set(name, (dealt * v) / total);
+    return parts;
+  }
+
+  // A lifesteal heal of `amount`, shared out by who gave the lifesteal (the sheet's per item `<key>By`, statuses by what put them on, `extra` off the
+  // target) so the Healing page can name Leech, Vampiric Burst ... under Bullet / Spirit Lifesteal. `key` null: only `extra` (a melee hit).
+  lifesteal(unit, amount, key, extra, label) {
+    if (unit.team !== 'hero') return this.heal(unit, amount, 'lifesteal', label);
+    const parts = new Map();
+    const add = (name, v) => { if (v > 1e-9) parts.set(name, (parts.get(name) ?? 0) + v); };
+    if (key) {
+      const sheet = unit.stats[`${key}By`] ?? {};
+      let rest = unit.stats[key] ?? 0;
+      for (const [name, v] of Object.entries(sheet)) { add(name, v); rest -= v; }
+      add('Other', rest);
+      for (const st of unit.statuses) add(statusName(st), st.mods?.[key]);
+    }
+    add('Other', extra);
+    let total = 0;
+    for (const v of parts.values()) total += v;
+    for (const [name, v] of parts) this.heal(unit, (amount * v) / total, 'lifesteal', label, name);
+  }
+
   // kind: 'cast' (an ability's or item's heal: Healing Tempo hears it), 'regen' or 'lifesteal'. Heal amp (Healing Booster, or an enemy's healing
   // cut: Toxic Bullets, Nullification Burst) scales it. Returns what was healed.
-  heal(unit, amount, kind = 'cast') {
+  // `label`: what to count it under in the breakdown's Healing (else the item or ability running, else by kind).
+  heal(unit, amount, kind = 'cast', label = null, sub = null) {
     if (!unit.alive || !(amount > 0)) return 0;
     const amp = unit.stat('healAmp');
     amount *= Math.max(0, 1 + (kind === 'constant' ? Math.min(0, amp) : amp)); // 'constant' regen (the sheet's): healing cuts hit it, Healing Booster doesn't (the wiki)
     if (unit.team === 'hero') { amount = Math.min(amount, unit.healPool); unit.healPool -= amount; }
     amount = Math.min(amount, unit.stats.maxHealth - unit.health);
     unit.health += amount;
+    if (amount > 0 && unit.team === 'hero') this.noteHeal(unit, label ?? this.by?.name ?? (kind === 'lifesteal' ? 'Lifesteal' : kind === 'constant' ? 'Health Regen' : 'Other'), amount, kind !== 'constant', sub);
     if (kind === 'cast' && amount > 0) this.emit('heal', { target: unit, amount });
     return amount;
   }
 
+  noteHeal(unit, what, amount, timed, sub = null) {
+    if (!this.healed.has(unit)) this.healed.set(unit, new Map());
+    const mine = this.healed.get(unit);
+    mine.set(what, (mine.get(what) || 0) + amount);
+    if (sub) {
+      if (!this.healedBy.has(unit)) this.healedBy.set(unit, new Map());
+      const parts = this.healedBy.get(unit).get(what) ?? this.healedBy.get(unit).set(what, new Map()).get(what);
+      parts.set(sub, (parts.get(sub) || 0) + amount);
+    }
+    if (!timed) return;
+    const t = Math.floor(this.time);
+    const last = this.healLog.findLast((h) => h.unit === unit && h.what === what);
+    if (last?.t === t) last.amount += amount;
+    else this.healLog.push({ t, unit, what, amount });
+  }
+
   // A heal over time (Healing Nova, Healing Rite ...): counts as one cast heal when it starts.
   regen(unit, id, perSecond, duration) {
-    this.addStatus(unit, { id, duration, regen: perSecond });
+    this.addStatus(unit, { id, duration, regen: perSecond, by: this.by?.name });
     this.emit('heal', { target: unit, amount: perSecond * duration });
   }
 
@@ -302,13 +430,17 @@ class Fight {
   shotDamage(hero, target) {
     const s = hero.stats;
     const f = s.falloff;
-    const far = 1 + (s.attackRange ?? 0);
+    const far = 1 + (s.attackRange ?? 0) + overflow(hero) * PRECISION.range; // + overflowing Precision
     const d = this.distance(hero, target);
     const scale = d <= f.start * far ? f.startScale
       : d >= f.end * far ? f.endScale : f.startScale + (f.endScale - f.startScale) * ((d - f.start * far) / ((f.end - f.start) * far));
-    const itemBonus = hero.items.reduce((sum, it) => sum + it.weaponBonus(this, target), 0); // distance, target health, build-up ... bonuses
-    const npcOnly = target.team === 'hero' ? s.npcWeapon ?? 0 : 0; // Monster Rounds' "vs. NPCs" damage does nothing to a rival hero
-    return (s.bulletDamage + hero.mod('bulletDamage')) * s.pellets * (s.weaponDamageMult - npcOnly + hero.mod('weaponDamage') + itemBonus) * scale;
+    return (s.bulletDamage + hero.mod('bulletDamage')) * s.pellets * (1 + this.weaponBonus(hero, target)) * scale;
+  }
+
+  // The hero's bonus Weapon Damage against `target` (0.2 = +20%): its stat, buffs, and items' distance, target health, build-up ... bonuses.
+  weaponBonus(hero, target) {
+    const npcOnly = target.team === 'hero' ? hero.stats.npcWeapon ?? 0 : 0; // Monster Rounds' "vs. NPCs" damage does nothing to a rival hero
+    return hero.stats.weaponDamageMult - 1 - npcOnly + hero.mod('weaponDamage') + hero.items.reduce((sum, it) => sum + it.weaponBonus(this, target), 0);
   }
 
   fireWeapon(hero, target) {
@@ -324,9 +456,9 @@ class Fight {
     while (w.charge >= 1 && (w.clip > 0 || infinite) && target.alive) {
       w.charge -= 1;
       if (!infinite) w.clip -= 1;
-      if (target.team === 'hero' && this.rng() < DUEL.miss) continue; // a shot at a hero can miss (a duel)
-      const opts = target.team === 'hero' ? { attack: true } : {}; // a shot at a hero is an attack it may parry or soften (a duel)
       const pellets = hero.stats.pellets;
+      if ((pellets === 1 || target.team === 'hero') && this.rng() < missChance(hero, target)) continue; // a missed shot (MISS)
+      const opts = target.team === 'hero' ? { attack: true } : {}; // a shot at a hero is an attack it may parry or soften (a duel)
       if (pellets > 1) { // a shotgun: how many of its pellets land
         const miss = 1 - pelletChance(this.distance(hero, target), hero.stat('precision'));
         let landed = Math.min(pellets, hero.stats.surePellets ?? 0); // pellets that can't miss (Rat King: one of his two, the wiki)
@@ -367,7 +499,7 @@ class Fight {
     // NPCs have their own Rebuttal behaviour and never choose a parry.
     if (kind === 'heavy' && hero.team === 'hero' && target.team === 'hero' && this.time >= (target.parryAt ?? 0)
       && !target.cantAct && !target.has('stun') && !target.has('blind')) {
-      const chance = target.items.some((it) => it.name === 'Rebuttal') ? DUEL.parryWithRebuttal : DUEL.parryChance;
+      const chance = Math.min(PRECISION.maxParry, (target.items.some((it) => it.name === 'Rebuttal') ? DUEL.parryWithRebuttal : DUEL.parryChance) + (target.stat('precision') - PRECISION.base) / 100 + overflow(target) * PRECISION.parry); // + Precision (his ask, Oct 28), more past full (Oct 29)
       if (this.rng() < chance) {
         opts.dodged = true;
         this.log.push({ t: +this.time.toFixed(1), who: target.name, target: hero.name, parry: true });
@@ -376,6 +508,7 @@ class Fight {
       }
       target.parryAt = this.time + DUEL.parryMissCooldown;
     }
+    if (this.rng() < missChance(hero, target)) return; // a whiffed swing (MISS): the time is spent, nothing lands, no melee procs
     const dealt = this.damage(hero, target, amount, 'melee', opts);
     if (!opts.dodged) {
       this.log.push({ t: +this.time.toFixed(1), who: hero.name, what: `${kind === 'light' ? 'Light' : 'Heavy'} Melee`, target: target.name, melee: true });
@@ -393,6 +526,7 @@ class Fight {
       hero.stamina--;
       hero.nextDash = this.time + MOVE.dashGap;
       this.addStatus(hero, { id: 'airborne', duration: MOVE.airTime, tags: ['airborne'] });
+      hero.dodgeUntil = this.time + MOVE.dodge; // the dash takes the hero out of the next attack or blast (damage, blasts)
       this.emit('dash', { source: hero });
     }
     if (this.time >= hero.nextSlide) {
@@ -404,6 +538,10 @@ class Fight {
 
   cast(ability) {
     ability.use();
+    if (ability.lockout > 0) {
+      ability.unit.lockedUntil = Math.max(ability.unit.lockedUntil, this.time + ability.castDelay + ability.lockout);
+      ability.unit.locking = ability;
+    }
     this.log.push({ t: +this.time.toFixed(1), who: ability.unit.name, what: ability.name });
     this.emit('cast', { source: ability.unit, ability });
     this.at(ability.castDelay, () => {
@@ -428,12 +566,13 @@ class Fight {
     for (const u of units.filter((u) => u.alive)) {
       if (u.team === 'hero') u.healPool = Math.min(u.stats.maxHealth * HEAL_POOL, u.healPool + u.stats.maxHealth * HEAL_RATE * DT);
       this.heal(u, (u.stats.healthRegen || 0) * DT, 'constant');
-      if (u.stats.oocRegen && this.time - u.lastHit > OUT_OF_COMBAT) this.heal(u, u.stats.oocRegen * DT, 'constant');
-      for (const st of u.statuses) if (st.regen) this.heal(u, st.regen * DT, 'regen'); // heals over time (Healing Nova, Mystic Regeneration ...)
+      if (u.stats.oocRegen && this.time - u.lastHit > OUT_OF_COMBAT) this.heal(u, u.stats.oocRegen * DT, 'constant', 'Out-of-Combat Regen');
+      for (const st of u.statuses) if (st.regen) this.heal(u, st.regen * DT, 'regen', st.by ?? null); // heals over time (Healing Nova, Mystic Regeneration ...), counted under what started them
       for (const st of u.statuses) { // damage over time carried by a status (a Haunt's fire, spores or puddle on the hero): gone with the status
         if (!st.dot || this.time + 1e-9 < st.dot.next || !u.alive) continue;
         st.dot.next += st.dot.every;
-        this.damage(st.dot.source, u, st.dot.perSecond * st.dot.every, st.dot.type);
+        const tick = () => this.damage(st.dot.source, u, st.dot.perSecond * st.dot.every, st.dot.type);
+        if (st.dot.move) this.asMove(st.dot.move, tick); else tick(); // an enemy's poison or burn counts under the move that put it on
       }
     }
     for (const [hero, view] of this.views) {
@@ -446,12 +585,18 @@ class Fight {
         const mods = it.dynamicMods(view); // conditional stats, re-read every step
         if (mods) { const { tags = [], ...m } = mods; view.addStatus(hero, { id: `item:${it.name}`, duration: DT * 1.5, mods: m, tags }); }
       }
-      if (hero.cantAct || hero.has('stun') || hero.has('blind') || !hero.alive) continue;
+      // an enemy's stun, sleep or curse (not the ult's own void or hold: Return to Shadows, Hotel Guest) interrupts it
+      if (hero.lockedUntil > view.time && hero.statuses.some((s) => s.debuff && s.tags.some((t) => STOPS.includes(t)))) view.interrupt(hero);
+      if (hero.cantAct || hero.has('stun') || hero.has('blind') || !hero.alive) {
+        // Dispel Magic still works through any crowd control but a curse (his call, Oct 28)
+        if (hero.alive && !['curse', 'void', 'hold', 'noItems'].some((t) => hero.has(t))) for (const it of hero.items) if (it.whileControlled && it.cdLeft <= 0 && it.want(view)) view.useItem(it);
+        continue;
+      }
       if (!hero.has('immobilize')) view.move(hero);
       const target = view.foes[0];
       if (target && view.wantMelee(hero, target)) view.melee(hero, target);
       if (target && hero.alive && !hero.has('disarm')) view.fireWeapon(hero, target);
-      if (!hero.has('silence')) for (const a of [...hero.abilities].reverse()) if (a.ready() && a.want(view)) view.cast(a);
+      if (!hero.has('silence') && view.time >= hero.lockedUntil) for (const a of [...hero.abilities].reverse()) if (a.ready() && a.want(view)) view.cast(a);
       if (!hero.has('noItems')) for (const it of hero.items) if (it.active && it.ready() && it.want(view)) view.useItem(it); // noItems: Cursed Relic
     }
     for (const enemy of this.enemies.filter((e) => e.team === 'enemy' && e.alive && !e.has('sleep') && !e.has('stun') && !e.has('blind'))) { // blind: it can't see anyone to attack (Drifter's Eternal Night; not a stun, so a boss doesn't shrug it off)
@@ -462,18 +607,27 @@ class Fight {
         if (enemy.swing >= ATTACK_EVERY - 1e-9) {
           enemy.swing -= ATTACK_EVERY;
           const hit = (enemy.stats.dps + (enemy.stats.dpsMaxHealthPct || 0) * target.stats.maxHealth) * ATTACK_EVERY;
-          if (enemy.stats.damageType === 'mixed') { // half weapon damage, half spirit damage (the Patron): each half meets its own resist
+          // inside its melee range (the game data's MeleeAttemptRange; the hero gets that close by meleeing it) it swings instead: the same hit, as melee
+          const type = this.distance(target, enemy) <= (enemy.stats.meleeRange ?? 0) ? 'melee' : enemy.stats.damageType;
+          if (type === 'mixed') { // half weapon damage, half spirit damage (the Patron): each half meets its own resist
             const opts = { attack: true }; // one attack: a warp dodges both halves
             this.damage(enemy, target, hit / 2, 'bullet', opts);
             this.damage(enemy, target, hit / 2, 'spirit', opts);
-          } else this.damage(enemy, target, hit, enemy.stats.damageType, { attack: true });
+          } else this.damage(enemy, target, hit, type, { attack: true });
           // a Haunt's special attack (haunts.js): a chance each second, on top of the hit; a silenced one can't
           const special = enemy.stats.special;
           if (special?.use && target.alive && !enemy.has('silence') && this.rng() < special.chance) {
             this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: special.name, enemy: true, special: true });
-            special.use(this, enemy, target);
+            this.asMove(special.name, () => special.use(this, enemy, target));
           }
         }
+      }
+      // a melee slam every so often on top of the hits (the Walker's); a disarm holds it. Sized against its damage per second, so hardness, growth and Descend follow it.
+      const slam = enemy.stats.slam;
+      if (slam && target.alive && !enemy.has('disarm') && this.time >= (enemy.slamAt ??= this.time + slam.first) - 1e-9) {
+        enemy.slamAt = this.time + slam.every;
+        this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: 'Melee Slam', enemy: true, special: true });
+        this.asMove('Melee Slam', () => this.damage(enemy, target, (slam.damage + slam.maxHealthPct * target.stats.maxHealth) * (enemy.stats.dps / slam.dps), 'melee', { special: true }));
       }
       // a blast every so often: it hurts and leaves the hero unable to shoot, cast or use items for a moment, unless the hero gets out of its way or
       // parries it. A silenced enemy holds its blast until the silence ends (his call, Oct 3).
@@ -483,7 +637,7 @@ class Fight {
         const what = blast.what ?? 'curse';
         const event = { source: enemy, target, what, parried: false, dodged: false };
         this.emit('blast', event); // Counterspell parries it; Restorative Locket counts it; Mina's Sanguine Retreat slips it (dodged)
-        const dodged = event.dodged || (!event.parried && !target.has('sleep') && this.rng() < dodgeChance(target, enemy));
+        const dodged = event.dodged || (!event.parried && (this.dashDodge(target) || (!target.has('sleep') && this.rng() < dodgeChance(target, enemy) * (1 - (enemy.stats.accuracy ?? 0)))));
         let landed = false;
         if (!event.parried && !dodged) {
           this.damage(enemy, target, blast.damage + blast.maxHealthPct * target.stats.maxHealth, blast.type ?? 'true', { blast: true });
@@ -498,6 +652,21 @@ class Fight {
         if (this.cc(target, { id: `enemy:${control.id}`, duration: control.duration, tags: control.tags })) {
           this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: control.verb, enemy: true, cc: true });
         }
+      }
+      // a debuffing attack every so often (/descend, his ask Oct 29): a hit that, unless dodged, leaves a debuff on the hero (a resist shred, a slow,
+      // a fire rate cut, poison). Each enemy keeps its own, so two Sharpshooters' shreds add up; debuff resist shortens it, a cleanse removes it.
+      for (const d of enemy.stats.debuffs ?? []) {
+        d.nextAt ??= this.time + d.every;
+        if (!target.alive || enemy.has('silence') || this.time < d.nextAt) continue;
+        d.nextAt = this.time + d.every;
+        const opts = { special: true };
+        this.asMove(d.name, () => {
+          if (d.hit) this.damage(enemy, target, enemy.stats.dps * d.hit, d.type ?? 'bullet', opts);
+          if (!target.alive || opts.dodged) return;
+          this.debuff(target, { id: `${d.id}:${this.enemies.indexOf(enemy)}`, duration: d.duration, mods: d.mods ?? {},
+            ...(d.dot ? { dot: { source: enemy, perSecond: enemy.stats.dps * d.dot, type: 'spirit', every: 0.5, next: this.time + 0.5 } } : {}) });
+        });
+        this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: d.name, enemy: true, special: !opts.dodged, dodged: !!opts.dodged, note: d.note });
       }
     }
   }
@@ -520,20 +689,61 @@ class Fight {
 
 // A plain enemy for fights: health, damage per second, resists, distance in metres, health regen per second,
 // dpsMaxHealthPct = extra damage per second as a share of the target's max health (the Patron's "440 + 5% HP"),
-// damageType = what its attack is ('bullet' | 'spirit' | 'mixed' = half each): which of the hero's resists takes the edge off it,
+// damageType = what its attack is ('bullet' | 'spirit' | 'melee' | 'mixed' = half each): which of the hero's resists takes the edge off it,
+// meleeRange = within this many metres its attack is melee instead (0: never),
+// slam = { first, every (s), damage, maxHealthPct, dps (the damage per second those numbers belong to) }: an extra melee hit (the Walker's),
 // blast = { every (s), damage, maxHealthPct, curse (s the hero can't act), type = 'true', what = 'curse' }: the Patron's cursing blast, the Walker's stomp,
 // souls = what it is worth on its own (Cultist Sacrifice). A Haunt's `special` (haunts.js) is put on its stats by play.js.
-const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', blast = null, controls = [], souls = 0 } = {}) =>
-  new Unit({ name, team: 'enemy', stats: { maxHealth, dps, dpsMaxHealthPct, damageType, blast: blast && { ...blast }, controls: controls.map((c) => ({ ...c, tags: [...c.tags] })), bulletResist, spiritResist, distance, healthRegen, lifesteal: 0, souls } });
+// What put a status on: the item (ids are "<item>:<what>" or "item:<item>"), else the ability that cast it, else its id.
+const statusName = (st) => (st.id.startsWith('item:') ? st.id.slice(5) : st.id.includes(':') ? st.id.split(':')[0] : st.from?.name ?? st.id);
+const capital = (text) => text[0].toUpperCase() + text.slice(1);
+const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', meleeRange = 0, slam = null, blast = null, controls = [], debuffs = [], souls = 0 } = {}) =>
+  new Unit({ name, team: 'enemy', stats: { maxHealth, dps, dpsMaxHealthPct, damageType, meleeRange, slam, blast: blast && { ...blast }, controls: controls.map((c) => ({ ...c, tags: [...c.tags] })), debuffs: debuffs.map((d) => ({ ...d })), bulletResist, spiritResist, distance, healthRegen, lifesteal: 0, souls } });
+
+// What each enemy dealt the hero over one or more fights (the breakdown's Enemy Damage): [{ name, dealt, by: [{ name, dealt }] }], most first.
+// An NPC's comes from `taken`, a rival hero's (a duel, a /descend rival) from its own `breakdown`. Two of a kind in one fight are numbered like the fight screen.
+function enemyDamage(fights) {
+  const out = [];
+  for (const f of fights) {
+    f.enemies.forEach((e, i) => {
+      const moves = f.taken.get(e) ?? (e.team === 'hero' ? f.breakdown.get(e) : null);
+      if (!moves) return;
+      const twin = f.enemies.filter((x) => x.name === e.name).length > 1;
+      const by = [...moves].map(([name, dealt]) => ({ name, dealt: Math.round(dealt) })).filter((m) => m.dealt > 0).sort((a, b) => b.dealt - a.dealt);
+      if (by.length) out.push({ name: twin ? `${e.name} ${i + 1}` : e.name, dealt: by.reduce((s, m) => s + m.dealt, 0), by });
+    });
+  }
+  return out.sort((a, b) => b.dealt - a.dealt);
+}
+
+// What healed a hero over one or more fights (the breakdown's Healing): { total, by: [{ name, healed, times: [[second, amount]] }] }, most first.
+function healBreakdown(hero, fights) {
+  const by = new Map();
+  for (const f of fights) {
+    for (const [what, n] of f.healed.get(hero) ?? []) by.set(what, { name: what, healed: (by.get(what)?.healed ?? 0) + n, times: by.get(what)?.times ?? [], parts: by.get(what)?.parts ?? new Map() });
+    for (const [what, parts] of f.healedBy.get(hero) ?? []) for (const [sub, n] of parts) by.get(what).parts.set(sub, (by.get(what).parts.get(sub) || 0) + n);
+    for (const h of f.healLog) if (h.unit === hero && by.has(h.what)) by.get(h.what).times.push([h.t, Math.round(h.amount)]);
+  }
+  const list = [...by.values()].map((x) => ({ ...x, healed: Math.round(x.healed), times: x.times.filter(([, n]) => n > 0), parts: [...x.parts].map(([name, n]) => ({ name, healed: Math.round(n) })).filter((p) => p.healed > 0).sort((a, b) => b.healed - a.healed) })).filter((x) => x.healed > 0).sort((a, b) => b.healed - a.healed);
+  return { total: list.reduce((s, x) => s + x.healed, 0), by: list };
+}
 
 // A hero's damage over one or more fights, by what dealt it (the Damage Breakdown button): [{ name, kind: 'weapon' | 'ability' | 'item', dealt }], most first.
 function damageBreakdown(hero, fights) {
   const total = new Map();
-  for (const f of fights) for (const [what, n] of f.breakdown.get(hero) ?? []) total.set(what, (total.get(what) || 0) + n);
+  const made = new Map();
+  for (const f of fights) {
+    for (const [what, n] of f.breakdown.get(hero) ?? []) total.set(what, (total.get(what) || 0) + n);
+    for (const [what, parts] of f.madeOf?.get(hero) ?? []) {
+      if (!made.has(what)) made.set(what, new Map());
+      for (const [name, n] of parts) made.get(what).set(name, (made.get(what).get(name) || 0) + n);
+    }
+  }
+  const partsOf = (what) => [...(made.get(what) ?? [])].map(([name, n]) => ({ name, dealt: Math.round(n) })).filter((p) => p.dealt > 0).sort((a, b) => (a.name === 'Base') - (b.name === 'Base') || b.dealt - a.dealt);
   const items = new Set(hero.items.map((it) => it.name));
   const weapon = new Set(['Gun', 'Heavy Melee', 'Other']); // anything else is an ability, also one the hero no longer has (Silver's after the wolf)
-  return [...total].map(([name, dealt]) => ({ name, kind: items.has(name) ? 'item' : weapon.has(name) ? 'weapon' : 'ability', dealt: Math.round(dealt) }))
+  return [...total].map(([name, dealt]) => ({ name, kind: items.has(name) ? 'item' : weapon.has(name) ? 'weapon' : 'ability', dealt: Math.round(dealt), parts: partsOf(name) }))
     .filter((d) => d.dealt > 0).sort((a, b) => b.dealt - a.dealt);
 }
 
-module.exports = { damageBreakdown, PELLETS, PRECISION, headshotChance, pelletChance, DUEL, DT, Unit, Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC, BULLET_LIFESTEAL_VS_NPC, SPIRIT_LIFESTEAL_VS_NPC, SPREAD, DODGE, dodgeChance, MELEE, HELPLESS };
+module.exports = { damageBreakdown, enemyDamage, healBreakdown, PELLETS, PRECISION, overflow, MISS, missChance, headshotChance, pelletChance, DUEL, DT, Unit, Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC, BULLET_LIFESTEAL_VS_NPC, SPIRIT_LIFESTEAL_VS_NPC, SPREAD, DODGE, dodgeChance, MELEE, HELPLESS };

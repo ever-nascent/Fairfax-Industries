@@ -1,3 +1,5 @@
+// An event file: loadEvents.js hooks `execute` to the Discord event in `name`.
+// At startup: logs that the bot is online and leaves any server that is not ours (GUILD_ID in config.js).
 const { isAllowedGuild } = require('../utils/guild');
 
 module.exports = {

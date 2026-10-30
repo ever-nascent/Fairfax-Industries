@@ -1,11 +1,12 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const { SCALE } = require('../src/utils/economy');
+process.env.NO_QUESTS = '1'; // quests would pay souls into the balances these tests count
+const { SCALE } = require('../src/utils/economy/economy');
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { getUser } = require('../src/utils/xp');
-const L = require('../src/utils/lockle');
+const { getUser } = require('../src/utils/economy/xp');
+const L = require('../src/utils/games/lockle');
 
 const item = (n) => ({ name: `Item ${n}`, slot: 'weapon', tier: 1, image: 'x', time: n * 60, sold: 0 });
 const build = { matchId: 1, hero: 'kelvin', souls: 30000, duration: 1800, items: Array.from({ length: 14 }, (_, i) => item(i)) };

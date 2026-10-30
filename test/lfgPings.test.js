@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const [route] = require('../src/components/lfgPings');
 const { pingMenuMessage } = require('../src/components/lfgPings');
-const { PING_ROLES } = require('../src/utils/lfg');
+const { PING_ROLES } = require('../src/utils/server/lfg');
 
 // A member holding `has` (role names), picking `values` in the dropdown.
 function fakePick(has, values) {

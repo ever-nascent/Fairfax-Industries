@@ -1,5 +1,7 @@
+// /trivia mode:<Heroes|Items>: one question hosted by Dynamo, souls for a right answer. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// Questions and payouts: utils/games/trivia.js; the answer buttons: components/trivia.js.
 const { SlashCommandBuilder } = require('discord.js');
-const { startRound } = require('../../utils/trivia');
+const { startRound } = require('../../utils/games/trivia');
 
 // Starts a solo trivia round for whoever ran it (public message). Also used by the Next Question button,
 // which carries the mode in its custom id.

@@ -1,4 +1,4 @@
-const { onChannelDeleted } = require('../utils/lfg');
+const { onChannelDeleted } = require('../utils/server/lfg');
 
 // If staff delete a lobby voice channel by hand, clean up its record and #lfg post.
 module.exports = {

@@ -14,6 +14,13 @@ const loadSouls = async () => (souls ??= await loadImage(SOULS_PNG));
 // The souls glyph is 44x77: draw it by height so it keeps its shape.
 const drawSouls = (g, img, x, y, h) => g.drawImage(img, x, y, (h * img.width) / img.height, h);
 
+// Cards with no transparency are sent as JPEG, not PNG: the grain and halftone make a PNG 300-930 KB and up to 0.2 s to encode,
+// while a JPEG at this quality looks the same and is about a sixth of the size in under 10 ms (measured Oct 29). Smaller files
+// upload faster, so screens open and edit faster. A picture with see-through parts (the rank card's corners) must stay PNG.
+const JPEG_QUALITY = 92;
+const jpeg = (canvas) => canvas.toBuffer('image/jpeg', JPEG_QUALITY);
+const isJpeg = (buffer) => buffer[0] === 0xff && buffer[1] === 0xd8;
+
 // Seeded random, so textures come out the same in every image.
 const seeded = (seed) => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
@@ -60,4 +67,4 @@ function grainAndVignette(g, w, h, grainTexture, { grainAlpha, inner, outer, dar
   g.fillRect(0, 0, w, h);
 }
 
-module.exports = { ASSETS, loadSouls, drawSouls, seeded, halftone, grain, grainAndVignette };
+module.exports = { jpeg, isJpeg, JPEG_QUALITY, ASSETS, loadSouls, drawSouls, seeded, halftone, grain, grainAndVignette };

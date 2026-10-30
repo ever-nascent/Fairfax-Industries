@@ -3,10 +3,10 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { changeSouls, getUser } = require('../src/utils/xp');
-const bj = require('../src/utils/blackjack');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
+const bj = require('../src/utils/games/blackjack');
 
-const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+const JPEG = Buffer.from([0xff, 0xd8, 0xff]); // the table is sent as JPEG (art.js jpeg)
 // A deck that deals `order` first (cards are drawn from the end). Deal order: you, Wraith, you, Wraith.
 const stack = (...order) => [...'2C 3C 4C 5C 6C 7C 2D 3D 4D'.split(' '), ...order.reverse()];
 
@@ -114,5 +114,5 @@ test('table images render', async () => {
     bj.play(bj.deal(stack('8S', '9H', '8D', '7C', '3H', 'KC'), 100), 'split'),
     bj.deal(stack('5S', '9H', 'JK', '7C'), 100),
   ];
-  for (const s of states) assert.ok((await bj.renderTable(s, 'Tester')).subarray(0, 4).equals(PNG));
+  for (const s of states) assert.ok((await bj.renderTable(s, 'Tester')).subarray(0, 3).equals(JPEG));
 });

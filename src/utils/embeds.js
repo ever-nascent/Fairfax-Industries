@@ -1,3 +1,4 @@
+// Small helpers for the bot's plain replies: `replyEmbed` (a green embed) and `privateReply` (only the clicker sees it).
 const { EmbedBuilder, MessageFlags } = require('discord.js');
 const { REPLY_COLOR } = require('../config');
 

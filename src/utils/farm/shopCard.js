@@ -7,10 +7,10 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
-const { ASSETS } = require('../art'); // (also registers the Retail font)
+const { ASSETS, jpeg } = require('../art'); // (also registers the Retail font)
 const { image } = require('./roamCard');
 const { itemByName } = require('./stats');
-const { itemFile } = require('./itemArt');
+const { itemFile, CORRUPTED_FRAME } = require('./itemArt');
 const { fmt } = require('../format');
 
 const DIR = path.join(ASSETS, 'farm', 'shop');
@@ -93,7 +93,6 @@ async function card(g, name, x, y, w, state = {}) {
   };
   const lit = state.glow ?? (state.upgrade && !state.owned ? TAB_COLOR[kind] : null); // the light round a card that can be acted on
   if (lit) glowing(lit);
-  else if (state.corrupted) glowing(CORRUPTED);
   g.beginPath();
   g.roundRect(x, y, w, h, 5);
   g.clip();
@@ -101,6 +100,7 @@ async function card(g, name, x, y, w, state = {}) {
   const k = Math.max(w / back.width, h / back.height); // object-fit: cover
   g.drawImage(back, x + (w - back.width * k) / 2, y + (h - back.height * k) / 2, back.width * k, back.height * k);
   try { g.drawImage(await image(itemFile(name)), x, y, w, w); } catch { /* no picture: the name says what it is */ }
+  if (state.corrupted || state.ribbon === 'CORRUPTED') g.drawImage(await image(CORRUPTED_FRAME), x, y, w, w); // the game's corrupted frame over the picture
   // the name, in the bottom 36%, dark on light backs and light on the dark tier 4 back
   g.fillStyle = tier >= 4 ? NAME_DARK[kind] : '#1a1510';
   const words = name.split(' ');
@@ -392,7 +392,7 @@ async function shopTab({ kind, tier, names, state }) {
   const left = area.x + (area.w - (cols * w + (cols - 1) * gap)) / 2;
   const top = area.y + (area.h - (rows * w * ASPECT + (rows - 1) * gap)) / 2;
   for (const [i, name] of list.entries()) await card(g, name, left + (i % cols) * (w + gap), top + Math.floor(i / cols) * (w * ASPECT + gap), w, state(name));
-  return c.toBuffer('image/png');
+  return jpeg(c);
 }
 
 // The Broker page (his call, Oct 3), drawn from a picture of his shop: black street, a rose-lit interior, the pink neon OPEN sign, his fedora silhouette
@@ -423,6 +423,34 @@ function emblem(g, cx, cy, L, color, alpha = 1) {
   }
   if (L >= 120) for (const [x, y, r] of [[-0.42, -0.22, 0.022], [-0.24, -0.34, 0.014], [0.24, -0.34, 0.014], [0.43, -0.2, 0.022], [-0.44, 0.24, 0.016], [-0.3, 0.2, 0.014], [0.36, 0.2, 0.014], [0.44, 0.3, 0.016], [-0.36, -0.36, 0.01], [0.36, -0.37, 0.01]]) dot(x, y, r);
   g.restore();
+}
+
+// The Broker's icon (his ask, Oct 30: a redraw of the cream fedora and round glasses he pasted; a placeholder he will redo): the thumbnail of every Broker
+// screen, the farm's Broker tab and Descend's stall. Cream on see-through, 256 px, kept as a PNG.
+let brokerIconPng;
+function brokerIcon() {
+  if (brokerIconPng) return brokerIconPng;
+  const c = createCanvas(256, 256);
+  const g = c.getContext('2d');
+  const CREAM = '#f1e7d3';
+  g.fillStyle = CREAM; g.strokeStyle = CREAM; g.lineCap = 'round'; g.lineJoin = 'round';
+  g.beginPath(); // the crown, pinched at the top
+  g.moveTo(74, 118);
+  g.bezierCurveTo(72, 70, 88, 40, 116, 42);
+  g.quadraticCurveTo(128, 54, 140, 42);
+  g.bezierCurveTo(168, 40, 184, 70, 182, 118);
+  g.closePath(); g.fill();
+  g.beginPath(); g.ellipse(128, 120, 104, 15, 0, 0, Math.PI * 2); g.fill(); // the brim
+  g.globalCompositeOperation = 'destination-out'; // the hat band, cut out of the crown
+  g.fillRect(70, 99, 116, 9);
+  g.globalCompositeOperation = 'source-over';
+  g.lineWidth = 9; // round glasses, a bridge between and an arm to each side
+  for (const x of [92, 164]) { g.beginPath(); g.arc(x, 186, 30, 0, Math.PI * 2); g.stroke(); }
+  g.beginPath(); g.moveTo(122, 182); g.quadraticCurveTo(128, 174, 134, 182); g.stroke();
+  g.lineWidth = 6;
+  g.beginPath(); g.moveTo(62, 180); g.lineTo(38, 170); g.moveTo(194, 180); g.lineTo(218, 170); g.stroke();
+  brokerIconPng = c.toBuffer('image/png');
+  return brokerIconPng;
 }
 
 // The Broker's shop, drawn after the picture of it (his call, Oct 3): the rose-lit room, the Broker as a dark figure against it (pinched fedora, pale
@@ -571,7 +599,7 @@ async function brokerPage({ open, timer, cards, empty }) {
   }
   const left = cx - (cols * w + (cols - 1) * gap) / 2;
   for (const [i, { name, state }] of cards.entries()) await card(g, name, left + (i % cols) * (w + gap), 190 + Math.floor(i / cols) * rowH, w, state);
-  return c.toBuffer('image/png');
+  return jpeg(c);
 }
 
 // The Broker and Sell tabs: one dark page with a title, a line under it, and cards with a note under each. cards: [{ name, state }].
@@ -596,7 +624,7 @@ async function listPage({ title, line, accent, cards, empty }) {
   }
   const left = (W - (cols * w + (cols - 1) * gap)) / 2;
   for (const [i, { name, state }] of cards.entries()) await card(g, name, left + (i % cols) * (w + gap), 200 + Math.floor(i / cols) * rowH, w, state);
-  return c.toBuffer('image/png');
+  return jpeg(c);
 }
 
-module.exports = { shopTab, listPage, brokerPage, BROKER, CORRUPTED, TIER_PRICE, write, measure };
+module.exports = { shopTab, listPage, brokerPage, brokerIcon, BROKER, CORRUPTED, TIER_PRICE, write, measure };

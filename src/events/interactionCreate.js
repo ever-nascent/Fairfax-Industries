@@ -1,6 +1,10 @@
+// Every slash command, button, dropdown and pop-up arrives here first (Discord's interactionCreate event).
+// Buttons/dropdowns/pop-ups go to the first route in components/ that `matches`; slash commands go to client.commands by name.
+// If you wonder "where does clicking X go?", find the button's customId and search components/ for it.
 const { MessageFlags } = require('discord.js');
 const { isAllowedGuild } = require('../utils/guild');
 const { findComponentRoute } = require('../components');
+const { withQuests } = require('../utils/economy/quests'); // tells a member privately when a quest they just finished paid
 
 module.exports = {
   name: 'interactionCreate',
@@ -11,7 +15,7 @@ module.exports = {
     // feature owns its own handlers.
     const route = findComponentRoute(interaction);
     if (route) {
-      await route.execute(interaction).catch((error) => console.error(`[${route.name}] ${route.label} failed:`, error));
+      await withQuests(interaction, () => route.execute(interaction)).catch((error) => console.error(`[${route.name}] ${route.label} failed:`, error));
       return;
     }
 
@@ -35,7 +39,7 @@ module.exports = {
     if (!command) return;
 
     try {
-      await command.execute(interaction, client);
+      await withQuests(interaction, () => command.execute(interaction, client));
     } catch (error) {
       console.error(`[command] Error running /${interaction.commandName}:`, error);
       const payload = { content: 'Something went wrong running that command.', flags: MessageFlags.Ephemeral };

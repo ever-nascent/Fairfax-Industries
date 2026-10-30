@@ -1,20 +1,21 @@
 // Run: node --test. A game nobody clicks for 5 minutes is finished for the player, not refunded (his call, Oct 5),
 // unless nothing had been revealed yet. Throwaway data folder, never the live data/.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
+process.env.NO_QUESTS = '1'; // quests would pay souls into the balances these tests count
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { getUser } = require('../src/utils/xp');
-const { expireGames } = require('../src/utils/casino');
-const { history } = require('../src/utils/soulsLedger');
-const doorman = require('../src/utils/doorman');
-const bj = require('../src/utils/blackjack');
-const bebop = require('../src/utils/bebop');
-const paradox = require('../src/utils/paradox');
-const pocket = require('../src/utils/pocket');
-const silver = require('../src/utils/silver');
-const yamato = require('../src/utils/yamato');
-const sinclair = require('../src/utils/sinclair');
+const { getUser } = require('../src/utils/economy/xp');
+const { expireGames } = require('../src/utils/games/casino');
+const { history } = require('../src/utils/economy/soulsLedger');
+const doorman = require('../src/utils/games/doorman');
+const bj = require('../src/utils/games/blackjack');
+const bebop = require('../src/utils/games/bebop');
+const paradox = require('../src/utils/games/paradox');
+const pocket = require('../src/utils/games/pocket');
+const silver = require('../src/utils/games/silver');
+const yamato = require('../src/utils/games/yamato');
+const sinclair = require('../src/utils/games/sinclair');
 
 const BET = 100;
 const START = 1000;

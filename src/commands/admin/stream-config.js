@@ -1,7 +1,9 @@
+// /stream-config description (Manage Server): the text under the go-live alerts' stream title. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// The alerts: utils/server/streams.js.
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const { requirePermission } = require('../../utils/permissions');
 const { replyEmbed } = require('../../utils/embeds');
-const { getDescription, setDescription, liveMessage } = require('../../utils/streams');
+const { getDescription, setDescription, liveMessage } = require('../../utils/server/streams');
 const { TWITCH_LOGIN, TIKTOK_LOGIN } = require('../../config');
 
 // Made-up streams, so staff can see the alerts with their description without going live.

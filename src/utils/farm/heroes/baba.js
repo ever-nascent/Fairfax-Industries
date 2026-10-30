@@ -24,7 +24,7 @@ class Threadsap extends Ability {
 
   gained(fight) { return (this.held(fight) * this.data.StolenSpiritEffectiveness) / 100; }
   want(fight) { return fight.foes.length > 0; }
-  status(fight) { return fight && !this.ready() && this.held(fight) ? `+${Math.round(this.gained(fight))} Spirit` : super.status(fight); }
+  status(fight) { return fight && this.held(fight) ? `${super.status(fight)}  -  +${Math.round(this.gained(fight))} Spirit` : super.status(fight); }
 
   cast(fight) {
     fight.at(this.data.ExplodeTime, () => fight.running(this, () => {

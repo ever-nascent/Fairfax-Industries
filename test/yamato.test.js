@@ -1,10 +1,11 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
+process.env.NO_QUESTS = '1'; // quests would pay souls into the balances these tests count
 const test = require('node:test');
 const assert = require('node:assert');
-const { expireGames, TIME_LIMIT_MINUTES } = require('../src/utils/casino');
-const { changeSouls, getUser } = require('../src/utils/xp');
-const yamato = require('../src/utils/yamato');
+const { expireGames, TIME_LIMIT_MINUTES } = require('../src/utils/games/casino');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
+const yamato = require('../src/utils/games/yamato');
 
 const { games, startGame, play, versus, winnings, staked, timeoutView } = yamato;
 const souls = async (id) => (await getUser(id)).souls;
@@ -26,7 +27,7 @@ test('stances: each beats one and loses to one', () => {
 test('against Yamato: bet taken, win pays 1.85x, tie refunds, loss pays nothing, only the player plays', async () => {
   const user = { id: 'duel-solo' };
   assert.ok((await startGame(user, 'Solo', 100)).error); // can't afford it
-  await rich(user.id);
+  await changeSouls(user.id, 30 * 100); // enough for 30 straight losses: with 1,000 a losing streak ran the balance under the bet in about 4.5% of runs
   const seen = new Set();
   for (let i = 0; i < 30; i++) {
     const before = await souls(user.id);

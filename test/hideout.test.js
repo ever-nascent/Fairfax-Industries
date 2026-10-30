@@ -4,8 +4,8 @@ const test = require('node:test');
 const assert = require('node:assert');
 const { PermissionFlagsBits: P } = require('discord.js');
 const { getStore } = require('../src/storage');
-const { changeSouls } = require('../src/utils/xp');
-const hideout = require('../src/utils/hideout');
+const { changeSouls } = require('../src/utils/economy/xp');
+const hideout = require('../src/utils/shop/hideout');
 
 const guild = { roles: { everyone: { id: 'everyone' } }, members: { me: { id: 'bot' } } };
 

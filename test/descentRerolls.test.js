@@ -3,7 +3,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const D = require('../src/utils/farm/descent');
 const { buildHero } = require('../src/utils/farm/hero');
-const { POOL, SLOTS, countItems } = require('../src/utils/farm/levels');
+const { POOL, SLOTS, countItems, priceFor } = require('../src/utils/farm/levels');
+const { itemByName } = require('../src/utils/farm/stats');
 
 const itemSpec = (d, room = 1) => {
   for (let seed = d.seed; seed < d.seed + 1000; seed++) {
@@ -67,7 +68,7 @@ test('Enhanced wiki PropertyUpgrades change the item in a real build', () => {
   assert.equal(enhanced.stats.maxHealth - normal.stats.maxHealth, 115);
 });
 
-test('taking an upgrade also gives its shown lower-tier BONUS item, including with a full build', () => {
+test('taking an upgrade also gives its shown lower-tier BONUS item, but only when the build has room for it', () => {
   const d = D.newRun('Haze', 1);
   d.items.vitality = ['Extra Health'];
   d.phase = 'offer';
@@ -76,24 +77,41 @@ test('taking an upgrade also gives its shown lower-tier BONUS item, including wi
   assert.equal(result.bonus, 'Extra Regen');
   assert.deepEqual(d.items.vitality.sort(), ['Extra Regen', 'Fortitude'].sort());
 
-  const full = D.newRun('Haze', 2);
-  full.items.vitality = ['Extra Health'];
-  const extras = SLOTS.flatMap((s) => POOL[s]).filter((n) => n !== 'Extra Health' && n !== 'Fortitude' && n !== 'Extra Regen').slice(0, 11);
-  for (const name of extras) full.items[SLOTS.find((s) => POOL[s].includes(name))].push(name);
-  full.phase = 'offer';
-  full.offer = { kind: 'items', choices: ['Fortitude'], bonuses: { 0: 'Extra Regen' }, enhanced: [], room: 1 };
-  // his call Oct 26: the upgrade is taken at once; only the BONUS asks which other item to give up
+  // his call Oct 26: a BONUS only comes with room for it once the upgrade is in, and nothing ever asks which item to give up for one
+  const build = (seed, size) => {
+    const run = D.newRun('Haze', seed);
+    run.items.vitality = ['Extra Health'];
+    const extras = SLOTS.flatMap((s) => POOL[s]).filter((n) => n !== 'Extra Health' && n !== 'Fortitude' && n !== 'Extra Regen' && itemByName(n).Tier === 1).slice(0, size - 1);
+    for (const name of extras) run.items[SLOTS.find((s) => POOL[s].includes(name))].push(name);
+    run.phase = 'offer';
+    run.offer = { kind: 'items', choices: ['Fortitude'], bonuses: { 0: 'Extra Regen' }, enhanced: [], room: 1 };
+    return run;
+  };
+  const heldIn = (run) => SLOTS.flatMap((s) => run.items[s]);
+
+  const roomy = build(2, 11); // 11 items: the upgrade keeps it at 11, so the BONUS fits as the 12th
+  const took = D.takeChoice(roomy, 0);
+  assert.ok(took.ok && took.bonus === 'Extra Regen');
+  assert.equal(countItems(roomy.items), 12);
+  assert.equal(roomy.phase, 'ready');
+
+  const full = build(3, 12); // a stale offer made before the rule: the upgrade is taken, the BONUS dropped, nothing asked
+  const before = heldIn(full).filter((n) => n !== 'Extra Health');
   const upgraded = D.takeChoice(full, 0);
-  assert.ok(upgraded.ok && upgraded.bonusPending);
-  assert.equal(full.phase, 'bonus');
-  const heldNow = () => SLOTS.flatMap((s) => full.items[s]);
-  assert.ok(heldNow().includes('Fortitude') && !heldNow().includes('Extra Health'));
-  assert.equal(countItems(full.items), 12);
-  assert.deepEqual(D.takeBonus(full, 'Not An Item'), { error: 'missing' }, 'a bonus swap needs an item the hero holds');
-  assert.equal(full.phase, 'bonus', 'a refused swap changes nothing');
-  const replaced = extras[0];
-  assert.equal(D.takeBonus(full, replaced).ok, true);
-  assert.equal(countItems(full.items), 12);
-  assert.ok(heldNow().includes('Extra Regen') && !heldNow().includes(replaced));
+  assert.ok(upgraded.ok && !upgraded.bonus && !upgraded.bonusPending);
   assert.equal(full.phase, 'ready');
+  assert.equal(full.pendingBonus, undefined);
+  assert.equal(countItems(full.items), 12);
+  assert.ok(heldIn(full).includes('Fortitude') && !heldIn(full).includes('Extra Health') && !heldIn(full).includes('Extra Regen'));
+  assert.ok(before.every((n) => heldIn(full).includes(n)), 'no other item was given up');
+
+  // and an offer made for a full build carries no BONUS at all
+  for (let seed = 1; seed <= 40; seed++) {
+    const run = build(seed, 12);
+    const offer = D.itemOffer(run, D.dice(seed, 'bonus-check'));
+    for (const [i, name] of offer.choices.entries()) {
+      const used = priceFor(itemByName(name), run.items).used.length;
+      if (countItems(run.items) - used + 1 >= 12) assert.equal(offer.bonuses[i], undefined, `${name} at seed ${seed}`);
+    }
+  }
 });

@@ -1,5 +1,6 @@
+// /reaction-roles' draft buttons. Button / dropdown / pop-up routes: each route has `matches` (is this click mine? usually by the customId prefix) and `execute`. components/index.js lists every route file.
 const { MessageFlags } = require('discord.js');
-const { getDraft, clearDraft, buildEmbed, saveMenu } = require('../utils/reactionRoles');
+const { getDraft, clearDraft, buildEmbed, saveMenu } = require('../utils/server/reactionRoles');
 const { replyEmbed } = require('../utils/embeds');
 
 // "Post" button on a reaction-role draft preview: sends the menu embed to the

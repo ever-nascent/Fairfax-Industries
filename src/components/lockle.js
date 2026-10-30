@@ -1,5 +1,6 @@
+// /lockle's guess dropdowns. Button / dropdown / pop-up routes: each route has `matches` (is this click mine? usually by the customId prefix) and `execute`. components/index.js lists every route file.
 const { MessageFlags } = require('discord.js');
-const { guess, view, GUESS_ID, AGAIN_ID } = require('../utils/lockle');
+const { guess, view, GUESS_ID, AGAIN_ID } = require('../utils/games/lockle');
 const { runGame } = require('../commands/games/lockle');
 
 // /lockle's hero dropdowns: a pick is a guess (only the runner's count).

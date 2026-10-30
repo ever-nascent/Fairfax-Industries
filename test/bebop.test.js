@@ -1,11 +1,11 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const { SCALE } = require('../src/utils/economy');
+const { SCALE } = require('../src/utils/economy/economy');
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { changeSouls, getUser } = require('../src/utils/xp');
-const bb = require('../src/utils/bebop');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
+const bb = require('../src/utils/games/bebop');
 
 const BOMBS = [0, 1, 2, 3]; // the whole top-left corner row, so tiles 4-19 are safe
 const tile = (payload, i) => payload.components[Math.floor(i / 5)].components[i % 5].data;

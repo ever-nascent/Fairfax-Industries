@@ -1,3 +1,4 @@
+// /farm-config cooldowns (staff): turn farm cooldowns off for testing (back on after a restart). A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { requirePermission } = require('../../utils/permissions');
 const { privateReply } = require('../../utils/embeds');

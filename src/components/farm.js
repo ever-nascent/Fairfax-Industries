@@ -1,13 +1,15 @@
+// Hero Farming's and Descend's buttons and dropdowns. Button / dropdown / pop-up routes: each route has `matches` (is this click mine? usually by the customId prefix) and `execute`. components/index.js lists every route file.
+// Each route mostly calls utils/farm/play.js (the rules) and a view in utils/farm/views.js or descentViews.js (the screens).
 const { setTimeout: sleep } = require('node:timers/promises');
 const { MessageFlags } = require('discord.js');
 const { getFarmUser, chooseHero, play, upgradeAbility, buyItem, sellItem, equipLegendary, unlockHero, switchHero, corruptItem, setImbue, hatchEgg, fightRival, walkAway, holdOffer, rivalKitOf, targetEnemies } = require('../utils/farm/play');
-const { npcBuildView, rivalBuildView } = require('../utils/farm/enemyBuild');
+const { npcBuildView, rivalBuildView, heroBuildView } = require('../utils/farm/enemyBuild');
 const { TARGETS, LANES } = require('../utils/farm/targets');
 const { drawbackLine } = require('../utils/farm/corruption');
 const { buffText } = require('../utils/farm/buffs');
 const { fmt } = require('../utils/format');
 const { shortId } = require('../utils/random');
-const { DAMAGE_ID, damageButton, damageView, DUEL_ID, WALK_ID, withRival, duelView, duelResultView, HERO_ID, PICK_ID, TARGET_ID, SEND_ID, ENEMY_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, LEGEND_ID, ROOM_ID, titleCase, timeLeft, pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, notReady } = require('../utils/farm/views');
+const { DAMAGE_ID, DAMAGETAB_ID, damageButton, damageTabs, damageView, enemyDamageView, healingView, DUEL_ID, WALK_ID, withRival, duelView, duelResultView, HERO_ID, PICK_ID, TARGET_ID, SEND_ID, ENEMY_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, LEGEND_ID, ROOM_ID, titleCase, timeLeft, pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, notReady } = require('../utils/farm/views');
 
 const descent = require('../utils/farm/descent');
 const dviews = require('../utils/farm/descentViews');
@@ -15,23 +17,53 @@ const dviews = require('../utils/farm/descentViews');
 // the live fight message is edited this often (Discord allows about 5 edits per 5 s per channel); tests set FARM_FRAME_MS=0
 const FRAME_MS = Number(process.env.FARM_FRAME_MS ?? 3000);
 
-// The farm's dropdowns and buttons redraw the member's own message. Only the member who opened it can use them.
+// The farm's dropdowns and buttons redraw the member's own message. Only the member who opened it can use them; anyone else is told,
+// privately, what that button does and where to get their own (his ask, Oct 26: a line for each button, not one for the whole farm).
+const BASE = 'Open your own farm with `/base`.';
+const RUN = 'Start your own descent with `/descend run`.';
+const NOT_YOURS = {
+  [HERO_ID]: `pick a hero on this screen. ${BASE}`, [PICK_ID]: `pick a hero on this screen. ${BASE}`,
+  [TARGET_ID]: `choose where their hero goes. ${BASE}`, [SEND_ID]: `send this fight. ${BASE}`, [BACK_ID]: `go back on this screen. ${BASE}`,
+  [UPGRADE_ID]: `spend this hero's ability points. ${BASE}`, [ITEM_ID]: `shop for this hero. ${BASE}`, [BUY_ID]: `buy items for this hero. ${BASE}`,
+  [ROOM_ID]: `sell this hero's items. ${BASE}`, [SELL_ID]: `sell this hero's items. ${BASE}`, [SHOPMODE_ID]: `open this hero's Item Shop. ${BASE}`,
+  [SHOPTAB_ID]: `browse this hero's Item Shop. ${BASE}`, [LEGEND_ID]: `change this hero's legendary. ${BASE}`,
+  [IMBUE_ID]: `change what this hero's items are imbued into. ${BASE}`, [IMBUESET_ID]: `change what this hero's items are imbued into. ${BASE}`,
+  [CORRUPT_ID]: `deal with the Broker for this hero. ${BASE}`, [HATCH_ID]: `hatch this hero's egg. ${BASE}`,
+  [SWITCH_ID]: `switch their hero. ${BASE}`, [SWITCHTO_ID]: `switch their hero. ${BASE}`, [UNLOCK_ID]: `spend their Character Unlock Token. ${BASE}`,
+  [DUEL_ID]: 'fight this rival: it is waiting for them. Rivals find you after won fights from `/base`.', [WALK_ID]: 'let this rival go: it is waiting for them.',
+  [dviews.DHERO_ID]: `pick the hero for this descent. ${RUN}`, [dviews.DASC_ID]: `pick the Ascension for this descent. ${RUN}`, [dviews.DBEGIN_ID]: `start this descent. ${RUN}`,
+  [dviews.DFIGHT_ID]: `fight this room. ${RUN}`, [dviews.DWALK_ID]: `flee from this rival or leave this stall. ${RUN}`, [dviews.DBVIEW_ID]: `look at this stall's items. ${RUN}`, [dviews.DCORRUPT_ID]: `deal with the Broker in this run. ${RUN}`, [dviews.DTAKE_ID]: `pick this run's reward. ${RUN}`,
+  [dviews.DSWAP_ID]: `choose what this run gives up. ${RUN}`, [dviews.DSKIP_ID]: `skip this run's reward. ${RUN}`, [dviews.DREROLL_ID]: `reroll this run's items. ${RUN}`,
+  [dviews.DPOINT_ID]: `spend this run's ability points. ${RUN}`, [dviews.DBACK_ID]: `go back on this screen. ${RUN}`, [dviews.DQUIT_ID]: `abandon this run. ${RUN}`,
+  [dviews.DAGAIN_ID]: `start another descent from here. ${RUN}`, [dviews.DIMBUE_ID]: `choose where this run's item is imbued. ${RUN}`,
+  [dviews.DBONUSSWAP_ID]: `choose this run's bonus item. ${RUN}`,
+};
+const ownerOf = (interaction) => interaction.customId.split(':')[1];
 async function mine(interaction) {
-  const [, ownerId] = interaction.customId.split(':');
+  const [prefix, ownerId] = interaction.customId.split(':');
   if (interaction.user.id === ownerId) return true;
-  await interaction.reply({ content: 'This is not your farm. Open yours with `/base`.', flags: MessageFlags.Ephemeral });
+  await interaction.reply({ content: `Only <@${ownerId}> can ${NOT_YOURS[prefix] ?? `use this. ${BASE}`}`, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
   return false;
+}
+// A build screen pressed by someone else: the owner's, privately and read-only (his ask, Oct 26: anyone may look at builds, only the owner acts).
+async function peek(interaction, view) {
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  const shown = await view();
+  return interaction.editReply(typeof shown === 'string' ? { content: shown } : { ...shown, components: [], allowedMentions: { parse: [] } });
 }
 
 // The rival a Fight / Walk Away button belongs to (farm_duel:<user id>:<rival>); buttons from before Oct 11 have none.
 const rivalOf = (interaction) => interaction.customId.split(':')[2];
 
 // The fights a Damage Breakdown button can still show (in memory: a restart forgets them). ponytail: the oldest go past MAX_BREAKDOWNS.
-const breakdowns = new Map(); // fight id -> { hero, rival?, seconds, damage }
+// fight id -> { hero, rival?, seconds, damage, taken, healing, kit (the hero's build as the fight started), foes (the enemies as they started) | theirs (a rival's kit), title }
+const breakdowns = new Map();
 const MAX_BREAKDOWNS = 500;
+const fightTitle = (run) => (run.spec ? `Room ${run.spec.room}` : run.siege ? 'Base Siege' : run.waves ? 'Waves' : TARGETS[run.key]?.name ?? run.key ?? 'The Fight');
 function withBreakdown(view, run, ownerId) {
   const id = shortId();
-  breakdowns.set(id, { hero: run.hero, rival: run.encounter ? run.rival : null, seconds: run.seconds, damage: run.damage ?? [] });
+  const rival = run.encounter ? run.rival : run.spec?.kind === 'rival' ? run.spec.rival : null;
+  breakdowns.set(id, { hero: run.hero, rival, seconds: run.seconds, damage: run.damage ?? [], taken: run.taken ?? [], healing: run.healing, kit: run.kit, foes: run.foes ?? [], theirs: run.theirs, theirHealth: run.theirHealth ?? 1, title: fightTitle(run) });
   if (breakdowns.size > MAX_BREAKDOWNS) breakdowns.delete(breakdowns.keys().next().value);
   const damage = damageButton(ownerId, id);
   const buildRow = view.components.find((r) => r.toJSON().components.some((c) => c.label === 'Your Build'));
@@ -114,7 +146,7 @@ const roomOf = (interaction) => Number(interaction.customId.split(':')[2]);
 const STALE = { say: 'That screen is out of date. Here is where your run stands.' };
 // What a pick did, for the next room's screen.
 function picked(result) {
-  if (result.kind === 'buffs') return `Took **${dviews.buffLine(result.name)}** for this run.`;
+  if (result.kind === 'buffs') return `Took **${dviews.buffLine(result.name, result.stacks)}** for this run.`;
   const name = `${result.enhanced ? 'Enhanced ' : ''}${result.name}`;
   if (result.kind === 'legendaries') return `**${name}** is in the legendary slot.`;
   if (result.used?.length) return `Upgraded ${result.used.join(' + ')} into **${name}**.${result.bonus ? ` BONUS: **${result.bonus}**.` : ''}`;
@@ -132,7 +164,7 @@ async function descendFight(interaction) {
   }
   const result = await descent.fight(interaction.user.id);
   if (result.error) {
-    const say = { busy: 'That room is already being fought.', none: 'You have no run going. Start one with `/descend run`.', offer: 'Pick your reward first.' }[result.error];
+    const say = { busy: 'That room is already being fought.', broker: 'The Broker has no fight. Corrupt an item or leave.', none: 'You have no run going. Start one with `/descend run`.', offer: 'Pick your reward first.' }[result.error];
     return interaction.followUp({ content: say, flags: MessageFlags.Ephemeral });
   }
   const { run } = result;
@@ -150,7 +182,50 @@ async function descendFight(interaction) {
   if (run.token) await interaction.followUp({ ...dviews.tokenView(run.hero), flags: MessageFlags.Ephemeral });
 }
 
+// One page of a fight's breakdown (`tab`: damage | taken | heal | build | foes), with the page buttons under it.
+async function breakdownPage(id, tab) {
+  const run = breakdowns.get(id);
+  const page = tab === 'taken' ? enemyDamageView(run) : tab === 'heal' ? healingView(run)
+    : tab === 'build' ? (run.kit ? await heroBuildView(run.hero, run.kit) : { content: 'That build was not kept.' })
+      : tab === 'foes' ? (run.theirs ? await rivalBuildView(run.rival, run.theirs, { health: run.theirHealth, note: 'The kit it fought with.' }) : npcBuildView(run.title, run.foes, 'The enemies as the fight started.'))
+        : damageView(run);
+  return { content: '', embeds: [], files: [], ...page, components: [damageTabs(id, run, tab)] };
+}
+
 const descentRoutes = [
+  {
+    name: 'farm',
+    label: 'Descend view item select', // only the Item Choices text changes (his ask, Oct 28); anyone else sees that item privately
+    matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DVIEW_ID}:`),
+    async execute(interaction) {
+      const d = (await getFarmUser(ownerOf(interaction))).descent;
+      const index = Number(interaction.values[0]);
+      if (d?.phase !== 'offer' || d.offer.room !== roomOf(interaction) || !d.offer.choices[index]) {
+        return interaction.user.id === ownerOf(interaction) ? descentAction(interaction, async () => STALE) : interaction.reply({ content: 'That pick is over.', flags: MessageFlags.Ephemeral });
+      }
+      const about = dviews.choiceAbout(d, index);
+      if (interaction.user.id !== ownerOf(interaction)) return interaction.reply({ content: about, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
+      const embed = interaction.message.embeds[0].toJSON();
+      embed.fields = embed.fields.map((f) => (f.name === 'Item Choices' ? { ...f, value: about } : f));
+      // the sent embed's pictures came back as CDN links; pointed back at the attachments, or Discord shows them loose above the embed.
+      // An edit's attachment:// only reaches files uploaded with that edit (Oct 29: they still showed loose), so the message's own files go up again.
+      await interaction.deferUpdate();
+      const names = new Set(interaction.message.attachments.map((a) => a.name));
+      const reattach = (url) => {
+        const name = url && decodeURIComponent(new URL(url).pathname.split('/').pop());
+        return names.has(name) ? `attachment://${name}` : url;
+      };
+      for (const part of [embed.image, embed.thumbnail]) if (part?.url) part.url = reattach(part.url);
+      for (const part of [embed.author, embed.footer]) if (part?.icon_url) part.icon_url = reattach(part.icon_url);
+      const components = interaction.message.components.map((r) => {
+        const json = r.toJSON();
+        for (const c of json.components) if (c.custom_id === interaction.customId) c.options = c.options.map((o) => ({ ...o, default: o.value === interaction.values[0] }));
+        return json;
+      });
+      const files = interaction.message.attachments.map((a) => ({ attachment: a.url, name: a.name }));
+      return interaction.editReply({ embeds: [embed], components, files, attachments: [] });
+    },
+  },
   {
     name: 'farm',
     label: 'Descend reroll button',
@@ -166,7 +241,17 @@ const descentRoutes = [
     matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DHERO_ID}:`),
     execute: (interaction) => redraw(interaction, async () => {
       const record = await getFarmUser(interaction.user.id);
-      return record.descent ? dviews.screen(interaction.member, record) : dviews.startView(interaction.member, record, interaction.values[0]);
+      const ascension = interaction.customId.split(':')[2];
+      return record.descent ? dviews.screen(interaction.member, record) : dviews.startView(interaction.member, record, interaction.values[0], ascension ? Number(ascension) : null);
+    }),
+  },
+  {
+    name: 'farm',
+    label: 'Descend ascension select',
+    matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DASC_ID}:`),
+    execute: (interaction) => redraw(interaction, async () => {
+      const record = await getFarmUser(interaction.user.id);
+      return record.descent ? dviews.screen(interaction.member, record) : dviews.startView(interaction.member, record, interaction.customId.split(':')[2] || null, Number(interaction.values[0]));
     }),
   },
   {
@@ -174,8 +259,9 @@ const descentRoutes = [
     label: 'Descend begin button',
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DBEGIN_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
-      const result = await descent.startRun(interaction.user.id, interaction.customId.split(':').slice(2).join(':'));
-      return { running: { say: 'You already have a run going. Here it is.' }, locked: { say: 'Unlock that hero first.' } }[result.error];
+      const [, , hero, ascension = '0'] = interaction.customId.split(':'); // (a button from before ascensions has none: 0)
+      const result = await descent.startRun(interaction.user.id, hero, undefined, Number(ascension));
+      return { running: { say: 'You already have a run going. Here it is.' }, locked: { say: 'Unlock that hero first.' }, ascension: { say: 'You have not unlocked that Ascension yet.' } }[result.error];
     }),
   },
   {
@@ -192,15 +278,38 @@ const descentRoutes = [
       const before = await descent.getRun(interaction.user.id);
       if (before?.room !== roomOf(interaction)) return STALE;
       const result = await descent.walkPast(interaction.user.id);
-      return result.ok ? { note: 'You walked away. The rival lets you pass, and you gain nothing.' } : STALE;
+      if (result.kind === 'broker') return { note: "You left the Broker's stall and went on." };
+      return result.ok ? { note: `You walked away. The rival lets you pass, and you gain nothing.${result.lost > 0 ? ` It cost you **${Math.round(result.lost * 100)}%** of your health.` : ''}` } : STALE;
+    }),
+  },
+  {
+    name: 'farm',
+    label: 'Descend broker view select', // the owner's message shows that item's corrupted effects; anyone else sees them privately
+    matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DBVIEW_ID}:`),
+    async execute(interaction) {
+      const d = (await getFarmUser(ownerOf(interaction))).descent;
+      const name = interaction.values[0];
+      const live = d?.room === roomOf(interaction) && descent.corruptibles(d).includes(name);
+      if (interaction.user.id !== ownerOf(interaction)) return interaction.reply({ content: live ? dviews.brokerAbout(name) : 'That stall is over.', flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
+      return descentAction(interaction, async () => (live ? { viewing: name } : STALE));
+    },
+  },
+  {
+    name: 'farm',
+    label: 'Descend broker select',
+    matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DCORRUPT_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const result = await descent.visitBroker(interaction.user.id, roomOf(interaction), interaction.values[0]);
+      if (result.error === 'health') return { say: 'You are too hurt to pay the Broker.' };
+      return result.ok ? { note: `The Broker corrupted **${result.name}**: it keeps its corrupted bonuses and carries **${drawbackLine(result)}**. It cost you **${Math.round(result.lost * 100)}%** of your health.` } : STALE;
     }),
   },
   {
     name: 'farm',
     label: 'Descend pick button',
-    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DTAKE_ID}:`),
+    matches: (interaction) => (interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith(`${dviews.DTAKE_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
-      const index = Number(interaction.customId.split(':')[3]);
+      const index = Number(interaction.values?.[0] ?? interaction.customId.split(':')[3]); // a rival's build is a dropdown
       const result = await descent.choose(interaction.user.id, roomOf(interaction), index);
       if (result.error === 'full') return { replace: index };
       return result.ok ? { note: picked(result) } : STALE;
@@ -221,7 +330,11 @@ const descentRoutes = [
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DSKIP_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
       const result = await descent.skip(interaction.user.id, roomOf(interaction));
-      return result.ok ? { note: `Skip: Heal **${descent.SKIP_HEAL * 100}%** and **${descent.SKIP_BUFFS} Perma-Buffs**.` } : STALE;
+      if (!result.ok) return STALE;
+      const got = {};
+      for (const b of result.buffs) got[b] = (got[b] ?? 0) + 1;
+      const healed = `Skip: Healed **${Math.round(result.healed * 100)}%** of max health.`;
+      return { note: result.buffs.length ? [`${healed} Perma-Buffs:`, ...Object.entries(got).map(([k, n]) => buffText(k, n))].join('\n') : healed };
     }),
   },
   {
@@ -254,17 +367,16 @@ const descentRoutes = [
   },
   {
     name: 'farm',
-    label: 'View Enemy Build button', // a private message: a target's enemies, or the rival waiting
+    label: 'View Enemy Build button', // a private message: a target's enemies, or the rival waiting (anyone may look: it shows the owner's)
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${ENEMY_ID}:`),
     async execute(interaction) {
-      if (!(await mine(interaction))) return;
-      const [, , key, ...rest] = interaction.customId.split(':');
+      const [, ownerId, key, ...rest] = interaction.customId.split(':');
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       if (key === 'rival') {
-        const kit = rivalKitOf(interaction.user.id, rest.join(':'));
+        const kit = rivalKitOf(ownerId, rest.join(':'));
         return interaction.editReply(kit ? await rivalBuildView(rest.join(':'), kit, { note: 'The kit it will fight with.' }) : { content: 'That rival has already left.' });
       }
-      const record = await getFarmUser(interaction.user.id);
+      const record = await getFarmUser(ownerId);
       const variant = rest.join(':');
       const { sections, note } = targetEnemies(record, key, { family: variant });
       const name = key === 'siege' ? 'Base Siege' : key === 'waves' ? 'Waves' : TARGETS[key]?.name ?? key;
@@ -273,28 +385,33 @@ const descentRoutes = [
   },
   {
     name: 'farm',
-    label: 'Descend enemy build button', // a private message: what is in this room
+    label: 'Descend enemy build button', // a private message: what is in this room (anyone may look: it shows the owner's run)
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DENEMY_ID}:`),
     async execute(interaction) {
-      if (!(await mine(interaction))) return;
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      const d = (await getFarmUser(interaction.user.id)).descent;
+      const d = (await getFarmUser(ownerOf(interaction))).descent;
       if (!d || d.room !== roomOf(interaction) || d.phase === 'offer') return interaction.editReply({ content: STALE.say });
-      const spec = descent.roomSpec(d.seed, d.room, d.hero);
+      const spec = descent.specOf(d);
       const held = descent.enemiesOf(d, spec);
+      const under = d.level - held.kit?.boons;
       return interaction.editReply(held.rival
-        ? await rivalBuildView(held.rival, held.kit, { health: held.health, note: 'The kit it will fight with, two levels under yours and at 70% health.' })
-        : npcBuildView(spec.final ? 'The Patron' : spec.kind === 'boss' ? `The ${descent.BOSSES[spec.boss].name}` : `Room ${spec.room}`, [{ units: held.units }], 'Exactly the enemies you will fight.'));
+        ? await rivalBuildView(held.rival, held.kit, { health: held.health, note: `The kit it will fight with, ${under > 0 ? `${under === 1 ? 'one level' : `${under} levels`} under yours` : 'at your level'} and at ${Math.round(held.health * 100)}% health.` })
+        : npcBuildView(spec.final ? `The ${descent.BOSSES[descent.finalKeys(spec)[0]].name}` : spec.kind === 'boss' ? `The ${descent.bossName(spec, true)}` : `Room ${spec.room}`, [{ units: held.units }], 'These are the enemies in this room.'));
     },
   },
   {
     name: 'farm',
-    label: 'Descend build button',
+    label: 'Descend build button', // the owner's message redraws; anyone else sees the run's build privately
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DBUILD_ID}:`),
-    execute: (interaction) => redraw(interaction, async () => {
-      const record = await getFarmUser(interaction.user.id);
-      return record.descent ? dviews.buildView(interaction.member, record.descent) : dviews.screen(interaction.member, record);
-    }),
+    execute: (interaction) => (interaction.user.id !== ownerOf(interaction)
+      ? peek(interaction, async () => {
+        const d = (await getFarmUser(ownerOf(interaction))).descent;
+        return d ? { ...(await dviews.buildView(interaction.member, d)), content: `<@${ownerOf(interaction)}>'s run.` } : 'That run is over.';
+      })
+      : redraw(interaction, async () => {
+        const record = await getFarmUser(interaction.user.id);
+        return record.descent ? dviews.buildView(interaction.member, record.descent) : dviews.screen(interaction.member, record);
+      })),
   },
   {
     name: 'farm',
@@ -332,9 +449,14 @@ module.exports = [
   ...descentRoutes,
   {
     name: 'farm',
-    label: 'Hero button',
+    label: 'Hero button', // the owner's message redraws; anyone else sees that hero's build privately
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${HEROCARD_ID}:`),
-    execute: (interaction) => redraw(interaction, () => heroScreen(interaction)),
+    execute: (interaction) => (interaction.user.id !== ownerOf(interaction)
+      ? peek(interaction, async () => {
+        const record = await getFarmUser(ownerOf(interaction));
+        return record.hero ? { ...(await heroView(interaction.member, record)), content: `<@${ownerOf(interaction)}>'s ${record.hero}.` } : 'They have no hero yet.';
+      })
+      : redraw(interaction, () => heroScreen(interaction))),
   },
   {
     name: 'farm',
@@ -364,7 +486,7 @@ module.exports = [
       if (result.error === 'inside') return titleCase(`You already have that in ${result.holder}.`);
       if (result.error === 'corrupted') return titleCase(`That would use up your corrupted ${result.item}. Sell it first.`);
       if (result.error === 'full') return { say: null, where: `shop:${interaction.customId.split(':').slice(2, 4).join(':')}:room:${name}` }; // which item to sell for it (his call, Oct 22)
-      return { souls: "Your hero can't afford that item.", owned: 'You already have that item.', unknown: 'That item is not for sale.' }[result.error];
+      return { souls: "Your hero can't afford that item.", owned: 'You already have that item.', unknown: 'That item is not for sale.', banned: "Your hero can't buy that item." }[result.error];
     }, `shop:${interaction.customId.split(':').slice(2, 4).join(':')}`), // back on the tab and price it was bought from
   },
   {
@@ -379,7 +501,7 @@ module.exports = [
         if (!result.ok) {
           if (result.error === 'inside') return titleCase(`You already have that in ${result.holder}.`);
           if (result.error === 'corrupted') return titleCase(`That would use up your corrupted ${result.item}. Sell it first.`);
-          return { souls: "Your hero can't afford that item, even after selling.", owned: 'You already have that item.', missing: 'You do not have that item to sell.', full: 'Your build is still full.', unknown: 'That item is not for sale.' }[result.error];
+          return { souls: "Your hero can't afford that item, even after selling.", owned: 'You already have that item.', missing: 'You do not have that item to sell.', full: 'Your build is still full.', unknown: 'That item is not for sale.', banned: "Your hero can't buy that item." }[result.error];
         }
         const said = titleCase(`Sold ${result.sold} for ${fmt(result.refund)} souls and bought ${name}${result.used.length ? ` (upgraded from ${result.used.join(' + ')})` : ''} for ${fmt(result.paid)} souls.`);
         return result.imbue ? { say: said, where: `hero:imbue:${name}` } : said;
@@ -569,10 +691,22 @@ module.exports = [
     name: 'farm',
     label: 'Damage Breakdown button', // anyone may look; the answer is private
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${DAMAGE_ID}:`),
-    execute(interaction) {
-      const run = breakdowns.get(interaction.customId.split(':')[2]);
-      if (!run) return interaction.reply({ content: 'That breakdown is gone: the bot restarted since this fight.', flags: MessageFlags.Ephemeral });
-      return interaction.reply({ ...damageView(run), flags: MessageFlags.Ephemeral });
+    async execute(interaction) {
+      const id = interaction.customId.split(':')[2];
+      if (!breakdowns.has(id)) return interaction.reply({ content: 'That breakdown is gone: the bot restarted since this fight.', flags: MessageFlags.Ephemeral });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      return interaction.editReply(await breakdownPage(id, 'damage'));
+    },
+  },
+  {
+    name: 'farm',
+    label: 'Damage Breakdown page button', // the breakdown's pages: the hero's damage, the enemies' damage, healing, both builds as the fight started
+    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${DAMAGETAB_ID}:`),
+    async execute(interaction) {
+      const [, id, tab] = interaction.customId.split(':');
+      if (!breakdowns.has(id)) return interaction.reply({ content: 'That breakdown is gone: the bot restarted since this fight.', flags: MessageFlags.Ephemeral });
+      await interaction.deferUpdate();
+      return interaction.editReply({ ...(await breakdownPage(id, tab)), attachments: [] });
     },
   },
   {

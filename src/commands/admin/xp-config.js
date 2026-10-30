@@ -1,8 +1,10 @@
+// /xp-config (Manage Server): chat XP, voice XP, the level-up channel, ignored channels, the Soul Bag. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// The XP rules: utils/economy/xp.js.
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags, EmbedBuilder } = require('discord.js');
 const { requirePermission } = require('../../utils/permissions');
 const { REPLY_COLOR } = require('../../config');
 const { privateReply } = require('../../utils/embeds');
-const { getSettings, updateSettings } = require('../../utils/xp');
+const { getSettings, updateSettings } = require('../../utils/economy/xp');
 
 module.exports = {
   data: new SlashCommandBuilder()

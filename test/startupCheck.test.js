@@ -231,7 +231,7 @@ test('a duel against a wolf-form Silver has wolf: true on her entry, and the fac
   try {
     const frame = { ...run.frames[run.frames.length - 1], enemies: [{ ...run.frames[0].enemies[0], wolf: true }] };
     const lost = { ...run, won: false, timedOut: false, frames: [frame] };
-    assert.match(String((await duelResultView(lost)).files[1].attachment), /silver wolf_gloat\.png$/);
+    assert.match(String((await duelResultView(lost)).files[1].source), /silver wolf_gloat\.png$/);
     frame.enemies[0].wolf = false;
     assert.doesNotMatch(String((await duelResultView(lost)).files[1].attachment), /wolf/);
   } finally { if (made) fs.unlinkSync(real); }

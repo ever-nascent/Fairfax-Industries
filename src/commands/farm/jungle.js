@@ -1,3 +1,5 @@
+// /jungle camp|roam|midboss. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// Each subcommand opens that target's details screen (utils/farm/commands.js); Send is handled in components/farm.js.
 const { SlashCommandBuilder } = require('discord.js');
 const { openTarget, runRoam } = require('../../utils/farm/commands');
 

@@ -9,9 +9,9 @@
 //               order every time), and types the word as soon as 3 or fewer names fit, picking one of them (a wrong one costs a wrong guess)
 //   solver      always guesses the letter that appears in most of the chapter's words that still fit what is known, and solves as soon as one
 //               word fits: the best any player can do, knowing every name in the game (the chapter is shown, so they could)
-// The payout table (PAYOUT in src/utils/paige.js) is set so the typical player is near 95% like the other games. A player who knows every name, and a
+// The payout table (PAYOUT in src/utils/games/paige.js) is set so the typical player is near 95% like the other games. A player who knows every name, and a
 // script with the full name list, beat that table (the words are few and public): how far is printed, so the table can be tightened if anyone does it.
-const { wordPool, lettersOf, winnings, PAYOUT, MAX_WRONG } = require('../src/utils/paige');
+const { wordPool, lettersOf, winnings, PAYOUT, MAX_WRONG } = require('../src/utils/games/paige');
 
 const KNOWN = 0.6; // the share of names a typical player recognises
 const ENGLISH = 'ETAOINSHRDLCUMWFGYPBVKJXQZ';

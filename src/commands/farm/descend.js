@@ -1,3 +1,5 @@
+// /descend run | leaderboard: the roguelite mode. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// Rules: utils/farm/descent.js; screens: utils/farm/descentViews.js; buttons: components/farm.js.
 const { SlashCommandBuilder } = require('discord.js');
 const { getFarmUser } = require('../../utils/farm/play');
 const { pickView } = require('../../utils/farm/views');

@@ -1,5 +1,6 @@
+// /trivia's answer buttons, dropdowns and pop-up. Button / dropdown / pop-up routes: each route has `matches` (is this click mine? usually by the customId prefix) and `execute`. components/index.js lists every route file.
 const { MessageFlags } = require('discord.js');
-const { guess, roundError, answerModal, BUTTON_ID, NEXT_ID, TYPE_ID } = require('../utils/trivia');
+const { guess, roundError, answerModal, BUTTON_ID, NEXT_ID, TYPE_ID } = require('../utils/games/trivia');
 const { runRound } = require('../commands/games/trivia');
 
 const reply = (interaction, content) => interaction.reply({ content, flags: MessageFlags.Ephemeral });

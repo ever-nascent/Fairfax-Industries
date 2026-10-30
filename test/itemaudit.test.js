@@ -1440,7 +1440,7 @@ test('Boundless Spirit: +30 spirit, +15% spirit power (of every source, temporar
   near(hero.abilities[0].spirit() - hero.stats.spirit, 23);
 });
 
-test('Mercurial Magnum: +7 spirit, 14 s charge-up; casting the imbued ability reloads, +22% fire rate for 12 s, +60 (+0.16 x spirit) on its hit; after any imbued cast bullets deal 20 (+0.38 x spirit) until a reload', () => {
+test('Mercurial Magnum: +7 spirit, 14 s charge-up; casting the imbued ability reloads, +22% fire rate for 12 s, +60 (+0.16 x spirit) on its hit; after any imbued cast bullets deal 20% (+0.38% x spirit) of the base bullet damage until a reload', () => {
   near(sheet(['Mercurial Magnum']).spirit - BASE.spirit, 7);
   const { hero, enemies, fight, it } = setup(['Mercurial Magnum'], { imbues: { 'Mercurial Magnum': 1 } });
   const e = enemies[0];
@@ -1449,10 +1449,11 @@ test('Mercurial Magnum: +7 spirit, 14 s charge-up; casting the imbued ability re
   fight.emit('cast', { source: hero, ability: hero.abilities[0] });
   assert.ok(!status(hero, 'Mercurial Magnum:quick'), 'still charging: no fire rate');
   fight.emit('bulletHit', { source: hero, target: e, amount: 10, dealt: 10, type: 'bullet', opts: {} });
-  near(1e6 - e.health, 20 + 0.38 * 7, 'the bullets have it anyway');
+  const perBullet = (hero.stats.bulletDamage * hero.stats.pellets * (20 + 0.38 * 7)) / 100; // the game: "+20% Base Bullet Damage"
+  near(1e6 - e.health, perBullet, 'the bullets have it anyway');
   fight.emit('reloadStart', { source: hero });
   fight.emit('bulletHit', { source: hero, target: e, amount: 10, dealt: 10, type: 'bullet', opts: {} });
-  assert.ok(1e6 - e.health < 20 + 0.38 * 7 + 1, 'until the reload'); // (Haze's Fixation adds a sliver of its own)
+  assert.ok(1e6 - e.health < perBullet + 1, 'until the reload'); // (Haze's Fixation adds a sliver of its own)
   it().cdLeft = 0;
   fight.emit('cast', { source: hero, ability: hero.abilities[0] });
   near(status(hero, 'Mercurial Magnum:quick').mods.fireRate, 0.22);
@@ -1577,7 +1578,7 @@ test('Celestial Blessing: below half health, heals 60% of max health (at least 4
   near(b.mods.moveSpeed, 5); near(b.mods.staminaCdr, 1); near(b.until - fight.time, 6); near(it().cooldown, 30);
 });
 
-test('Eternal Gift: a permanent buff every 165 s of fights (play.js); a Rejuv\'s wait is 70% shorter once per 165 s', () => {
+test('Eternal Gift: a permanent buff every 15 s of fights (play.js); a Rejuv\'s wait is 70% shorter once per 165 s', () => {
   const { fight, it } = setup(['Eternal Gift']);
   near(it().cooldown, 165);
   near(it().respawnCut(fight), 0.7);

@@ -1,7 +1,9 @@
+// /auto-mod censor add|remove|list (Manage Server): the censored phrases. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// Matching and deleting is utils/server/censor.js and events/censor.js.
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { requirePermission } = require('../../utils/permissions');
 const { replyEmbed } = require('../../utils/embeds');
-const { getPhrases, addPhrase, removePhrase } = require('../../utils/censor');
+const { getPhrases, addPhrase, removePhrase } = require('../../utils/server/censor');
 
 const titled = (interaction, title, text) =>
   interaction.reply({ embeds: [replyEmbed(text).setTitle(title)], flags: MessageFlags.Ephemeral });

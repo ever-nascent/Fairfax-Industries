@@ -1,6 +1,6 @@
 const { ourGuild } = require('../utils/guild');
-const { getSettings, addXp, announceLevelUp, loadSoulsEmoji, voiceEarners } = require('../utils/xp');
-const { loadStreakEmojis } = require('../utils/trivia');
+const { getSettings, addXp, announceLevelUp, loadSoulsEmoji, voiceEarners } = require('../utils/economy/xp');
+const { loadStreakEmojis } = require('../utils/games/trivia');
 
 // On startup: look up the :souls: and /trivia streak bar emojis, then run voice XP.
 // Voice XP (off by default, /xp-config voice): once a minute, everyone in a voice channel with at

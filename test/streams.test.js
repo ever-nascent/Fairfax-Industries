@@ -2,7 +2,7 @@
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('node:test');
 const assert = require('node:assert');
-const { checkLive, liveMessage, setDescription, getDescription } = require('../src/utils/streams');
+const { checkLive, liveMessage, setDescription, getDescription } = require('../src/utils/server/streams');
 
 // Fake Twitch + TikTok: `live[platform]` is the current stream id (or null). First Twitch token is "expired".
 const live = { twitch: null, tiktok: null };

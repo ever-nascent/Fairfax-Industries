@@ -3,7 +3,7 @@
 // right: this hour's bridge buff (lit when found). Bottom strip: the souls.
 const path = require('node:path');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
-const { ASSETS, loadSouls, drawSouls, halftone, grain, grainAndVignette } = require('../art');
+const { ASSETS, loadSouls, drawSouls, halftone, grain, grainAndVignette, jpeg } = require('../art');
 const { FINDS } = require('./roam');
 const { BRIDGE } = require('./buffs');
 const { fmt } = require('../format');
@@ -153,7 +153,7 @@ async function roamCard(haul, gained) {
 
   texture ??= grain(W, H, 77, 90);
   grainAndVignette(g, W, H, texture, { grainAlpha: 0.35, inner: 260, outer: 560, dark: 0.55 });
-  return c.toBuffer('image/png');
+  return jpeg(c);
 }
 
 module.exports = { roamCard, BRIDGE_COLOR, GOLD, SOULS, FONT, image, panel, contain, label, badge, FARM };

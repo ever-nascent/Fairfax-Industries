@@ -5,7 +5,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 const { getStore } = require('../src/storage');
-const { SCALE, migrate, moveToHeroes } = require('../src/utils/economy');
+const { SCALE, migrate, moveToHeroes } = require('../src/utils/economy/economy');
 
 test('raising the souls scale grows balances and hero progress once, after a backup', async () => {
   await getStore('xp').set('m1', { xp: 5, souls: 123 });
@@ -30,7 +30,7 @@ test('a fresh server (no data yet) just records the scale', async () => {
 });
 
 test('once (Oct 11): the server balance, buffs, Rejuvs, growth and cooldowns go to Haze, or the current hero without Haze', async () => {
-  const { history } = require('../src/utils/soulsLedger');
+  const { history } = require('../src/utils/economy/soulsLedger');
   const { getFarmUser } = require('../src/utils/farm/play');
   const xp = getStore('xp');
   const farm = getStore('farm');

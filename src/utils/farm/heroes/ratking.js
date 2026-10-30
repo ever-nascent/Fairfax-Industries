@@ -39,7 +39,7 @@ class RatSwarm extends Ability {
   }
 
   want(fight) { return fight.foes.length > 0; }
-  status(fight) { return fight && !this.ready() && this.rats.length ? `${this.rats.length} Rats` : super.status(fight); }
+  status(fight) { return fight && this.rats.length ? `${super.status(fight)}  -  ${this.rats.length} Rats` : super.status(fight); }
 
   // One rat onto `e`; false when it already carries all it can.
   attach(fight, e) {

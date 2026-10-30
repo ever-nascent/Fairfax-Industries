@@ -1,3 +1,5 @@
+// Reads every file in src/events/ and hooks it up: `name` is the Discord event, `once` runs it a single time, `execute` is the handler.
+// A file may export an array of events. A handler that throws is logged with its event name and never crashes the bot.
 const fs = require('node:fs');
 const path = require('node:path');
 

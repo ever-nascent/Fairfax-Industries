@@ -1,3 +1,5 @@
+// /reaction-roles (Manage Roles): build an emoji -> role menu as a draft, then post it. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// Drafts and menus: utils/server/reactionRoles.js.
 const {
   SlashCommandBuilder,
   PermissionFlagsBits,
@@ -25,7 +27,13 @@ const {
   listMenus,
   parseEmoji,
   saveMenuRoles,
-} = require('../../utils/reactionRoles');
+  saveMenuMode,
+  fetchMenuMessage,
+  withIntro,
+  dropOption,
+} = require('../../utils/server/reactionRoles');
+
+const CLEAR = '-'; // typed as a menu's title or description to take it off
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -91,6 +99,35 @@ module.exports = {
     )
     .addSubcommand((sub) =>
       sub
+        .setName('menu-edit')
+        .setDescription('Change the title, text, color or mode of a menu that is already posted')
+        .addStringOption((option) => option.setName('message-id').setDescription('Message ID of the menu').setRequired(true))
+        .addStringOption((option) => option.setName('title').setDescription(`New title (${CLEAR} removes it)`).setMaxLength(256))
+        .addStringOption((option) =>
+          option.setName('description').setDescription(`New text above the options (${CLEAR} removes it)`).setMaxLength(1500),
+        )
+        .addStringOption((option) => option.setName('color').setDescription('New hex color like #5865F2'))
+        .addStringOption((option) =>
+          option
+            .setName('mode')
+            .setDescription('Can members pick more than one option?')
+            .addChoices(
+              { name: 'Multiple (keep every role they react to)', value: 'multi' },
+              { name: 'Single (only the most recent reaction keeps a role)', value: 'single' },
+            ),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('menu-change')
+        .setDescription("Change an option's emoji or role on a menu that is already posted")
+        .addStringOption((option) => option.setName('message-id').setDescription('Message ID of the menu').setRequired(true))
+        .addRoleOption((option) => option.setName('role').setDescription('The option to change, by its current role').setRequired(true))
+        .addStringOption((option) => option.setName('new-emoji').setDescription('Emoji to use instead'))
+        .addRoleOption((option) => option.setName('new-role').setDescription('Role to give instead')),
+    )
+    .addSubcommand((sub) =>
+      sub
         .setName('delete')
         .setDescription('Stop tracking a posted reaction role menu')
         .addStringOption((option) =>
@@ -151,17 +188,62 @@ module.exports = {
       return interaction.reply({ embeds: [buildEmbed(draft)], components: [row], flags: MessageFlags.Ephemeral });
     }
 
-    if (sub === 'menu-add' || sub === 'menu-remove') {
+    if (sub.startsWith('menu-')) {
       const messageId = interaction.options.getString('message-id').trim();
       const menu = await getMenu(messageId);
       if (!menu || menu.guildId !== guildId) {
         return reply(`There is no Reaction Role Menu with the ID \`${messageId}\` in this server. \`/reaction-roles list\` shows the IDs.`);
       }
       const role = interaction.options.getRole('role');
-      const message = await (await interaction.guild.channels.fetch(menu.channelId)).messages.fetch(messageId).catch(() => null);
+      const message = await fetchMenuMessage(interaction.guild, messageId, menu);
       if (!message?.embeds[0]) return reply("I can't find that menu's message (deleted?).");
       const embed = EmbedBuilder.from(message.embeds[0]);
       const text = embed.data.description ?? '';
+
+      if (sub === 'menu-edit') {
+        const title = interaction.options.getString('title');
+        const description = interaction.options.getString('description');
+        const color = interaction.options.getString('color');
+        const mode = interaction.options.getString('mode');
+        if (!title && !description && !color && !mode) return reply('Pick at least one thing to change: title, description, color or mode.');
+        if (color && !/^#?[0-9a-f]{6}$/i.test(color)) return reply("That color isn't a hex code. Use 6 digits like `#5865F2`.");
+        if (title) embed.setTitle(title === CLEAR ? null : title);
+        if (description) embed.setDescription(withIntro(text, description === CLEAR ? '' : description));
+        if (color) embed.setColor(color.startsWith('#') ? color : `#${color}`);
+        if (title || description || color) await message.edit({ embeds: [embed] });
+        if (mode) await saveMenuMode(messageId, menu, mode);
+        const changed = [title && 'title', description && 'description', color && 'color', mode && `mode (now ${mode === 'single' ? 'Single' : 'Multi'})`];
+        return reply(`Updated menu \`${messageId}\`: ${changed.filter(Boolean).join(', ')}.`);
+      }
+
+      if (sub === 'menu-change') {
+        const newEmoji = interaction.options.getString('new-emoji');
+        const newRole = interaction.options.getRole('new-role');
+        if (!newEmoji && !newRole) return reply('Give a new emoji, a new role, or both.');
+        const key = Object.keys(menu.roles).find((k) => menu.roles[k] === role.id);
+        const line = text.split('\n').find((l) => l.includes(`<@&${role.id}>`));
+        if (!key || !line) return reply(`${role} isn't on that menu.`);
+        if (newRole) {
+          const problem = roleProblem(newRole, interaction.guild);
+          if (problem) return reply(problem);
+          if (Object.values(menu.roles).includes(newRole.id)) return reply(`${newRole} is already on that menu.`);
+        }
+        const picked = newEmoji && parseEmoji(newEmoji);
+        if (picked && picked.key !== key && picked.key in menu.roles) return reply(`${picked.display} is already on that menu.`);
+        if (picked && picked.key !== key) {
+          try {
+            await message.react(interaction.guild.emojis.cache.get(picked.key) ?? picked.key); // first, so a bad emoji changes nothing
+          } catch {
+            return reply(`I couldn't react with ${picked.display}. Is it a real emoji from this server?`);
+          }
+        }
+        const display = picked?.display ?? line.match(/^> (.*) `-` <@&/)?.[1] ?? key;
+        const next = `> ${display} \`-\` <@&${(newRole ?? role).id}>`;
+        await message.edit({ embeds: [embed.setDescription(text.replace(line, () => next))] });
+        await saveMenuRoles(messageId, menu, Object.fromEntries(Object.entries(menu.roles).map(([k, v]) => (k === key ? [picked?.key ?? k, (newRole ?? role).id] : [k, v]))));
+        if (picked && picked.key !== key) await message.reactions.cache.get(key)?.remove().catch(() => {});
+        return reply(`Menu \`${messageId}\`: ${next.slice(2).replace('`-`', '-')}\n(Members who already have the old role keep it.)`);
+      }
 
       if (sub === 'menu-add') {
         const problem = roleProblem(role, interaction.guild);
@@ -181,13 +263,7 @@ module.exports = {
         return reply(`Added ${display} - ${role} to menu \`${messageId}\`.`);
       }
 
-      const key = Object.keys(menu.roles).find((k) => menu.roles[k] === role.id);
-      if (!key) return reply(`${role} isn't on that menu.`);
-      const kept = text.split('\n').filter((line) => !line.includes(`<@&${role.id}>`)).join('\n');
-      await message.edit({ embeds: [embed.setDescription(kept || null)] });
-      const { [key]: _gone, ...roles } = menu.roles;
-      await saveMenuRoles(messageId, menu, roles);
-      await message.reactions.cache.get(key)?.remove().catch(() => {});
+      if (!(await dropOption(message, messageId, menu, role.id))) return reply(`${role} isn't on that menu.`);
       return reply(`Removed ${role} from menu \`${messageId}\`.\n(Members who already have the role keep it.)`);
     }
 

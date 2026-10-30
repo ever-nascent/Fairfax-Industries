@@ -87,15 +87,25 @@ class SandBlast extends Ability {
 // 4. Combo: they walk up to the front enemy and hold it: stunned for the channel (a boss shrugs part of that off), spirit damage every step, no
 // shooting or casting meanwhile. If it dies during the hold or within KILL_WINDOW seconds after, they gain max health for the rest of the fight
 // (the health that comes with it is a heal under the cap, like Billy's). T1: they heal for the damage. T2: bullet resist meanwhile. T3: longer,
-// more damage.
+// more damage. Combo waits until the front enemy will die in time.
 const KILL_WINDOW = 3;
 class Combo extends Ability {
   constructor(...args) {
     super(...args);
     this.held = null; // { e, until, watch }
+    this.kills = this.carried(); // a Descend run's kills (ability.js carried) bring their max health in
+    if (this.kills) this.unit.addMaxHealth(this.kills * this.value('BonusHealthOnKill'));
   }
 
-  want(fight) { return fight.foes.length > 0; }
+  keep() { return this.kills; }
+  stackText() { return this.kills ? `${this.kills} kills: +${Math.round(this.kills * this.value('BonusHealthOnKill'))} Max Health` : null; }
+
+  // Waits until the front enemy would die in time (his ask, Oct 29): the hold's own damage, then the hero's within KILL_WINDOW after it.
+  want(fight) {
+    const e = fight.foes[0];
+    const channel = this.value('AbilityChannelTime');
+    return !!e && this.diesWithin(fight, e, this.value('DPS') * channel, KILL_WINDOW);
+  }
   status(fight) { return fight && this.held && fight.time < this.held.until ? 'Holding' : super.status(fight); }
 
   cast(fight) {
@@ -117,12 +127,20 @@ class Combo extends Ability {
       const dealt = fight.damage(this.unit, h.e, this.value('DPS') * dt, 'spirit');
       fight.heal(this.unit, ((dealt * this.value('LifeStealPercentOnHit')) / 100) * (h.e.team === 'hero' ? 1 : LIFESTEAL_VS_NPC), 'lifesteal');
     }
-    if (!h.e.alive) {
-      const health = this.value('BonusHealthOnKill');
-      this.unit.stats.maxHealth += health;
-      fight.heal(this.unit, health);
-      this.held = null;
-    } else if (fight.time > h.watch) this.held = null;
+    if (!this.held) return; // the hold's own damage killed it (counted by its kill event)
+    if (!h.e.alive) this.killed(fight); // died without a kill event
+    else if (fight.time > h.watch) this.held = null;
+  }
+
+  // counted as it dies: the fight ends on the last enemy's death, before another tick (Oct 29: the last kill never counted)
+  on(event, fight, p) { if (event === 'kill' && this.held?.e === p.target && fight.time <= this.held.watch + 1e-9) this.killed(fight); }
+
+  killed(fight) {
+    const health = this.value('BonusHealthOnKill');
+    this.kills++;
+    this.unit.stats.maxHealth += health;
+    fight.heal(this.unit, health);
+    this.held = null;
   }
 }
 

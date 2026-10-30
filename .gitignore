@@ -12,3 +12,5 @@ data/auditFiles/
 # mock-up scratch folder
 Claude outputs/
 .claude/
+# copies made by /souls reset-all
+data/resetBackups/

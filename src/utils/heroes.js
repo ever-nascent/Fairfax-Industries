@@ -1,6 +1,6 @@
 // The 44 heroes for Shop hero cards: names, art, colours and their server emojis.
 // Art comes in two styles (sold separately in the Shop): 'icon' = the hero's chat icon (assets/heroes),
-// 'portrait' = their full-body render (assets/heroes/full body, `Get-DeadlockFullBody.ps1`; the icon
+// 'portrait' = their full-body render (assets/heroes/full body, downloaded by tools/startup-check.js; the icon
 // stands in if a render is missing). Colours are sampled from the art.
 const fs = require('node:fs');
 const path = require('node:path');

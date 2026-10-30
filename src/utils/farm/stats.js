@@ -21,17 +21,27 @@ const itemByName = (name) => ITEMS.find((i) => i.Name.toLowerCase() === String(n
 // pictures, the item pages and the stat sheet all see them. Two groups: the headshot items (Crippling Headshot +15 is his call; the others
 // "slightly", +5), and my picks, the items whose bullet speed / zoom did nothing in fights (distance isn't a factor here), bigger for a higher
 // tier. The base is 25 and a buff is 1. ponytail: placeholder numbers apart from Crippling Headshot's.
-const ITEM_PRECISION = {
-  'Crippling Headshot': 15, 'Headshot Booster': 5, 'Weakening Headshot': 5, Headhunter: 5, 'Spirit Rend': 5, 'Lucky Shot': 5,
-  'High-Velocity Rounds': 5, 'Opening Rounds': 6, 'Express Shot': 8, 'Armor Piercer': 10, 'Infinite Rounds': 20, Sharpshooter: 10,
-};
-for (const card of [...ITEMS, ...LEGENDARIES]) {
-  const points = ITEM_PRECISION[card.Name];
-  const innate = points && Object.values(card).find((info) => info?.Type === 'Innate');
-  if (innate) innate.Main.push({ Key: 'Precision', Value: points, Label: 'Precision', Prefix: '{s:sign}', Postfix: '' });
-}
-
+// Oct 28 (his ask): two stats, shown apart on the hero card: Precision (does the bullet land: spread pellets far away; my picks, the bullet speed /
+// zoom / range items and Lucky Shot) and Headshot Precision (the headshot chance in %; the headshot items, plus Sharpshooter's zoom).
+// Oct 29 (his calls): the headshot items give Headshot Precision only, and the most of it; an item with bullet velocity (its card's Bullet
+// Velocity line) gives Precision, a lot (VELOCITY.precision a % of velocity: +10 for the usual +60%; +15 until his "a bit" less), and some Headshot Precision, less than any
+// headshot item (VELOCITY.headshot a %, at most VELOCITY.headshotMax). The fights have no bullet travel time, so this is what velocity does.
 const num = (v) => (typeof v === 'number' ? v : parseFloat(v) || 0); // the wiki writes distances "7m"
+const ITEM_PRECISION = { 'Long Range': 5, 'Lucky Shot': 5 }; // no bullet velocity; my picks (Oct 22)
+// a set amount (none from velocity on top); Infinite Rounds 25, his call Oct 29: a legendary beats every headshot item
+const ITEM_HEADSHOT = { 'Crippling Headshot': 15, 'Headshot Booster': 5, 'Weakening Headshot': 5, Headhunter: 5, 'Spirit Rend': 5, 'Infinite Rounds': 25 };
+const VELOCITY = { precision: 1 / 6, headshot: 1 / 20, headshotMax: 4 }; // ponytail: my placeholders
+const velocityOf = (card) => num(Object.values(card).filter((info) => info?.Type).flatMap((info) => [...(info.Main ?? []), ...(info.Alt ?? [])])
+  .find((l) => l.Key === 'BonusBulletSpeedPercent')?.Value);
+for (const card of [...ITEMS, ...LEGENDARIES]) {
+  const innate = Object.values(card).find((info) => info?.Type === 'Innate');
+  if (!innate) continue;
+  const v = velocityOf(card);
+  const precision = (ITEM_PRECISION[card.Name] ?? 0) + Math.round(v * VELOCITY.precision);
+  const headshot = ITEM_HEADSHOT[card.Name] ?? Math.min(VELOCITY.headshotMax, Math.round(v * VELOCITY.headshot));
+  if (precision) innate.Main.push({ Key: 'Precision', Value: precision, Label: 'Precision', Prefix: '{s:sign}', Postfix: '' });
+  if (headshot) innate.Main.push({ Key: 'HeadshotPrecision', Value: headshot, Label: 'Headshot Precision', Prefix: '{s:sign}', Postfix: '' });
+}
 // Innate item stat -> change to the stat sheet. Values are the wiki's: flat amounts, or percents (divided here).
 // Anything not listed (zoom, bullet speed, gravity, footsteps, melee resist: nothing on a farm uses them) is ignored.
 const ITEM_STATS = {
@@ -43,6 +53,7 @@ const ITEM_STATS = {
   BonusClipSizePercent: (s, v) => { s.clip *= 1 + v / 100; },
   BulletResist: (s, v) => { s.bulletResist = stackResist(s.bulletResist, v / 100); }, // each resist takes its share of what the others let through
   TechResist: (s, v) => { s.spiritResist = stackResist(s.spiritResist, v / 100); },
+  MeleeResistPercent: (s, v) => { s.meleeResist = stackResist(s.meleeResist, v / 100); }, // only melee hits: bullet and spirit resist don't touch them
   TechPower: (s, v) => { s.spirit += v; },
   SpiritPower: (s, v) => { s.spirit += v; },
   SpiritPowerInnate: (s, v) => { s.spirit += v; },
@@ -70,7 +81,8 @@ const ITEM_STATS = {
   Stamina: (s, v) => { s.stamina += v; },
   StaminaCooldownReduction: (s, v) => { s.staminaCdr += v / 100; },
   SlideScale: (s, v) => { s.slideScale += v / 100; },
-  Precision: (s, v) => { s.precision += v; }, // flat points (ITEM_PRECISION above, engine.js headshotChance / pelletChance)
+  Precision: (s, v) => { s.precision += v; }, // flat points (ITEM_PRECISION above, engine.js pelletChance)
+  HeadshotPrecision: (s, v) => { s.headshot += v; }, // flat points, the headshot chance in % (ITEM_HEADSHOT above, engine.js headshotChance)
   BonusAttackRangePercent: (s, v) => { s.attackRange += v / 100; }, // pushes weapon falloff out
   OutgoingDamagePenaltyPercent: (s, v) => { s.damageDealt += v / 100; }, // Golden Goose Egg: -15% damage dealt
   BonusAbilityCharges: (s, v) => { s.bonusCharges += v; }, // charged abilities only (ability.js maxCharges)
@@ -157,10 +169,12 @@ const DRAWBACKS = {
 const drawbackText = ({ drawback, amount }) => `-${+amount.toFixed(2)}${DRAWBACKS[drawback].unit} ${DRAWBACKS[drawback].name}`;
 
 // The card an item fights with: its corrupted card if it is the hero's corrupted item.
+// `corrupted`: { name, drawback, amount }, null, or a list of them (a /descend run can carry several, his call Oct 30; a farm hero has one).
+const corruptedList = (corrupted) => [].concat(corrupted ?? []);
 const cardFor = (name, corrupted, enhanced = []) => {
   let card = itemByName(name);
   if (enhanced.includes(name)) card = enhancedCard(card);
-  return corrupted?.name === name ? corruptCard(card) : card;
+  return corruptedList(corrupted).some((c) => c.name === name) ? corruptCard(card) : card;
 };
 
 // Guns that deal full damage at any distance: Graves' beam (the wiki: no falloff; his call, Oct 5: its 17 m limit isn't simulated). The game data's
@@ -187,9 +201,14 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
     weaponDamageMult: 1,
     spirit: (ls.TechPower || 0) * boons,
     bulletResist: 0,
+    meleeResist: 0,
     spiritResist: ((ls.TechResist || 0) * boons) / 100, // Kelvin: 0.625% a level (wiki)
     lifesteal: 0,
     spiritLifesteal: 0,
+    weaponBy: {}, // item -> the bonus weapon damage it gave (a fraction); spiritBy: item -> the spirit power (the Damage Breakdown names them)
+    spiritBy: {},
+    lifestealBy: {}, // item -> how much of lifesteal / spiritLifesteal it gave (the Healing page names them)
+    spiritLifestealBy: {},
     oocRegen: 0,
     spiritMult: 1,
     healthMult: 0,
@@ -212,7 +231,9 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
     staminaRegen: 0,
     slideScale: 0,
     attackRange: 0,
-    precision: PRECISION.base, // flat points: headshot chance in %, and above the base, more spread pellets landing (engine.js)
+    precision: PRECISION.base, // flat points: above the base, more spread pellets landing (engine.js)
+    headshot: PRECISION.base, // Headshot Precision: the headshot chance in % (engine.js headshotChance; his call, Oct 28: apart from Precision)
+    noHeadshot: hero.Weapon?.CanCrit === false, // the wiki: Deadman Danny and Paige can't headshot (Oct 29, his call for Danny)
     bonusCharges: 0,
     chargedSpirit: 0,
     chargedCdr: 0,
@@ -222,16 +243,24 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
     npcBulletResist: 0,
   };
   const baseHealth = s.maxHealth;
+  const levels = s.spirit; // the spirit power the hero's own levels give
   for (const name of items) {
     const card = cardFor(name, corrupted, enhanced);
     if (!card) throw new Error(`Unknown item: ${name}`);
+    const [bullet, spirit, weapon, power] = [s.lifesteal, s.spiritLifesteal, s.weaponDamageMult, s.spirit];
     for (const [key, value] of innateStats(card)) ITEM_STATS[key]?.(s, value);
     for (const key of PASSIVE_STATS[name] ?? []) ITEM_STATS[key]?.(s, effectValue(card, key));
+    if (s.lifesteal > bullet) s.lifestealBy[name] = s.lifesteal - bullet;
+    if (s.spiritLifesteal > spirit) s.spiritLifestealBy[name] = s.spiritLifesteal - spirit;
+    if (s.weaponDamageMult > weapon) s.weaponBy[name] = s.weaponDamageMult - weapon;
+    if (s.spirit > power) s.spiritBy[name] = s.spirit - power;
   }
-  if (corrupted && items.includes(corrupted.name)) DRAWBACKS[corrupted.drawback]?.apply(s, corrupted.amount);
+  for (const c of corruptedList(corrupted)) if (items.includes(c.name)) DRAWBACKS[c.drawback]?.apply(s, c.amount);
   applyBuffs(s, buffs);
   for (const key of bridge) BRIDGE[key]?.apply(s);
   s.spirit *= s.spiritMult;
+  for (const name of Object.keys(s.spiritBy)) s.spiritBy[name] *= s.spiritMult;
+  if (levels > 0) s.spiritBy.Levels = levels * s.spiritMult;
   s.maxHealth = Math.max(1, (s.maxHealth + baseHealth * s.baseHealthPct) * (1 + s.healthMult));
   s.bulletDamage += (hero.SpiritScaling?.BulletDamage || 0) * s.spirit; // Grey Talon: +0.08 bullet damage and a little move speed per spirit power (wiki)
   s.moveSpeed += ((hero.SpiritScaling?.MaxMoveSpeed || 0) + (hero.SpiritScaling?.SprintSpeed || 0)) * s.spirit; // sprint speed counts like move speed (Wraith: 0.05 a point)

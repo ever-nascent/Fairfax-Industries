@@ -1,10 +1,10 @@
 // Run: node --test
 // Uses a throwaway data folder so the bot's real XP is never touched.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const { SCALE } = require('../src/utils/economy');
+const { SCALE } = require('../src/utils/economy/economy');
 const test = require('node:test');
 const assert = require('node:assert');
-const { progress, xpToNext, soulsFor, addXp, claimUrn, getUser, applyEdit, editUser, MAX_LEVEL } = require('../src/utils/xp');
+const { progress, xpToNext, soulsFor, addXp, claimUrn, getUser, applyEdit, editUser, MAX_LEVEL } = require('../src/utils/economy/xp');
 const { getStore } = require('../src/storage');
 
 test('level curve', () => {
@@ -64,7 +64,7 @@ test('editUser saves the edit', async () => {
 });
 
 test('buying and equipping hero cards', async () => {
-  const { buyCard, equipCard, changeSouls } = require('../src/utils/xp');
+  const { buyCard, equipCard, changeSouls } = require('../src/utils/economy/xp');
   const id = 'test-user-cards';
   await getStore('xp').delete(id);
   await changeSouls(id, 1000);
@@ -83,7 +83,7 @@ test('buying and equipping hero cards', async () => {
 });
 
 test('Soul Boost: 1 hour per buy, stacks by adding time; doubles XP, level-up souls, urn and trivia souls', async () => {
-  const { buyBoost, triviaAnswer, changeSouls, BOOST_PRICE, BOOST_MS } = require('../src/utils/xp');
+  const { buyBoost, triviaAnswer, changeSouls, BOOST_PRICE, BOOST_MS } = require('../src/utils/economy/xp');
   const id = 'test-user-boost';
   await getStore('xp').delete(id);
   assert.deepStrictEqual(await buyBoost(id), { ok: false, reason: 'souls' });
@@ -106,7 +106,7 @@ test('Soul Boost: 1 hour per buy, stacks by adding time; doubles XP, level-up so
 });
 
 test('Rejuv: max 3; a broken 2+ day urn streak asks first, then Use Rejuv saves it or Start Over keeps the Rejuv', async () => {
-  const { buyRejuv, changeSouls, REJUV_PRICE } = require('../src/utils/xp');
+  const { buyRejuv, changeSouls, REJUV_PRICE } = require('../src/utils/economy/xp');
   const id = 'test-user-rejuv';
   await getStore('xp').delete(id);
   assert.deepStrictEqual(await buyRejuv(id), { ok: false, reason: 'souls' });
@@ -132,7 +132,7 @@ test('Rejuv: max 3; a broken 2+ day urn streak asks first, then Use Rejuv saves 
 });
 
 test('trivia: a streak pays 25, 30 ... 70 (max 10), wrong resets it, 10 paid answers per UTC day', async () => {
-  const { triviaAnswer, triviaOdds } = require('../src/utils/xp');
+  const { triviaAnswer, triviaOdds } = require('../src/utils/economy/xp');
   const id = 'test-user-trivia';
   await getStore('xp').delete(id);
   const day1 = new Date('2026-09-28T12:00:00Z');
@@ -153,7 +153,7 @@ test('trivia: a streak pays 25, 30 ... 70 (max 10), wrong resets it, 10 paid ans
   await getStore('xp').delete(id);
 });
 
-const { chatCounts, voiceEarners, standing, getSettings } = require('../src/utils/xp');
+const { chatCounts, voiceEarners, standing, getSettings } = require('../src/utils/economy/xp');
 
 test('chatCounts: system, webhook, ignored channel (and its category/thread parent), too short, repeats and censored do not count', async () => {
   const s = { ...(await getSettings('g')), ignoredChannelIds: ['bots'], minLength: 4 };

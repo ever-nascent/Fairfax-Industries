@@ -1,12 +1,12 @@
-const { expireGames } = require('../utils/casino');
+const { expireGames } = require('../utils/games/casino');
 const { ourGuild } = require('../utils/guild');
-const games = ['doorman', 'blackjack', 'sinclair', 'paradox', 'bebop', 'holliday', 'yamato', 'silver', 'rem', 'pocket', 'paige', 'abrams'].map((name) => require(`../utils/${name}`));
-const bebop = require('../utils/bebop');
-const yamato = require('../utils/yamato');
-const silver = require('../utils/silver');
-const holliday = require('../utils/holliday');
-const rem = require('../utils/rem');
-const abrams = require('../utils/abrams');
+const games = ['doorman', 'blackjack', 'sinclair', 'paradox', 'bebop', 'holliday', 'yamato', 'silver', 'rem', 'pocket', 'paige', 'abrams'].map((name) => require(`../utils/games/${name}`));
+const bebop = require('../utils/games/bebop');
+const yamato = require('../utils/games/yamato');
+const silver = require('../utils/games/silver');
+const holliday = require('../utils/games/holliday');
+const rem = require('../utils/games/rem');
+const abrams = require('../utils/games/abrams');
 
 // On startup, then every 30 s: call off games nobody has clicked for 5 minutes and give the bets back.
 // Also looks up Bebop's :sticky_bomb:, Yamato's stance and Silver's :shell_live: / :shell_blank: emojis in the server.

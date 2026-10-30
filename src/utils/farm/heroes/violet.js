@@ -100,7 +100,18 @@ class StillLife extends Ability {
     super(...args);
     this.subject = null;
     this.until = 0;
-    this.sketches = 0;
+    this.kinds = { weapon: 0, spirit: 0, health: 0, speed: 0, ...this.carried({}) }; // sketches by buff; a Descend run keeps them (ability.js carried)
+    this.sketches = Object.values(this.kinds).reduce((a, b) => a + b, 0);
+    this.brought = this.sketches > 0; // their buffs go on at the first step (they need the fight)
+    if (this.kinds.health) this.unit.addMaxHealth(this.kinds.health * SKETCH.health);
+  }
+
+  keep() { return { ...this.kinds }; }
+  stackText() {
+    const k = this.kinds;
+    const got = [k.weapon && `+${+(k.weapon * SKETCH.weapon * 100).toFixed(1)}% Weapon Damage`, k.spirit && `+${k.spirit * SKETCH.spirit} Spirit Power`,
+      k.health && `+${k.health * SKETCH.health} Max Health`, k.speed && `+${+(k.speed * SKETCH.speed).toFixed(2)} m/s Move Speed`].filter(Boolean);
+    return this.sketches ? `${this.sketches} sketches: ${got.join(', ')}` : null;
   }
 
   pick(fight) { const e = fight.foes[0]; return e && fight.distance(this.unit, e) <= this.value('AbilityCastRange') ? e : null; }
@@ -119,6 +130,11 @@ class StillLife extends Ability {
   stop(fight) { this.unit.busyUntil = Math.min(this.unit.busyUntil, fight.time); this.subject = null; }
 
   tick(fight, dt) {
+    if (this.brought) { // the run's earlier sketches (health went on when she was built)
+      this.brought = false;
+      const k = this.kinds;
+      forever(fight, this.unit, 'sketches_kept', { weaponDamage: k.weapon * SKETCH.weapon, spirit: k.spirit * SKETCH.spirit, moveSpeed: k.speed * SKETCH.speed });
+    }
     const e = this.subject;
     if (!e) return;
     const u = this.unit;
@@ -139,6 +155,7 @@ class StillLife extends Ability {
     const kinds = Object.keys(SKETCHES);
     const kind = kinds.find((k) => e.team === 'hero' && SKETCHES[k].includes(e.name)) ?? kinds[Math.floor(fight.rng() * kinds.length)];
     this.sketches++;
+    this.kinds[kind]++;
     if (kind === 'health') u.addMaxHealth(SKETCH.health);
     else forever(fight, u, `sketch_${this.sketches}`, { weapon: { weaponDamage: SKETCH.weapon }, spirit: { spirit: SKETCH.spirit }, speed: { moveSpeed: SKETCH.speed } }[kind]);
     fight.log.push({ t: +fight.time.toFixed(1), who: u.name, what: `Sketched ${e.name}` });

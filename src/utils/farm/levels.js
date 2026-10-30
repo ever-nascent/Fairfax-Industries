@@ -56,6 +56,9 @@ const POOL = Object.fromEntries(SLOTS.map((slot) => [slot, ITEMS
   .sort((a, b) => a.Tier - b.Tier || a.Cost - b.Cost || a.Name.localeCompare(b.Name))
   .map((c) => c.Name)]));
 const ITEM_POOL = SLOTS.flatMap((slot) => POOL[slot]);
+// Items a hero can't buy (the wiki: Deadman Danny can't buy Ricochet; his call Oct 29). Shop, buyItem, Descend's offers and a rival's kit all ask canBuy.
+const NO_BUY = { 'Deadman Danny': new Set(['Ricochet']) };
+const canBuy = (hero, name) => !NO_BUY[hero]?.has(name);
 
 // ---- corruption (his calls, Oct 3): The Broker corrupts one owned tier 3 or 4 item per hero, for its price again, while he is open ----
 // Open 30 minutes every 3 hours (UTC: 00:00-00:30, 03:00-03:30 ...), the same for everyone.
@@ -116,7 +119,7 @@ function rollLegendary(kills, rng = Math.random, owned = [], chance = LEGENDARY_
 const itemsOf = (items = {}) => Object.fromEntries(SLOTS.map((slot) => [slot, [].concat(items[slot] ?? []).filter(Boolean)]));
 
 module.exports = {
-  THRESHOLDS, MAX_LEVEL, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, LEGENDARY_NAMES, rollLegendary, SIEGE_LEGENDARY_CHANCE, SLOT_OF, sellPrice, POOL, ITEM_POOL, itemsOf,
+  THRESHOLDS, MAX_LEVEL, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, LEGENDARY_NAMES, rollLegendary, SIEGE_LEGENDARY_CHANCE, SLOT_OF, sellPrice, POOL, ITEM_POOL, canBuy, itemsOf,
   BROKER, brokerOpen, brokerNext, brokerCloses, corruptible, corruptPrice, rollDrawback,
   progress, pointsSpent, unlockLevel, campMultiplier, UNLOCKS, POINTS,
 };

@@ -1,5 +1,5 @@
 const { isAllowedGuild, ourGuild } = require('../utils/guild');
-const { ensureCategory, ownerLeftOrReturned, channelDeleted, reconcile } = require('../utils/hideout');
+const { ensureCategory, ownerLeftOrReturned, channelDeleted, reconcile } = require('../utils/shop/hideout');
 
 // Hideouts: make the category on startup; remake a Hideout channel deleted by hand; hide a Hideout while its owner
 // is gone, open it again when they're back.

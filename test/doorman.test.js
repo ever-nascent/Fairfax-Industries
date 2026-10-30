@@ -3,10 +3,10 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { changeSouls, getUser } = require('../src/utils/xp');
-const { games, startGame, pickRoom, finishGame, roomToOpen, otherRoom, winnings, renderRooms, WIN_LINES, LOSE_LINES } = require('../src/utils/doorman');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
+const { games, startGame, pickRoom, finishGame, roomToOpen, otherRoom, winnings, renderRooms, WIN_LINES, LOSE_LINES } = require('../src/utils/games/doorman');
 
-const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+const JPEG = Buffer.from([0xff, 0xd8, 0xff]); // the rooms are sent as JPEG (art.js jpeg)
 
 test('the Doorman only opens an empty room that is not yours', () => {
   for (let prize = 0; prize < 3; prize++) {
@@ -67,6 +67,6 @@ test('a full game: bet taken, win pays 1.425x once, only the owner can play', as
 
 test('room images render', async () => {
   for (const rooms of [[{}, {}, {}], [{ mine: true }, {}, { open: true }], [{ open: true }, { open: true, prize: true, mine: true }, { open: true }]]) {
-    assert.ok((await renderRooms(rooms)).subarray(0, 4).equals(PNG));
+    assert.ok((await renderRooms(rooms)).subarray(0, 3).equals(JPEG));
   }
 });

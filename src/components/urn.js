@@ -1,5 +1,7 @@
+// /urn's Use Rejuv / Start Over buttons. Button / dropdown / pop-up routes: each route has `matches` (is this click mine? usually by the customId prefix) and `execute`. components/index.js lists every route file.
 const { MessageFlags } = require('discord.js');
-const { claimUrn } = require('../utils/xp');
+const { claimUrn } = require('../utils/economy/xp');
+const { track } = require('../utils/economy/quests');
 const { REJUV_ID, claimedMessage } = require('../commands/xp/urn');
 
 // /urn's Use Rejuv / Start Over buttons: only the member whose streak it is can pick, then the urn is claimed.
@@ -10,6 +12,7 @@ async function onPick(interaction) {
   }
   const result = await claimUrn(userId, new Date(), { rejuv: choice === 'use' });
   if (!result.claimed) return interaction.update({ components: [] }); // already claimed (double click)
+  await track(userId, 'urn'); // quests
   return interaction.update({ ...claimedMessage(interaction.member, result), attachments: [] });
 }
 

@@ -1,10 +1,10 @@
 // Audit log: everything Discord reports through gateway events (Discord's own audit log entries go through
-// utils/auditEntries.js). The bot's own messages, reactions and actions are never logged.
+// utils/audit/auditEntries.js). The bot's own messages, reactions and actions are never logged.
 const { AttachmentBuilder, AutoModerationActionType, AutoModerationRuleTriggerType } = require('discord.js');
 const { isAllowedGuild, ourGuild } = require('../utils/guild');
-const audit = require('../utils/auditLog');
-const memory = require('../utils/auditMessages');
-const { handleEntry } = require('../utils/auditEntries');
+const audit = require('../utils/audit/auditLog');
+const memory = require('../utils/audit/auditMessages');
+const { handleEntry } = require('../utils/audit/auditEntries');
 
 const { COLOR, log, clip, when, duration, who, whoId, entryEmbed } = audit;
 const inOurGuild = (thing) => thing?.guildId && isAllowedGuild(thing.guildId);

@@ -36,10 +36,14 @@ class ExplodingUppercut extends Ability {
 class StickyBomb extends Ability {
   constructor(...args) {
     super(...args);
-    this.hits = 0;
-    this.kills = 0;
+    const carried = this.carried({}); // a Descend run's stacks (ability.js carried)
+    this.hits = carried.hits ?? 0;
+    this.kills = carried.kills ?? 0;
     this.bombs = []; // { target, at, damage }
   }
+
+  keep() { return { hits: this.hits, kills: this.kills }; }
+  stackText() { return this.hits || this.kills ? `${this.hits} hits, ${this.kills} kills: +${+(this.bonus * 100).toFixed(1)}% bomb damage` : null; }
 
   // stacks of a kind: full ones up to `cap`, half ones after
   static stacks(n, cap) { return Math.min(n, cap) + Math.max(0, n - cap) / 2; }

@@ -3,8 +3,8 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { changeSouls, getUser } = require('../src/utils/xp');
-const sc = require('../src/utils/sinclair');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
+const sc = require('../src/utils/games/sinclair');
 
 test('the shuffle is a GIF that plays once, the reveal a PNG', async () => {
   const gif = await sc.renderShuffle();
@@ -13,7 +13,7 @@ test('the shuffle is a GIF that plays once, the reveal a PNG', async () => {
   assert.ok(gif.length < 8 * 1024 * 1024); // well under Discord's upload limit
   assert.strictEqual(await sc.renderShuffle(), gif); // made once, reused
   const png = await sc.renderReveal(0, 2);
-  assert.ok(png.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])));
+  assert.ok(png.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))); // sent as JPEG (art.js jpeg)
 });
 
 test('a full game: bet taken, a win pays 2.85x once, only the owner picks', async () => {

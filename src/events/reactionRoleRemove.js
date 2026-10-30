@@ -1,4 +1,4 @@
-const { menuReaction, SELF_PICKED } = require('../utils/reactionRoles');
+const { menuReaction, SELF_PICKED } = require('../utils/server/reactionRoles');
 
 // Removing a reaction from a menu takes the role back.
 module.exports = {

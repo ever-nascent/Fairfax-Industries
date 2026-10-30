@@ -18,7 +18,7 @@ const BUFFS = {
   spiritResist: { name: 'Spirit Resist', odds: 10, amount: 0.5, unit: '%', apply: (s, v) => { s.spiritResist = stackResist(s.spiritResist, v / 100); } },
   moveSpeed: { name: 'Move Speed', odds: 5, amount: 0.1, unit: ' m/s', apply: (s, v) => { s.moveSpeed += v; } },
   abilityRange: { name: 'Ability Range', odds: 5, amount: 0.25, unit: '%', apply: (s, v) => { s.rangeMult += v / 100; } },
-  precision: { name: 'Precision', odds: 10, amount: 1, unit: '', apply: (s, v) => { s.precision += v; } }, // his call, Oct 22 (not one of the wiki's ten)
+  precision: { name: 'Precision', odds: 10, amount: 1, unit: '', apply: (s, v) => { s.precision += v; s.headshot += v; } }, // his call, Oct 22 (not one of the wiki's ten); since the Oct 28 split it raises both, as it did
 };
 
 // "+3% Weapon Damage" for `count` buffs of `key` (one buff: count 1).

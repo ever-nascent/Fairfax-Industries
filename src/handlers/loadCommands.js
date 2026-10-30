@@ -1,3 +1,5 @@
+// Reads every file in src/commands/<category>/ and puts it in client.commands by its name.
+// A new command is just a new file there: no list to update.
 const fs = require('node:fs');
 const path = require('node:path');
 

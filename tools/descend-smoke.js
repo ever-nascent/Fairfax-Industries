@@ -1,7 +1,7 @@
 // The /descend bug sweep (descent.js): every hero with ability logic goes through whole runs with random play (picks, skips, a full build's
 // swaps, ability points, walking past rivals, bosses' buffs and legendaries) until it falls or reaches --rooms. Every room's fight is checked
 // (health a real number between 0 and the max, frames to replay) and every screen it would show against Discord's limits.
-// Run: node tools/descend-smoke.js [hero] [--seeds=3 --rooms=60]   (a temp data folder; never touches data/)
+// Run: node tools/descend-smoke.js [hero] [--seeds=3 --rooms=60 --ascension=0]   (a temp data folder; never touches data/)
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-dsmoke-'));
 const path = require('node:path');
 const ROOT = path.join(__dirname, '..', 'src', 'utils', 'farm');
@@ -12,11 +12,12 @@ const { SLOTS, priceFor } = require(path.join(ROOT, 'levels'));
 const { itemByName } = require(path.join(ROOT, 'stats'));
 // the server's bar emojis, as long as the real ones (a health bar of them is about 380 characters)
 const STREAK = ['left', 'mid', 'right'].flatMap((p) => ['on', 'off'].map((s) => `streak_${p}_${s}`));
-require(path.join(__dirname, '..', 'src', 'utils', 'trivia')).loadStreakEmojis({ emojis: { cache: { find: (fn) => STREAK.map((name) => ({ name, toString: () => `<:${name}:1554307832742940715>` })).find(fn) } } });
+require(path.join(__dirname, '..', 'src', 'utils', 'games', 'trivia')).loadStreakEmojis({ emojis: { cache: { find: (fn) => STREAK.map((name) => ({ name, toString: () => `<:${name}:1554307832742940715>` })).find(fn) } } });
 
 const opt = (name, fallback) => { const hit = process.argv.find((a) => a.startsWith(`--${name}=`)); return hit ? Number(hit.slice(name.length + 3)) : fallback; };
 const SEEDS = opt('seeds', 3);
 const ROOMS = opt('rooms', 60);
+const ASCENSION = opt('ascension', 0); // every run at this ascension (descent.js ASCENSIONS)
 const only = process.argv.slice(2).find((a) => !a.startsWith('--'));
 const heroes = only ? roster().filter((n) => n.toLowerCase() === only.toLowerCase()) : roster();
 if (!heroes.length) { console.log(`Unknown hero. The roster: ${roster().join(', ')}`); process.exit(1); }
@@ -50,13 +51,19 @@ function limits(payload, what) {
     const reached = [];
     for (let seed = 1; seed <= SEEDS; seed++) {
       const rng = seeded(seed * 104729 + hero.length);
-      const d = D.newRun(hero, seed * 31 + hero.length);
+      const d = D.newRun(hero, seed * 31 + hero.length, ASCENSION);
       const fail = (what) => problems.push(`${hero} seed ${seed} room ${d.room}: ${what}`);
       try {
         for (;;) {
-          const spec = D.roomSpec(d.seed, d.room, d.hero);
+          const spec = D.specOf(d);
           problems.push(...limits(await V.roomView(member, d), `${hero} room ${d.room}`));
           if (spec.kind === 'rival' && rng() < 0.3) { d.room += 1; continue; } // Walk Away
+          if (spec.kind === 'broker') { // the Broker's stall: corrupt a random item half the time, else leave
+            d.phase = 'ready'; // (this sweep never answers an imbue prompt, which leaves the phase on 'imbue')
+            const held = D.corruptibles(d);
+            if (held.length && rng() < 0.5) { const r = D.corrupt(d, held[Math.floor(rng() * held.length)]); if (!r.ok && r.error !== 'health') fail(`the Broker refused: ${r.error}`); } else d.room += 1;
+            continue;
+          }
           const run = D.fightRoom(d, spec, rng);
           if (!(run.health >= 0 && run.health <= 1)) fail(`health after the fight is ${run.health}`);
           if (run.frames.length < 2) fail('fewer than 2 frames');
@@ -84,7 +91,7 @@ function limits(payload, what) {
               if (!r2.ok) fail(`swap: ${r2.error}`);
             } else if (!r.ok) fail(`pick: ${r.error}`);
           }
-          if (Object.values(d.items).flat().length > 12) fail('more than 12 items');
+          if (Object.values(d.items).flat().length > D.rules(d).maxItems) fail(`more than ${D.rules(d).maxItems} items`);
           if (d.room > ROOMS) { reached.push(ROOMS); break; }
         }
         if (seed === 1) problems.push(...limits(await V.buildView(member, d), `${hero} build`));

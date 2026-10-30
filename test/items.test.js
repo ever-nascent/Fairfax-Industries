@@ -47,6 +47,7 @@ test('resists multiply instead of adding, and an enemy that deals spirit damage 
     const foe = enemy('Dummy', { maxHealth: 1e6, dps: 50, damageType });
     hero.weapon.reloadLeft = 1e9;
     hero.stats.healthRegen = 0;
+    hero.stats.stamina = hero.stamina = 0; // no dash-jump dodges: this is about resists
     new Fight({ heroes: [hero], enemies: [foe], rng: seeded(3) }).run(2);
     return hero.stats.maxHealth - hero.health;
   };
@@ -211,6 +212,7 @@ test('items work together: a full kit beats the same hero with none', () => {
   const fightWith = (items) => {
     const hero = buildHero('Haze', { items, boons: 15 });
     hero.abilities[2].on = () => {}; // without Fixation: it alone clears these dummies, and the items are what's tested
+    hero.stats.stamina = hero.stamina = 0; // no dash-jump dodges either: the items are what's tested
     const f = new Fight({ heroes: [hero], enemies: [enemy('A', { maxHealth: 3000, dps: 18 }), enemy('B', { maxHealth: 3000, dps: 18 })], rng: seeded(3) });
     const out = f.run(120);
     return { ...out, time: f.time, health: hero.health };

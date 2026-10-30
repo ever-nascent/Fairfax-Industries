@@ -2,7 +2,7 @@
 // buff and the day's Golden Statue buffs along the bottom. Same look as the roam card (roamCard.js).
 const path = require('node:path');
 const { createCanvas } = require('@napi-rs/canvas');
-const { ASSETS, loadSouls, drawSouls, halftone, grain, grainAndVignette } = require('../art');
+const { ASSETS, loadSouls, drawSouls, halftone, grain, grainAndVignette, jpeg } = require('../art');
 const { BRIDGE, dailyBuffs, bridgeNow } = require('./buffs');
 const { BRIDGE_COLOR, SOULS, FONT, image, panel, contain, label, FARM } = require('./roamCard');
 const { fmt } = require('../format');
@@ -139,7 +139,7 @@ async function homeCard({ tiles, heldBridge = [], now = Date.now(), day }) {
 
   texture ??= grain(W, H, 91, 90);
   grainAndVignette(g, W, H, texture, { grainAlpha: 0.35, inner: 260, outer: 560, dark: 0.55 });
-  return c.toBuffer('image/png');
+  return jpeg(c);
 }
 
 module.exports = { homeCard };

@@ -4,10 +4,10 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { getUser } = require('../src/utils/xp');
-const { expireGames } = require('../src/utils/casino');
-const paige = require('../src/utils/paige');
-const { renderBook, renderBookPng, layout } = require('../src/utils/paigeBook');
+const { getUser } = require('../src/utils/economy/xp');
+const { expireGames } = require('../src/utils/games/casino');
+const paige = require('../src/utils/games/paige');
+const { renderBook, renderBookPng, layout } = require('../src/utils/games/paigeBook');
 const { findComponentRoute } = require('../src/components');
 const { simulate } = require('../tools/hangman-rtp');
 

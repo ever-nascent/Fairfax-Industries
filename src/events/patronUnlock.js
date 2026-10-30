@@ -1,5 +1,5 @@
 const { isAllowedGuild } = require('../utils/guild');
-const { giveCitizen, isUnlocked } = require('../utils/memberRoles');
+const { giveCitizen, isUnlocked } = require('../utils/server/memberRoles');
 
 // Picking a Patron in #roles makes a new member a Citizen, which unlocks the rest of the server.
 module.exports = {

@@ -1,8 +1,9 @@
 const { PermissionFlagsBits } = require('discord.js');
 const { isAllowedGuild } = require('../utils/guild');
-const { getSettings, addXp, announceLevelUp, chatCounts } = require('../utils/xp');
-const { findPhrase, getPhrases } = require('../utils/censor');
-const { shouldDrop, dropBag } = require('../utils/soulBag');
+const { getSettings, addXp, announceLevelUp, chatCounts } = require('../utils/economy/xp');
+const { findPhrase, getPhrases } = require('../utils/server/censor');
+const { shouldDrop, dropBag } = require('../utils/economy/soulBag');
+const { track } = require('../utils/economy/quests');
 
 // Chat XP: one counted message per cooldown, random XP between min and max (chatCounts has what doesn't count).
 // Every counted message (cooldown or not) can also drop a Soul Bag.
@@ -19,5 +20,6 @@ module.exports = {
     const amount = s.minXp + Math.floor(Math.random() * (s.maxXp - s.minXp + 1));
     const result = await addXp(message.author.id, amount, { fromChat: true, cooldownSeconds: s.cooldownSeconds });
     await announceLevelUp(message.guild, message.author.id, result);
+    if (result) await track(message.author.id, 'chat'); // quests (no private note here: /quests shows it)
   },
 };

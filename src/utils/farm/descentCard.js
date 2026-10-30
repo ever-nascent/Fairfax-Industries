@@ -11,7 +11,7 @@ const path = require('node:path');
 const { createCanvas, Path2D, PathOp } = require('@napi-rs/canvas');
 const { grain, grainAndVignette } = require('../art'); // (also registers the Retail and Radiance fonts)
 const { image, FARM } = require('./roamCard');
-const { itemFile } = require('./itemArt');
+const { itemFile, enhancedOverlay } = require('./itemArt');
 const { itemByName } = require('./stats');
 const { encodeGif } = require('../gif');
 const { buffText } = require('./buffs');
@@ -204,34 +204,41 @@ function slanted(g, text, x, y, px, fill, outline, turn = 0) {
   g.fillText(text, 0, 0);
   g.restore();
 }
-// The blue ENHANCED badge with the game's upgrade mark (a solid lightning bolt with an arrowhead on top, leaning right, outlined), centred at (x, y).
-// a lightning bolt (traced from a plain bolt icon), squeezed to 55% wide round its middle; the arrowhead above it, a little bigger and still centred on the bolt's top
-const BOLT = [[113, 48], [162, 48], [136, 98], [172, 98], [88, 210], [117, 128], [60, 128]].map(([x, y]) => [116 + (x - 116) * 0.55, y]);
-const BOLT_HEAD = [[96, 52], [178, 52], [140, -10]].map(([x, y]) => [128 + (x - 137) * 1.07, 52 + (y - 52) * 1.05]);
-function enhancedBadge(g, x, y) {
-  const px = 13;
+// The blue ENHANCED badge with the game's own Enhanced arrow (the wiki's Enhanced arrow.png, his pick Oct 30), centred at (x, y).
+const ARROW = path.join(FARM, 'ui', 'enhanced_arrow.png');
+// The wiki's own style for the word: #3FDCFF, bold, Retail (its Valve Pulp / retail-demo), a 2 px #112179 outline all round and a 6 px #112179 glow (his paste of the wiki's CSS, Oct 30; sizes scaled to `px`).
+const TILT = -4; // degrees: the word leans left, rising to the right (his ask, Oct 30: 3-5)
+function enhancedWord(g, x, y, px) {
+  const edge = '#112179', d = Math.max(1, px * 0.13);
   g.save();
-  g.font = `italic bold ${px}px sans-serif`;
-  const w = g.measureText('ENHANCED').width;
-  g.restore();
-  slanted(g, 'ENHANCED', x - 6, y, px, '#45acce', '#1d527e', -5);
-  g.save();
-  g.translate(x + w / 2 + 5, y - 6);
-  g.rotate(rad(-5 + 8));
-  const k = 24 / 220; // about 24 px tall
-  g.scale(k, k);
-  g.translate(-122, -100);
-  g.lineJoin = 'miter';
-  g.miterLimit = 6;
-  for (const pts of [BOLT, BOLT_HEAD]) { // the outline first (both shapes), then the fill over it so the two read as one mark
-    g.beginPath(); pts.forEach(([a_, b_], i) => (i ? g.lineTo(a_, b_) : g.moveTo(a_, b_))); g.closePath();
-    g.strokeStyle = '#1d527e'; g.lineWidth = 26; g.stroke();
+  g.translate(x, y);
+  g.rotate(rad(TILT));
+  x = 0; y = 0;
+  g.font = `bold ${px}px Retail, sans-serif`;
+  g.textAlign = 'center';
+  g.shadowColor = edge;
+  g.shadowBlur = 0;
+  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]]) { // text-shadow: the 8 offsets
+    g.shadowOffsetX = dx * d; g.shadowOffsetY = dy * d;
+    g.fillStyle = edge;
+    g.fillText('ENHANCED', x, y);
   }
-  for (const pts of [BOLT, BOLT_HEAD]) {
-    g.beginPath(); pts.forEach(([a_, b_], i) => (i ? g.lineTo(a_, b_) : g.moveTo(a_, b_))); g.closePath();
-    g.fillStyle = '#45acce'; g.fill();
-  }
+  g.shadowOffsetX = 0; g.shadowOffsetY = 0; g.shadowBlur = px * 0.46; // 0 0 6px
+  g.fillText('ENHANCED', x, y);
+  g.shadowColor = 'transparent';
+  g.fillStyle = '#3FDCFF';
+  g.fillText('ENHANCED', x, y);
+  const width = g.measureText('ENHANCED').width;
   g.restore();
+  return width;
+}
+async function enhancedBadge(g, x, y) {
+  const px = 15;
+  const w = enhancedWord(g, x - 8, y, px);
+  const arrow = await image(ARROW);
+  const h = 34;
+  const rise = Math.sin(rad(TILT)) * (w / 2 + 3); // the arrow follows the word's tilt
+  g.drawImage(arrow, x - 8 + w / 2 + 3, y - h + 9 + rise, h * arrow.width / arrow.height, h);
 }
 
 // One framed item card (the picture, its border in the kind's colour, tier marks top right, ACTIVE / IMBUE along the bottom, the UPGRADE ribbon)
@@ -250,13 +257,8 @@ async function card(g, { picture, kind, tier, active, upgrade, enhanced }, cx, c
   g.save();
   g.beginPath(); g.roundRect(x, x, size, size, 4); g.clip();
   try { g.drawImage(await image(picture), x, x, size, size); } catch { /* no picture: the name says what it is */ }
-  if (enhanced) { // an enhanced item has a blue hue rising from the bottom of its card
-    const hue = g.createLinearGradient(0, -x, 0, x);
-    hue.addColorStop(0, 'rgba(60,170,230,0.6)');
-    hue.addColorStop(0.55, 'rgba(60,170,230,0.18)');
-    hue.addColorStop(1, 'rgba(60,170,230,0)');
-    g.fillStyle = hue;
-    g.fillRect(x, x, size, size);
+  if (enhanced) { // an enhanced item gets the wiki's blue 45-degree gradient over its picture
+    enhancedOverlay(g, x, x, size, size);
   }
   if (active) { // a dark pill at the bottom, centred
     const th = Math.round(size * 0.15), tw = size * (active === 'IMBUE' ? 0.5 : 0.46);
@@ -338,7 +340,7 @@ async function choiceIn(g, choice, deg, grow = 1) {
   if (grow >= 1) {
     const base = top + size + 8 + 15;
     lines.forEach((l, i) => lettering(g, l, x, base + i * 21));
-    if (choice.enhanced) enhancedBadge(g, x, base + lines.length * 21 + 1);
+    if (choice.enhanced) await enhancedBadge(g, x, base + lines.length * 21 + 1);
   }
   g.restore();
 }
@@ -412,7 +414,7 @@ function itemChoice(name, kind) {
 }
 function choicesOf(offer, upgrades = new Set(), stacks = 1) {
   if (offer.kind === 'buffs') return offer.choices.map((key) => ({ name: buffText(key, stacks), kind: BUFF_KIND[key] ?? 'legendary', picture: path.join(BUFF_DIR, `${key}.png`) }));
-  if (offer.kind === 'legendaries') return offer.choices.map((name) => itemChoice(name, 'legendary'));
+  if (offer.kind === 'legendaries') return offer.choices.map((name) => ({ ...itemChoice(name, 'legendary'), enhanced: !!offer.enhanced?.includes(name) }));
   return offer.choices.map((name, i) => ({
     ...itemChoice(name), upgrade: upgrades.has(name), enhanced: !!offer.enhanced?.includes(name), bonus: offer.bonuses?.[i] ? itemChoice(offer.bonuses[i]) : null,
   }));

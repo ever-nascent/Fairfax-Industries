@@ -1,7 +1,9 @@
+// /shop's section dropdown and buy buttons. Button / dropdown / pop-up routes: each route has `matches` (is this click mine? usually by the customId prefix) and `execute`. components/index.js lists every route file.
+// What each buy does: utils/shop/shop.js.
 const { MessageFlags } = require('discord.js');
-const { heroCardsView, SECTION_VIEWS, STYLES, SECTION_ID, SELECT_ID, STYLE_ID, BUY_ID, EQUIP_ID, BOOST_ID, REJUV_ID, HIDEOUT_BUY_ID, receipts, FAILED } = require('../utils/shop');
-const { buyCard, equipCard, buyBoost, buyRejuv } = require('../utils/xp');
-const { buyHideout, getHideout } = require('../utils/hideout');
+const { heroCardsView, SECTION_VIEWS, STYLES, SECTION_ID, SELECT_ID, STYLE_ID, BUY_ID, EQUIP_ID, BOOST_ID, REJUV_ID, HIDEOUT_BUY_ID, receipts, FAILED } = require('../utils/shop/shop');
+const { buyCard, equipCard, buyBoost, buyRejuv } = require('../utils/economy/xp');
+const { buyHideout, getHideout } = require('../utils/shop/hideout');
 const { replyEmbed } = require('../utils/embeds');
 
 // /shop's dropdowns and buttons redraw the Shop message with `view(member)`.

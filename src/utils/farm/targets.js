@@ -16,8 +16,8 @@
 // where /urn pays 1,000-2,200 a day and Shop prices are 8,000-64,000). The Mid-Boss and the siege pay double that (HARD_PAY).
 const path = require('node:path');
 const { ASSETS } = require('../art');
-const { Fight, enemy, damageBreakdown } = require('./engine');
-const { SCALE } = require('../economy');
+const { Fight, enemy, damageBreakdown, enemyDamage, healBreakdown } = require('./engine');
+const { SCALE } = require('../economy/economy');
 
 const { npcs, objectives } = require(path.join(ASSETS, 'farm', 'npcs.json'));
 const ICONS = path.join(ASSETS, 'farm', 'icons'); // wiki icons, `npm run farm-data` (credits: assets/CREDITS.txt)
@@ -33,7 +33,7 @@ const creep = (key, name, dps, controls = []) => () => {
   const n = npcs[key];
   const mods = n.IntrinsicModifiers[0];
   return enemy(name, {
-    maxHealth: n.MaxHealth, dps, distance: 10, controls, souls: n.GoldReward,
+    maxHealth: n.MaxHealth, dps, distance: 10, meleeRange: n.MeleeAttemptRange, controls, souls: n.GoldReward,
     bulletResist: pct(mods.BULLET_DAMAGE_REDUCTION_PERCENT), spiritResist: pct(mods.ABILITY_DAMAGE_REDUCTION_PERCENT),
   });
 };
@@ -57,12 +57,12 @@ const BOSS_RESISTS = {
   npc_boss_tier1: { spirit: 0.25, cc: 0.5 }, npc_boss_tier2: { spirit: 0.35, cc: 0.5 }, npc_super_neutral: { spirit: 0.3, bullet: 0.1, cc: 0.75 },
   npc_barrack_boss: { spirit: 0.3, cc: 0.5 }, destroyable_building: { spirit: 0.4, cc: 1 }, npc_boss_tier3: { spirit: 0.35, bullet: 0.2, cc: 0.75 },
 };
-const boss = (key, name, { health, dps, regen = 0, dpsMaxHealthPct = 0, extraResist = 0, damageType = 'bullet', blast = null, controls = [] }) => () => {
+const boss = (key, name, { health, dps, regen = 0, dpsMaxHealthPct = 0, extraResist = 0, damageType = 'bullet', slam = null, blast = null, controls = [] }) => () => {
   const n = npcs[key];
   const mods = n.IntrinsicModifiers?.[0] || {};
   const r = BOSS_RESISTS[key] ?? {};
   const e = enemy(name, {
-    maxHealth: health ?? n.MaxHealth, dps, dpsMaxHealthPct, damageType, blast, controls, distance: 20, healthRegen: regen,
+    maxHealth: health ?? n.MaxHealth, dps, dpsMaxHealthPct, damageType, meleeRange: n.MeleeAttemptRange, slam, blast, controls, distance: 20, healthRegen: regen,
     bulletResist: resistWith(resistWith(pct(mods.BULLET_ARMOR_DAMAGE_RESIST), extraResist), r.bullet || 0),
     spiritResist: resistWith(pct(mods.ABILITY_DAMAGE_REDUCTION_PERCENT), r.spirit || 0),
   });
@@ -84,7 +84,7 @@ const shrineResist = () => {
 // would have at that point (level 0 / 6 / 12 / 18 / 24 / 28 / 35, abilities and tiers spent in order, 0-12 items, 0-24 permanent buffs, 3 Rejuvs
 // for the siege, items picked at random) clears the target 55% of the time. Other heroes use the same numbers and may find them easier (his call, Oct 2). Re-run the
 // tuning if hero levels, items or enemy numbers change.
-const HARDNESS = { 'small-camp': 1, 'medium-camp': 2.724, 'large-camp': 0.687, guardian: 0.405, walker: 0.415, 'mid-boss': 0.667, siege: 0.265 }; // Oct 3 (late): retuned for every item in fights, melee, dashes and once-a-second enemy hits; Oct 2 (evening): Silencer left the shop (retired in the game); all retuned Oct 3 for ability range, dodging, the Walker's stomp and the 9 items they brought into the shop // Oct 2: `farm-sim.js tune` with Haze, 120 fights per number, typical kits win 55%
+const HARDNESS = { 'small-camp': 1, 'medium-camp': 2.379, 'large-camp': 0.577, guardian: 0.596, walker: 0.488, 'mid-boss': 1.026, siege: 0.374 }; // Oct 28 (his call: 'a good mix of balance and challenge', after misses and stamina dodges): the bosses and the siege moved halfway (geometric) to farm-sim retune's roster-wide 55% (guardian 0.876, walker 0.574, mid-boss 1.577, siege 0.529; it was 0.405 / 0.415 / 0.667 / 0.265); the camps set to Haze's own 55% (tune: 2.379 / 0.577, were 2.724 / 0.687; retune's roster-wide x1.4-1.65 left the starter Haze at 0%). Oct 3 (late): retuned for every item in fights, melee, dashes and once-a-second enemy hits; Oct 2 (evening): Silencer left the shop (retired in the game); all retuned Oct 3 for ability range, dodging, the Walker's stomp and the 9 items they brought into the shop // Oct 2: `farm-sim.js tune` with Haze, 120 fights per number, typical kits win 55%
 // A failed attempt takes one clear back off (his call, Oct 2, play.js), so a target settles at a size the member can still beat instead of locking them out
 // (simulated: a typical kit of the target's own level settles at 1-4 clears, winning a quarter to half of its attempts).
 // Every target grows each time a member clears it, up to a cap (his call, Oct 2: enemies scale on their own, not with the hero): more health, damage and
@@ -158,7 +158,8 @@ const trooper = (key, name) => (wave) => {
   const n = npcs[key];
   const k = (1 + WAVE.growth) ** (wave - 1); // compounding: a kitted hero is many times a fresh one, so a straight line never catches up
   const resist = pct(n.VSPlayer.DamageResist); // -25%: heroes hurt troopers more
-  return enemy(name, { maxHealth: n.MaxHealth * k, dps: n.VSPlayer.BaseDPS * WAVE.hardness * k, distance: 15, bulletResist: resist, spiritResist: resist, souls: TROOPER_SOULS });
+  const melee = key === 'trooper_melee'; // charges in and only swings (the game data's MeleeChargeRange)
+  return enemy(name, { maxHealth: n.MaxHealth * k, dps: n.VSPlayer.BaseDPS * WAVE.hardness * k, distance: melee ? n.MeleeHitRange : 15, damageType: melee ? 'melee' : 'bullet', meleeRange: n.MeleeAttemptRange, bulletResist: resist, spiritResist: resist, souls: TROOPER_SOULS });
 };
 const [ranged, medic, melee] = [trooper('trooper_normal', 'Trooper'), trooper('trooper_medic', 'Medic Trooper'), trooper('trooper_melee', 'Melee Trooper')];
 const WAVES = {
@@ -170,6 +171,10 @@ const WAVES = {
 // The Walker's stomp (wiki NpcData: 350 + 15% of max health, a 2 s stun, a 6 s cooldown), spirit damage like all its attacks. A hero can dodge it (engine.js DODGE).
 // ponytail: in the game it only reaches heroes within 12 m; the fight has no hero position, so every hero is in reach.
 const walkerData = npcs.npc_boss_tier2;
+// The Walker's melee slam (his call, Oct 28): the game data's MeleeDamage, 300 + 10% of the hero's max health. The data gives no cooldown;
+// every 6 s like the Stomp, half a cycle after it, so the two take turns (my pick, his to change).
+const WALKER_DPS = walkerData.BoundAbilities.ESlot_Signature_2.AbilityProperties.DPS; // its laser
+const WALKER_SLAM = { first: 3, every: 6, damage: walkerData.MeleeDamage, maxHealthPct: walkerData.MeleeDamageHealthPct / 100, dps: WALKER_DPS };
 const WALKER_STOMP = { every: walkerData.BoundAbilities.ESlot_Signature_3.AbilityProperties.AbilityCooldown, damage: walkerData.StompDamage, maxHealthPct: walkerData.StompDamageMaxHealthPercent / 100, curse: walkerData.StunDuration, type: 'spirit', what: 'stomp', tags: ['stun'] };
 const TARGETS = {
   'small-camp': { name: 'Tier 1 Camp (3 small Haunts)', cooldown: 1 * HOUR, souls: 3 * soulsOf('neutral_trooper_weak'), enemies: scaled(HARDNESS['small-camp'], camp(small, small, small)) },
@@ -178,7 +183,7 @@ const TARGETS = {
   'large-camp': { name: 'Tier 3 Camp (3 large Haunts)', cooldown: 6 * HOUR, souls: 3 * soulsOf('neutral_trooper_strong'), enemies: scaled(HARDNESS['large-camp'], camp(large, large, large)) },
   guardian: { name: 'Guardian', cooldown: 12 * HOUR, souls: objectives.Tier1GoldKill, enemies: scaled(HARDNESS.guardian, boss('npc_boss_tier1', 'Guardian', { dps: npcs.npc_boss_tier1.PlayerDPS, controls: [{ id: 'stun', every: 10, duration: 1, tags: ['stun'], verb: 'stunned' }] })) },
   // ponytail: base health only; the wiki's 9000 / 12000 are for after other Walkers have fallen
-  walker: { name: 'Walker', cooldown: 24 * HOUR, souls: objectives.Tier2GoldKill, enemies: scaled(HARDNESS.walker, boss('npc_boss_tier2', 'Walker', { damageType: 'spirit', blast: WALKER_STOMP, dps: npcs.npc_boss_tier2.BoundAbilities.ESlot_Signature_2.AbilityProperties.DPS })) },
+  walker: { name: 'Walker', cooldown: 24 * HOUR, souls: objectives.Tier2GoldKill, enemies: scaled(HARDNESS.walker, boss('npc_boss_tier2', 'Walker', { damageType: 'spirit', blast: WALKER_STOMP, slam: WALKER_SLAM, dps: WALKER_DPS })) },
   // Mid-Boss (once every 12 hours, his call Oct 2): 13000 HP (+195 per minute after it spawns, not scaled yet), regenerates 15 HP/s, 3000 souls (+50/min). No revive
   // during the fight; a kill drops a Rejuv (the wiki gives up to 3 credits per kill to a team, 1 for a lone hero here).
   'mid-boss': { name: 'Mid-Boss', cooldown: 12 * HOUR, souls: HARD_PAY * 3000, rejuv: 1, enemies: scaled(HARDNESS['mid-boss'], boss('npc_super_neutral', 'Mid-Boss', { health: npcs.npc_super_neutral.StartingHealth, dps: 100, regen: npcs.npc_super_neutral.IntrinsicModifiers[0].HEALTH_REGEN_PER_SECOND, controls: [{ id: 'grapple', every: 11, duration: 1.2, tags: ['stun', 'immobilize'], verb: 'grappled' }] })) },
@@ -220,15 +225,21 @@ const payout = (souls) => Math.round(souls * PAYOUT_SCALE);
 
 // Runs `stages` ([{ enemies() }]) in order with one hero; health, cooldowns and the clock carry from stage to stage. Stops at the
 // first stage the hero doesn't clear. `watch(fight, stageIndex, phase)` is called at each stage's 'start' and after every 'step'
-// (the live message records snapshots with it). Returns { won, stage (how many were cleared), time, fight, timedOut, bonusSouls (what souls items earned, wiki souls) }.
+// (the live message records snapshots with it). Returns { won, stage (how many were cleared), time, fight, timedOut, bonusSouls (what souls items earned, wiki souls),
+// damage (the hero's, by source), taken (each enemy's, by move), healing (what healed the hero, and when), foes (the enemies of the last 5 stages fought as they started: the breakdown's Enemy Build) }.
+// A unit as it started the fight, for the breakdown's Enemy Build (enemyBuild.js unitLines reads only its name and stats).
+const snapUnit = (u) => ({ name: u.name, stats: { ...u.stats, blast: u.stats.blast && { ...u.stats.blast }, controls: (u.stats.controls ?? []).map((c) => ({ ...c })) } });
 function runStages(hero, stages, { rng, maxSecondsPerStage = 600, watch } = {}) {
   let time = 0;
   let fight;
   let bonusSouls = 0;
   const fights = [];
+  const foes = [];
+  const report = () => ({ damage: damageBreakdown(hero, fights), taken: enemyDamage(fights), healing: healBreakdown(hero, fights), foes: foes.slice(-5) });
   for (const [i, stage] of stages.entries()) {
     fight = new Fight({ heroes: [hero], enemies: stage.enemies(), rng, time });
     fights.push(fight);
+    foes.push({ label: stages.length > 1 ? stage.name : null, units: fight.enemies.filter((e) => e.team === 'enemy').map(snapUnit) });
     watch?.(fight, i, 'start');
     const end = time + maxSecondsPerStage;
     while (fight.time < end && hero.alive && fight.enemies.some((e) => e.alive)) {
@@ -237,9 +248,9 @@ function runStages(hero, stages, { rng, maxSecondsPerStage = 600, watch } = {}) 
     }
     time = fight.time;
     bonusSouls += fight.bonusSouls;
-    if (fight.enemies.some((e) => e.alive)) return { won: false, stage: i, time, fight, timedOut: hero.alive, bonusSouls, damage: damageBreakdown(hero, fights) };
+    if (fight.enemies.some((e) => e.alive)) return { won: false, stage: i, time, fight, timedOut: hero.alive, bonusSouls, ...report() };
   }
-  return { won: true, stage: stages.length, time, fight, timedOut: false, bonusSouls, damage: damageBreakdown(hero, fights) };
+  return { won: true, stage: stages.length, time, fight, timedOut: false, bonusSouls, ...report() };
 }
 
 // One attempt: `hero` (from buildHero) against a target. Souls are paid only for a win; a lost fight leaves the target

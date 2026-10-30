@@ -1,5 +1,5 @@
 const { ourGuild } = require('../utils/guild');
-const { ensureMemberRoles } = require('../utils/memberRoles');
+const { ensureMemberRoles } = require('../utils/server/memberRoles');
 
 // On startup: create the Don / Shrine Keeper / Base Guardian / Citizen roles if missing, hand out Citizen.
 module.exports = {

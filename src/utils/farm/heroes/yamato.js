@@ -1,6 +1,6 @@
 // Yamato's abilities (deadlock.wiki/Yamato, checked Oct 5 2026; page updated Sept 30). Numbers come from the wiki data through Ability.value();
 // this file is only what each ability does. Standing rules used: "on hero hit / kill" is any enemy; a slower fire rate on an NPC is that much
-// less damage from it. (This is the hero; the betting game she hosts is src/utils/yamato.js.)
+// less damage from it. (This is the hero; the betting game she hosts is src/utils/games/yamato.js.)
 const { Ability } = require('./../ability');
 const { DT, MELEE } = require('./../engine');
 

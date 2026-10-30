@@ -68,10 +68,12 @@ class Bloodscent extends Ability {
 
   constructor(...args) {
     super(...args);
-    this.kills = 0;
+    this.kills = this.carried(); // a Descend run's kills (ability.js carried)
   }
 
   status() { return this.kills ? `+${this.kills * this.data.WeaponDmgPerIsolationKill}% Weapon` : 'Passive'; }
+  keep() { return this.kills; }
+  stackText() { return this.kills ? `${this.kills} kills: +${this.kills * this.data.WeaponDmgPerIsolationKill}% Weapon Damage` : null; }
 
   tick(fight) {
     const prey = fight.enemies.filter((e) => isolated(fight, e));

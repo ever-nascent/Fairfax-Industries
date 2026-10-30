@@ -3,7 +3,7 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 process.env.FARM_FRAME_MS = '0';
 const test = require('node:test');
 const assert = require('node:assert');
-const { getUser } = require('../src/utils/xp');
+const { getUser } = require('../src/utils/economy/xp');
 const { getFarmUser, chooseHero, play, simulate, cooldownLeft, updateFarmUser: changeRecord } = require('../src/utils/farm/play');
 const views = require('../src/utils/farm/views');
 const routes = require('../src/components/farm');
@@ -17,7 +17,7 @@ const { buildHero } = require('../src/utils/farm/hero');
 const guild = { emojis: { cache: { find: () => undefined } } };
 // the server's bar emojis, as long as the real ones: <:streak_mid_on:1554307832742940715> (a bar of them is about 380 characters)
 const STREAK = ['left', 'mid', 'right'].flatMap((p) => ['on', 'off'].map((s) => `streak_${p}_${s}`));
-require('../src/utils/trivia').loadStreakEmojis({
+require('../src/utils/games/trivia').loadStreakEmojis({
   emojis: { cache: { find: (fn) => STREAK.map((name) => ({ name, toString: () => `<:${name}:1554307832742940715>` })).find(fn) } },
 });
 const member = (id) => ({ id, guild, toString: () => `<@${id}>` });
@@ -147,7 +147,24 @@ test("only the owner can use a member's buttons", async () => {
   const other = fake('intruder', 'farm_back:owner');
   await route('Back button').execute(other);
   assert.strictEqual(other.log[0][0], 'reply');
-  assert.match(other.log[0][1].content, /not your farm/);
+  assert.match(other.log[0][1].content, /^Only <@owner> can go back on this screen\. Open your own farm with `\/base`\.$/);
+  // each button says what it does (his ask, Oct 26), never one line for the whole farm
+  const said = [];
+  for (const [label, id] of [['Send button', 'farm_send:owner:small-camp'], ['Buy item', 'farm_buy:owner:weapon:1:Extra Health'], ['Rival Walk Away button', 'farm_walk:owner:Haze'], ['Descend fight button', 'farm_dfight:owner:1'], ['Descend abandon button', 'farm_dquit:owner:yes']]) {
+    const i = fake('intruder', id);
+    await route(label).execute(i);
+    assert.strictEqual(i.log[0][0], 'reply', label);
+    said.push(i.log[0][1].content);
+  }
+  assert.strictEqual(new Set(said).size, said.length, said.join(' | '));
+  assert.match(said[3], /fight this room\. Start your own descent with `\/descend run`/);
+  // the build buttons are for anyone: the owner's build, privately and read-only
+  await chooseHero('owner', 'Haze');
+  const peek = fake('intruder', 'farm_herocard:owner');
+  await route('Hero button').execute(peek);
+  const shown = peek.log.find(([k]) => k === 'editReply')[1];
+  assert.ok(peek.log[0][0] === 'deferReply' && shown.components.length === 0 && /<@owner>'s Haze/.test(shown.content));
+  assert.match(shown.embeds[0].toJSON().title, /^Haze/);
 });
 
 test('Send plays the fight as a live message, pays once, and the cooldown blocks a second try', async () => {
@@ -216,8 +233,8 @@ test('a roam is one drawn card, with the buffs and bridge buff written under it'
   const base = { finds: { crate: 1, toughCrate: 0, statue: 2, sinner: 0 }, today: ['weaponDamage'], souls: 3, bridge: null, bridgeNow: 'gun', hero: 'Haze' };
   const withBuffs = await views.roamView({ ...base, buffs: ['weaponDamage', 'weaponDamage', 'fireRate'] });
   const j = withBuffs.embeds[0].toJSON();
-  assert.strictEqual(j.image.url, 'attachment://roam.png');
-  assert.ok(withBuffs.files.some((f) => f.name === 'roam.png'));
+  assert.strictEqual(j.image.url, 'attachment://roam.jpg');
+  assert.ok(withBuffs.files.some((f) => f.name === 'roam.jpg'));
   assert.match(j.fields.find((f) => f.name.startsWith('Buffs Gained')).value, /\+6% Weapon Damage[\s\S]*\+1.5% Fire Rate/);
   assert.match(j.footer.text, /bridge buff: Gun/);
   const bridge = (await views.roamView({ ...base, buffs: [], bridge: 'survival', bridgeNow: 'survival' })).embeds[0].toJSON();
@@ -371,7 +388,7 @@ test('a camp screen: the triangle is the author icon, a Haunt is in the corner, 
   checkLimits(view, 'camp details');
   const j = view.embeds[0].toJSON();
   assert.deepStrictEqual([j.author.icon_url, j.thumbnail.url, view.files.map((f) => f.name)], ['attachment://icon.png', 'attachment://thumb.png', ['icon.png', 'thumb.png']]);
-  assert.match(view.files[1].attachment, /gutter_ghoul_small\.png$/);
+  assert.match(view.files[1].source, /gutter_ghoul_small\.png$/);
   assert.strictEqual(j.description, 'Three Small Haunts Guard This Camp.');
   assert.strictEqual(j.footer.text, 'If Haze Dies, Nothing Is Paid and the Cooldown Still Starts.');
   const value = (name) => j.fields.find((f) => f.name === name).value;
@@ -380,7 +397,7 @@ test('a camp screen: the triangle is the author icon, a Haunt is in the corner, 
   assert.strictEqual(sendId, `farm_send:${id}:small-camp:gutter_ghoul`);
   const sent = fake(id, sendId);
   await route('Send button').execute(sent);
-  assert.match(sent.log.at(-1)[1].files.at(-1).attachment, /gutter_ghoul_small\.png$/, 'the fight is against the Haunt the screen showed');
+  assert.match(sent.log.at(-1)[1].files.at(-1).source, /gutter_ghoul_small\.png$/, 'the fight is against the Haunt the screen showed');
   const waiting = await views.targetView(member(id), 'small-camp', await getFarmUser(id));
   assert.match(waiting.embeds[0].toJSON().footer.text, /^Not Ready Yet: (1h 0m|\d+m) Left\. If Haze Dies/);
   const walker = (await views.targetView(member(id), 'walker', await getFarmUser(id))).embeds[0].toJSON();
@@ -477,7 +494,7 @@ test('lane screens: the dropdown lists every lane, a Walker shows its lane, heal
   const down = (await views.targetView(member(id), 'guardian', record, now, 'york')).embeds[0].toJSON();
   assert.match(down.footer.text, /^Down: Back in 12h 0m\./);
   const siege = (await views.targetView(member(id), 'siege', record, now)).embeds[0].toJSON();
-  assert.strictEqual(siege.image.url, 'attachment://siege.png', 'the lanes and stages are a drawn card');
+  assert.strictEqual(siege.image.url, 'attachment://siege.jpg', 'the lanes and stages are a drawn card');
   assert.match(siege.footer.text, /^Locked: All Three Walkers Must Be Down First\./);
 
   // the dropdown opens a lane's screen, and pressing Send on a locked Walker is refused
@@ -531,10 +548,10 @@ test('waves: an endless run down a lane, every wave cleared pays, once a day per
   assert.match(j.fields.find((f) => f.name === 'Best Run').value, new RegExp(`^${out.run.cleared} Waves?`));
   assert.strictEqual(details.components.at(-2).toJSON().components[0].custom_id, `farm_send:${id}:waves:york`);
   for (const frame of out.run.frames) checkLimits(views.fightView(out.run, frame), 'waves live');
-  assert.match(details.files.at(-1).attachment, /trooper\.png$/, 'the corner picture is a trooper');
-  assert.match(views.fightView(out.run, out.run.frames[0]).files.at(-1).attachment, /trooper\.png$/);
+  assert.match(details.files.at(-1).source, /trooper\.png$/, 'the corner picture is a trooper');
+  assert.match(views.fightView(out.run, out.run.frames[0]).files.at(-1).source, /trooper\.png$/);
   const medicLeft = { ...out.run.frames[0], enemies: out.run.frames[0].enemies.map((e) => ({ ...e, hp: e.name.startsWith('Medic') ? 10 : 0 })) };
-  assert.match(views.fightView(out.run, medicLeft).files.at(-1).attachment, /trooper-medic\.png$/, 'the picture is the trooper still standing');
+  assert.match(views.fightView(out.run, medicLeft).files.at(-1).source, /trooper-medic\.png$/, 'the picture is the trooper still standing');
   const result = views.resultView(out.run);
   checkLimits(result, 'waves result');
   assert.match(result.embeds[0].toJSON().title, /^York Waves: \d+ Waves? Cleared$/);
@@ -635,7 +652,7 @@ test('encounters: a rival shows on the result with Fight / Walk Away, the duel i
 
     // someone else can't press it
     const stranger = await press('Rival Fight button', `farm_duel:${id}:${rival}`, 'someone-else');
-    assert.ok(stranger.log.some(([kind, p]) => kind === 'reply' && /not your farm/.test(p.content)));
+    assert.ok(stranger.log.some(([kind, p]) => kind === 'reply' && new RegExp(`Only <@${id}> can fight this rival`).test(p.content)));
 
     // Walk Away: the buttons go, and the rival with them
     const walked = await press('Rival Walk Away button', `farm_walk:${id}:${rival}`);
@@ -713,19 +730,29 @@ test('Damage Breakdown: every point of damage counted by what dealt it; a button
   assert.strictEqual(button.label, 'Damage Breakdown');
   const pressed = fake('someone-else', button.custom_id); // anyone may look, privately
   await route('Damage Breakdown button').execute(pressed);
-  const [kind, p] = pressed.log[0];
-  assert.ok(kind === 'reply' && p.flags);
+  assert.strictEqual(pressed.log[0][0], 'deferReply');
+  const p = pressed.log.find(([k]) => k === 'editReply')[1];
   checkLimits(p, 'damage breakdown');
   const e = p.embeds[0].toJSON();
   assert.strictEqual(e.title, "Haze's Damage Breakdown");
   assert.ok(e.fields.some((f) => f.name.startsWith('Weapon & Melee')));
+  // its pages (his ask, Oct 26): the enemies' damage, healing, and both builds as the fight started; anyone may turn them
+  const tabs = p.components[0].toJSON().components;
+  assert.deepStrictEqual(tabs.map((c) => c.label), ["Haze's Damage", 'Enemy Damage', 'Healing', "Haze's Build", 'Enemy Build']);
+  assert.ok(tabs[0].disabled && !tabs[1].disabled);
+  const page = async (n) => { const i = fake('someone-else', tabs[n].custom_id); await route('Damage Breakdown page button').execute(i); assert.strictEqual(i.log[0][0], 'deferUpdate'); const out = i.log.find(([k]) => k === 'editReply')[1]; checkLimits(out, tabs[n].label); return out; };
+  assert.match((await page(1)).embeds[0].toJSON().title, /^Enemy Damage {2}- {2}vs Haze/);
+  assert.match((await page(2)).embeds[0].toJSON().title, /^Haze's Healing/);
+  const build = await page(3);
+  assert.ok(/^Haze's Build {2}- {2}Level/.test(build.embeds[0].toJSON().title) && build.files.some((f) => f.name === 'rival-build.jpg'));
+  assert.match((await page(4)).embeds[0].toJSON().title, /^Enemy Build {2}- {2}/);
   const gone = fake(id, `farm_damage:${id}:nope`);
   await route('Damage Breakdown button').execute(gone);
   assert.match(gone.log[0][1].content, /gone/);
 });
 
 test('voice lines: a hero with lines says one of them, a hero without says nothing', () => {
-  const haze = require('../src/utils/trivia').heroes().find((h) => h.name === 'Haze');
+  const haze = require('../src/utils/games/trivia').heroes().find((h) => h.name === 'Haze');
   for (let i = 0; i < 200; i++) assert.doesNotMatch(views.voiceLine('Haze'), /Dynamo|Wraith|Yamato|undefined/, 'a camp or boss: no line about a hero');
   for (let i = 0; i < 200; i++) assert.doesNotMatch(views.voiceLine('Wraith'), /Spanish Harlem/, 'a camp or boss: no kill line about a hero, named or not');
   assert.strictEqual(views.voiceLine('Haze', 'Wraith', () => 0), `\n\n**Haze:** *"${haze.kills.heroes.Wraith[0]}"*`, 'a duel: a kill line about that hero');
@@ -746,7 +773,7 @@ test('View Enemy Build: target screens, the siege, a camp and a waiting rival ea
   const guardian = await ask(`farm_enemy:${id}:guardian:york`);
   checkLimits(guardian.log.find(([k]) => k === 'editReply')[1], 'guardian build');
   assert.match(text(guardian), /Enemy Build {2}- {2}York Guardian/);
-  assert.match(text(guardian), /\*\*Stuns\*\* every 10 s/, 'its stun is listed with the timing');
+  assert.match(text(guardian), /- \*\*Stun:\*\* Every 10s/, 'its stun is listed with the timing, as a bullet point');
   const siege = await ask(`farm_enemy:${id}:siege`);
   checkLimits(siege.log.find(([k]) => k === 'editReply')[1], 'siege build');
   assert.match(text(siege), /Enemy Build {2}- {2}Base Siege/);
@@ -755,7 +782,7 @@ test('View Enemy Build: target screens, the siege, a camp and a waiting rival ea
   assert.match(text(camp), /Toxic Waste/, 'a large Haunt shows its family special');
   const stranger = fake('someone', `farm_enemy:${id}:guardian:york`);
   await route('View Enemy Build button').execute(stranger);
-  assert.ok(stranger.log.some(([k, p]) => k === 'reply' && /not your farm/.test(p.content)));
+  assert.match(text(stranger), /Enemy Build/, 'anyone may look: the enemies of the owner, privately');
   // a waiting rival: Fight / Flee, then View Enemy Build; its drawn card is the kit it will fight with
   await changeRecord(id, (r) => { r.earned = 1e6; r.tiers = { 1: 3, 2: 3, 3: 3, 4: 3 }; });
   setCooldowns(false);
@@ -771,7 +798,7 @@ test('View Enemy Build: target screens, the siege, a camp and a waiting rival ea
     const reply = view.log.find(([k]) => k === 'editReply')[1];
     checkLimits(reply, 'rival build');
     assert.ok(text(view).includes(`Enemy Build  -  ${rival}`));
-    assert.ok(reply.files.some((f) => f.name === 'rival-build.png'));
+    assert.ok(reply.files.some((f) => f.name === 'rival-build.jpg'));
     const flee = fake(id, `farm_walk:${id}:${rival}`);
     await route('Rival Walk Away button').execute(flee);
     const rows = flee.log.find(([k]) => k === 'editReply')[1].components;

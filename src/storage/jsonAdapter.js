@@ -1,3 +1,6 @@
+// Where all saved data lives: one JSON file per store in data/ (DATA_DIR, a temp folder in tests). Each file is kept in memory and
+// written through on every change (atomically: a .tmp file renamed over the old one), so a crash never leaves half a file.
+// Use it through storage/index.js `getStore(name)`; never write data/ files by hand while the bot runs.
 const fs = require('node:fs');
 const path = require('node:path');
 const { setTimeout: sleep } = require('node:timers/promises');

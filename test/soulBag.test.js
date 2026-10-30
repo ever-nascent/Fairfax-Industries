@@ -3,8 +3,8 @@
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('node:test');
 const assert = require('node:assert');
-const { shouldDrop, rollSouls, onGrab, BAG_MIN, BAG_MAX } = require('../src/utils/soulBag');
-const { getUser, buyBoost, BOOST_PRICE } = require('../src/utils/xp');
+const { shouldDrop, rollSouls, onGrab, BAG_MIN, BAG_MAX } = require('../src/utils/economy/soulBag');
+const { getUser, buyBoost, BOOST_PRICE } = require('../src/utils/economy/xp');
 const { getStore } = require('../src/storage');
 
 const s = { bagChance: 2, bagCooldownMinutes: 60 };

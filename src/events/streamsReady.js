@@ -1,5 +1,5 @@
 const { ourGuild } = require('../utils/guild');
-const { PLATFORMS, ensureChannel, checkLive } = require('../utils/streams');
+const { PLATFORMS, ensureChannel, checkLive } = require('../utils/server/streams');
 
 // On startup: find the alerts channel (STREAM_CHANNEL_ID in config.js), then check Twitch and TikTok once a minute.
 module.exports = {

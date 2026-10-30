@@ -2,8 +2,8 @@
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('node:test');
 const assert = require('node:assert');
-const { changeSouls, getUser } = require('../src/utils/xp');
-const pocket = require('../src/utils/pocket');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
+const pocket = require('../src/utils/games/pocket');
 
 const USER = { id: 'u1' };
 const grid = (payload) => payload.components.flatMap((r) => r.components.map((c) => c.data));

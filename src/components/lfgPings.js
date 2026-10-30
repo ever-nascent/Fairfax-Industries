@@ -1,7 +1,7 @@
 // The LFG Pings dropdown in #roles: pick any LFG ping roles; the picks replace the ones you had.
 const { ActionRowBuilder, EmbedBuilder, MessageFlags, StringSelectMenuBuilder } = require('discord.js');
 const { BRAND_COLOR } = require('../config');
-const { PING_ROLES } = require('../utils/lfg');
+const { PING_ROLES } = require('../utils/server/lfg');
 const { replyEmbed } = require('../utils/embeds');
 
 const ID = 'lfg_pings';

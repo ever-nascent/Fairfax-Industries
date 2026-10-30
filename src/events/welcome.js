@@ -2,7 +2,7 @@ const { ChannelType } = require('discord.js');
 const { isAllowedGuild } = require('../utils/guild');
 const { replyEmbed } = require('../utils/embeds');
 const { pickRandom } = require('../utils/random');
-const { isUnlocked } = require('../utils/memberRoles');
+const { isUnlocked } = require('../utils/server/memberRoles');
 
 // The Shopkeeper walks a new member through the gate: #welcome -> (react in) #rules -> (pick a Patron in) #roles -> the whole server.
 // {rules} / {roles} become channel links.

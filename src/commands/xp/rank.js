@@ -1,6 +1,8 @@
+// /rank [member]: the level card. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// The card is drawn in utils/economy/rankCard.js.
 const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
-const { getUser, progress, standing, MAX_LEVEL } = require('../../utils/xp');
-const { renderRankCard, CARD_COLOR, cardColor } = require('../../utils/rankCard');
+const { getUser, progress, standing, MAX_LEVEL } = require('../../utils/economy/xp');
+const { renderRankCard, CARD_COLOR, cardColor } = require('../../utils/economy/rankCard');
 const { getHero, heroArt } = require('../../utils/heroes');
 const { pickRandom } = require('../../utils/random');
 const { fmt } = require('../../utils/format');

@@ -4,6 +4,10 @@
 const { Ability } = require('./../ability');
 const { isBoss, npcShare } = require('./../items');
 
+// His idea (Oct 29): every Love Bites proc heals her a little, a share of her max health (not on the wiki; Mina was the weakest hero in Descend, and
+// Rake's heal needs kills that deep runs hardly ever give her). `heal.pct` is the knob.
+const heal = { pct: 0.06 };
+
 // 1. Rake: slashes the enemies in reach for spirit damage plus a share of their missing health, finishes off non-boss enemies left under the
 // execute threshold, and heals for every kill. ponytail: the missing-health share is cut against NPCs like the items' health shares (npcShare);
 // the float isn't simulated.
@@ -74,6 +78,7 @@ class LoveBites extends Ability {
     bar.until = fight.time + this.data.BuildUpDuration;
     if (bar.n < 100) return;
     bar.n = 0;
+    fight.heal(this.unit, this.unit.stats.maxHealth * heal.pct, 'cast', 'Love Bites');
     bar.readyAt = fight.time + this.value('PerTargetCooldown');
     fight.damage(this.unit, target, this.value('BonusDamage'), 'spirit', { events: false });
     const slow = this.value('SlowPercent');
@@ -98,9 +103,12 @@ class LoveBites extends Ability {
 class NoxNostra extends Ability {
   constructor(...args) {
     super(...args);
-    this.bonus = 0; // bats added by bites, this fight (his call, Oct 2)
+    this.bonus = this.carried(); // bats added by bites, this fight (his call, Oct 2); a Descend run keeps them (ability.js carried)
     this.left = 0; // bats still to fly
   }
+
+  keep() { return this.bonus; }
+  stackText() { return this.bonus ? `+${+this.bonus.toFixed(1)} bats (most ${this.data.BonusBatsMax})` : null; }
 
   grow() { this.bonus = Math.min(this.data.BonusBatsMax, this.bonus + this.data.BonusBatsPerProc); }
 
@@ -135,8 +143,8 @@ class NoxNostra extends Ability {
 const info = [
   ['Rake', 'Slashes nearby enemies, hitting harder the more health they have lost. Heals for every kill.'],
   ['Sanguine Retreat', 'Disperses for a moment, out of every enemy\'s reach. Slips a blast as it lands.'],
-  ['Love Bites', 'Bullets deal extra spirit damage, and hits build up to a vicious bite.'],
+  ['Love Bites', 'Bullets deal extra spirit damage, and hits build up to a vicious bite that heals a little.'],
   ['Nox Nostra', 'Unleashes a cloud of bats that damage and silence enemies. Every bite adds bats for the rest of the fight.'],
 ];
 
-module.exports = { name: 'Mina', abilities: { 1: Rake, 2: SanguineRetreat, 3: LoveBites, 4: NoxNostra }, info };
+module.exports = { name: 'Mina', abilities: { 1: Rake, 2: SanguineRetreat, 3: LoveBites, 4: NoxNostra }, info, heal };

@@ -3,9 +3,9 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { MessageFlags } = require('discord.js');
-const { takeBet, openGame, betCommand, gameButtons, expireGames, MIN_BET, TIME_LIMIT_MINUTES } = require('../src/utils/casino');
+const { takeBet, openGame, betCommand, gameButtons, expireGames, MIN_BET, TIME_LIMIT_MINUTES } = require('../src/utils/games/casino');
 const { getStore } = require('../src/storage');
-const { changeSouls, getUser } = require('../src/utils/xp');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
 
 // A fake interaction that records which reply calls the handler made.
 function fakeInteraction({ bet, game: choice, customId } = {}) {
@@ -134,7 +134,7 @@ test("each game's time's-up message: the host gloats with a time's-up line, the 
   const user = { id: 'timeout-real' };
   await changeSouls(user.id, 10_000);
   for (const name of ['doorman', 'blackjack', 'sinclair', 'paradox', 'bebop']) {
-    const game = require(`../src/utils/${name}`);
+    const game = require(`../src/utils/games/${name}`);
     const start = await game.startGame(user, 'Tester', 100);
     const id = start.components[0].components[0].data.custom_id.split(':')[1];
     const saved = await game.games().get(id);

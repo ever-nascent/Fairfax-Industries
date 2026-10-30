@@ -1,6 +1,8 @@
+// /leaderboard xp|souls: the top 10 as a picture. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// The ranking: utils/economy/xp.js; the picture: utils/economy/rankCard.js.
 const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
-const { leaderboard, progress, standing, MAX_LEVEL } = require('../../utils/xp');
-const { renderLeaderboard, CARD_COLOR } = require('../../utils/rankCard');
+const { leaderboard, progress, standing, MAX_LEVEL } = require('../../utils/economy/xp');
+const { renderLeaderboard, CARD_COLOR } = require('../../utils/economy/rankCard');
 const { fmt } = require('../../utils/format');
 
 module.exports = {

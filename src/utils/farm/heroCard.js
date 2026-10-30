@@ -5,15 +5,15 @@
 // deadlock-api.com, see assets/CREDITS.txt), ability glyphs from assets/trivia/abilities.
 const path = require('node:path');
 const { createCanvas } = require('@napi-rs/canvas');
-const { ASSETS, loadSouls, drawSouls, halftone, grain, grainAndVignette } = require('../art');
+const { ASSETS, loadSouls, drawSouls, halftone, grain, grainAndVignette, jpeg } = require('../art');
 const { SOULS, FONT, image, label } = require('./roamCard');
 const { MAX_TIER, TIER_COSTS, SLOTS, MAX_ITEMS, unlockLevel } = require('./levels');
 const { itemByName } = require('./stats');
-const { itemFile } = require('./itemArt');
+const { itemFile, CORRUPTED_FRAME, enhancedOverlay } = require('./itemArt');
 const { fmt } = require('../format');
 
 const W = 800;
-const BASE_H = 960; // room under the ability names for "Unlocks at level N"
+const BASE_H = 982; // room under the ability names for "Unlocks at level N" (+22, Oct 28: a fifth stat row, Headshot Precision / Melee Armor)
 const PAD = 32;
 const READY = '#7dffb3';
 const UI = path.join(ASSETS, 'farm', 'ui');
@@ -26,13 +26,11 @@ const KIND = {
 };
 // Which stats go under which emblem: the first is the big number, the rest are rows of [label on the stat sheet, icon in assets/farm/ui].
 const STATS = {
-  weapon: [['Bullet Damage'], ['Fire Rate', 'stat-fire-rate'], ['Ammo', 'stat-ammo'], ['Lifesteal', 'stat-lifesteal'], ['Precision', 'stat-precision']],
-  vitality: [['Health'], ['Movement Speed', 'stat-move-speed'], ['Health Regen', 'stat-health-regen'], ['Spirit Armor', 'stat-spirit-resist'], ['Bullet Armor', 'stat-bullet-resist']],
+  weapon: [['Bullet Damage'], ['Fire Rate', 'stat-fire-rate'], ['Ammo', 'stat-ammo'], ['Lifesteal', 'stat-lifesteal'], ['Precision', 'stat-precision'], ['Headshot Precision', 'stat-headshot']],
+  vitality: [['Health'], ['Movement Speed', 'stat-move-speed'], ['Health Regen', 'stat-health-regen'], ['Spirit Armor', 'stat-spirit-resist'], ['Bullet Armor', 'stat-bullet-resist'], ['Melee Armor', 'stat-melee-resist']],
   spirit: [['Spirit Power'], ['Ability Cooldown', 'stat-cooldown'], ['Ability Range', 'stat-range'], ['Ability Duration', 'stat-duration']],
 };
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V']; // V: a legendary
-const CORRUPTED = '#b44dff'; // the frame of the hero's corrupted item (ponytail: my pick of colour)
-const ENHANCED = '#57e3ff'; // Street Brawl's improved item, kept visibly distinct in a Descend build
 
 const textures = new Map(); // the film grain, one per card height (a legendary adds a row)
 
@@ -77,7 +75,7 @@ const LEGEND_H = TILE + NAME_H + 40; // the row's height: its label, the tile an
 
 // One item's tile at (x, y): the item's own picture (the game's shop art, as the HUD shows it) with a glow in its kind's colour (a flat tile with
 // the HUD glyph only when that picture is missing), its tier in the corner and its name under it. `frame` / `frameWidth`: the border.
-async function itemTile(g, name, kind, x, y, frame = `rgba(${kind.rgb},0.9)`, frameWidth = 2) {
+async function itemTile(g, name, kind, x, y, frame = `rgba(${kind.rgb},0.9)`, frameWidth = 2, corrupted = false, enhanced = false) {
   let art = null;
   try { art = await image(itemFile(name)); } catch { /* no shop art for it */ }
   g.save();
@@ -94,6 +92,8 @@ async function itemTile(g, name, kind, x, y, frame = `rgba(${kind.rgb},0.9)`, fr
   g.clip();
   if (art) g.drawImage(art, x, y, TILE, TILE);
   else { try { g.drawImage(await tinted(path.join(ASSETS, 'farm', 'items', `${slug(name)}.png`), kind.ink, 72), x + 14, y + 16); } catch { /* the name under the tile says what it is */ } }
+  if (enhanced) enhancedOverlay(g, x, y, TILE, TILE); // the wiki's blue gradient over the picture
+  if (corrupted) g.drawImage(await image(CORRUPTED_FRAME), x, y, TILE, TILE); // the game's corrupted frame over the picture
   g.restore();
   box(g, x, y, TILE, TILE, 12, null, frame, frameWidth);
   // the tier, on a dark tab in the corner
@@ -119,7 +119,7 @@ async function itemTile(g, name, kind, x, y, frame = `rgba(${kind.rgb},0.9)`, fr
 }
 
 // view: { hero, progress, pointsLeft, abilities: [{ slot, name, tier, locked }], stats: { label: text }, items: { weapon: [names], vitality: [...], spirit: [...] }, souls,
-//   corrupted: item name | undefined, legendary: the one in the legendary slot | undefined (the card grows a row for it),
+//   corrupted: item name (or a list of names) | undefined, legendary: the one in the legendary slot | undefined (the card grows a row for it),
 //   counter: { top, amount, label } | undefined (a /descend run: what stands in for the level's souls and the hero's souls, which a run has none of) }
 async function heroCard(view) {
   const H = BASE_H + (view.legendary ? LEGEND_H : 0);
@@ -182,7 +182,7 @@ async function heroCard(view) {
   const sTop = 156;
   const sGap = 14;
   const sw = (W - 2 * PAD - 2 * sGap) / SLOTS.length;
-  const sh = 200;
+  const sh = 222; // five rows under the big number
   for (const [n, slot] of SLOTS.entries()) {
     const kind = KIND[slot];
     const x = PAD + n * (sw + sGap);
@@ -227,12 +227,12 @@ async function heroCard(view) {
     const y = iy + Math.floor(i / COLS) * (TILE + NAME_H);
     const [name, kind] = held[i] ?? [];
     if (!name) { box(g, x, y, TILE, TILE, 12, 'rgba(255,255,255,0.035)', 'rgba(255,255,255,0.12)'); continue; }
-    await itemTile(g, name, kind, x, y, ...(name === view.corrupted ? [CORRUPTED, 4] : view.enhanced?.includes(name) ? [ENHANCED, 4] : []));
+    await itemTile(g, name, kind, x, y, ...([].concat(view.corrupted ?? []).includes(name) ? [undefined, undefined, true] : view.enhanced?.includes(name) ? [undefined, undefined, false, true] : []));
   }
   iy += 2 * (TILE + NAME_H) + 8;
   if (view.legendary) { // the legendary slot, under the 12
     label(g, 'Legendary', PAD, iy + 16);
-    await itemTile(g, view.legendary, LEGENDARY, PAD, iy + 32, view.enhanced?.includes(view.legendary) ? ENHANCED : `rgba(${LEGENDARY.rgb},1)`, view.enhanced?.includes(view.legendary) ? 4 : 3);
+    await itemTile(g, view.legendary, LEGENDARY, PAD, iy + 32, `rgba(${LEGENDARY.rgb},1)`, 3, false, !!view.enhanced?.includes(view.legendary));
     iy += LEGEND_H;
   }
 
@@ -288,7 +288,7 @@ async function heroCard(view) {
 
   if (!textures.has(H)) textures.set(H, grain(W, H, 53, 90));
   grainAndVignette(g, W, H, textures.get(H), { grainAlpha: 0.3, inner: 300, outer: 640, dark: 0.5 });
-  return c.toBuffer('image/png');
+  return jpeg(c);
 }
 
 module.exports = { heroCard };

@@ -1,3 +1,5 @@
+// /lfg mode: ping the LFG role and open a voice lobby. A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// Lobbies, roles and channels: utils/server/lfg.js.
 const { SlashCommandBuilder, ChannelType, PermissionFlagsBits, EmbedBuilder, MessageFlags } = require('discord.js');
 const { BRAND_COLOR } = require('../../config');
 const { replyEmbed, privateReply } = require('../../utils/embeds');
@@ -11,7 +13,7 @@ const {
   findOpenLobbyFor,
   getTimeoutMinutes,
   regionForChannel,
-} = require('../../utils/lfg');
+} = require('../../utils/server/lfg');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -40,8 +42,8 @@ module.exports = {
     // The region comes from the channel /lfg is run in.
     const region = regionForChannel(cfg, interaction.channelId);
     if (!region) {
-      const list = Object.values(cfg.regionChannels).map((id) => `<#${id}>`).join(' ');
-      return reply(`Run /lfg in your region's LFG channel: ${list}`);
+      const list = Object.values(cfg.regions ?? {}).map((r) => `<#${r.channelId}>`).join(' ');
+      return reply(`Run /lfg in an LFG channel: ${list}`);
     }
 
     // One open lobby per person.

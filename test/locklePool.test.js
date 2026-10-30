@@ -4,7 +4,7 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const L = require('../src/utils/lockle');
+const L = require('../src/utils/games/lockle');
 
 const ITEMS = [{ id: 7, type: 'upgrade', shopable: true, name: 'Healbane', shop_image: 'u', cost: 1600, description: 'far more than a build needs' }];
 const HEROES = [{ id: 12, name: 'Kelvin' }];

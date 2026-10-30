@@ -1,3 +1,5 @@
+// Permission gates for staff commands: `requirePermission(interaction, flag)` answers "you can't" and returns false when the member lacks it.
+// The owner (OWNER_ID in config.js) passes every gate.
 const { MessageFlags } = require('discord.js');
 
 // The owner (config.js) passes every permission gate.

@@ -1,7 +1,7 @@
 // The picture on the siege's details screen (his call, Oct 3: a drawn card, not a wall of text): the three lanes with their Walkers (the siege
 // only opens while all three are down), then the five stages in the order the hero fights them. Same look as the home card (homeCard.js).
 const { createCanvas } = require('@napi-rs/canvas');
-const { halftone, grain, grainAndVignette } = require('../art');
+const { halftone, grain, grainAndVignette, jpeg } = require('../art');
 const { FONT, image, panel, contain, label } = require('./roamCard');
 const { fmt } = require('../format');
 
@@ -176,7 +176,7 @@ async function siegeCard({ lanes, stages }) {
 
   texture ??= grain(W, H, 91, 90);
   grainAndVignette(g, W, H, texture, { grainAlpha: 0.35, inner: 280, outer: 600, dark: 0.5 });
-  return c.toBuffer('image/png');
+  return jpeg(c);
 }
 
 module.exports = { siegeCard };

@@ -1,16 +1,18 @@
-const { betCommand } = require('../../utils/casino');
-const doorman = require('../../utils/doorman');
-const blackjack = require('../../utils/blackjack');
-const sinclair = require('../../utils/sinclair');
-const paradox = require('../../utils/paradox');
-const bebop = require('../../utils/bebop');
-const holliday = require('../../utils/holliday');
-const yamato = require('../../utils/yamato');
-const silver = require('../../utils/silver');
-const rem = require('../../utils/rem');
-const pocket = require('../../utils/pocket');
-const paige = require('../../utils/paige');
-const abrams = require('../../utils/abrams');
+// /mini-game game:<name> bet:<souls>: one command for every betting game. Each game is a module in utils/games/
+// (listed below); `betCommand` in utils/games/casino.js builds the command, takes the bet and starts the game. To add a game: write its module, add it here.
+const { betCommand } = require('../../utils/games/casino');
+const doorman = require('../../utils/games/doorman');
+const blackjack = require('../../utils/games/blackjack');
+const sinclair = require('../../utils/games/sinclair');
+const paradox = require('../../utils/games/paradox');
+const bebop = require('../../utils/games/bebop');
+const holliday = require('../../utils/games/holliday');
+const yamato = require('../../utils/games/yamato');
+const silver = require('../../utils/games/silver');
+const rem = require('../../utils/games/rem');
+const pocket = require('../../utils/games/pocket');
+const paige = require('../../utils/games/paige');
+const abrams = require('../../utils/games/abrams');
 
 // slow: the first picture (shuffle GIF, clock, fuse GIF) takes a moment to draw.
 module.exports = betCommand('mini-game', 'Bet Souls on one of the mini-games', {

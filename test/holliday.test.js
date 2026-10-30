@@ -1,10 +1,11 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
+process.env.NO_QUESTS = '1'; // quests would pay souls into the balances these tests count
 const test = require('node:test');
 const assert = require('node:assert');
-const { changeSouls, getUser } = require('../src/utils/xp');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
 const { getStore } = require('../src/storage');
-const hk = require('../src/utils/holliday');
+const hk = require('../src/utils/games/holliday');
 
 test('multiplier: 1x at the start, 10x when the fuse hits the keg, x2 at about 6 s', () => {
   assert.strictEqual(hk.multiplierAt(0), 1);
@@ -37,7 +38,7 @@ test('the fuse is a GIF that plays once, made once per bet; the end pictures are
   assert.notStrictEqual(await hk.renderFuse(250), gif); // the souls on the plate differ
   for (const game of [{ lost: false, cashedAt: 2.35, ms: 11000 }, { lost: true, crash: 1.62, ms: 6000 }]) {
     const png = await hk.renderEnd(game);
-    assert.ok(png.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])));
+    assert.ok(png.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))); // sent as JPEG (art.js jpeg)
   }
 });
 

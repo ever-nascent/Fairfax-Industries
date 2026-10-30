@@ -30,12 +30,28 @@ function addStamina(unit, amount) {
 class LeechTherapy extends Ability {
   constructor(...args) {
     super(...args);
-    this.stacks = 0;
+    this.stacks = this.carried(); // a Descend run keeps her leeches (ability.js carried), regen and all
+    this.unit.stats.healthRegen = (this.unit.stats.healthRegen ?? 0) + this.stacks * this.regenPer;
     this.feeding = []; // [{ e, until, drained }]
   }
 
+  get regenPer() { return this.data.RegenPerLeechPickup.Value + perBoon(this.data.RegenPerLeechPickup) * boons(this); }
   want(fight) { return fight.foes.length > 0; }
   status(fight) { return this.stacks ? `${super.status(fight)}  -  ${this.stacks} Leeches` : super.status(fight); }
+  keep() { return this.stacks; }
+  stackText() {
+    if (!this.stacks) return null;
+    const spirit = this.stacks * this.value('SpiritPowerPerLeechStack');
+    return `${this.stacks} leeches: +${+(this.stacks * this.regenPer).toFixed(1)} Health Regen, +${+(this.stacks * this.data.FireRatePerLeechPickup).toFixed(1)}% Fire Rate${spirit ? `, +${+spirit.toFixed(1)} Spirit Power` : ''}`;
+  }
+
+  // The game: 25% of her leech stacks are lost on death (here: the hit that sends her to a Rejuv).
+  on(event, fight, { target, dealt }) {
+    if (event !== 'damage' || target !== this.unit || !(dealt > 0) || !this.unit.statuses.some((s) => s.id === 'rejuv') || !this.stacks) return;
+    const lost = Math.ceil(this.stacks * 0.25);
+    this.stacks -= lost;
+    this.unit.stats.healthRegen -= lost * this.regenPer;
+  }
 
   cast(fight) {
     const hit = fight.near(this.value('Radius'));

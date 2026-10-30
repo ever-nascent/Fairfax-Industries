@@ -58,10 +58,13 @@ class Item {
     const e = this.entries[key];
     if (!e) return 0;
     let v = num(e.Value);
+    let spirit = 0;
     for (const sc of [].concat(e.Scale ?? [])) {
-      if (sc.Type === 'spirit') v += sc.Value * (this.unit.stats.spirit + this.unit.mod('spirit') * (this.unit.stats.spiritMult ?? 1));
+      if (sc.Type === 'spirit') spirit += sc.Value * (this.unit.stats.spirit + this.unit.mod('spirit') * (this.unit.stats.spiritMult ?? 1));
       else if (sc.Type === 'power_increase') v += sc.Value * (this.unit.boons || 0);
     }
+    v += spirit;
+    if (spirit || /Damage/.test(key)) this.sShare = v > 0 ? spirit / v : 0; // the share of a damage number that is spirit power (the Damage Breakdown's lines)
     if (key.endsWith('Duration') && !KEEP.has(key)) v *= this.unit.stat('durationMult');
     return v;
   }
@@ -202,6 +205,7 @@ define('Glass Cannon', {
     if (diedHere(this, event, p)) this.kills = 0;
   },
   dynamicMods() { return this.kills ? { fireRate: this.kills * this.pct('FireRatePerKill') } : null; },
+  stackText() { return this.kills ? `${this.kills} / ${this.value('MaxStacks')} kills: +${+(this.kills * this.value('FireRatePerKill')).toFixed(1)}% Fire Rate` : null; },
 });
 define('Escalating Resilience', {
   init() { this.stacks = 0; this.until = 0; },
@@ -235,6 +239,10 @@ define('Trophy Collector', {
   },
   tick(fight, dt) { if (fight.foes.length) fight.bonusSouls += (this.stacks * this.value('StackingGoldPerMinute') * dt) / 60; },
   dynamicMods() { return this.stacks ? { moveSpeed: this.stacks * this.value('StackingBonusSprintSpeed'), rangeMult: this.stacks * this.pct('StackingTechRangeMultiplier') } : null; },
+  stackText() {
+    const n = this.stacks;
+    return n ? `${n} / ${this.value('MaxStacks')} kills: +${+(n * this.value('StackingBonusSprintSpeed')).toFixed(2)} m/s, +${+(n * this.value('StackingTechRangeMultiplier')).toFixed(2)}% Ability Range, ${+(n * this.value('StackingGoldPerMinute')).toFixed(1)} souls a minute` : null;
+  },
 });
 
 // ===== BULLET PROCS =====
@@ -644,10 +652,14 @@ define('Rebuttal', {
   },
 });
 // Counterspell (his call, Oct 3): parries the next enemy blast: no damage, no curse; heals and gives spirit power and speed.
+// Oct 28 (his call): any other crowd control but a curse (a stun, silence, grapple, disarm, sleep) is parried COUNTER_CHANCE of the time, then cooldown.
+const COUNTER_CHANCE = 0.5; // how often the parry is timed right (his call, Oct 28)
 define('Counterspell', {
   on(event, fight, p) {
-    if (event !== 'blast' || p.target !== this.unit || p.parried || p.dodged || !this.fire()) return;
-    p.parried = true;
+    if (p.target !== this.unit) return;
+    if (event === 'blast' && !p.parried && !p.dodged && this.fire()) p.parried = true;
+    else if (event === 'cc' && !p.blocked && !p.status.tags?.includes('curse') && this.cdLeft <= 0 && fight.rng() < COUNTER_CHANCE && this.fire()) { p.blocked = true; p.blockedBy = this.name; }
+    else return;
     fight.heal(this.unit, this.value('HealOnSuccess'));
     this.buff(fight, 'parry', this.value('BuffDuration'), { spirit: this.value('SpiritPower'), moveSpeed: this.value('BonusMoveSpeed') });
   },
@@ -758,7 +770,8 @@ define('Rescue Beam', ACTIVE, healActive(function (fight) { const t = this.value
 // Dispel Magic: used when something is on the hero to purge (a curse, a slow, a healing cut ...); only a purge that removed something heals and gives
 // speed (the wiki).
 define('Dispel Magic', ACTIVE, {
-  purgeable(fight) { return this.unit.statuses.some((st) => st.debuff && st.until > fight.time); },
+  whileControlled: true, // usable while stunned or asleep (engine.js), never while cursed
+  purgeable(fight) { return this.unit.statuses.some((st) => st.debuff && st.until > fight.time && !st.tags.includes('curse')); }, // a curse can't be cleansed
   want(fight) { return fight.foes.length > 0 && this.purgeable(fight); },
   cast(fight) {
     const removed = this.purgeable(fight);
@@ -1093,7 +1106,9 @@ const quicksilver = {
       this.armed = true;
     }
     if (event === 'damage' && this.mine(p.source) && this.armed && this.fromImbued(p)) { this.armed = false; fight.damage(this.unit, p.target, this.value('Damage'), 'spirit', { proc: true }); }
-    if (bulletHit(this, event, p) && this.magnum) fight.damage(this.unit, p.target, this.value('BulletsBonusMagicDamage'), 'spirit', { proc: true });
+    // Mercurial Magnum's bullets: 20% (+0.38% x spirit) of the gun's base bullet damage as spirit damage, each pellet that landed (the game's
+    // tooltip: "+20% Base Bullet Damage"; Oct 28, his report "Merc Mag is BROKEN": it was a flat 20 (+0.38 x spirit) a bullet, several times too much)
+    if (bulletHit(this, event, p) && this.magnum) fight.damage(this.unit, p.target, (this.unit.stats.bulletDamage * (this.unit.stats.pellets ?? 1) * (p.opts?.landed ?? 1) * this.value('BulletsBonusMagicDamage')) / 100, 'spirit', { proc: true }); // landed: the share of the pellets
     if (event === 'reloadStart' && this.mine(p.source)) this.magnum = false;
   },
 };

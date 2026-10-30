@@ -1,13 +1,13 @@
 // What Abrams' Interrogation (solo) gives back, by how well the player plays. Run: node tools/interrogation-rtp.js [games]
-// Run it after changing PAYOUT / HAND / MAX_QUESTIONS in src/utils/abrams.js, or any question or answer in abramsCase.js.
+// Run it after changing PAYOUT / HAND / MAX_QUESTIONS in src/utils/games/abrams.js, or any question or answer in abramsCase.js.
 // Never touches data/ (a temp DATA_DIR).
 //   strong   asks the hand's question with the best expected payout and accuses the moment accusing is worth more
 //            than asking on (the plan the payouts are set for: about 95%)
 //   greedy   always asks the question that splits the suspects most evenly, accuses when one is left or out of questions
 //   random   asks a random question from the hand, accuses when one is left or out of questions
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-rtp-'));
-const { answer } = require('../src/utils/abramsCase');
-const { PAYOUT, HAND, MAX_QUESTIONS, NAMES, useful } = require('../src/utils/abrams');
+const { answer } = require('../src/utils/games/abramsCase');
+const { PAYOUT, HAND, MAX_QUESTIONS, NAMES, useful } = require('../src/utils/games/abrams');
 
 const GAMES = Number(process.argv[2]) || 6000;
 const seeded = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;

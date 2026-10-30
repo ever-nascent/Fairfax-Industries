@@ -1,11 +1,14 @@
+// /urn: the daily Soul Urn (souls, streaks, a Rejuv to save a broken streak). A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// The rules: claimUrn in utils/economy/xp.js; the Rejuv buttons: components/urn.js.
 const path = require('node:path');
 const { SlashCommandBuilder, ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags } = require('discord.js');
-const { claimUrn, URN_MAX_DAYS } = require('../../utils/xp');
+const { claimUrn, URN_MAX_DAYS } = require('../../utils/economy/xp');
+const { track } = require('../../utils/economy/quests');
 const { heroEmoji } = require('../../utils/heroes');
 const { soulsText, boldSouls, rejuvIcon } = require('../../utils/format');
 const { pickRandom } = require('../../utils/random');
 const { ASSETS } = require('../../utils/art');
-const { streakBar } = require('../../utils/trivia'); // the same bar as /trivia
+const { streakBar } = require('../../utils/games/trivia'); // the same bar as /trivia
 
 const CARD = path.join(ASSETS, 'card');
 const icon = () => new AttachmentBuilder(path.join(CARD, 'soul_urn.png'), { name: 'soul_urn.png' }); // deadlock.wiki
@@ -84,6 +87,7 @@ module.exports = {
       const embed = urnEmbed().setDescription(`You already claimed today's urn. Next one <t:${nextUrn()}:R>.`);
       return interaction.reply({ embeds: [embed], files: [icon()], flags: MessageFlags.Ephemeral });
     }
+    await track(interaction.user.id, 'urn'); // quests
     return interaction.reply(claimedMessage(interaction.member, result));
   },
 };

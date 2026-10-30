@@ -3,14 +3,14 @@
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('node:test');
 const assert = require('node:assert');
-const doorman = require('../src/utils/doorman');
-const sinclair = require('../src/utils/sinclair');
-const yamato = require('../src/utils/yamato');
-const bebop = require('../src/utils/bebop');
-const paradox = require('../src/utils/paradox');
-const rem = require('../src/utils/rem');
-const bj = require('../src/utils/blackjack');
-const silver = require('../src/utils/silver');
+const doorman = require('../src/utils/games/doorman');
+const sinclair = require('../src/utils/games/sinclair');
+const yamato = require('../src/utils/games/yamato');
+const bebop = require('../src/utils/games/bebop');
+const paradox = require('../src/utils/games/paradox');
+const rem = require('../src/utils/games/rem');
+const bj = require('../src/utils/games/blackjack');
+const silver = require('../src/utils/games/silver');
 
 const BET = 100_000; // big, so rounding a prize down to whole souls doesn't show
 const near = (value, target, slack, what) => assert.ok(Math.abs(value - target) <= slack, `${what}: ${value.toFixed(4)} is not within ${slack} of ${target}`);

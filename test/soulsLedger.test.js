@@ -2,13 +2,14 @@
 const fs = require('node:fs');
 const path = require('node:path');
 process.env.DATA_DIR = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'fairfax-test-'));
+process.env.NO_QUESTS = '1'; // quests would pay souls into the balances these tests count
 const test = require('node:test');
 const assert = require('node:assert');
-const { changeSouls, addXp, claimUrn, editUser, buyBoost, BOOST_PRICE, getUser } = require('../src/utils/xp');
-const { history, report, label, record } = require('../src/utils/soulsLedger');
-const { forGame, takeBet, expireGames } = require('../src/utils/casino');
-const { backupToday, KEEP_DAYS } = require('../src/utils/backup');
-const { walletEmbed } = require('../src/utils/wallet');
+const { changeSouls, addXp, claimUrn, editUser, buyBoost, BOOST_PRICE, getUser } = require('../src/utils/economy/xp');
+const { history, report, label, record } = require('../src/utils/economy/soulsLedger');
+const { forGame, takeBet, expireGames } = require('../src/utils/games/casino');
+const { backupToday, KEEP_DAYS } = require('../src/utils/economy/backup');
+const { walletEmbed } = require('../src/utils/economy/wallet');
 const { getStore } = require('../src/storage');
 
 test('every souls change is recorded with its reason and the balance after', async () => {
@@ -109,7 +110,7 @@ test('/souls (Oct 11, replaces /wallet): balance and hero are for everyone and p
   const { chooseHero, updateFarmUser, unlockHero, buyItem } = require('../src/utils/farm/play');
   const json = souls.data.toJSON();
   assert.strictEqual(json.default_member_permissions, undefined, 'everyone sees /souls');
-  assert.deepStrictEqual(json.options.map((o) => o.name), ['balance', 'hero', 'add', 'subtract', 'set', 'reset', 'history', 'report']);
+  assert.deepStrictEqual(json.options.map((o) => o.name), ['balance', 'hero', 'add', 'subtract', 'set', 'reset', 'history', 'reset-all', 'report']);
   assert.ok(json.options.slice(2).every((o) => o.description.startsWith('Staff: ')));
   assert.strictEqual(require('../src/commands/admin/xp').data.toJSON().default_member_permissions, '32', '/xp stays hidden');
   const run = async (id, sub, options = {}) => {

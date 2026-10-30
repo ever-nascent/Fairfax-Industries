@@ -2,7 +2,7 @@
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('node:test');
 const assert = require('node:assert');
-const { findPhrase, addPhrase, removePhrase, getPhrases, WARN_LINES } = require('../src/utils/censor');
+const { findPhrase, addPhrase, removePhrase, getPhrases, WARN_LINES } = require('../src/utils/server/censor');
 
 test('phrases are stored normalized, no duplicates, removable', async () => {
   assert.equal(await addPhrase('g', '  Bad Word '), true);

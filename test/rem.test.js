@@ -3,8 +3,8 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { changeSouls, getUser } = require('../src/utils/xp');
-const rem = require('../src/utils/rem');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
+const rem = require('../src/utils/games/rem');
 
 const text = (payload) => payload.embeds[0].toJSON().description;
 const ODDS = [2.63, 3.65, 4.75, 8.63, 13.57];

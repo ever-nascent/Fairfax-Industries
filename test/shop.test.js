@@ -6,8 +6,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { loadImage } = require('@napi-rs/canvas');
 const { HEROES, heroArt } = require('../src/utils/heroes');
-const { renderRankCard } = require('../src/utils/rankCard');
-const { MENUS } = require('../src/utils/shop');
+const { renderRankCard } = require('../src/utils/economy/rankCard');
+const { MENUS } = require('../src/utils/shop/shop');
 
 const ASSETS = path.join(__dirname, '..', 'assets');
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
@@ -42,10 +42,10 @@ test('every hero has a colour and renders a card in both styles', async () => {
 });
 
 test('shop first screen: banner + section dropdown; hero cards keep the dropdown on top', async () => {
-  const { shopView, heroCardsView, SECTIONS } = require('../src/utils/shop');
+  const { shopView, heroCardsView, SECTIONS } = require('../src/utils/shop/shop');
   const member = { id: 'test-shop-view', displayName: 'Test', guild: null };
   const view = await shopView(member);
-  assert.ok(view.files[0].attachment.subarray(0, 4).equals(PNG));
+  assert.ok(view.files[0].attachment.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])) && view.files[0].name === 'shop.jpg', 'the banner is sent as JPEG');
   assert.deepStrictEqual(view.components[0].components[0].options.map((o) => o.data.value), SECTIONS.map((s) => s.value));
   const cards = await heroCardsView(member, 'haze', 'icon');
   assert.strictEqual(cards.components.length, 4); // sections, 2 hero menus, style/buy buttons (Discord max 5)

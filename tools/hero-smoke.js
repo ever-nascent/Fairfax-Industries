@@ -37,8 +37,10 @@ const SCENES = [
   () => ['slum_shroom', 'past_due', 'crabbage_pot', 'stage_hand'].map((family, i) => { const e = enemy(`Haunt ${i + 1}`, { maxHealth: 3000, dps: 14, distance: 10, souls: 181 }); e.stats.special = specialFor(family, false); return e; }),
 ];
 // Two long ones for the tiers check only (cooldown tiers of 100 s+ abilities need a fight long enough to cast twice; the hero keeps getting back up):
-// a lone sponge that blasts, and a crowd of them.
+// a lone sponge that blasts, a crowd of them, and (Oct 29) a long line of killable enemies: abilities that wait for a kill in time (Assassinate,
+// Guided Owl, Combo) never fire on a sponge, so their cooldown tiers are measured on this one.
 const LONG = [
+  Object.assign(() => Array.from({ length: 40 }, (_, i) => enemy(`Trooper ${i + 1}`, { maxHealth: 2500, dps: 12, distance: 8 + (i % 4) * 4, souls: 10 })), { seconds: 420, rejuvs: 99 }),
   Object.assign(() => { const e = enemy('Sponge', { maxHealth: 5e6, dps: 60, distance: 15, blast: { every: 7, damage: 150, maxHealthPct: 0, curse: 1 }, souls: 10 }); e.health *= 0.45; return [e]; }, { seconds: 420, rejuvs: 99 }), // below half health: "finisher" abilities get used
   Object.assign(() => Array.from({ length: 4 }, (_, i) => enemy(`Sponge ${i + 1}`, { maxHealth: 5e6, dps: 18, distance: 12, damageType: i % 2 ? 'spirit' : 'bullet', blast: i ? null : { every: 9, damage: 120, maxHealthPct: 0, curse: 1, what: 'stomp' }, souls: 10 })), { seconds: 420, rejuvs: 99 }),
 ];

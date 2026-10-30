@@ -74,35 +74,49 @@ class SpiritSnare extends Ability {
 
 // 4. Guided Owl: he stops shooting for the cast, then the owl hits: spirit damage around the front enemy and a stun. Every enemy that dies within
 // KILL_WINDOW seconds of the hit (the wiki's note) adds spirit power for the rest of the fight. T3: after the hit, an enemy below a share of its
-// health dies (pure damage; his call: the share is cut against NPCs like every health share).
+// health dies (pure damage; his call: the share is cut against NPCs like every health share). The owl waits until it will kill someone in time.
 // ponytail: the owl lands when the cast ends; the wiki gives no owl speed.
 const KILL_WINDOW = 4;
 class GuidedOwl extends Ability {
   constructor(...args) {
     super(...args);
-    this.kills = 0;
+    this.kills = this.carried(); // a Descend run's kills (ability.js carried)
     this.hit = []; // [{ e, until }] enemies the owl hit, while their death still counts
   }
 
-  want(fight) { return fight.foes.length > 0; }
+  get lockout() { return 0; } // the wiki's 20 s channel is the owl's flight time; here it lands as the cast ends (on() silences him for the cast)
+
+  keep() { return this.kills; }
+  stackText() { return this.kills ? `${this.kills} kills: +${+(this.kills * this.data.BonusTechPowerPerKill).toFixed(1)} Spirit Power` : null; }
+
+  // Waits until the owl would kill someone in time (his ask, Oct 29: an ability whose stack needs timing is used then): an enemy in its blast
+  // that the hit, the T3 execute, or the hero's damage within KILL_WINDOW after it would finish.
+  dies(fight, e) {
+    const left = e.health - this.value('Damage');
+    const below = (this.value('LowHealthEnemyThresholdPct') / 100) * (e.team === 'hero' ? 1 : npcShare(e));
+    return left <= 0 || left < e.stats.maxHealth * below || this.diesWithin(fight, e, this.value('Damage'), KILL_WINDOW);
+  }
+  want(fight) { return fight.near(this.value('ExplosionRadius')).some((e) => this.dies(fight, e)); }
 
   cast(fight) {
     for (const e of fight.near(this.value('ExplosionRadius'))) {
+      this.hit.push({ e, until: fight.time + KILL_WINDOW }); // before the hit, so its own kill's event counts it
       fight.damage(this.unit, e, this.value('Damage'), 'spirit');
       const below = (this.value('LowHealthEnemyThresholdPct') / 100) * (e.team === 'hero' ? 1 : npcShare(e));
       if (e.alive && e.health < e.stats.maxHealth * below) fight.damage(this.unit, e, e.health, 'true');
       fight.addStatus(e, { id: 'guided_owl', duration: this.value('StunDuration'), tags: ['stun'], debuff: true });
-      this.hit.push({ e, until: fight.time + KILL_WINDOW });
     }
   }
 
   tick(fight) {
-    this.kills += this.hit.filter((h) => !h.e.alive).length;
+    this.kills += this.hit.filter((h) => !h.e.alive).length; // died without a kill event
     this.hit = this.hit.filter((h) => h.e.alive && h.until > fight.time);
     if (this.kills) fight.addStatus(this.unit, { id: 'owl_spirit', duration: DT * 1.5, mods: { spirit: this.kills * this.data.BonusTechPowerPerKill } });
   }
 
   on(event, fight, p) {
+    // counted as it dies: the fight ends on the last enemy's death, before another tick (Oct 29: the last kill never counted)
+    if (event === 'kill' && this.hit.some((h) => h.e === p.target && h.until >= fight.time)) { this.kills += 1; this.hit = this.hit.filter((h) => h.e !== p.target); }
     if (event !== 'cast' || p.ability !== this) return;
     fight.addStatus(this.unit, { id: 'owl_cast', duration: this.castDelay, tags: ['silence'] });
     this.unit.busyUntil = Math.max(this.unit.busyUntil, fight.time + this.castDelay);

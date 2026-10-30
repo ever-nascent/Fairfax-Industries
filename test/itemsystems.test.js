@@ -370,17 +370,17 @@ test('imbue items ask for an ability when bought, can be moved for free, and fig
   assert.ok(main.components.length <= 5);
 });
 
-test('Golden Goose Egg grows with fight time and hatches for souls and a buff per 80 souls grown; Eternal Gift keeps a buff every 165 s of fights', async () => {
+test('Golden Goose Egg grows with fight time and hatches for souls and a buff per 80 souls grown; Eternal Gift keeps a buff every 15 s of fights', async () => {
   const id = 'egg1';
   await chooseHero(id, 'Haze');
   await giveSouls(id, 100000);
   await buyItem(id, 'Golden Goose Egg');
   await buyItem(id, 'Eternal Gift'); // not for sale: refused
-  await updateFarmUser(id, (r) => { r.items.vitality.push('Eternal Gift'); afterFight(r, { seconds: 300 }, seeded(4)); });
+  await updateFarmUser(id, (r) => { r.items.vitality.push('Eternal Gift'); afterFight(r, { seconds: 310 }, seeded(4)); });
   const r = await getFarmUser(id);
-  assert.ok(Math.abs(r.egg - 400) < 1e-9, '80 a minute for 5 minutes');
-  assert.strictEqual(Object.values(r.gifts).reduce((a, b) => a + b, 0), 1, 'one Eternal Gift buff in 300 s');
-  assert.ok(Math.abs(r.giftTime - 135) < 1e-9);
+  assert.ok(Math.abs(r.egg - 80 * 310 / 60) < 1e-9, '80 a minute for 310 s');
+  assert.strictEqual(Object.values(r.gifts).reduce((a, b) => a + b, 0), 20, '20 Eternal Gift buffs in 310 s');
+  assert.ok(Math.abs(r.giftTime - 10) < 1e-9, 'the 10 s left over count toward the next');
   const before = (await heroSouls(id));
   const hatch = await hatchEgg(id, seeded(2));
   assert.ok(hatch.ok && hatch.buffs.length === 5);

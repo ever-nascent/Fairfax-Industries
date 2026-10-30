@@ -3,8 +3,8 @@ process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(
 const test = require('node:test');
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
-const { changeSouls, getUser } = require('../src/utils/xp');
-const px = require('../src/utils/paradox');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
+const px = require('../src/utils/games/paradox');
 
 const game = (hour, prize = 100) => ({ bet: 100, prize, hour, history: [[hour]], done: false, lost: false, version: 0 });
 const to = (h) => () => h; // the hand lands on h

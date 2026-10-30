@@ -1,10 +1,11 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
+process.env.NO_QUESTS = '1'; // quests would pay souls into the balances these tests count
 const test = require('node:test');
 const assert = require('node:assert');
-const { expireGames, TIME_LIMIT_MINUTES } = require('../src/utils/casino');
-const { changeSouls, getUser } = require('../src/utils/xp');
-const silver = require('../src/utils/silver');
+const { expireGames, TIME_LIMIT_MINUTES } = require('../src/utils/games/casino');
+const { changeSouls, getUser } = require('../src/utils/economy/xp');
+const silver = require('../src/utils/games/silver');
 
 const { games, startGame, move, fire, play, loadShells, count, winnings, SILVER } = silver;
 const souls = async (id) => (await getUser(id)).souls;

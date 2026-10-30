@@ -1,5 +1,7 @@
+// Don't Wake the Bookwyrm's letter dropdowns, Solve It button and pop-up. Button / dropdown / pop-up routes: each route has `matches` (is this click mine? usually by the customId prefix) and `execute`. components/index.js lists every route file.
+// The game: utils/games/paige.js.
 const { MessageFlags } = require('discord.js');
-const paige = require('../utils/paige');
+const paige = require('../utils/games/paige');
 
 // Don't Wake the Bookwyrm's controls (Play Again is in components/games.js with the other games').
 // The picture takes a moment to draw, so each answers Discord first (it only gives 3 seconds) and edits the message after.

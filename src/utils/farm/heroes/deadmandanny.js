@@ -3,9 +3,9 @@
 // His calls (Oct 16): the charged shot is only fired to cash in a Strix Salvo mark; Close The Deal waits until an enemy is below 50% health.
 // Taken by me (say if wrong): the charge takes CHARGE_TIME (the game data gives none), the grab GRAB_TIME, Chimera's T1 (faster venting: heat
 // isn't simulated) shortens the cooldown by T1_CUT, Jettison Fuel's spray builds up items like his shots would at his fire rate.
-// Not simulated: steering the flight, heat and overheating, a charged shot hurting himself (it hits an enemy every time).
+// He can't die from his own damage (Kami-Labs, Oct 28). Not simulated: steering the flight, heat and overheating, a charged shot hurting himself (it hits an enemy every time).
 const { Ability } = require('./../ability');
-const { DT, DUEL } = require('./../engine');
+const { missChance } = require('./../engine');
 const { HEROES } = require('./../stats');
 
 const CHARGE_TIME = 0.5; // ponytail: seconds to charge a shot at his base fire rate (fire rate items shorten it, the wiki); placeholder
@@ -71,9 +71,8 @@ class StrixSalvo extends Ability {
     const target = this.marked(fight);
     if (!target || !u.alive || u.cantAct || u.has('stun') || u.has('disarm') || w.clip < CHARGED.ammo || w.reloadLeft > 0) return;
     w.clip -= CHARGED.ammo;
-    if (!(target.team === 'hero' && fight.rng() < DUEL.miss)) {
-      const s = u.stats;
-      const base = (CHARGED.damage + CHARGED.perBoon * boons(this)) * (s.weaponDamageMult + u.mod('weaponDamage') + u.items.reduce((sum, it) => sum + it.weaponBonus(fight, target), 0));
+    if (!(fight.rng() < missChance(u, target))) { // misses like any single shot (Precision)
+      const base = (CHARGED.damage + CHARGED.perBoon * boons(this)) * (1 + fight.weaponBonus(u, target));
       const front = target.offset ?? 0;
       for (const e of fight.foes.filter((x) => Math.abs((x.offset ?? 0) - front) <= CHARGED.radius * u.range)) {
         fight.damage(u, e, base * (e === target ? 1 : CHARGED.edge), 'bullet', { landed: CHARGED.buildUp, ...(e.team === 'hero' ? { attack: true } : {}) });
@@ -127,7 +126,7 @@ class ChimeraMk1 extends Ability {
       const cut = this.value('OverheatLockoutDurationReductionOnPlayerHitPercent');
       if (cut) this.cdLeft *= 1 - cut / 100;
     }
-    if (!(hit.length && this.value('SelfDamageReductionOnPlayerHitPercent') >= 100)) fight.damage(u, u, (u.stats.maxHealth * this.data.MaxHealthSelfDamagePercent) / 100, 'spirit', { events: false });
+    if (!(hit.length && this.value('SelfDamageReductionOnPlayerHitPercent') >= 100)) fight.damage(u, u, (u.stats.maxHealth * this.data.MaxHealthSelfDamagePercent) / 100, 'spirit', { events: false, nonLethal: true });
     if (!hit.length) fight.addStatus(u, { id: 'chimera_self_stun', duration: this.data.OverheatStunDurationSelf, tags: ['stun'] });
   }
 }
@@ -209,7 +208,7 @@ class CloseTheDeal extends Ability {
     if ((e.health / e.stats.maxHealth) * 100 < this.data.LowHealthEnemyThresholdPct) amount *= 1 + this.data.BonusDamagePercent / 100;
     fight.damage(u, e, amount, 'spirit');
     if (e.alive) fight.addStatus(e, { id: 'deal_stun', duration: this.value('StunDuration'), tags: ['stun'], debuff: true });
-    fight.damage(u, u, (amount * this.data.SelfDamagePercent) / 100, 'spirit', { events: false });
+    fight.damage(u, u, (amount * this.data.SelfDamagePercent) / 100, 'spirit', { events: false, nonLethal: true });
     if (u.alive) fight.addStatus(u, { id: 'deal_self_stun', duration: this.data.StunDurationSelf, tags: ['stun'] });
   }
 }
