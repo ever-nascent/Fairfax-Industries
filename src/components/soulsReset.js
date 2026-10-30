@@ -12,7 +12,7 @@ async function onPick(interaction) {
   if (choice !== 'yes') return interaction.update({ embeds: [replyEmbed('Cancelled. Nobody lost anything.')], components: [] });
   if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) return interaction.update({ embeds: [replyEmbed('You need Manage Server for that.')], components: [] });
   await interaction.update({ embeds: [replyEmbed('Resetting...')], components: [] }); // answers at once; the reset can take a while
-  const copy = saveCopy();
+  const copy = `resetBackups/${require('node:path').basename(saveCopy())}`; // the folder's name only, never where the bot's files are
   const { members, souls } = await resetAllSouls();
   const embed = audit.entryEmbed({
     color: audit.COLOR.edit,
@@ -21,7 +21,7 @@ async function onPick(interaction) {
       { name: 'Staff', value: audit.who(interaction.user), inline: true },
       { name: 'Members', value: fmt(members), inline: true },
       { name: 'Souls taken', value: fmt(souls), inline: true },
-      { name: 'Copy saved in', value: `\`${copy}\`` },
+      { name: 'Copy saved as', value: `\`${copy}\`` },
     ],
   });
   await audit.log(interaction.guild, 'staff-edit', embed, { userIds: [interaction.user.id] });

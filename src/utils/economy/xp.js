@@ -8,6 +8,7 @@ const { setSoulsEmoji, setRejuvEmoji, soulsText } = require('../format');
 const { pickRandom } = require('../random');
 const { findEmoji } = require('../guild');
 const ledger = require('./soulsLedger');
+const { currentGuild } = require('../guildContext');
 
 const MAX_LEVEL = 99;
 const DEFAULTS = {
@@ -99,15 +100,16 @@ async function updateSettings(guildId, change) {
 const isIgnored = (s, channel) =>
   [channel.id, channel.parentId, channel.parent?.parentId].some((id) => id && s.ignoredChannelIds.includes(id));
 
-const lastText = new Map(); // user id -> their previous message, so repeating yourself earns nothing
+const lastText = new Map(); // server:user id -> their previous message there, so repeating yourself earns nothing
 const sameText = (text) => text.trim().toLowerCase();
 
 // Does a chat message count towards XP? Not: system messages, webhooks, ignored channels, too short, or the same
 // text as that member's previous message. `censored` = the censor is deleting it. Remembers the text either way.
 function chatCounts(message, s, censored = false) {
   const text = sameText(message.content ?? '');
-  const repeat = text !== '' && lastText.get(message.author.id) === text;
-  lastText.set(message.author.id, text);
+  const who = `${currentGuild()}:${message.author.id}`;
+  const repeat = text !== '' && lastText.get(who) === text;
+  lastText.set(who, text);
   return !(message.system || message.webhookId || censored || repeat || isIgnored(s, message.channel) || text.length < s.minLength);
 }
 
