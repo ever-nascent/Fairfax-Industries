@@ -14,3 +14,5 @@ Claude outputs/
 .claude/
 # copies made by /souls reset-all
 data/resetBackups/
+# copy of every member file made before the move to per-server data
+data/pre-per-server-backup/
