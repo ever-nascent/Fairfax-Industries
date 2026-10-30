@@ -1,13 +1,13 @@
 // Audit log: everything Discord reports through gateway events (Discord's own audit log entries go through
 // utils/audit/auditEntries.js). The bot's own messages, reactions and actions are never logged.
 const { AttachmentBuilder, AutoModerationActionType, AutoModerationRuleTriggerType } = require('discord.js');
-const { isAllowedGuild, ourGuild } = require('../utils/guild');
+const { isHomeGuild, ourGuild } = require('../utils/guild');
 const audit = require('../utils/audit/auditLog');
 const memory = require('../utils/audit/auditMessages');
 const { handleEntry } = require('../utils/audit/auditEntries');
 
 const { COLOR, log, clip, when, duration, who, whoId, entryEmbed } = audit;
-const inOurGuild = (thing) => thing?.guildId && isAllowedGuild(thing.guildId);
+const inOurGuild = (thing) => thing?.guildId && isHomeGuild(thing.guildId);
 const jump = (guildId, channelId, messageId) => `[Go to message](https://discord.com/channels/${guildId}/${channelId}/${messageId})`;
 const channelLine = (id) => `<#${id}> (\`${id}\`)`;
 const fail = (what) => (e) => console.error(`[auditLog] ${what} failed:`, e.message);
@@ -243,7 +243,7 @@ async function pollVote(added, answer, userId, client) {
 // ---- Members ----
 
 async function memberJoin(member) {
-  if (!isAllowedGuild(member.guild.id) || member.id === member.client.user.id) return;
+  if (!isHomeGuild(member.guild.id) || member.id === member.client.user.id) return;
   const { guild, user } = member;
   const s = await audit.getSettings();
   const age = Date.now() - user.createdTimestamp;
@@ -273,7 +273,7 @@ async function memberJoin(member) {
 }
 
 async function memberLeave(member) {
-  if (!isAllowedGuild(member.guild.id) || member.id === member.client.user.id) return;
+  if (!isHomeGuild(member.guild.id) || member.id === member.client.user.id) return;
   const { guild, user } = member;
   const roles = member.roles.cache.filter((r) => r.id !== guild.id).sort((a, b) => b.position - a.position);
   const embed = entryEmbed({
@@ -318,7 +318,7 @@ async function userUpdate(oldUser, user, client) {
 
 // Per-server avatar (the rest of a member edit comes from Discord's audit log, with who did it).
 async function memberUpdate(oldMember, member) {
-  if (!isAllowedGuild(member.guild.id) || oldMember.partial || oldMember.avatar === member.avatar) return;
+  if (!isHomeGuild(member.guild.id) || oldMember.partial || oldMember.avatar === member.avatar) return;
   if (member.id === member.client.user.id) return;
   const old = oldMember.avatar ? `[Old](${oldMember.displayAvatarURL({ size: 512 })})` : 'None';
   const now = member.avatar ? `[New](${member.displayAvatarURL({ size: 512 })})` : 'None (uses their main avatar)';
@@ -338,7 +338,7 @@ async function memberUpdate(oldMember, member) {
 const joinedVoiceAt = new Map(); // member id → when they joined their current channel
 
 async function voiceUpdate(oldState, state, client) {
-  if (!isAllowedGuild(state.guild.id) || state.id === client.user.id) return;
+  if (!isHomeGuild(state.guild.id) || state.id === client.user.id) return;
   const user = state.member?.user ?? (await client.users.fetch(state.id).catch(() => null));
   const member = { name: 'Member', value: who(user ?? state.id), inline: true };
   const stayed = { name: 'Time There', value: joinedVoiceAt.has(state.id) ? duration(Date.now() - joinedVoiceAt.get(state.id)) : null, inline: true };
@@ -385,7 +385,7 @@ const AUTOMOD_ACTIONS = {
 
 async function autoModAction(execution, client) {
   const { guild, action } = execution;
-  if (!isAllowedGuild(guild.id)) return;
+  if (!isHomeGuild(guild.id)) return;
   const rule = execution.autoModerationRule ?? (await guild.autoModerationRules.fetch(execution.ruleId).catch(() => null));
   const embed = entryEmbed({
     color: COLOR.remove,
@@ -445,6 +445,6 @@ module.exports = [
   { name: 'inviteDelete', execute: (invite) => audit.forgetInvite(invite) },
   {
     name: 'guildAuditLogEntryCreate',
-    execute: (entry, guild) => (isAllowedGuild(guild.id) ? handleEntry(entry, guild).catch(fail('Audit log entry')) : null),
+    execute: (entry, guild) => (isHomeGuild(guild.id) ? handleEntry(entry, guild).catch(fail('Audit log entry')) : null),
   },
 ];

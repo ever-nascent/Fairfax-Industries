@@ -8,7 +8,7 @@ const {
 } = require('discord.js');
 const { getStore } = require('../../storage');
 const { getUser, changeSouls } = require('../economy/xp');
-const { findOrCreateChannel } = require('../guild');
+const { findOrCreateChannel, isHomeGuild } = require('../guild');
 const { withLock } = require('../../storage/mutex');
 const { findPhrase, getPhrases } = require('../server/censor');
 
@@ -90,6 +90,7 @@ async function setCategory(guild, category) {
 // Buys a Hideout: checks level, souls and that they don't own one, takes the souls, makes both channels and
 // pins the control panel. Returns null, or why not: 'level' | 'owned' | 'souls'.
 async function buyHideout(member) {
+  if (!isHomeGuild(member.guild.id)) return 'away'; // Hideouts are a Fairfax feature
   if ((await getUser(member.id)).level < HIDEOUT_LEVEL) return 'level';
   let fresh = false;
   await hideouts().update(member.id, (current) => {

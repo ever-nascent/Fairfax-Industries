@@ -43,7 +43,7 @@ test('every hero has a colour and renders a card in both styles', async () => {
 
 test('shop first screen: banner + section dropdown; hero cards keep the dropdown on top', async () => {
   const { shopView, heroCardsView, SECTIONS } = require('../src/utils/shop/shop');
-  const member = { id: 'test-shop-view', displayName: 'Test', guild: null };
+  const member = { id: 'test-shop-view', displayName: 'Test', guild: { id: require('../src/config').GUILD_ID, emojis: { cache: { find: () => undefined } } } }; // in Fairfax, where the Hideout section is listed
   const view = await shopView(member);
   assert.ok(view.files[0].attachment.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])) && view.files[0].name === 'shop.jpg', 'the banner is sent as JPEG');
   assert.deepStrictEqual(view.components[0].components[0].options.map((o) => o.data.value), SECTIONS.map((s) => s.value));

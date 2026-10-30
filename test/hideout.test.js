@@ -7,7 +7,7 @@ const { getStore } = require('../src/storage');
 const { changeSouls } = require('../src/utils/economy/xp');
 const hideout = require('../src/utils/shop/hideout');
 
-const guild = { roles: { everyone: { id: 'everyone' } }, members: { me: { id: 'bot' } } };
+const guild = { id: require('../src/config').GUILD_ID, roles: { everyone: { id: 'everyone' } }, members: { me: { id: 'bot' } } }; // Hideouts are a Fairfax feature
 
 test('text channel names follow the voice name', () => {
   assert.strictEqual(hideout.textName("Zechariah's Hideout"), 'zechariahs-hideout');

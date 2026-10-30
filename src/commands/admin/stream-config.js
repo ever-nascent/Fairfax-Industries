@@ -19,6 +19,7 @@ const SAMPLES = {
 };
 
 module.exports = {
+  homeOnly: true, // registered in the Fairfax server only (deploy-commands.js)
   data: new SlashCommandBuilder()
     .setName('stream-config')
     .setDescription('Staff: manage the Twitch and TikTok go-live alerts')
