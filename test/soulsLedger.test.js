@@ -52,7 +52,7 @@ test('a timed-out game refund is recorded under that game', async () => {
   await changeSouls(id, 500, 'staff');
   const game = { BUTTON_ID: 'hat', games: () => getStore('ledgerTestGames'), staked: (g) => g.bet, timeoutView: async () => ({}) };
   assert.strictEqual(await forGame('hat').takeBet(id, 100), null);
-  await game.games().set('g1', { userId: id, bet: 100, at: 0, done: false });
+  await game.games().set('g1', { userId: id, bet: 100, at: 0, done: false, guildId: 'test-guild' });
   await expireGames({}, [game]);
   assert.strictEqual(history(id, 1)[0].r, 'game:hat');
   assert.strictEqual(history(id, 1)[0].d, 100);
@@ -73,8 +73,8 @@ test('daily backup: once a day, copies the souls files, keeps the newest 7 days'
   const kept = fs.readdirSync(path.join(dir, 'backups')).sort();
   assert.strictEqual(kept.length, KEEP_DAYS);
   assert.strictEqual(kept[0], '2026-10-03');
-  const copy = JSON.parse(fs.readFileSync(path.join(dir, 'backups', '2026-10-09', 'xp.json'), 'utf8'));
-  assert.strictEqual(copy['backup-user'].souls, 1);
+  const copy = JSON.parse(fs.readFileSync(path.join(dir, 'backups', '2026-10-09', 'xp.json'), 'utf8')); // saved as <server>:<user>
+  assert.strictEqual(copy['test-guild:backup-user'].souls, 1);
   assert.ok(fs.existsSync(path.join(dir, 'backups', '2026-10-09', 'soulsLedger.jsonl')));
 });
 

@@ -9,6 +9,9 @@ const { getStore } = require('./storage');
 const { deployCommands } = require('./deploy-commands');
 const { backupToday } = require('./utils/economy/backup');
 const { migrate, moveToHeroes } = require('./utils/economy/economy');
+const { migratePerServer } = require('./utils/economy/perServer');
+const { runInGuild } = require('./utils/guildContext');
+const { GUILD_ID } = require('./config');
 
 async function main() {
   if (!process.env.DISCORD_TOKEN) {
@@ -29,8 +32,11 @@ async function main() {
   };
   backup();
   setInterval(backup, 60 * 60 * 1000).unref();
+  // Member data is saved per server (utils/economy/perServer.js moves what was saved before). If that move fails the bot must not start:
+  // it would see every member as new.
+  await migratePerServer().catch((e) => { console.error('[per-server] Migration failed, not starting (nothing was lost, see data/pre-per-server-backup):', e); process.exit(1); });
   await migrate().catch((e) => console.error('[economy] Migration failed:', e));
-  await moveToHeroes().catch((e) => console.error('[economy] Moving souls to heroes failed:', e)); // once (Oct 11: farm souls are each hero's own)
+  await runInGuild(GUILD_ID, () => moveToHeroes()).catch((e) => console.error('[economy] Moving souls to heroes failed:', e)); // once (Oct 11: farm souls are each hero's own; Fairfax was the only server)
 
   const client = new Client({
     intents: [

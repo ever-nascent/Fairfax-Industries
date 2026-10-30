@@ -6,7 +6,7 @@ const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBu
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const fs = require('node:fs');
 const path = require('node:path');
-const { getStore } = require('../../storage');
+const { getStore, getRawStore } = require('../../storage');
 const { changeSouls } = require('../economy/xp');
 const { track } = require('../economy/quests');
 const { HEROES, getHero, heroEmoji } = require('../heroes');
@@ -28,7 +28,8 @@ const GUESS_ID = 'lockle'; // custom id: lockle:<game id ('daily' for the daily)
 const AGAIN_ID = 'lockle_again';
 
 const MAX_PRACTICE = 200; // practice games kept in memory; the oldest is dropped past this (abandoned ones never end)
-const store = () => getStore('lockle'); // 'daily' -> { day, build }; <user id> -> their daily game
+const store = () => getStore('lockle'); // <user id> -> their daily game (this server's)
+const shared = () => getRawStore('lockle'); // 'daily' -> { day, build }: the same build for every server
 // The last good download, kept on disk in its own file so Lockle still works while deadlock-api.com is down:
 // 'assets' -> { items: [[id, item]], heroes: [[id, slug]] }, 'matches' -> the slimmed match pool.
 const saved = () => getStore('locklePool');
@@ -141,13 +142,13 @@ async function randomBuild(rnd) {
 let dailyPick; // { day, promise } so two players starting at once don't pick two builds
 async function dailyBuild(now = new Date()) {
   const day = today(now);
-  const saved = await store().get('daily');
+  const saved = await shared().get('daily');
   if (saved?.day === day) return saved.build;
   if (dailyPick?.day !== day) {
     dailyPick = {
       day,
       promise: randomBuild().then(async (build) => {
-        await store().set('daily', { day, build });
+        await shared().set('daily', { day, build });
         return build;
       }),
     };
@@ -197,7 +198,7 @@ async function guess(gameId, userId, slug, now = new Date()) {
     if (game.over) practice.delete(gameId);
     return { game };
   }
-  const saved = await store().get('daily');
+  const saved = await shared().get('daily');
   if (saved?.day !== today(now)) return { reply: "That was yesterday's Lockle. Run `/lockle daily` for today's." };
   let game = null;
   let changed = false;

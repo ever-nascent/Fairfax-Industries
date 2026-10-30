@@ -142,6 +142,21 @@ function createJsonStore(collection) {
     async all() {
       return structuredClone(readCollection(collection));
     },
+    // Replaces the whole collection in one write (the per-server migration rekeys every entry at once).
+    async replaceAll(data) {
+      return withLock(collection, async () => {
+        readCollection(collection); // make sure the cache has this collection before it is replaced
+        cache.set(collection, structuredClone(data));
+        await writeCollection(collection, data);
+      });
+    },
+    // Replaces the whole collection in one write (the per-server migration rekeys every entry at once).
+    async replaceAll(data) {
+      return withLock(collection, async () => {
+        cache.set(collection, structuredClone(data));
+        await writeCollection(collection, data);
+      });
+    },
   };
 }
 

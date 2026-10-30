@@ -4,7 +4,7 @@ process.env.NO_QUESTS = '1'; // quests would pay souls into the balances these t
 const { SCALE } = require('../src/utils/economy/economy');
 const test = require('node:test');
 const assert = require('node:assert');
-const { getStore } = require('../src/storage');
+const { getStore, getRawStore } = require('../src/storage');
 const { getUser } = require('../src/utils/economy/xp');
 const L = require('../src/utils/games/lockle');
 
@@ -23,7 +23,7 @@ test('toBuild keeps shop items in buy order and skips short builds or unknown he
 });
 
 test('daily: same build for everyone, pays by guess once, survives a restart, no replays', async () => {
-  await getStore('lockle').set('daily', { day: '2026-09-28', build });
+  await getRawStore('lockle').set('daily', { day: '2026-09-28', build }); // the build is shared by every server
   const game = await L.startDaily('a', now);
   assert.deepStrictEqual(game.guesses, []);
   assert.strictEqual((await L.guess('daily', 'a', 'abrams', now)).game.over, false);

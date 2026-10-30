@@ -6,6 +6,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { DATA_DIR } = require('../../storage/jsonAdapter');
+const { currentGuild } = require('../guildContext');
+const { GUILD_ID } = require('../../config');
 
 const FILE = () => path.join(DATA_DIR, 'soulsLedger.jsonl');
 const OLD = () => path.join(DATA_DIR, 'soulsLedger.1.jsonl');
@@ -35,26 +37,31 @@ const GAMES = {
 };
 const label = (reason) => (reason === 'shop:rejuv' ? `${require('../format').rejuvIcon()}Rejuv` : reason.startsWith('game:') ? GAMES[reason.slice(5)] ?? reason.slice(5) : LABELS[reason] ?? reason);
 
+// Every line says which server it happened in (`g`). Lines from before the bot went per-server have none: they are Fairfax's.
+const guildOf = (line) => line.g ?? GUILD_ID;
+
 // Adds a line. `meta`: a reason string, or { reason, with, hero } (`with` = the other member, for a duel's pot; `hero` = a farm hero's own souls).
 // Never throws: a full disk must not undo a purchase.
 function record(userId, delta, meta, balance) {
   if (!delta) return;
   const { reason = 'other', with: other, hero } = typeof meta === 'string' ? { reason: meta } : meta ?? {};
+  const g = currentGuild();
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     if (fs.existsSync(FILE()) && fs.statSync(FILE()).size > MAX_BYTES) fs.renameSync(FILE(), OLD());
-    const line = { t: Date.now(), u: userId, d: delta, b: balance, r: reason, ...(other ? { w: other } : {}), ...(hero ? { h: hero } : {}) };
+    const line = { t: Date.now(), g, u: userId, d: delta, b: balance, r: reason, ...(other ? { w: other } : {}), ...(hero ? { h: hero } : {}) };
     fs.appendFileSync(FILE(), `${JSON.stringify(line)}\n`);
   } catch (error) {
     console.error('[ledger] Could not write:', error.message);
   }
 }
 
-// Every line, oldest first (the old file, then the current one).
+// Every line of the current server, oldest first (the old file, then the current one).
 function entries() {
+  const guildId = currentGuild();
   return [OLD(), FILE()].flatMap((file) =>
     fs.existsSync(file)
-      ? fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean)
+      ? fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter((e) => e && guildOf(e) === guildId)
       : [],
   );
 }

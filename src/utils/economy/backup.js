@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { DATA_DIR, flushPending } = require('../../storage/jsonAdapter');
 
-const FILES = ['xp.json', 'xpSettings.json', 'farm.json', 'economy.json', 'hideouts.json', 'lockle.json', 'soulsLedger.jsonl'];
+const FILES = ['xp.json', 'xpSettings.json', 'farm.json', 'economy.json', 'hideouts.json', 'lockle.json', 'quests.json', 'soulsLedger.jsonl'];
 const KEEP_DAYS = 7;
 
 // Copies FILES into today's folder unless it already exists. Returns the folder made, or null.
