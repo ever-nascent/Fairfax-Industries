@@ -2,7 +2,7 @@
 // /trivia, Lockle, farm trips) and every price (Shop, Hideout, game minimum bets) is written as "the old number x SCALE", so they stay in step.
 // Since Oct 11 Hero Farming's souls are each hero's own, apart from the server balance (his call; moveToHeroes below).
 // Hero Farming's item prices are the wiki's own and are NOT scaled; the souls the economy pays are what grew to meet them.
-const { getStore } = require('../../storage');
+const { getStore, getRawStore } = require('../../storage');
 
 const SCALE = 10;
 
@@ -28,9 +28,9 @@ async function migrate() {
   if (before >= SCALE) return false;
   const factor = SCALE / before;
   backupFiles();
-  const xp = getStore('xp');
+  const xp = getRawStore('xp'); // every server's members (keys as saved), whichever server this runs for
   for (const id of Object.keys(await xp.all())) await xp.update(id, (u) => ({ ...u, souls: Math.round((u.souls || 0) * factor) }));
-  const farm = getStore('farm');
+  const farm = getRawStore('farm');
   const grow = (p) => ({ ...p, earned: Math.round((p.earned || 0) * factor), ...('souls' in p ? { souls: Math.round(p.souls * factor) } : {}) });
   for (const id of Object.keys(await farm.all())) { // every hero's progress (older records keep one `earned` on the member)
     await farm.update(id, (r) => ({ ...('earned' in r ? grow(r) : r), heroes: Object.fromEntries(Object.entries(r.heroes ?? {}).map(([name, p]) => [name, grow(p)])) }));
@@ -40,7 +40,7 @@ async function migrate() {
   return true;
 }
 
-// Run once at startup, after `migrate` (his calls, Oct 11): Hero Farming souls became each hero's own, so every member who has a hero gets
+// Run once at startup, after `migrate` (his calls, Oct 11; it ran for Fairfax, the only server then, so it runs in that server's context): Hero Farming souls became each hero's own, so every member who has a hero gets
 // their whole server balance moved into Haze's own souls (the only hero anyone had played; their current hero if they have no Haze), after a
 // backup copy of both files. Their buffs, Rejuvs, growth, cooldowns and lanes, shared until now, go to the same hero (farm/play.js `load`);
 // every farm record is rewritten in the per-hero layout. Both sides of each move are lines in the souls ledger ('farm-move').

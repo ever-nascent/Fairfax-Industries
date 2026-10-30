@@ -1,6 +1,7 @@
 const { ourGuild } = require('../utils/guild');
 const { getSettings, addXp, announceLevelUp, loadSoulsEmoji, voiceEarners } = require('../utils/economy/xp');
 const { loadStreakEmojis } = require('../utils/games/trivia');
+const { runInGuild } = require('../utils/guildContext');
 
 // On startup: look up the :souls: and /trivia streak bar emojis, then run voice XP.
 // Voice XP (off by default, /xp-config voice): once a minute, everyone in a voice channel with at
@@ -13,7 +14,7 @@ module.exports = {
     if (!guild) return;
     try { loadSoulsEmoji(guild); } catch (e) { console.error('[xp] Souls emoji:', e.message); }
     try { loadStreakEmojis(guild); } catch (e) { console.error('[trivia] Streak bar emojis:', e.message); }
-    setInterval(async () => {
+    setInterval(() => runInGuild(guild.id, async () => {
       try {
         const s = await getSettings(guild.id);
         if (!s.voiceEnabled) return;
@@ -24,6 +25,6 @@ module.exports = {
       } catch (e) {
         console.error('[xp] Voice XP:', e.message);
       }
-    }, 60_000);
+    }), 60_000);
   },
 };

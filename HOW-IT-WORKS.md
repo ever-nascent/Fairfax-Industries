@@ -91,6 +91,7 @@ Nearly every feature follows this shape: **command, logic in utils, storage, rep
 ## 6. Saved data and souls
 
 - `getStore('xp')` (from `src/storage`) gives you `data/xp.json`. Read with `get`, change with `update`. The file is kept in memory and saved on every change, so never edit it by hand while the bot runs.
+- **A member's progress is per server (Oct 30).** The stores `xp`, `farm`, `quests`, `lockle` and `hideouts` keep one copy per server, saved as `<server id>:<user id>`. You never write that key yourself: `getStore('xp')` gives the current server's view, so `get(userId)` and `all()` already mean "in this server". "Current server" is set by `runInGuild(guildId, fn)` (`utils/guildContext.js`); `interactionCreate.js` and the message and voice XP events do it for you, a timer or other new entry point has to do it itself. With none set, a store call throws "no server set" instead of touching the wrong server. `getRawStore` (every server's entries, keys as saved) is only for migrations and backups.
 - **Souls are only ever changed through `changeSouls(userId, delta, reason)`** (`utils/economy/xp.js`), or for games through the helpers in `utils/games/casino.js` (`takeBet`, `stake`, `pay`). Each change is one ledger line with its reason, which is how `/souls history` works. Never set `user.souls = ...` directly.
 - Every souls amount is multiplied by `SCALE` (`utils/economy/economy.js`), so write prices as `1600 * SCALE`, not `16000`.
 

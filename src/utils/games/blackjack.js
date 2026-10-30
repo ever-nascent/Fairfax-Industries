@@ -7,6 +7,7 @@ const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { getStore } = require('../../storage');
 const { fmt, soulsIcon } = require('../format');
 const { pickRandom, shortId } = require('../random');
+const { currentGuild } = require('../guildContext');
 const { ASSETS, loadSouls, seeded, halftone, grain, grainAndVignette, jpeg } = require('../art');
 const { GREEN: WIN_COLOR, RED: LOSE_COLOR, resultFields, playAgainButton, gameMessage, timeoutMessage, forGame } = require('./casino');
 
@@ -596,7 +597,7 @@ async function startGame(user, name, bet, deck = newDeck()) {
   const error = await takeBet(user.id, bet);
   if (error) return { error };
   const id = shortId();
-  const game = { ...deal(deck, bet), userId: user.id, name, startBet: bet, at: Date.now() };
+  const game = { ...deal(deck, bet), userId: user.id, name, startBet: bet, at: Date.now(), guildId: currentGuild() };
   if (game.done) return finish(id, game, user.id);
   await games().set(id, game);
   return view(id, game, name);

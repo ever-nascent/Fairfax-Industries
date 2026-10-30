@@ -8,6 +8,8 @@ const { track } = require('../economy/quests');
 const { fmt, soulsText, boldSouls } = require('../format');
 const { replyEmbed, privateReply } = require('../embeds');
 const { shortId, pickRandom } = require('../random');
+const { runInGuild, currentGuild } = require('../guildContext');
+const { GUILD_ID } = require('../../config');
 
 const { SCALE } = require('../economy/economy');
 const MIN_BET = 10 * SCALE;
@@ -47,7 +49,7 @@ async function openGame(store, userId, bet, build, reason) {
   if (error) return { error };
   const id = shortId();
   try {
-    const game = { ...build(), at: Date.now() };
+    const game = { ...build(), at: Date.now(), guildId: currentGuild() };
     await store.set(id, game);
     return { id, game };
   } catch (e) {
@@ -253,35 +255,41 @@ async function expireGames(client, gameModules, now = Date.now()) {
     for (const id of Object.keys(await game.games().all())) {
       const g = await game.games().take(id, stale); // taken inside the lock, so a click at the same moment can't also play it
       if (!g) continue;
-      const reason = `game:${game.BUTTON_ID}`;
-      const edit = async (payload) => {
-        if (!g.messageId) return;
-        const channel = await client.channels.fetch(g.channelId).catch(() => null);
-        await channel?.messages
-          .edit(g.messageId, { ...payload, attachments: [] })
-          .catch((error) => console.error('[games] Could not edit a timed-out game:', error.message));
-      };
-      const settled = game.finishOnTimeout?.(id, g);
-      if (settled) {
-        let balance = 0;
-        for (const [userId, amount, other] of settled.pays) {
-          const paid = await pay(userId, amount, other ? { reason, with: other } : reason);
-          if (userId === g.userId) balance = paid?.souls ?? 0;
-        }
-        console.log(`[games] ${game.BUTTON_ID} ${id} timed out and was finished: paid ${settled.pays.map(([, amount]) => amount).join(' + ')} Souls`);
-        await edit(markTimedOut(await settled.view(balance)));
-        continue;
-      }
-      // refunds(g): [[user id, souls]] when more than the first player staked (a duel)
-      let user;
-      for (const [userId, amount] of game.refunds?.(g) ?? [[g.userId, game.staked(g)]]) {
-        const refunded = await pay(userId, amount, reason);
-        if (userId === g.userId) user = refunded;
-      }
-      console.log(`[games] ${game.BUTTON_ID} ${id} timed out, returned ${game.staked(g)} Souls`);
-      if (g.messageId) await edit(await game.timeoutView(id, g, user?.souls ?? 0));
+      // The souls move in the server the game was played in. Games saved before the bot went per-server have no `guildId`: their channel knows, else it was Fairfax.
+      const guildId = g.guildId ?? client.channels.cache?.get(g.channelId)?.guildId ?? GUILD_ID;
+      await runInGuild(guildId, () => finishStale(client, game, id, g));
     }
   }
+}
+
+async function finishStale(client, game, id, g) {
+  const reason = `game:${game.BUTTON_ID}`;
+  const edit = async (payload) => {
+    if (!g.messageId) return;
+    const channel = await client.channels.fetch(g.channelId).catch(() => null);
+    await channel?.messages
+      .edit(g.messageId, { ...payload, attachments: [] })
+      .catch((error) => console.error('[games] Could not edit a timed-out game:', error.message));
+  };
+  const settled = game.finishOnTimeout?.(id, g);
+  if (settled) {
+    let balance = 0;
+    for (const [userId, amount, other] of settled.pays) {
+      const paid = await pay(userId, amount, other ? { reason, with: other } : reason);
+      if (userId === g.userId) balance = paid?.souls ?? 0;
+    }
+    console.log(`[games] ${game.BUTTON_ID} ${id} timed out and was finished: paid ${settled.pays.map(([, amount]) => amount).join(' + ')} Souls`);
+    await edit(markTimedOut(await settled.view(balance)));
+    return;
+  }
+  // refunds(g): [[user id, souls]] when more than the first player staked (a duel)
+  let user;
+  for (const [userId, amount] of game.refunds?.(g) ?? [[g.userId, game.staked(g)]]) {
+    const refunded = await pay(userId, amount, reason);
+    if (userId === g.userId) user = refunded;
+  }
+  console.log(`[games] ${game.BUTTON_ID} ${id} timed out, returned ${game.staked(g)} Souls`);
+  if (g.messageId) await edit(await game.timeoutView(id, g, user?.souls ?? 0));
 }
 
 module.exports = { MIN_BET, TIME_LIMIT_MINUTES, forGame, takeBet, stake, pay, openGame, GREEN, RED, mention, pot, versusLine, resultFields, playAgainButton, gameMessage, betCommand, gameButtons, timeoutMessage, staked, plainTimeout, expireGames };

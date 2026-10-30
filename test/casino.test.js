@@ -114,9 +114,9 @@ test('games with no click for the time limit are called off: everything staked c
   const now = Date.now();
   const limit = TIME_LIMIT_MINUTES * 60_000;
   const store = fakeGame.games();
-  await store.set('old', { userId: 'timeout-user', stake: 70, at: now - limit, channelId: 'c', messageId: 'm' });
+  await store.set('old', { userId: 'timeout-user', stake: 70, at: now - limit, channelId: 'c', messageId: 'm', guildId: 'test-guild' });
   await store.set('fresh', { userId: 'timeout-user', stake: 70, at: now - limit + 1000 });
-  await store.set('paying', { userId: 'timeout-user', stake: 70, at: now - limit, done: true }); // being paid out: leave it
+  await store.set('paying', { userId: 'timeout-user', stake: 70, at: now - limit, done: true, guildId: 'test-guild' }); // being paid out: leave it
   const edits = [];
   const client = { channels: { fetch: async () => ({ messages: { edit: async (id, payload) => edits.push([id, payload]) } }) } };
   const module_ = { ...fakeGame, staked: (g) => g.stake, timeoutView: async (id, g, balance) => ({ content: `${id} ${balance}` }) };
