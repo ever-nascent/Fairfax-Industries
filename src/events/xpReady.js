@@ -14,17 +14,21 @@ module.exports = {
     if (!guild) return;
     try { loadSoulsEmoji(guild); } catch (e) { console.error('[xp] Souls emoji:', e.message); }
     try { loadStreakEmojis(guild); } catch (e) { console.error('[trivia] Streak bar emojis:', e.message); }
-    setInterval(() => runInGuild(guild.id, async () => {
-      try {
-        const s = await getSettings(guild.id);
-        if (!s.voiceEnabled) return;
-        for (const id of voiceEarners(guild, s)) {
-          const result = await addXp(id, s.voiceXpPerMinute);
-          await announceLevelUp(guild, id, result);
-        }
-      } catch (e) {
-        console.error('[xp] Voice XP:', e.message);
+    setInterval(() => {
+      for (const g of client.guilds.cache.values()) {
+        runInGuild(g.id, async () => {
+          try {
+            const s = await getSettings(g.id);
+            if (!s.voiceEnabled) return;
+            for (const id of voiceEarners(g, s)) {
+              const result = await addXp(id, s.voiceXpPerMinute);
+              await announceLevelUp(g, id, result);
+            }
+          } catch (e) {
+            console.error(`[xp] Voice XP in "${g.name}":`, e.message);
+          }
+        });
       }
-    }), 60_000);
+    }, 60_000);
   },
 };

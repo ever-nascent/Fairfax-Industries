@@ -1,5 +1,6 @@
 // LFG (looking-for-group) infrastructure: roles, regional LFG channels, voice lobbies
-// and their auto-cleanup. The bot creates anything missing when it starts.
+// and their auto-cleanup. The bot creates anything missing when it starts in the Fairfax server; any other server asks for it
+// once with /lfg-config setup (ensureInfrastructure).
 const { ChannelType } = require('discord.js');
 const { getStore } = require('../../storage');
 const { findOrCreateChannel } = require('../guild');
@@ -30,7 +31,7 @@ const DEFAULT_REGIONS = {
 const LFG_CATEGORY = 'LFG'; // holds the region channels and (by default) the lobby voice channels
 const LEGACY_CATEGORY = 'LFG Lobbies'; // old layout, replaced by LFG_CATEGORY
 const DEFAULT_TIMEOUT_MINUTES = 5; // delete a lobby after this long with nobody in it (/lfg-config timeout)
-let timeoutMinutes = DEFAULT_TIMEOUT_MINUTES;
+const timeouts = new Map(); // server id -> its empty-lobby timeout in minutes (saved in lfgSettings; kept here so timers can read it at once)
 
 const lfgRoleName = (rank) => `LFG ${rank}`;
 // Every LFG ping role, in the order the #roles LFG Pings dropdown lists them.
@@ -58,7 +59,8 @@ async function ensureRole(guild, name, saved) {
   return role;
 }
 
-async function ensureInfrastructure(guild) {
+// `regions`: the region list a server with none saved starts with (default: the seven in DEFAULT_REGIONS).
+async function ensureInfrastructure(guild, { regions } = {}) {
   await guild.roles.fetch();
   await guild.channels.fetch();
   const saved = (await settings().get(guild.id)) ?? { roles: {} };
@@ -75,7 +77,7 @@ async function ensureInfrastructure(guild) {
 
   // First start on the region list: seed it from the old fixed seven, keeping the channels they already have.
   saved.regions ??= Object.fromEntries(
-    Object.entries(DEFAULT_REGIONS).map(([key, r]) => [key, { ...r, channelId: saved.regionChannels?.[key] }]),
+    Object.entries(regions ?? DEFAULT_REGIONS).map(([key, r]) => [key, { ...r, channelId: saved.regionChannels?.[key] }]),
   );
   delete saved.regionChannels;
   for (const region of Object.values(saved.regions)) {
@@ -90,7 +92,7 @@ async function ensureInfrastructure(guild) {
 
   saved.timeoutMinutes ??= DEFAULT_TIMEOUT_MINUTES;
   saved.disabledModes ??= [];
-  timeoutMinutes = saved.timeoutMinutes;
+  timeouts.set(guild.id, saved.timeoutMinutes);
   await settings().set(guild.id, saved);
   console.log(`[lfg] Ready: ${names.length} roles, ${Object.keys(saved.regions).length} region channels, lobbies in "${cache.get(saved.categoryId)?.name}"`);
   return saved;
@@ -113,7 +115,9 @@ function regionKey(label, taken) {
 const regionChannelName = (label) => `lfg-${regionKey(label, {})}`;
 
 const getSettings = (guildId) => settings().get(guildId);
-const getTimeoutMinutes = () => timeoutMinutes;
+const getTimeoutMinutes = (guildId) => timeouts.get(guildId) ?? DEFAULT_TIMEOUT_MINUTES;
+// Has this server's LFG been set up (by startup in Fairfax, by /lfg-config setup elsewhere)? A settings entry alone isn't enough: /lfg-config timeout could have made one.
+const isSetUp = (cfg) => Boolean(cfg?.lfgCategoryId && Object.keys(cfg.regions ?? {}).length);
 
 // Change saved settings (used by /lfg-config). `change` edits the settings object in place.
 async function updateSettings(guildId, change) {
@@ -122,7 +126,7 @@ async function updateSettings(guildId, change) {
     change(copy);
     return copy;
   });
-  timeoutMinutes = next.timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES;
+  timeouts.set(guildId, next.timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES);
   return next;
 }
 
@@ -135,9 +139,10 @@ function cancelDeletion(channelId) {
   timers.delete(channelId);
 }
 
-function scheduleDeletion(client, channelId) {
+function scheduleDeletion(client, channel) {
+  const channelId = channel.id;
   if (timers.has(channelId)) return;
-  const minutes = timeoutMinutes;
+  const minutes = getTimeoutMinutes(channel.guild?.id);
   timers.set(
     channelId,
     setTimeout(() => closeLobby(client, channelId, { why: `empty for ${minutes} min` }), minutes * 60 * 1000),
@@ -186,7 +191,7 @@ async function openLobbies(guild) {
 
 async function registerLobby(client, channel, data) {
   await lobbies().set(channel.id, { ...data, createdAt: Date.now() });
-  scheduleDeletion(client, channel.id); // starts empty; timer cancels as soon as someone joins
+  scheduleDeletion(client, channel); // starts empty; timer cancels as soon as someone joins
 }
 
 async function findOpenLobbyFor(guild, userId) {
@@ -200,16 +205,17 @@ async function findOpenLobbyFor(guild, userId) {
 // Called whenever someone joins/leaves/moves voice.
 async function onVoiceChange(client, channel) {
   if (!channel || !(await lobbies().get(channel.id))) return;
-  if (channel.members.size === 0) scheduleDeletion(client, channel.id);
+  if (channel.members.size === 0) scheduleDeletion(client, channel);
   else cancelDeletion(channel.id);
 }
 
 // After a restart: forget deleted lobbies, restart timers for empty ones.
 async function reconcile(client) {
+  for (const [guildId, cfg] of Object.entries(await settings().all())) timeouts.set(guildId, cfg.timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES); // every server's timeout, before any timer starts
   for (const channelId of Object.keys(await lobbies().all())) {
     const channel = await client.channels.fetch(channelId).catch(() => null);
     if (!channel) await lobbies().delete(channelId);
-    else if (channel.members.size === 0) scheduleDeletion(client, channelId);
+    else if (channel.members.size === 0) scheduleDeletion(client, channel);
   }
 }
 
@@ -223,6 +229,7 @@ module.exports = {
   PING_ROLES,
   joinableRanks,
   ensureInfrastructure,
+  isSetUp,
   getSettings,
   getTimeoutMinutes,
   updateSettings,

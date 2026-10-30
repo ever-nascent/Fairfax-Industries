@@ -1,4 +1,4 @@
-// /lfg-config (Manage Channels): close a lobby, the empty-lobby timeout, the lobby category, mode settings, and the LFG regions (add / remove / rename a region's channel and role). A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
+// /lfg-config (Manage Channels): set LFG up in a server (`setup`, `pings-menu`), close a lobby, the empty-lobby timeout, the lobby category, mode settings, and the LFG regions (add / remove / rename a region's channel and role). A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it.
 // Lobbies and the region list: utils/server/lfg.js. The "rename the role too?" buttons: components/lfgRegions.js.
 const {
   SlashCommandBuilder,
@@ -15,6 +15,7 @@ const { REPLY_COLOR } = require('../../config');
 const { replyEmbed, privateReply } = require('../../utils/embeds');
 const { findOrCreateChannel } = require('../../utils/guild');
 const { menusWithRole, fetchMenuMessage, dropOption } = require('../../utils/server/reactionRoles');
+const { pingMenuMessage } = require('../../components/lfgPings');
 const {
   MODES,
   getSettings,
@@ -24,6 +25,10 @@ const {
   openLobbies,
   regionKey,
   regionChannelName,
+  ensureInfrastructure,
+  isSetUp,
+  RANKS,
+  PING_ROLES,
 } = require('../../utils/server/lfg');
 
 const modeChoices = Object.entries(MODES).map(([value, m]) => ({ name: m.label, value }));
@@ -36,6 +41,13 @@ module.exports = {
     .setDescription('Staff: manage the LFG system')
     // Hidden from members without Manage Channels (checked again below).
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
+    .addSubcommand((s) =>
+      s
+        .setName('setup')
+        .setDescription('Set LFG up in this server: the ping and rank roles, an LFG category and a first region channel')
+        .addStringOption((o) => o.setName('region').setDescription('Name of the first region, e.g. NA (default: Any). Add more later with region-add').setMaxLength(30)),
+    )
+    .addSubcommand((s) => s.setName('pings-menu').setDescription('Post the LFG Pings dropdown here, so members can pick their LFG ping roles'))
     .addSubcommand((s) =>
       s
         .setName('close')
@@ -121,6 +133,38 @@ module.exports = {
     const guild = interaction.guild;
     const guildId = interaction.guildId;
 
+    if (sub === 'setup') {
+      const label = (interaction.options.getString('region') ?? 'Any').trim() || 'Any';
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      try {
+        const cfg = await ensureInfrastructure(guild, { regions: { [regionKey(label, {})]: { label, name: regionChannelName(label) } } });
+        const regions = Object.values(cfg.regions).map(regionLine).join('\n');
+        const next = [
+          '**Next:**',
+          '• `/lfg-config pings-menu` in a channel members can see: they pick their LFG pings from it.',
+          '• Ranked LFG uses the rank roles (Initiate to Eternus). Give members theirs with `/reaction-roles`, or by hand.',
+          '• `/lfg-config region-add` for more regions, and `/lfg` to start a lobby inside a region channel.',
+        ];
+        return interaction.editReply({
+          embeds: [
+            replyEmbed(
+              [`LFG is set up. I made (or found) ${RANKS.length} rank roles, ${PING_ROLES.length} LFG ping roles and an **LFG** category.`, '', '**Regions**', regions, '', ...next].join('\n'),
+            ),
+          ],
+        });
+      } catch (error) {
+        console.error('[lfg] /lfg-config setup failed:', error);
+        return interaction.editReply({ embeds: [replyEmbed("I couldn't finish setting LFG up. Check that I have **Manage Roles** and **Manage Channels**, then run `/lfg-config setup` again (it picks up where it stopped).")] });
+      }
+    }
+
+    if (!isSetUp(await getSettings(guildId))) return reply('LFG is not set up in this server yet. Run `/lfg-config setup` first.');
+
+    if (sub === 'pings-menu') {
+      await interaction.channel.send(pingMenuMessage());
+      return reply('Posted the LFG Pings dropdown here. Members pick their LFG pings from it.');
+    }
+
     if (sub === 'close') {
       const lobby = interaction.guild.channels.cache.get(interaction.options.getString('lobby'));
       if (!lobby || !(await isLobby(lobby.id))) return reply("That lobby isn't open anymore. Pick one from the list.");
@@ -158,7 +202,6 @@ module.exports = {
     }
 
     const cfg = await getSettings(guildId);
-    if (!cfg) return reply('LFG is not set up yet. Restart the bot.');
     const regions = cfg.regions ?? {};
 
     if (sub === 'region-add') {

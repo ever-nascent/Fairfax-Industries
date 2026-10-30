@@ -6,6 +6,7 @@ const { privateReply } = require('../../utils/embeds');
 const { setCategory, removeHideout } = require('../../utils/shop/hideout');
 
 module.exports = {
+  homeOnly: true, // registered in the Fairfax server only (deploy-commands.js)
   data: new SlashCommandBuilder()
     .setName('hideout-config')
     .setDescription('Staff: manage Hideouts')

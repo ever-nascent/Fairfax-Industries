@@ -1,5 +1,4 @@
 const { PermissionFlagsBits } = require('discord.js');
-const { isAllowedGuild } = require('../utils/guild');
 const { getSettings, addXp, announceLevelUp, chatCounts } = require('../utils/economy/xp');
 const { findPhrase, getPhrases } = require('../utils/server/censor');
 const { shouldDrop, dropBag } = require('../utils/economy/soulBag');
@@ -11,7 +10,7 @@ const { runInGuild } = require('../utils/guildContext');
 module.exports = {
   name: 'messageCreate',
   async execute(message) {
-    if (message.author.bot || !message.guild || !isAllowedGuild(message.guild.id)) return;
+    if (message.author.bot || !message.guild) return;
     return runInGuild(message.guild.id, () => countMessage(message));
   },
 };

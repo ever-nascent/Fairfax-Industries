@@ -1,5 +1,4 @@
 const { PermissionFlagsBits } = require('discord.js');
-const { isAllowedGuild } = require('../utils/guild');
 const { replyEmbed } = require('../utils/embeds');
 const { pickRandom } = require('../utils/random');
 const { WARN_LINES, findPhrase, getPhrases } = require('../utils/server/censor');
@@ -11,7 +10,7 @@ module.exports = [
   {
     name: 'messageCreate',
     async execute(message) {
-      if (message.author.bot || !message.guild || !isAllowedGuild(message.guild.id)) return;
+      if (message.author.bot || !message.guild) return;
       if (message.member?.permissions.has(PermissionFlagsBits.ManageMessages)) return;
       if (!findPhrase(message.content, await getPhrases(message.guild.id))) return;
       await message.delete().catch(() => {}); // already gone, or the bot lacks Manage Messages

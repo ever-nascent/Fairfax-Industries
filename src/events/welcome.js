@@ -1,5 +1,5 @@
 const { ChannelType } = require('discord.js');
-const { isAllowedGuild } = require('../utils/guild');
+const { isHomeGuild } = require('../utils/guild');
 const { replyEmbed } = require('../utils/embeds');
 const { pickRandom } = require('../utils/random');
 const { isUnlocked } = require('../utils/server/memberRoles');
@@ -50,7 +50,7 @@ module.exports = [
   {
     name: 'guildMemberAdd',
     async execute(member) {
-      if (member.user.bot || !isAllowedGuild(member.guild.id)) return;
+      if (member.user.bot || !isHomeGuild(member.guild.id)) return;
       await greet(member, 'welcome', 'Welcome To The Cursed Apple', WELCOME_LINES);
     },
   },
@@ -59,7 +59,7 @@ module.exports = [
     name: 'messageReactionAdd',
     async execute(reaction, user) {
       const channel = reaction.message.channel;
-      if (user.bot || !channel.guild || !isAllowedGuild(channel.guild.id) || channel.name !== 'rules' || reaction.emoji.name !== 'souls' || rulesSent.has(user.id)) return;
+      if (user.bot || !channel.guild || !isHomeGuild(channel.guild.id) || channel.name !== 'rules' || reaction.emoji.name !== 'souls' || rulesSent.has(user.id)) return;
       const member = await channel.guild.members.fetch(user.id).catch(() => null);
       if (!member || isUnlocked(member) || member.roles.cache.some((r) => r.name === 'Citizen of the Cursed Apple')) return;
       rulesSent.add(user.id);
@@ -70,7 +70,7 @@ module.exports = [
     // Gaining Citizen (by picking a Patron in #roles) welcomes them to the whole server.
     name: 'guildMemberUpdate',
     async execute(old, member) {
-      if (old.partial || !isAllowedGuild(member.guild.id)) return;
+      if (old.partial || !isHomeGuild(member.guild.id)) return;
       const citizen = member.guild.roles.cache.find((r) => r.name === 'Citizen of the Cursed Apple');
       if (!citizen || old.roles.cache.has(citizen.id) || !member.roles.cache.has(citizen.id)) return;
       await greet(member, 'roles', "You're In, Citizen! Welcome To The Cursed Apple", SERVER_LINES, POINTER_LIFETIME_MS);

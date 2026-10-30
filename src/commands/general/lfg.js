@@ -12,6 +12,7 @@ const {
   registerLobby,
   findOpenLobbyFor,
   getTimeoutMinutes,
+  isSetUp,
   regionForChannel,
 } = require('../../utils/server/lfg');
 
@@ -36,7 +37,7 @@ module.exports = {
     const { guild, member, user } = interaction;
     const mode = interaction.options.getString('mode');
     const cfg = await getSettings(guild.id);
-    if (!cfg) return reply('LFG is still being set up. Try again in a minute.');
+    if (!isSetUp(cfg)) return reply('LFG is not set up in this server yet. A server admin can run `/lfg-config setup`.');
     if (cfg.disabledModes?.includes(mode)) return reply(`${MODES[mode].label} LFG is turned off right now.`);
 
     // The region comes from the channel /lfg is run in.
@@ -91,7 +92,7 @@ module.exports = {
       .setTitle(`Looking for a game: ${fullLabel}`)
       .setDescription(`${user} is looking for a **${fullLabel}** game!\nJoin the lobby: ${voice}`)
       .setThumbnail(user.displayAvatarURL())
-      .setFooter({ text: `Lobby deletes itself after ${getTimeoutMinutes()} min with nobody in it` })
+      .setFooter({ text: `Lobby deletes itself after ${getTimeoutMinutes(guild.id)} min with nobody in it` })
       .setTimestamp();
     if (rank) {
       embed.addFields({ name: 'Who can join', value: joinableRanks(rank).join(', ') });

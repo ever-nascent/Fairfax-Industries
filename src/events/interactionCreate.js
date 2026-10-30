@@ -2,7 +2,6 @@
 // Buttons/dropdowns/pop-ups go to the first route in components/ that `matches`; slash commands go to client.commands by name.
 // If you wonder "where does clicking X go?", find the button's customId and search components/ for it.
 const { MessageFlags } = require('discord.js');
-const { isAllowedGuild } = require('../utils/guild');
 const { findComponentRoute } = require('../components');
 const { withQuests } = require('../utils/economy/quests'); // tells a member privately when a quest they just finished paid
 const { runInGuild } = require('../utils/guildContext'); // player data is per server: everything below runs for this interaction's server
@@ -10,7 +9,7 @@ const { runInGuild } = require('../utils/guildContext'); // player data is per s
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
-    if (!isAllowedGuild(interaction.guildId)) return;
+    if (!interaction.guildId) return; // commands are server-only (deploy-commands.js); a DM has nothing to run for
     return runInGuild(interaction.guildId, () => handle(interaction, client));
   },
 };

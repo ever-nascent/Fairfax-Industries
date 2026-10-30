@@ -105,7 +105,7 @@ function sampleColor(image) {
 
 // The hero's server emoji (uploaded by `setup.py hero-emojis`), for select menu options.
 function heroEmoji(guild, slug) {
-  const e = guild?.emojis.cache.find((x) => x.name === slug);
+  const e = require('./guild').emojiNamed(guild, slug); // the member's server, else Fairfax (where the emojis live)
   return e ? { id: e.id, name: e.name } : undefined;
 }
 

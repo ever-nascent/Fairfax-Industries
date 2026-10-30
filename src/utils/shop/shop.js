@@ -6,6 +6,7 @@ const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBu
 const { getUser, progress, MAX_LEVEL, BOOST_PRICE, REJUV_PRICE, REJUV_MAX } = require('../economy/xp');
 const { SCALE } = require('../economy/economy');
 const { getHideout, HIDEOUT_PRICE, HIDEOUT_LEVEL } = require('./hideout');
+const { isHomeGuild } = require('../guild');
 const { renderRankCard, CARD_COLOR, cardColor } = require('../economy/rankCard');
 const { renderShopBanner, renderItemPage } = require('./shopBanner');
 const { HEROES, getHero, heroArt, heroEmoji } = require('../heroes');
@@ -55,7 +56,8 @@ function sectionRow(member, current, heroSlug) {
       .setCustomId(`${SECTION_ID}:${member.id}`)
       .setPlaceholder('Pick a section')
       .addOptions(
-        SECTIONS.map((s) => ({
+        // Hideouts are built for the Fairfax server (their channels and category), so other servers' Shops don't list them.
+        SECTIONS.filter((s) => s.value !== 'hideout' || isHomeGuild(member.guild.id)).map((s) => ({
           label: s.label,
           value: s.value,
           description: s.description,
@@ -330,6 +332,7 @@ const receipts = {
       level: `A Hideout needs level ${HIDEOUT_LEVEL}.`,
       souls: `A Hideout costs ${boldSouls(HIDEOUT_PRICE)}, and you don't have that much.`,
       owned: 'You already have a Hideout.',
+      away: "Hideouts aren't available in this server.",
     }[result];
   },
 };

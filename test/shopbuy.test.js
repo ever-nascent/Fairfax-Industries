@@ -17,7 +17,7 @@ const give = (id, user) => getStore('xp').set(id, { xp: 0, level: 0, souls: 0, c
 function press(customId, userId, { createFails = false } = {}) {
   const calls = { followUp: [], reply: [], edits: 0 };
   const guild = {
-    id: 'g', roles: { everyone: { id: 'everyone' } }, members: { me: { id: 'bot' } },
+    id: require('../src/config').GUILD_ID, roles: { everyone: { id: 'everyone' } }, members: { me: { id: 'bot' } },
     emojis: { cache: { find: () => undefined, get: () => undefined } },
     channels: { cache: new Map(), create: async () => { if (createFails) throw new Error('Missing Permissions'); throw new Error('unused'); } },
   };

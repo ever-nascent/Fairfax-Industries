@@ -12,6 +12,7 @@ const ALL = 'all';
 const setIn = (key, id, on) => updateSettings((s) => (s[key] = on ? [...new Set([...s[key], id])] : s[key].filter((x) => x !== id)));
 
 module.exports = {
+  homeOnly: true, // registered in the Fairfax server only (deploy-commands.js)
   data: new SlashCommandBuilder()
     .setName('audit-log-config')
     .setDescription('Admins: choose what the audit log records')
