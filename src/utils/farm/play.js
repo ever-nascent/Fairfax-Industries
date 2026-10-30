@@ -16,6 +16,7 @@
 // The cooldown is claimed (and the result is known) when they press Send, so a restart mid-replay never loses or repeats a payout.
 const path = require('node:path');
 const { getStore } = require('../../storage');
+const { currentGuild } = require('../guildContext');
 const { ASSETS } = require('../art');
 const { titleCase } = require('../format');
 const ledger = require('../economy/soulsLedger');
@@ -132,7 +133,7 @@ const unlockHero = (userId, name) => updateFarmUser(userId, (r) => {
   if (!(r.tokens > 0)) return { error: 'token' };
   r.tokens -= 1;
   r.heroes[name] = { earned: 0, tiers: {}, items: {} };
-  offers.get(userId)?.delete(name); // a rival waiting as that hero has nothing left to offer (only that one: the others keep their time)
+  offers.get(who(userId))?.delete(name); // a rival waiting as that hero has nothing left to offer (only that one: the others keep their time)
   return { ok: true };
 });
 
@@ -335,25 +336,26 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
 // A member can have several rivals waiting at once, one per result message (Oct 11: one offer per member meant each new rival sent the last one
 // away early); each message's buttons name their own rival. A rival already waiting, or already unlocked, never shows up again.
 const OFFER_MS = 5 * 60 * 1000;
-const offers = new Map(); // user id -> Map(rival -> ms timestamp it leaves)
-const rivalKits = new Map(); // `${user id}:${rival}` -> the kit that rival will fight with (rolled when it shows up, so View Enemy Build shows the real one)
+const who = (userId) => `${currentGuild()}:${userId}`; // offers are per server, like the rest of a member's progress
+const offers = new Map(); // server:user id -> Map(rival -> ms timestamp it leaves)
+const rivalKits = new Map(); // `${server:user id}:${rival}` -> the kit that rival will fight with (rolled when it shows up, so View Enemy Build shows the real one)
 // The member's waiting rivals (the ones whose 5 minutes ran out are dropped).
 function waiting(userId, now = Date.now()) {
-  const mine = offers.get(userId) ?? new Map();
-  for (const [rival, until] of mine) if (until <= now) { mine.delete(rival); rivalKits.delete(`${userId}:${rival}`); }
-  if (mine.size) offers.set(userId, mine); else offers.delete(userId);
+  const mine = offers.get(who(userId)) ?? new Map();
+  for (const [rival, until] of mine) if (until <= now) { mine.delete(rival); rivalKits.delete(`${who(userId)}:${rival}`); }
+  if (mine.size) offers.set(who(userId), mine); else offers.delete(who(userId));
   return mine;
 }
 function meet(userId, r, run, rng = Math.random, now = Date.now()) {
   if (!run.won || run.siege) return null;
   const mine = waiting(userId, now);
   const rival = rollRival((name) => hasHero(r, name) || mine.has(name), rng, cooldownsOn ? ENCOUNTER_CHANCE : 1);
-  if (rival) { offers.set(userId, mine.set(rival, now + OFFER_MS)); rivalKits.set(`${userId}:${rival}`, rivalKit(fightKit(r), rng, rival)); }
+  if (rival) { offers.set(who(userId), mine.set(rival, now + OFFER_MS)); rivalKits.set(`${who(userId)}:${rival}`, rivalKit(fightKit(r), rng, rival)); }
   return rival;
 }
 // Is `rival` still waiting for this member? Returns the rival, or null.
 const offerFor = (userId, rival, now = Date.now()) => (waiting(userId, now).has(rival) ? rival : null);
-const rivalKitOf = (userId, rival) => rivalKits.get(`${userId}:${rival}`) ?? null;
+const rivalKitOf = (userId, rival) => rivalKits.get(`${who(userId)}:${rival}`) ?? null;
 // The 5 minutes start again when the fight's result is shown (the offer is made at Send, before the replay). Returns the rival, or null if it is gone.
 function holdOffer(userId, rival, now = Date.now()) {
   if (!offerFor(userId, rival, now)) return null;
@@ -364,8 +366,8 @@ function holdOffer(userId, rival, now = Date.now()) {
 function walkAway(userId, rival, now = Date.now()) {
   const mine = waiting(userId, now);
   const was = mine.delete(rival) ? rival : null;
-  rivalKits.delete(`${userId}:${rival}`);
-  if (!mine.size) offers.delete(userId);
+  rivalKits.delete(`${who(userId)}:${rival}`);
+  if (!mine.size) offers.delete(who(userId));
   return was;
 }
 // Fight: the duel is played at once (like a trip) and a win unlocks the rival, at level 0 with nothing; a loss costs nothing but the Rejuvs it used (his call, Oct 10:

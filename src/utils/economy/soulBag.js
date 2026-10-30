@@ -4,6 +4,7 @@
 const path = require('node:path');
 const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags } = require('discord.js');
 const { SCALE } = require('./economy');
+const { currentGuild } = require('../guildContext');
 const { REPLY_COLOR } = require('../../config');
 const { ASSETS } = require('../art');
 const { boldSouls, soulsIcon } = require('../format');
@@ -29,13 +30,14 @@ const TOO_LATE = "Too slow, pal. That bag's gone.";
 
 // ponytail: the cooldown and the grabbed bags live in memory. A restart lets a bag drop right away and forgets which
 // bags were grabbed (a grabbed bag has no button left to press anyway). Keep them in data/ if that ever matters.
-let lastDropAt = 0;
+const lastDropAt = new Map(); // server id -> when it last dropped a bag (each server has its own cooldown)
 const grabbed = new Set(); // message ids
 
 // Does this counted message drop a bag? `s` = the XP settings. Claims the cooldown when it does.
 function shouldDrop(s, now = Date.now(), roll = Math.random()) {
-  if (now - lastDropAt < s.bagCooldownMinutes * 60 * 1000 || roll * 100 >= s.bagChance) return false;
-  lastDropAt = now;
+  const guildId = currentGuild();
+  if (now - (lastDropAt.get(guildId) ?? 0) < s.bagCooldownMinutes * 60 * 1000 || roll * 100 >= s.bagChance) return false;
+  lastDropAt.set(guildId, now);
   return true;
 }
 

@@ -1,7 +1,7 @@
 // The "Rename the role too?" buttons after /lfg-config region-rename. Rename Role opens a pop-up to type the new name; Keep Role Name closes the question.
 // Only the staff member who ran the command can answer. Region settings: utils/server/lfg.js.
 const { ActionRowBuilder, MessageFlags, ModalBuilder, PermissionFlagsBits, TextInputBuilder, TextInputStyle } = require('discord.js');
-const { OWNER_ID } = require('../config');
+const { OWNER_ID, GUILD_ID } = require('../config');
 const { replyEmbed } = require('../utils/embeds');
 const { getSettings } = require('../utils/server/lfg');
 
@@ -9,7 +9,7 @@ const BUTTON = 'lfg_role:';
 const MODAL = 'lfg_role_name:';
 
 const say = (interaction, text) => interaction.reply({ embeds: [replyEmbed(text)], flags: MessageFlags.Ephemeral });
-const canRename = (interaction) => interaction.user.id === OWNER_ID || interaction.memberPermissions?.has(PermissionFlagsBits.ManageRoles);
+const canRename = (interaction) => (interaction.user.id === OWNER_ID && interaction.guildId === GUILD_ID) || interaction.memberPermissions?.has(PermissionFlagsBits.ManageRoles);
 
 // The region's linked role, or null (unlinked, or the role is gone).
 async function regionRole(interaction, key) {
