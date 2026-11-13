@@ -730,7 +730,7 @@
    "Main": [
     {
      "Key": "BonusBulletSpeedPercent",
-     "Value": 60,
+     "Value": 45,
      "Type": "bullet_damage"
     }
    ],
@@ -869,7 +869,7 @@
    "Alt": [
     {
      "Key": "ParryCooldownReduction",
-     "Value": 1.75,
+     "Value": 1.25,
      "Type": "cooldown"
     },
     {
@@ -1733,7 +1733,7 @@
    "Alt": [
     {
      "Key": "BonusHealth",
-     "Value": 50,
+     "Value": 90,
      "Type": "health"
     }
    ]
@@ -2792,7 +2792,7 @@
     },
     {
      "Key": "HealAmpRegenPenaltyPercent",
-     "Value": -35,
+     "Value": -40,
      "Type": "damage",
      "UsageFlags": "ConditionallyApplied"
     }
@@ -2836,7 +2836,7 @@
    },
    "HealAmpReceivePenaltyPercent": {
     "Key": "HealAmpReceivePenaltyPercent",
-    "Value": -35,
+    "Value": -40,
     "Type": "damage",
     "UsageFlags": "ConditionallyApplied"
    },
@@ -3082,7 +3082,7 @@
    "Alt": [
     {
      "Key": "SlowDuration",
-     "Value": 2,
+     "Value": 2.5,
      "Type": "duration"
     },
     {
@@ -3163,7 +3163,7 @@
     },
     {
      "Key": "HealAmpReceivePenaltyPercent",
-     "Value": -35,
+     "Value": -40,
      "Type": "damage",
      "UsageFlags": "ConditionallyApplied"
     }
@@ -3219,7 +3219,7 @@
    },
    "HealAmpRegenPenaltyPercent": {
     "Key": "HealAmpRegenPenaltyPercent",
-    "Value": -35,
+    "Value": -40,
     "Type": "damage",
     "UsageFlags": "ConditionallyApplied"
    },
@@ -3397,7 +3397,7 @@
    "Main": [
     {
      "Key": "BulletLifestealPercent",
-     "Value": 13,
+     "Value": 15,
      "Type": "healing"
     }
    ],
@@ -3409,7 +3409,7 @@
     },
     {
      "Key": "BaseAttackDamagePercent",
-     "Value": 6,
+     "Value": 10,
      "Type": "bullet_damage"
     }
    ]
@@ -3701,7 +3701,7 @@
    "Main": [
     {
      "Key": "BulletResist",
-     "Value": 30,
+     "Value": 35,
      "Type": "bullet_armor_up",
      "UsageFlags": "IntrinsicallyProvidedInAbility"
     }
@@ -3709,7 +3709,7 @@
    "Alt": [
     {
      "Key": "OutOfCombatHealthRegen",
-     "Value": 3,
+     "Value": 5,
      "Type": "healing"
     }
    ]
@@ -3806,6 +3806,13 @@
      "UsageFlags": "ConditionallyApplied"
     },
     {
+     "Key": "GravityScale",
+     "Value": 20,
+     "Type": "slow",
+     "UsageFlags": "ConditionallyApplied",
+     "LocTokenOverride": "GravityScaleIncrease"
+    },
+    {
      "Key": "GroundDashReductionPercent",
      "Value": -20,
      "Type": "slow",
@@ -3860,9 +3867,7 @@
   "Tier": 2,
   "Slot": "Armor",
   "Activation": "Passive",
-  "Components": [
-   "upgrade_endurance"
-  ],
+  "Components": null,
   "TargetTypes": null,
   "ShopFilters": null,
   "IsDisabled": false,
@@ -3876,13 +3881,8 @@
    "Main": [],
    "Alt": [
     {
-     "Key": "BonusHealthRegen",
-     "Value": 3,
-     "Type": "healing"
-    },
-    {
      "Key": "OutOfCombatHealthRegen",
-     "Value": 1,
+     "Value": 2,
      "Type": "healing"
     }
    ]
@@ -3902,8 +3902,7 @@
   },
   "Upgrades": {
    "HealAmpRegenPercent": 15,
-   "HealAmpCastPercent": 15,
-   "BonusHealthRegen": 9
+   "HealAmpCastPercent": 15
   },
   "Other": {
    "AbilityUnitTargetLimit": {
@@ -3927,8 +3926,7 @@
   },
   "PropertyUpgrades": {
    "HealAmpRegenPercent": 15,
-   "HealAmpCastPercent": 15,
-   "BonusHealthRegen": 9
+   "HealAmpCastPercent": 15
   }
  },
  "upgrade_chonky": {
@@ -4060,12 +4058,12 @@
    "Main": [
     {
      "Key": "AbilityLifestealPercentHero",
-     "Value": 28,
+     "Value": 30,
      "Type": "healing"
     },
     {
      "Key": "BulletLifestealPercent",
-     "Value": 28,
+     "Value": 30,
      "Type": "healing"
     }
    ],
@@ -4883,7 +4881,7 @@
     },
     {
      "Key": "TechResist",
-     "Value": 18,
+     "Value": 15,
      "Type": "tech_armor_up",
      "UsageFlags": "ConditionallyApplied"
     }
@@ -4977,7 +4975,7 @@
    "Main": [
     {
      "Key": "BaseAttackDamagePercent",
-     "Value": 18,
+     "Value": 22,
      "Type": "bullet_damage",
      "UsageFlags": "ConditionallyApplied"
     },
@@ -5335,7 +5333,7 @@
     },
     {
      "Key": "AbilityLifestealPercentHero",
-     "Value": 13,
+     "Value": 15,
      "Type": "healing"
     },
     {
@@ -5345,7 +5343,7 @@
     },
     {
      "Key": "TechPower",
-     "Value": 6,
+     "Value": 8,
      "Type": "tech_damage"
     }
    ]
@@ -5453,6 +5451,20 @@
   "StreetBrawl": false,
   "IsImbue": false,
   "Info1": {
+   "Type": "Innate",
+   "DescKey": null,
+   "Cooldown": null,
+   "ChargeUp": null,
+   "Main": [],
+   "Alt": [
+    {
+     "Key": "BulletResist",
+     "Value": 10,
+     "Type": "bullet_armor_up"
+    }
+   ]
+  },
+  "Info2": {
    "Type": "Active",
    "DescKey": "#upgrade_return_fire_desc",
    "Cooldown": 23,
@@ -5497,11 +5509,6 @@
     "Key": "ChannelMoveSpeed",
     "Value": -1,
     "Type": "move_speed"
-   },
-   "BulletResist": {
-    "Key": "BulletResist",
-    "Value": 10,
-    "Type": "bullet_armor_up"
    }
   },
   "PropertyUpgrades": {
@@ -5731,7 +5738,7 @@
    "Main": [
     {
      "Key": "AbilityLifestealPercentHero",
-     "Value": 13,
+     "Value": 15,
      "Type": "healing"
     }
    ],
@@ -5743,7 +5750,7 @@
     },
     {
      "Key": "TechPower",
-     "Value": 6,
+     "Value": 8,
      "Type": "tech_damage"
     }
    ]
@@ -6264,7 +6271,11 @@
     },
     {
      "Key": "HealOnKill",
-     "Value": 275,
+     "Value": 170,
+     "Scale": {
+      "Value": 3,
+      "Type": "power_increase"
+     },
      "Type": "healing"
     }
    ],
@@ -6302,6 +6313,10 @@
     "Value": -35,
     "Type": "damage",
     "UsageFlags": "ConditionallyApplied"
+   },
+   "StackingPenaltyAnchorPercent": {
+    "Key": "StackingPenaltyAnchorPercent",
+    "Value": 80
    }
   },
   "PropertyUpgrades": {
@@ -6360,7 +6375,7 @@
     },
     {
      "Key": "GroundDashReductionPercent",
-     "Value": -10,
+     "Value": -12,
      "Type": "slow",
      "UsageFlags": "ConditionallyApplied"
     }
@@ -6910,7 +6925,7 @@
   "Info2": {
    "Type": "Active",
    "DescKey": "#upgrade_spirit_sap_desc",
-   "Cooldown": 18,
+   "Cooldown": 22,
    "ChargeUp": null,
    "Main": [
     {
@@ -6933,7 +6948,7 @@
    "Alt": [
     {
      "Key": "AbilityCastRange",
-     "Value": "40m",
+     "Value": "35m",
      "Type": "range"
     }
    ]
@@ -7006,7 +7021,7 @@
   "Info2": {
    "Type": "Active",
    "DescKey": "#upgrade_focus_lens_desc",
-   "Cooldown": 45,
+   "Cooldown": 40,
    "ChargeUp": null,
    "Main": [
     {
@@ -7470,7 +7485,7 @@
     },
     {
      "Key": "HealAmpReceivePenaltyPercent",
-     "Value": -50,
+     "Value": -55,
      "Type": "damage",
      "UsageFlags": "ConditionallyApplied"
     },
@@ -7540,7 +7555,7 @@
    },
    "HealAmpRegenPenaltyPercent": {
     "Key": "HealAmpRegenPenaltyPercent",
-    "Value": -50,
+    "Value": -55,
     "Type": "damage",
     "UsageFlags": "ConditionallyApplied"
    },
@@ -8259,7 +8274,7 @@
    },
    "AbilityPostCastDuration": {
     "Key": "AbilityPostCastDuration",
-    "Value": 0.5
+    "Value": 0.2
    },
    "AbilityCooldownBetweenCharge": {
     "Key": "AbilityCooldownBetweenCharge",
@@ -8308,7 +8323,7 @@
     },
     {
      "Key": "MeleeResistPercent",
-     "Value": 18
+     "Value": 22
     }
    ]
   },
@@ -8549,8 +8564,8 @@
    "ChargeUp": null,
    "Main": [
     {
-     "Key": "AmbushBonusFireRate",
-     "Value": 25,
+     "Key": "AmbushBonusWeaponDamage",
+     "Value": 50,
      "Type": "bullet_damage",
      "UsageFlags": "ConditionallyApplied"
     },
@@ -8559,12 +8574,6 @@
      "Value": 25,
      "Type": "tech_damage",
      "UsageFlags": "ConditionallyApplied"
-    },
-    {
-     "Key": "AmbushBonusMeleeDamage",
-     "Value": 25,
-     "Type": "melee_damage",
-     "UsageFlags": "ConditionallyApplied"
     }
    ],
    "Alt": [
@@ -8572,13 +8581,17 @@
      "Key": "AmbushDuration",
      "Value": 5,
      "Type": "duration"
+    },
+    {
+     "Key": "AmbushBuildUpDuration",
+     "Value": 6,
+     "Type": "duration"
     }
    ]
   },
   "Upgrades": {
    "OutOfCombatHealthRegen": 20,
-   "AmbushBonusFireRate": 35,
-   "AmbushBonusMeleeDamage": 30,
+   "AmbushBonusWeaponDamage": 35,
    "AmbushBonusTechPower": 35,
    "AbilityCooldown": -17
   },
@@ -8586,9 +8599,8 @@
    "OutOfCombatHealthRegen": 7,
    "BonusSprintSpeed": "0.5m",
    "InvisMoveSpeedMod": "3m",
-   "AmbushBonusFireRate": 35,
+   "AmbushBonusWeaponDamage": 35,
    "AmbushBonusTechPower": 35,
-   "AmbushBonusMeleeDamage": 35,
    "AmbushDuration": 3,
    "AbilityDuration": 7,
    "SpottedRadius": "-6m",
@@ -8639,8 +8651,7 @@
   },
   "PropertyUpgrades": {
    "OutOfCombatHealthRegen": 20,
-   "AmbushBonusFireRate": 35,
-   "AmbushBonusMeleeDamage": 30,
+   "AmbushBonusWeaponDamage": 35,
    "AmbushBonusTechPower": 35,
    "AbilityCooldown": -17
   }
@@ -8830,8 +8841,8 @@
      "Key": "TotalHealthRegen",
      "Value": 325,
      "Scale": {
-      "Value": 6,
-      "Type": "power_increase"
+      "Value": 1.1,
+      "Type": "spirit"
      },
      "Type": "healing"
     }
@@ -9106,7 +9117,7 @@
    "Alt": [
     {
      "Key": "AbilityLifestealPercentHeroPassive",
-     "Value": 13,
+     "Value": 15,
      "Type": "healing"
     },
     {
@@ -9121,7 +9132,7 @@
     },
     {
      "Key": "TechPower",
-     "Value": 6,
+     "Value": 8,
      "Type": "tech_damage"
     }
    ]
@@ -9134,7 +9145,7 @@
    "Main": [
     {
      "Key": "AbilityLifestealPercentHero",
-     "Value": 70,
+     "Value": 75,
      "Type": "healing",
      "UsageFlags": "ConditionallyApplied"
     },
@@ -9353,7 +9364,7 @@
   "Info2": {
    "Type": "Active",
    "DescKey": "#upgrade_divine_barrier_desc",
-   "Cooldown": 45,
+   "Cooldown": 55,
    "ChargeUp": null,
    "Main": [
     {
@@ -10807,7 +10818,7 @@
    "Alt": [
     {
      "Key": "BaseAttackDamagePercent",
-     "Value": 80,
+     "Value": 85,
      "Type": "bullet_damage"
     },
     {
@@ -10918,7 +10929,7 @@
    "Alt": [
     {
      "Key": "BulletLifestealPercent",
-     "Value": 14,
+     "Value": 15,
      "Type": "healing"
     },
     {
@@ -10928,7 +10939,7 @@
     },
     {
      "Key": "BaseAttackDamagePercent",
-     "Value": 6,
+     "Value": 10,
      "Type": "bullet_damage"
     }
    ]
@@ -10946,7 +10957,7 @@
     },
     {
      "Key": "ActiveBonusMoveSpeed",
-     "Value": "1m",
+     "Value": "1.5m",
      "Type": "move_speed",
      "UsageFlags": "ConditionallyApplied"
     },
@@ -11036,7 +11047,7 @@
    "Alt": [
     {
      "Key": "BulletLifestealPercent",
-     "Value": 13,
+     "Value": 15,
      "Type": "healing"
     },
     {
@@ -11051,7 +11062,7 @@
     },
     {
      "Key": "BaseAttackDamagePercent",
-     "Value": 6,
+     "Value": 10,
      "Type": "bullet_damage"
     }
    ]
@@ -11064,7 +11075,7 @@
    "Main": [
     {
      "Key": "ActiveBonusLifesteal",
-     "Value": 70,
+     "Value": 75,
      "Type": "healing"
     },
     {
@@ -11777,7 +11788,7 @@
  "upgrade_resonant_healing": {
   "Key": "upgrade_resonant_healing",
   "Name": "Radiant Regeneration",
-  "Description": "<span class=\"highlight\">Heal</span> and gain bonus <span class=\"highlight\">Movement Speed</span> for a short duration when you cast an ability.",
+  "Description": "While in-combat, <span class=\"highlight\">Heal</span> and gain bonus <span class=\"highlight\">Movement Speed</span> for a short duration when you cast an ability.",
   "Cost": 3200,
   "Tier": 3,
   "Slot": "Tech",
@@ -11814,7 +11825,7 @@
      "Key": "Regeneration",
      "Value": 4,
      "Scale": {
-      "Value": 0.035,
+      "Value": 0.025,
       "Type": "spirit"
      },
      "Type": "healing"
@@ -11836,9 +11847,9 @@
    "Main": [
     {
      "Key": "HealingPerCast",
-     "Value": 65,
+     "Value": 40,
      "Scale": {
-      "Value": 1.7,
+      "Value": 1.4,
       "Type": "power_increase"
      },
      "Type": "healing"
@@ -13706,6 +13717,10 @@
     {
      "Key": "Damage",
      "Value": 150,
+     "Scale": {
+      "Value": 0.35,
+      "Type": "spirit"
+     },
      "Type": "tech_damage"
     }
    ],
@@ -13780,7 +13795,7 @@
    },
    "GroundDashReductionPercent": {
     "Key": "GroundDashReductionPercent",
-    "Value": -10,
+    "Value": -12,
     "Type": "slow",
     "UsageFlags": "ConditionallyApplied"
    }
@@ -14047,7 +14062,7 @@
    "Main": [
     {
      "Key": "ProcChance",
-     "Value": 55
+     "Value": 60
     }
    ],
    "Alt": []
@@ -14305,7 +14320,7 @@
     },
     {
      "Key": "BonusHealthRegen",
-     "Value": 8,
+     "Value": 15,
      "Type": "healing"
     }
    ]
@@ -14629,9 +14644,9 @@
     },
     {
      "Key": "ProcBaseAttackDamagePercentAltFire",
-     "Value": 40,
+     "Value": 38,
      "Scale": {
-      "Value": 1.3,
+      "Value": 1.24,
       "Type": "power_increase"
      },
      "Type": "bullet_damage",
@@ -14881,7 +14896,7 @@
    "Main": [
     {
      "Key": "OutgoingDamagePenaltyPercent",
-     "Value": -15
+     "Value": -12
     }
    ],
    "Alt": [

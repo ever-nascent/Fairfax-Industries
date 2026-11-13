@@ -87,13 +87,26 @@ class DjinnsMark extends Ability {
     this.marks.set(e, { stacks: 0, next }); // the next mark still waits its turn
   }
 
+  // The ability's active (the wiki: "consume all Djinn Marks to deal their damage now", its own cooldown): used when the marks on an enemy would kill it.
+  // ponytail: his rule (Nov 2) is only "it would kill"; the estimate takes the enemy's spirit resist but no other amplification.
+  pops(e, m) {
+    return m.stacks > 0 && this.value('ProcDamageBase') * this.data.DMarkMultiplierPerStack ** (m.stacks - 1) * (1 - (e.stats.spiritResist ?? 0)) >= e.health;
+  }
+
   tick(fight) {
-    for (const [e, m] of this.marks) if (!e.alive || (m.stacks && fight.time > m.until)) this.burst(fight, e);
+    for (const [e, m] of this.marks) {
+      if (!e.alive || (m.stacks && fight.time > m.until)) this.burst(fight, e);
+      else if (fight.time >= (this.popReady ?? 0) && this.pops(e, m)) {
+        this.popReady = fight.time + this.value('AbilityCooldown');
+        this.burst(fight, e);
+      }
+    }
   }
 }
 
 // 4. Traveler: used when hurt (his call): Mirage teleports out, out of every enemy's reach and not attacking for the wait, and comes back.
-// T1: faster and a higher fire rate after. T2: a barrier after. T3: far shorter cooldown.
+// A barrier after (the Nov 2026 patch moved it from T2 to the base). T1: faster and a higher fire rate after. T2: far shorter cooldown.
+// T3: the barrier grows with spirit power (its "can't be interrupted by damage" has nothing to act on here: nothing interrupts the teleport).
 // ponytail: the barrier lasts as long as tier 1's bonuses (the wiki gives it no time).
 const HURT = 0.5;
 const BARRIER_FOR = 12;

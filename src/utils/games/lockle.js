@@ -379,7 +379,7 @@ async function renderBuild({ items, shown, guesses, answer, over, souls }) {
 function rankLabel(guild, badge) {
   const name = RANKS[Math.floor(badge / 10) - 1];
   if (!name) return null;
-  const e = guild?.emojis.cache.find((x) => x.name === `rank_${name.toLowerCase()}`);
+  const e = require('../guild').emojiNamed(guild, `rank_${name.toLowerCase()}`);
   return `${e ? `${e} ` : ''}${name} ${['I', 'II', 'III', 'IV', 'V', 'VI'][(badge % 10) - 1] ?? ''}`.trim();
 }
 

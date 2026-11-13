@@ -1,7 +1,7 @@
 // Bebop's abilities (deadlock.wiki/Bebop, checked Oct 3 2026). Numbers come from the wiki data through Ability.value(); this file is only
 // what each ability does. His calls (Oct 3): Sticky Bomb grows with any enemy it hits or kills, for the rest of the fight only; Grapple Arm's
 // tier 2 (range, which does nothing here) stuns the hooked enemy for a moment instead. "On hero hit" effects work on any enemy.
-const { Ability } = require('./../ability');
+const { Ability, anyReady } = require('./../ability');
 const { MELEE } = require('./../engine');
 const { isBoss } = require('./../items');
 
@@ -99,7 +99,7 @@ class GrappleArm extends Ability {
   }
 }
 
-// 4. Hyper Beam: after its wind-up, a long beam through every enemy: spirit damage and a slow (less to bosses, the game's "objectives"). The gun
+// 4. Hyper Beam: after its wind-up, a long beam through every enemy: spirit damage and a slow (the same to bosses: they aren't the game's "objectives" here, his call Oct 31). The gun
 // is silent while it lasts. T3: the beam heals Bebop for a share of its damage (less from NPCs than from a hero).
 class HyperBeam extends Ability {
   constructor(...args) {
@@ -107,9 +107,7 @@ class HyperBeam extends Ability {
     this.until = 0;
   }
 
-  want(fight) {
-    return fight.foes.length > 0;
-  }
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, ExplodingUppercut, StickyBomb, GrappleArm); } // combo first (his ask, Nov 6): hook, bomb and uppercut before the beam
 
   status(fight) {
     return fight && fight.time < this.until ? 'Beaming' : super.status(fight);
@@ -124,7 +122,7 @@ class HyperBeam extends Ability {
     if (fight.time > this.until + 1e-9) return;
     if (this.unit.cantAct) { this.until = 0; this.unit.busyUntil = 0; return; } // interrupted
     for (const e of fight.near(this.value('BeamLength'))) {
-      const dealt = fight.damage(this.unit, e, this.value('DPS') * dt * (isBoss(e) ? this.data.BossDamageScale : 1), 'spirit');
+      const dealt = fight.damage(this.unit, e, this.value('DPS') * dt, 'spirit');
       fight.addStatus(e, { id: 'beam_slow', duration: this.data.SlowTargetDuration, mods: { slow: this.data.SlowPercent / 100 }, debuff: true });
       fight.heal(this.unit, (dealt * this.value(e.team === 'hero' ? 'BeamLifesteal' : 'BeamLifestealNonHeroPercent')) / 100, 'lifesteal');
     }

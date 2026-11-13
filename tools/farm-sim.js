@@ -18,6 +18,7 @@
 //   check    the gate for a new hero: a typical kit of each target's own stage must win at least 35% (heroes may differ, his call Oct 2: above 75% is only noted as easy)
 // Options: --hero=Abrams (default Haze; tune and check every hero before it goes in the roster), --kits=24 --seeds=5 (kits x seeds fights per number).
 // A "kit" is what a member would have at a stage: level, ability points spent in order, items, permanent buffs, Rejuvs. The stages are in STAGES.
+try { require('node:os').setPriority(0, require('node:os').constants.priority.PRIORITY_LOW); } catch {} // idle priority (Nov 2, his ask: the sims took his whole CPU)
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-sim-'));
 const path = require('node:path');
 const ROOT = path.join(__dirname, '..', 'src', 'utils', 'farm');
@@ -341,8 +342,10 @@ function descend() {
   const ASCENSION = Math.max(0, Math.min(D.MAX_ASCENSION, Number(opt('ascension', 0)) || 0)); // --ascension=N plays every run at that level
   const { SLOTS, countItems, priceFor } = require(path.join(ROOT, 'levels'));
   const runs = arg('seeds', 20);
-  for (const k of ['health', 'dps', 'growth', 'knee', 'late']) if (opt(k)) D.TUNE[k] = Number(opt(k)); // try other numbers without editing descent.js
+  const FIRST = arg('first', 1); // --first=101: seeds from 101 on (Nov 2: to check a tuning on seeds it was not measured with)
+  for (const k of ['health', 'dps', 'growth', 'knee', 'late', 'hpLate']) if (opt(k)) D.TUNE[k] = Number(opt(k)); // try other numbers without editing descent.js
   for (const k of ['boss-health', 'boss-dps']) if (opt(k)) D.BOSS[k.slice(5)] = Number(opt(k));
+  if (opt('tuning')) for (const hero of roster()) D.TUNING[hero] = Number(opt('tuning')); // --tuning=0.2: try a Descend tuning (descent.js TUNING) on the hero(es) run
   // A build to try (his ask, Oct 29): --build=Item,Item takes those whenever offered (else the bot's own picks), --focus=<slot> puts ability points into that ability first,
   // --legendary=Name takes that legendary when offered.
   const BUILD = String(opt('build', '')).split(',').map((x) => x.trim()).filter(Boolean);
@@ -357,7 +360,7 @@ function descend() {
     apply(copy, i);
     spendAll(copy);
     const spec = D.specOf(copy);
-    if (spec.kind === 'broker') return 0; // no fight to score
+    if (D.NO_FIGHT.has(spec.kind)) return 0; // no fight to score
     let total = 0;
     for (let t = 0; t < 3; t++) { const run = D.fightRoom(copy, spec, rng); total += run.won ? 1 + run.health : 0; }
     return total;
@@ -365,7 +368,17 @@ function descend() {
   // What one item is worth to this hero (a member who knows the game): how much more damage it deals and how much longer it lasts with it alone,
   // at level 12, against weapon and spirit damage (log-scaled, so a 10% gain in either counts the same). Kept per hero.
   const values = new Map();
-  const worth = (hero, name, enhanced = false) => { // `enhanced`: the offered copy is the enhanced one (Oct 29: the good bot takes those into account)
+  // Nov 2: the measured table (tools/descend-values.js: each item in real Descend rooms) when the hero has one. The guess below scored items on a 1e6-health
+  // dummy and a 1e7-health Brute, so share-of-health items (Siphon Bullets, Toxic Bullets, Decay) came out on top for every hero.
+  let TABLE = {};
+  try { TABLE = require(path.join(__dirname, '..', 'assets', 'farm', 'descendValues.json')); } catch {}
+  const ENHANCED_WORTH = 1.25; // ponytail: an enhanced copy counted a quarter better; measure enhanced items in descend-values.js if picks hinge on it
+  const worth = (hero, name, enhanced = false) => {
+    const measured = TABLE[hero]?.[name];
+    if (measured !== undefined) return measured * (enhanced ? ENHANCED_WORTH : 1);
+    return guess(hero, name, enhanced);
+  };
+  const guess = (hero, name, enhanced = false) => { // `enhanced`: the offered copy is the enhanced one (Oct 29: the good bot takes those into account)
     const key = `${hero}|${name}${enhanced ? '|e' : ''}`;
     if (!values.has(key)) {
       const deal = (items, enh = []) => { let t = 0; for (let s = 1; s <= 2; s++) { const h = buildHero(hero, { items, boons: 12, enhanced: enh }); const f = new Fight({ heroes: [h], enemies: [enemy('Dummy', { maxHealth: 1e6, dps: 0, bulletResist: 0.15, spiritResist: 0.15, distance: 15 })], rng: seeded(s * 7919) }); f.run(30); t += f.dealt.get(h) || 0; } return t; };
@@ -391,19 +404,52 @@ function descend() {
     });
     return d.health < 0.35 && best < 0.1 ? -1 : pick;
   }
+  // An imbue item waits for its ability (descent.js setImbue; Nov 2: the bot never chose, so its imbue items did nothing and a Broker stall could hold the
+  // run forever): the ability whose next room goes best, from every one it may go on.
+  function imbue(d, rng) {
+    for (let i = 0; d.phase === 'imbue' && i < 4; i++) {
+      let best = -1;
+      let slot = 1;
+      for (let s = 1; s <= 4; s++) {
+        const copy = structuredClone(d);
+        if (!D.setImbue(copy, s).ok) continue;
+        const spec = D.specOf(copy);
+        const sc = D.NO_FIGHT.has(spec.kind) ? 0 : [0, 1].reduce((t) => { const run = D.fightRoom(copy, spec, rng); return t + (run.won ? 1 + run.health : 0); }, 0);
+        if (sc > best) { best = sc; slot = s; }
+      }
+      if (!D.setImbue(d, slot).ok) break;
+    }
+  }
   function one(hero, seed, good, ascension = ASCENSION) {
     const d = D.newRun(hero, seed, ascension);
     const rng = seeded(seed * 7919 + (good ? 1 : 0));
     for (;;) {
       const spec = D.specOf(d);
-      if (spec.kind === 'broker') { const [name] = D.corruptibles(d); if (good && name) D.corrupt(d, name); else d.room += 1; continue; } // a good bot corrupts its first tier 3-4 item, as a player would
-      if (good && spec.kind === 'rival' && [0, 1, 2].filter(() => D.fightRoom(structuredClone(d), spec, rng).won).length < 2) { D.walkAway(d); continue; } // Flee a duel it would usually lose, as a player can (from Ascension 3 it costs health)
-      const run = D.fightRoom(d, spec, rng);
-      if (!run.won) return { rooms: d.room - 1, end: spec.kind, level: d.level };
-      D.afterWin(d, run);
-      if (LEGENDARY && opt('always') && d.offer?.kind === 'legendaries' && !d.offer.choices.includes(LEGENDARY)) d.offer.choices[0] = LEGENDARY; // --always=1: the legendary is in every legendary offer
-      if (ALL_ENHANCED && d.offer?.choices && d.offer.kind !== 'buffs') d.offer.enhanced = [...d.offer.choices];
-      if (spec.final) return { rooms: D.LAST_ROOM, end: 'cleared', level: d.level };
+      if (spec.kind === 'broker') { const [name] = D.corruptibles(d); if (!(good && name && D.corrupt(d, name)?.ok)) d.room += 1; continue; } // a good bot corrupts its first tier 3-4 item, as a player would
+      if (D.EVENT_KINDS.includes(spec.kind) || spec.kind === 'visit') { // an event room or a hero room; then its pick, like a won room's (EVENT_PICK)
+        if (spec.kind === 'visit') { // a hero room (Nov 6): the bots take what needs no item (Ghouls, the Assistant, Plot Armor) and turn the rest down
+          if (!D.eventAct(d, 'accept').ok) D.eventAct(d, 'leave');
+        } else if (spec.kind === 'breather') D.breakCrates(d);
+        else if (spec.kind === 'rest') { // a good bot tinkers its dearest item while it has health to spare, else rests; a random one flips a coin
+          const can = D.tinkerables(d).sort((a, b) => itemByName(b).Cost - itemByName(a).Cost);
+          const tinker = can.length && (good ? d.health >= 0.6 : rng() < 0.5);
+          D.restStop(d, tinker ? 'tinker' : 'rest', can[0]);
+        } else { // the rest take what's offered (sell the cheapest item at the Dealer when hurt), else leave
+          const cheapest = D.dealerItems(d).sort((a, b) => itemByName(a).Cost - itemByName(b).Cost)[0];
+          const want = { urn: 'urn', wounded: 'recruit', patron: 'bless', teleporter: 'step', dealer: cheapest && d.health < 0.35 ? 'sell' : 'leave' }[spec.kind];
+          if (!D.eventAct(d, want, cheapest).ok) D.eventAct(d, 'leave');
+        }
+        if (d.phase !== 'offer') continue;
+      } else {
+        if (good && spec.kind === 'rival' && [0, 1, 2].filter(() => D.fightRoom(structuredClone(d), spec, rng).won).length < 2) { D.walkAway(d); continue; } // Flee a duel it would usually lose, as a player can (from Ascension 3 it costs health)
+        const run = D.fightRoom(d, spec, rng);
+        if (!run.won && spec.kind === 'rift') { D.fleeRift(d, run); continue; } // the Rift lost: the hero flees, the run goes on (Nov 6)
+        if (!run.won) return { rooms: d.room - 1, end: spec.kind, level: d.level };
+        D.afterWin(d, run);
+        if (LEGENDARY && opt('always') && d.offer?.kind === 'legendaries' && !d.offer.choices.includes(LEGENDARY)) d.offer.choices[0] = LEGENDARY; // --always=1: the legendary is in every legendary offer
+        if (ALL_ENHANCED && d.offer?.choices && d.offer.kind !== 'buffs') d.offer.enhanced = [...d.offer.choices];
+        if (spec.final) return { rooms: D.LAST_ROOM, end: 'cleared', level: d.level };
+      }
       spendAll(d);
       let choice = Math.floor(rng() * d.offer.choices.length);
       if (good && d.offer.kind === 'items') choice = itemPick(d);
@@ -411,6 +457,7 @@ function descend() {
       if (good && choice >= 0 && d.offer.kind === 'items' && countItems(d.items) >= D.rules(d).maxItems && !priceFor(itemByName(d.offer.choices[choice]), d.items).used.length) {
         D.takeChoice(d, choice, weakest(d)); // a full build gives up its least useful item, not its cheapest
       } else apply(d, choice);
+      imbue(d, rng);
       spendAll(d);
     }
   }
@@ -437,7 +484,7 @@ function descend() {
     return;
   }
   for (const good of opt('good-only') ? [true] : [false, true]) { // --good-only=1: just the good bot (half the time)
-    const list = Array.from({ length: runs }, (_, i) => one(HERO, i + 1, good));
+    const list = Array.from({ length: runs }, (_, i) => one(HERO, i + FIRST, good));
     const s2 = stat(list);
     const ends = {};
     for (const x of list) ends[x.end] = (ends[x.end] ?? 0) + 1;

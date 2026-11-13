@@ -19,6 +19,18 @@ function enhancedOverlay(g, x, y, w, h) {
   g.fillStyle = grad;
   g.fillRect(x, y, w, h);
 }
+const { crackOverlay } = require('./fragileGlass'); // the broken glass over a Fragile Item's picture (Descend's Broker)
+// A cracked item's picture on its own (the Broker's stall): the shop art with crackOverlay over it, as a JPEG (no see-through parts).
+async function crackedPicture(name, size = 192) {
+  const { createCanvas, loadImage } = require('@napi-rs/canvas');
+  const c = createCanvas(size, size);
+  const g = c.getContext('2d');
+  g.fillStyle = '#2a2d33';
+  g.fillRect(0, 0, size, size);
+  try { g.drawImage(await loadImage(itemFile(name)), 0, 0, size, size); } catch { /* no shop art: the cracks over a plain square */ }
+  crackOverlay(g, 0, 0, size, size, name);
+  return require('../art').jpeg(c);
+}
 const itemFile = (name) => path.join(DIR, `${slug(name)}.png`);
 const missing = () => [...ITEM_POOL, ...LEGENDARY_NAMES].filter((name) => !fs.existsSync(itemFile(name)));
 
@@ -45,4 +57,4 @@ async function fetchMissing() {
   return failed;
 }
 
-module.exports = { enhancedOverlay, CORRUPTED_FRAME, itemFile, missing, fetchMissing };
+module.exports = { enhancedOverlay, crackOverlay, crackedPicture, CORRUPTED_FRAME, itemFile, missing, fetchMissing };

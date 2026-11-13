@@ -3,7 +3,7 @@
 // has) leaves the enemies it hits WINDED seconds from attacking. Standing rules used: hero-only abilities work on any enemy; a weapon damage
 // cut takes nothing off an enemy that deals spirit damage and half off a mixed one (the Doorman's bell); an aura around him reaches the
 // enemies around the front one.
-const { Ability } = require('./../ability');
+const { Ability, anyReady } = require('./../ability');
 const { isBoss } = require('./../items');
 
 // 1. Alchemical Flask: spirit damage around the front enemy, a slow, and less weapon damage from the enemies hit for a while.
@@ -68,7 +68,7 @@ class LastStand extends Ability {
     this.next = 0;
   }
 
-  want(fight) { return fight.foes.length > 0; }
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, AlchemicalFlask, Willpower, BindingWord); } // combo first (his ask, Nov 6): the flask, the barrier and the curse go first
   status(fight) { return fight && fight.time < this.until ? 'Standing' : super.status(fight); }
 
   on(event, fight, p) {

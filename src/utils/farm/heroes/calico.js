@@ -63,7 +63,7 @@ const AWAY = 4;
 const HURT = 0.5;
 class Ava extends Ability {
   want(fight) {
-    return fight.foes.length > 0 && this.unit.health < this.unit.stats.maxHealth * HURT;
+    return fight.foes.length > 0 && this.unit.health < this.unit.stats.maxHealth * HURT && !this.unit.has('void'); // not while already away (Return to Shadows)
   }
 
   cast(fight) {
@@ -82,7 +82,7 @@ class Ava extends Ability {
 // Used when hurt. T3: heals on return and makes her other abilities ready again.
 class ReturnToShadows extends Ability {
   want(fight) {
-    return fight.foes.length > 0 && this.unit.health < this.unit.stats.maxHealth * HURT;
+    return fight.foes.length > 0 && this.unit.health < this.unit.stats.maxHealth * HURT && !this.unit.has('void'); // not while already away (Ava)
   }
 
   burst(fight) {

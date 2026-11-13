@@ -2,7 +2,7 @@
 // this file is only what each ability does. His calls (Oct 10): Threadsap's thread goes through every enemy; while Granny Long Legs is on she
 // ground-pounds whenever her heavy melee is ready; each Baba's Brew is one of the three at random. Standing rules used: enemies stand still, so
 // Feed The Birds always lands at full strength (the Infernus rule); spirit power taken from an enemy cuts its spirit damage.
-const { Ability } = require('./../ability');
+const { Ability, anyReady } = require('./../ability');
 const { DT, MELEE } = require('./../engine');
 const { isBoss } = require('./../items');
 
@@ -156,7 +156,7 @@ class FeedTheBirds extends Ability {
     this.fed = [];
   }
 
-  want(fight) { return fight.foes.length > 0; }
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, Threadsap, BabasBrew); } // combo first (his ask, Nov 6): the stolen spirit power and the brew go first
   status(fight) { return fight && fight.time < this.until ? 'Channelling' : super.status(fight); }
 
   cast(fight) {

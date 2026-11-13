@@ -10,8 +10,8 @@ const { embed, soulsFile, statsFor, heroPicture } = require('./views');
 const { fmt, titleCase } = require('../format');
 
 const COLOR = 0xc0504d;
-const EFFECT = { stunned: 'Stun', silenced: 'Silence', grappled: 'Grapple', disarmed: 'Disarm', slept: 'Sleep' };
-const EFFECT_TEXT = { disarmed: ' (no shooting)', slept: ' (no actions until hit)' };
+const EFFECT = { stunned: 'Stun', silenced: 'Silence', grappled: 'Grapple', disarmed: 'Disarm', slept: 'Sleep', cursed: 'Curse' };
+const EFFECT_TEXT = { disarmed: ' (no shooting)', slept: ' (no actions until hit)', cursed: ' (no actions)' };
 const BLAST_EFFECT = { curse: 'a curse (no actions)', stun: 'a stun', silence: 'a silence', sleep: 'a sleep' };
 const DAMAGE = { spirit: 'spirit', melee: 'melee', mixed: 'half weapon, half spirit' };
 const num = (n) => +n.toFixed(1);

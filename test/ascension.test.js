@@ -2,7 +2,7 @@
 // /descend's ascensions (descent.js ASCENSIONS, his ask Oct 26, redesigned Oct 29): 20 levels, unlocked per member, fixed for the run.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 process.env.FARM_FRAME_MS = '0';
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const D = require('../src/utils/farm/descent');
 const dviews = require('../src/utils/farm/descentViews');
@@ -39,13 +39,15 @@ test('20 levels, each with a line and no name (his call, Oct 29); ascension 0 ke
   const r0 = D.rules({ v: 2, ascension: 0 });
   assert.deepStrictEqual([r0.rest, r0.skipHeal, r0.startHealth, r0.maxItems, r0.maxRejuvs, r0.bossBuffs, r0.skipBuffs, r0.rerolls],
     [D.REST, D.SKIP_HEAL, 1, 12, 3, D.BOSS_BUFFS, D.SKIP_BUFFS, D.REROLLS_PER_FLOOR]);
-  assert.ok(!r0.slowFarm && !r0.shortStock && !r0.deniedSouls && !r0.bossRejuv && !r0.walkCost);
+  assert.ok(!r0.slowFarm && !r0.shortStock && !r0.deniedSouls && !r0.walkCost);
   const r20 = D.rules({ v: 2, ascension: 20, room: 31 });
-  assert.deepStrictEqual([r20.rest, r20.skipHeal, r20.maxItems, r20.maxRejuvs, r20.walkCost], [D.REST, 0.15, 12, 1, 0.1], 'every level stacks');
-  assert.ok(r20.slowFarm && r20.shortStock && r20.deniedSouls && r20.bossRejuv);
+  assert.deepStrictEqual([r20.rest, r20.skipHeal, r20.maxItems, r20.maxRejuvs, r20.walkCost], [D.REST, 0.2, 12, 1, 0.1], 'every level stacks');
+  assert.ok(r20.slowFarm && r20.shortStock && r20.deniedSouls);
+  assert.deepStrictEqual([9, 10, 20].map((a) => D.rules({ v: 2, ascension: a }).rerolls), [3, 3, 3].map(() => D.REROLLS_PER_FLOOR), 'every level keeps its rerolls');
+  assert.deepStrictEqual([0, 9, 10, 18].map((a) => [D.rivalHealth(a), D.allyHealth(a)]), [[0.7, 0.7], [0.7, 0.7], [0.85, 0.85], [0.85, 0.85]], 'A10: tougher heroes (Nov 6)');
   // a level only turns on its own change
   assert.ok(!D.rules({ v: 2, ascension: 4 }).slowFarm && D.rules({ v: 2, ascension: 5 }).slowFarm, 'A5');
-  assert.ok(!D.rules({ v: 2, ascension: 8, room: 31 }).deniedSouls && D.rules({ v: 2, ascension: 9 }).deniedSouls, 'A9');
+  assert.ok(!D.rules({ v: 2, ascension: 8, room: 31 }).deniedSouls && D.rules({ v: 2, ascension: 9, room: 25 }).deniedSouls && !D.rules({ v: 2, ascension: 9, room: 20 }).deniedSouls, 'A9');
 });
 
 test('ascension 0 rooms roll none of the ascension extras; old runs keep their old rooms', () => {
@@ -58,22 +60,22 @@ test('ascension 0 rooms roll none of the ascension extras; old runs keep their o
 });
 
 test('the enemies: more of them (A1), room enemies +health (A2) +damage (A6), healbane (A7), elites (A11), bosses (A12), wards (A16), faster (A17, A19), second affix (A18), the full siege (A20)', () => {
-  // A1: from floor 3 a fight room spends more threat points (one more enemy), never on floors 1-2
+  // A1: from floor 6 a fight room spends more threat points (one more enemy), never on floors 1-5 (Nov 2 reshape; it was floor 3)
   const units = (spec) => spec.groups.reduce((n, g) => n + (D.ARCHETYPES[g.type].count ?? 1), 0);
   let more = 0;
   for (let s = 1; s < 200; s++) {
-    const [a, b] = [D.roomSpec(s, 12, 'Haze', 0), D.roomSpec(s, 12, 'Haze', 1)];
+    const [a, b] = [D.roomSpec(s, 27, 'Haze', 0), D.roomSpec(s, 27, 'Haze', 1)];
     if (a.kind === 'fight' && b.kind === 'fight') more += units(b) - units(a);
-    const [c, e] = [D.roomSpec(s, 7, 'Haze', 0), D.roomSpec(s, 7, 'Haze', 1)];
-    if (c.kind === 'fight') assert.deepStrictEqual(e.groups, c.groups, 'A1 waits for floor 3');
+    const [c, e] = [D.roomSpec(s, 22, 'Haze', 0), D.roomSpec(s, 22, 'Haze', 1)];
+    if (c.kind === 'fight') assert.deepStrictEqual(e.groups, c.groups, 'A1 waits for floor 6');
   }
-  assert.ok(more > 50, 'A1: bigger rooms from floor 3');
+  assert.ok(more > 50, 'A1: bigger rooms from floor 6');
   const one = (type, affix, a) => D.unitsOf({ room: 5, floor: 1, ascension: a, groups: [{ type, affix }] })[0].stats;
   assert.ok(Math.abs(one('tank', null, 2).maxHealth / one('tank', null, 1).maxHealth - 1 - D.ASC.room) < 1e-9, 'A2: room enemies have more health');
   assert.ok(Math.abs(one('tank', null, 6).dps / one('tank', null, 5).dps - 1 - D.ASC.room) < 1e-9, 'A6: room enemies hit harder');
   assert.ok(!one('tank', null, 6).antiHeal && one('tank', null, 7).antiHeal.cut === D.ASC.healbane, 'A7: their hits cut healing');
-  assert.strictEqual(one('tank', 'Withering', 7).antiHeal.cut, 0.4, 'a stronger heal cut (Withering) stays');
-  assert.ok(Math.abs(one('tank', 'Regenerating', 11).dps / one('tank', 'Regenerating', 10).dps - 1 - D.ASC.elite) < 1e-9, 'A11: elites hit harder');
+  assert.strictEqual(one('tank', 'Blighting', 7).antiHeal.cut, 0.25, 'a stronger heal cut (Blighting) stays');
+  assert.ok(Math.abs(one('tank', 'Restorative', 11).dps / one('tank', 'Restorative', 10).dps - 1 - D.ASC.elite) < 1e-9, 'A11: elites hit harder');
   assert.strictEqual(one('tank', null, 11).dps, one('tank', null, 10).dps, 'A11: elites only');
   assert.ok(Math.abs(one('tank', null, 16).spiritResist - one('tank', null, 15).spiritResist - D.ASC.wards) < 1e-9, 'A16: enemies resist more');
   const grappler = D.unitsOf({ room: 5, floor: 1, ascension: 17, groups: [{ type: 'grappler', affix: null }] })[0];
@@ -84,50 +86,50 @@ test('the enemies: more of them (A1), room enemies +health (A2) +damage (A6), he
   assert.strictEqual(one('disruptor', null, 18).controls[0].duration, one('disruptor', null, 17).controls[0].duration + D.ASC.longer, 'A18: silences last longer');
   let seed = 1;
   let spec;
-  for (; seed < 500; seed++) { spec = D.roomSpec(seed, 12, 'Haze', 18); if (spec.kind === 'fight' && spec.groups.some((g) => g.affix)) break; }
+  for (; seed < 500; seed++) { spec = D.roomSpec(seed, 27, 'Haze', 18); if (spec.kind === 'fight' && spec.groups.some((g) => g.affix)) break; }
   for (const g of spec.groups.filter((x) => x.affix)) assert.ok(g.affix2 && g.affix2 !== g.affix, 'A18: a second, different affix');
+  for (let s2 = 1; s2 < 100; s2++) { const early = D.roomSpec(s2, 22, 'Haze', 18); if (early.kind === 'fight') assert.ok(early.groups.every((g) => !g.affix2), 'A18: the second affix waits for floor 6'); }
 
   const boss = (a, affix = null) => D.bossFor('guardian', 10, a, affix);
   assert.ok(Math.abs(boss(12).stats.dps / boss(11).stats.dps - 1.1) < 1e-9 && Math.abs(boss(12).stats.maxHealth / boss(11).stats.maxHealth - 1.1) < 1e-9, 'A12');
   assert.strictEqual(boss(19).stats.controls[0].duration, boss(18).stats.controls[0].duration + D.ASC.longer, 'A19: a boss stun lasts longer');
   for (let s = 1; s < 40; s++) {
     const b = D.roomSpec(s, 15, 'Haze', 19);
-    assert.ok(b.affix && b.affix !== 'Shielded', 'A19: a floor boss rolls an affix, never Shielded');
-    assert.ok(!D.roomSpec(s, 10, 'Haze', 19).affix, 'A19: not on floors 1-2');
+    assert.ok(!b.affix, 'A19: bosses never have an affix');
     const last = D.roomSpec(s, D.LAST_ROOM, 'Haze', 20);
     assert.deepStrictEqual(D.finalKeys(last), ['base-guardian', 'shrine', 'patron', 'weakened-patron'], 'A20: the whole siege at the bottom');
   }
 });
 
-test('bosses: an escort (A4, from floor 4) and a Rejuv of their own (A10, from floor 5); Denied Souls (A9); one Rejuv at most (A14)', () => {
+test('bosses: an escort (A4, from floor 5), never back up (A10 revive removed Nov 6); Denied Souls (A9, floors 5-7); one Rejuv at most (A14)', () => {
   const at = (room, a) => ({ ...D.newRun('Haze', 3, a), room });
   const boss = (room, a) => D.enemiesOf(at(room, a), D.specOf(at(room, a), room)).units;
-  assert.strictEqual(boss(15, 4).length, 1, 'no escort on floors 1-3');
-  assert.deepStrictEqual(boss(20, 4).slice(1).map((e) => e.name), ['Swarmling', 'Swarmling'], 'A4: 2 Swarmlings');
-  assert.strictEqual(boss(20, 3).length, 1);
-  assert.match(D.roomLine(D.specOf(at(20, 4), 20)), /and 2 Swarmlings$/);
+  assert.strictEqual(boss(20, 4).length, 1, 'no escort on floors 1-4');
+  assert.deepStrictEqual(boss(25, 4).slice(1).map((e) => e.name), ['Swarmling', 'Swarmling'], 'A4: 2 Swarmlings');
+  assert.strictEqual(boss(25, 3).length, 1);
+  assert.match(D.roomLine(D.specOf(at(25, 4), 25)), /and 2 Swarmlings$/);
   const stages = (room, a) => { const d = at(room, a); return D.fightRoom({ ...d, level: 35 }, D.specOf(d, room), seeded(2)).stageNames.length; };
   assert.strictEqual(stages(25, 9), 1);
-  assert.strictEqual(stages(20, 10), 1, 'A10 waits for floor 5');
-  assert.strictEqual(stages(25, 10), 2, 'A10: the boss gets back up');
-  // A9: no level from a boss room; A14: no Rejuv from an odd floor's boss
+  assert.strictEqual(stages(10, 20), 1, 'a boss never gets back up, even at A20');
+  // A9: no level from the bosses of floors 5-7; A14: no Rejuv from an odd floor's boss
   const win = (room, a) => { const d = { ...at(room, a), level: 4 }; D.afterWin(d, { spec: D.specOf(d, room), health: 1, rejuvsUsed: 0, kept: {} }); return d; };
-  assert.strictEqual(win(5, 8).level, 5);
-  assert.strictEqual(win(5, 9).level, 4, 'A9');
-  assert.strictEqual(win(4, 9).level, 5, 'a fight room still gives one');
+  assert.strictEqual(win(25, 8).level, 5);
+  assert.strictEqual(win(25, 9).level, 4, 'A9');
+  assert.strictEqual(win(20, 9).level, 5, 'A9 waits for floor 5');
+  assert.strictEqual(win(24, 9).level, 5, 'a fight room still gives one');
   assert.strictEqual({ ...win(5, 13) }.rejuvs, 1);
   const full = (a) => { const d = { ...at(10, a), rejuvs: 2 }; D.afterWin(d, { spec: D.specOf(d, 10), health: 1, rejuvsUsed: 0, kept: {} }); return d.rejuvs; };
   assert.deepStrictEqual([full(13), full(14)], [3, 1], 'A14: carry at most 1');
 });
 
 test('the hero: locked item slots (A8), slow farm (A5), short stock (A15), Flee costs health (A3)', () => {
-  assert.deepStrictEqual([1, 10, 11, 21, 31].map((room) => D.rules({ v: 2, ascension: 8, room }).maxItems), [9, 9, 10, 11, 12], 'A8: a slot opens after the bosses of floors 2, 4 and 6');
+  assert.deepStrictEqual([1, 20, 21, 30, 31].map((room) => D.rules({ v: 2, ascension: 8, room }).maxItems), [10, 10, 11, 11, 12], 'A8: 10 slots, one more after the bosses of floors 4 and 6');
   const d8 = D.newRun('Haze', 1, 8);
-  const names = ['Extra Health', 'Extra Regen', 'Extra Stamina', 'Healing Rite', 'Close Quarters', 'Headshot Booster', 'High-Velocity Rounds', 'Monster Rounds', 'Extra Charge'];
+  const names = ['Extra Health', 'Extra Regen', 'Extra Stamina', 'Healing Rite', 'Close Quarters', 'Headshot Booster', 'High-Velocity Rounds', 'Monster Rounds', 'Extra Charge', 'Rapid Rounds'];
   for (const n of names) assert.ok(D.addItem(d8, n).ok, n);
-  assert.deepStrictEqual(D.addItem(d8, 'Rapid Rounds'), { error: 'full' });
-  d8.room = 11;
-  assert.ok(D.addItem(d8, 'Rapid Rounds').ok, 'the 10th slot opens on floor 3');
+  assert.deepStrictEqual(D.addItem(d8, 'Extra Spirit'), { error: 'full' });
+  d8.room = 21;
+  assert.ok(D.addItem(d8, 'Extra Spirit').ok, 'the 11th slot opens on floor 5');
   // A5: tiers half a floor behind; A15: 2 items from floor 5
   const tiers = (a) => { let t = 0; for (let s = 1; s <= 60; s++) { const d = { ...D.newRun('Haze', s, a), room: 15 }; t += D.rollOffer(d, { ...D.specOf(d, 14), kind: 'fight' }).choices.reduce((n, c) => n + require('../src/utils/farm/stats').itemByName(c).Tier, 0); } return t; };
   assert.ok(tiers(5) < tiers(4), 'A5: lower tiers');
@@ -178,10 +180,11 @@ test('unlocks are per member: clearing at N unlocks N + 1 for every hero; a run 
   await updateFarmUser(id, (x) => { x.descentAscension = D.MAX_ASCENSION; });
   run = await clearAt(id, D.MAX_ASCENSION);
   assert.ok(run.won && run.complete.unlocked === undefined, 'nothing past 20');
-  assert.deepStrictEqual(run.stageNames, ['Base Guardian', 'Shrine', 'Patron', 'Weakened Patron'], 'A20: the whole siege at the bottom');
+  const patron = run.spec.patron; // the run's own Patron (Nov 4: the Archmother or the Hidden King)
+  assert.deepStrictEqual(run.stageNames, ['Base Guardian', 'Shrine', D.BOSSES[patron].name, D.BOSSES[`${patron}-weak`].name], 'A20: the whole siege at the bottom');
   for (const frame of [run.frames[0], run.frames.at(-1)]) assert.strictEqual((await dviews.fightView(run, frame)).embeds[0].toJSON().description, undefined, 'no "is fighting" line (his ask, Oct 29)');
   const done = await dviews.completeView(member(id), run);
-  assert.match(done.embeds[0].toJSON().description, /on \*\*Ascension 20\*\*/);
+  assert.match(done.embeds[0].toJSON().description, /on Ascension 20/);
   assert.strictEqual(done.embeds[0].toJSON().image.url, 'attachment://hero.jpg', 'the build is the hero card image');
   assert.ok(done.files.some((f) => f.name === 'hero.jpg'));
 });

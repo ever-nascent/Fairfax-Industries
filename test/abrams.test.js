@@ -1,7 +1,7 @@
 // Run: node --test. Abrams' Interrogation: the question data, a solo case, a duel, timeouts and the odds.
 // Throwaway data folder, never the live data/.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
 const { getUser } = require('../src/utils/economy/xp');

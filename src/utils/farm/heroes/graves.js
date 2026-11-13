@@ -5,7 +5,7 @@
 // Her summons are not units: Deadheads and Ghouls are kept on the ability that owns them and deal Graves' damage.
 const { Ability } = require('./../ability');
 const { DT } = require('./../engine');
-const { isBoss, npcShare } = require('./../items');
+const { isBoss, npcShare, summonScale } = require('./../items');
 const { HEROES } = require('./../stats');
 
 const find = (unit, Cls) => unit.abilities.find((a) => a instanceof Cls);
@@ -61,7 +61,7 @@ class JarOfDead extends Ability {
       const target = fight.foes[0];
       if (!target || fight.time + 1e-9 < h.next) continue;
       h.next = fight.time + Math.min(a, b) + Math.abs(a - b) * fight.rng();
-      fight.damage(this.unit, target, this.value('Damage'), 'spirit');
+      fight.damage(this.unit, target, this.value('Damage') * summonScale(this.unit, target), 'spirit');
       if (this.value('SlowPercent')) fight.addStatus(target, { id: 'deadhead_slow', duration: this.value('SlowDuration'), mods: { slow: this.value('SlowPercent') / 100 }, debuff: true });
       find(this.unit, EssenceTheft)?.summoned(fight, target, 'SkullBuildUp');
     }
@@ -124,7 +124,7 @@ class GraspingHands extends Ability {
     const d = this.decree;
     this.ghouls = this.ghouls.filter((g) => g !== ghoul);
     const share = d.value('CurrentHealthDamagePercentage') / 100;
-    if (share) for (const e of fight.near(d.value('ExplosionRadius'))) fight.damage(this.unit, e, e.health * share * (e.team === 'hero' ? 1 : npcShare(e)), 'spirit');
+    if (share) for (const e of fight.near(d.value('ExplosionRadius'))) fight.damage(this.unit, e, e.health * share * (e.team === 'hero' ? 1 : npcShare(e)) * summonScale(this.unit, e), 'spirit');
     const jar = find(this.unit, JarOfDead);
     jar?.collect(fight, jar.data.PickupsPerDeath);
   }
@@ -138,7 +138,7 @@ class GraspingHands extends Ability {
       if (!front || fight.time < g.arrive || fight.time + 1e-9 < g.next) continue;
       if (front.team === 'hero' || isBoss(front)) {
         for (const e of fight.near(d.value('ExplosionRadius'))) {
-          fight.damage(this.unit, e, d.value('Damage'), 'spirit');
+          fight.damage(this.unit, e, d.value('Damage') * summonScale(this.unit, e), 'spirit');
           fight.addStatus(e, { id: 'ghoul_slow', duration: d.value('SlowDuration'), mods: { slow: d.data.SlowPercent / 100 }, debuff: true });
           theft?.summoned(fight, e, 'ZombieExplosionBuildUp');
         }
@@ -147,7 +147,7 @@ class GraspingHands extends Ability {
       }
       g.next = fight.time + SWING;
       for (const e of fight.near(d.data.SummonSearchRadius)) {
-        fight.damage(this.unit, e, d.value('SummonMeleeDamage'), 'melee');
+        fight.damage(this.unit, e, d.value('SummonMeleeDamage') * summonScale(this.unit, e), 'melee');
         theft?.summoned(fight, e, 'ZombieMeleeBuildUp');
       }
     }

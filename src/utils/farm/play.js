@@ -30,7 +30,9 @@ const { progress, pointsSpent, campMultiplier, TIER_COSTS, MAX_TIER, SLOTS, MAX_
 const { itemByName, effectValue } = require('./stats');
 const { IMBUES, NO_ULT_IMBUE, keptAfter } = require('./items');
 const { abilityStacks } = require('./ability');
+const { guarded } = require('./engine');
 const { rollAnyBuff } = require('./buffs');
+const { rankOf, FIRST: REBIRTH_FIRST } = require('./rebirth');
 const { PAYOUT_SCALE } = require('./targets');
 const { rollRival, rivalKit, duel, ENCOUNTER_CHANCE } = require('./encounter');
 const { specialFor } = require('./haunts');
@@ -50,6 +52,7 @@ const heroPart = (mine = {}) => ({
   souls: mine.souls ?? 0, earned: mine.earned ?? 0, tiers: { ...mine.tiers }, items: legendaryOut(itemsOf(mine.items)), legendary: mine.legendary ?? null, legendaries: mine.legendaries ?? (mine.legendary ? [mine.legendary] : []), corrupted: mine.corrupted ?? null,
   imbues: { ...mine.imbues }, egg: mine.egg ?? 0, giftTime: mine.giftTime ?? 0, gifts: { ...mine.gifts }, kept: { ...(mine.glass ? { 'Glass Cannon': mine.glass } : {}), ...mine.kept }, // (`glass`: Glass Cannon's alone, Oct 22)
   cooldowns: { ...mine.cooldowns }, down: { ...mine.down }, clears: { ...mine.clears }, rejuvs: mine.rejuvs ?? 0, buffs: { ...mine.buffs }, bridge: [...(mine.bridge ?? [])],
+  sieged: !!mine.sieged, rebirth: mine.rebirth ?? 0, // has won a siege; the highest /descend ascension it cleared after that (Rebirth, rebirth.js)
 });
 const HERO_KEYS = Object.keys(heroPart());
 const savedPart = (r) => Object.fromEntries(HERO_KEYS.map((k) => [k, r[k]]).filter(([k, v]) => ['earned', 'tiers', 'items'].includes(k) || (v && (typeof v !== 'object' || Object.keys(v).length))));
@@ -69,6 +72,7 @@ function load(saved) {
   if (midbossKills) old.clears = { ...old.clears, 'mid-boss': midbossKills }; // the first version counted only the Mid-Boss
   const owner = record.heroes[OLD_OWNER] ? OLD_OWNER : record.hero;
   if (owner && Object.keys(old).length) record.heroes[owner] = savedPart(heroPart({ ...old, ...record.heroes[owner] }));
+  for (const [name, h] of Object.entries(record.heroes)) if (!h.sieged && (record.siegeTokens.includes(name) || h.clears?.siege > 0)) record.heroes[name] = { ...h, sieged: true }; // siege wins from before Rebirth (Oct 30)
   return { ...record, ...heroPart(record.heroes[record.hero]) };
 }
 // ... and back: the hero's part goes into `heroes[hero]`, the other heroes' progress is left as it was.
@@ -177,18 +181,23 @@ const hauntFile = (family, size) => path.join(ASSETS, 'farm', 'haunts', `${famil
 // `cleared` is how many waves were beaten and every one of them pays. Returns the run:
 //   { key, siege, hero, won, timedOut, cleared (stages beaten), stageNames, seconds, souls, rejuvsUsed, rejuvsEarned,
 //     family: { key, name, size } | null (camps), frames (snapshots to replay), log: [[seconds, text]] }
-function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, kept = {}, clears = 0, family: wanted, walkersDown: fallen = 0, stages: rooms = null, health = null, healthScale = 1, enhanced = [] } = {}) {
+const DESCEND_NPC = 0.5; // Monster Rounds' "vs. NPCs" bonuses in /descend, where every enemy is an NPC (his call Nov 2: halved; hero.js scaleNpc)
+function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, kept = {}, clears = 0, family: wanted, walkersDown: fallen = 0, stages: rooms = null, health = null, healthScale = 1, enhanced = [], fragile = [], rebirth = 0, tuning = 0, itemCd = {}, aura = 0, lesson = null, allies = [], minions = [], ffa = false, flee = 0, maxSeconds = null, echo = 0, plotArmor = false } = {}) {
   const rnd = (n) => Math.floor(rng() * n);
   const isSiege = requested === 'siege';
   const isWaves = requested === 'waves';
   const isDescend = requested === 'descend'; // a /descend room (descent.js): its own `stages`, the run's health carried in (`health`, a share of max)
   const key = requested;
   const target = isSiege || isWaves || isDescend ? null : TARGETS[key];
-  const kit = { buffs, bridge, boons, items, tiers, unlocked, corrupted, imbues, copies, kept, healthScale, enhanced };
+  const kit = { buffs, bridge, boons, items, tiers, unlocked, corrupted, imbues, copies, kept, healthScale, enhanced, fragile, rebirth, tuning, itemCd, aura, lesson, npcScale: isDescend ? DESCEND_NPC : 1 };
   const startKit = { ...kit, items: [...items], tiers: { ...tiers }, kept: { ...kept } }; // the build as the fight started (the breakdown's Your Build): kill stacks change during it
   const hero = buildHero(heroName, kit);
   hero.rejuvs = isSiege || isDescend ? rejuvs : 0; // Rejuvs are for the siege (his design) and a descent; the Mid-Boss gives them, never takes them
   if (health != null) hero.health = Math.max(1, health * hero.stats.maxHealth);
+  // /descend's hero rooms and the Rift (his asks, Nov 6): the Rift's hero flees instead of dying, Sinclair's Assistant, Paige's Plot Armor
+  if (flee) hero.fleeAt = flee;
+  if (echo) hero.echo = echo;
+  if (plotArmor) hero.plotArmor = true;
   const size = CAMP_SIZE[key];
   // a camp's family: the one its details screen showed (`wanted`), else a random one of its size
   const family = !size ? null : campFamilies(key).includes(wanted) ? wanted : pickRandom(campFamilies(key), rnd);
@@ -218,12 +227,17 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
   let lastWarp; // keep the latest dodge visible even when casts/kills fill the four-line replay
   const slept = new Set(); // enemies that were asleep at any moment since the last snapshot (a sleep is shorter than a frame)
   const stunned = new Set(); // the same for a stun (Crushing Fists' is 0.75 s)
-  const label = (fight, i) => (fight.enemies.length > 1 ? `${fight.enemies[i].name} ${i + 1}` : fight.enemies[i].name);
+  // a summoned trooper (the Patron's) carries its own number; the others are numbered among themselves, so a lone Patron stays "Patron"
+  const label = (fight, i) => fight.enemies[i].label ?? (fight.enemies[i].team === 'hero' ? fight.enemies[i].name // a rival hero is its name (the Rift's several, Nov 6)
+    : fight.enemies.filter((e) => !e.summoner).length > 1 ? `${fight.enemies[i].name} ${i + 1}` : fight.enemies[i].name);
   const snapshot = (fight, stage) => ({
     t: fight.time, stage,
     hero: { hp: hero.health, max: hero.stats.maxHealth, respawning: hero.has('rejuv') }, rejuvs: hero.rejuvs,
-    enemies: fight.enemies.map((e, i) => ({ name: label(fight, i), hp: e.health, max: e.stats.maxHealth, asleep: slept.has(i) || e.has('sleep'), stunned: stunned.has(i) || e.has('stun') })),
-    abilities: hero.abilities.filter((a) => !a.hidden).map((a) => ({ name: a.name, status: a.status(fight) })), // hidden: an ultimate Sinclair copied
+    enemies: fight.enemies.map((e, i) => ({ name: label(fight, i), ...(e.fled ? { fled: true } : {}), hp: e.health, max: e.stats.maxHealth, asleep: slept.has(i) || e.has('sleep'), stunned: stunned.has(i) || e.has('stun'), ...(guarded(e) ? { guarded: true } : {}), ...(e.summoner ? { summoned: true } : {}) }))
+      .filter((f) => !(f.summoned && f.hp <= 0)), // a fallen trooper leaves the screen (the Patron's waves would fill it)
+    ...require('./icons').loadoutOf(hero, fight), // the abilities and items, with stacks and cooldowns
+    ...(allies.length ? { allies: allies.map((a) => ({ name: a.name, hp: a.health, max: a.stats.maxHealth })) } : {}), // a recruited rival (/descend)
+    ...(minions.length ? { minions: minions.map((m) => ({ name: m.name, hp: m.health, max: m.stats.maxHealth })) } : {}), // Rift Troopers, Ghouls, a Mini Turret (/descend)
     log: lastWarp && !log.slice(-4).includes(lastWarp) ? [lastWarp, ...log.slice(-3)] : log.slice(-4),
   });
   const watch = (fight, stage, phase) => {
@@ -233,7 +247,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     }
     for (; seen < fight.log.length; seen++) {
       const l = fight.log[seen];
-      log.push([l.t, titleCase(l.warped ? `${l.who} warped away from ${l.from}'s ${l.what}` : l.reload ? `${l.who} started reloading` : l.interrupted ? `${l.who}'s ${l.what} was interrupted` : l.ccBlocked ? `${l.who}'s ${l.ccBlocked} blocked ${l.what}` : l.parry ? `${l.who} parried ${l.target}'s Heavy Melee` : l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.drop ? `${l.who} dropped a ${l.what}` : l.special ? `${l.who} used ${l.what}${l.note ? `: **${l.note}**` : ""}` : l.cc ? `${l.who} **${l.what}** ${hero.name}` : l.verb ? `${l.who} **${l.verb}** ${hero.name}` : `${l.who} **${l.what === 'stomp' ? 'stomped' : 'cursed'}** ${hero.name}`) : l.melee ? `${l.who} landed a ${l.what} on ${l.target}` : `${l.who} used ${l.what}`)]); // (a rival hero’s casts are its own)
+      log.push([l.t, titleCase(l.fled ? `${l.who} fled the fight` : l.warped ? `${l.who} warped away from ${l.from}'s ${l.what}` : l.reload ? `${l.who} started reloading` : l.interrupted ? `${l.who}'s ${l.what} was interrupted` : l.ccBlocked ? `${l.who}'s ${l.ccBlocked} blocked ${l.what}` : l.parry ? `${l.who} parried ${l.target}'s Heavy Melee` : l.what === 'Rejuvenated' ? 'The Rejuvenator has expired.' : l.summon ? `${l.who} summoned ${l.what}` : l.enemy ? (l.parried ? `${hero.name} parried ${l.who}'s ${l.what}` : l.dodged ? `${hero.name} dodged ${l.who}'s ${l.what}` : l.drop ? `${l.who} dropped a ${l.what}` : l.special ? `${l.who} used ${l.what}${l.note ? `: **${l.note}**` : ""}` : l.cc ? `${l.who} **${l.what}** ${hero.name}` : l.verb ? `${l.who} **${l.verb}** ${hero.name}` : `${l.who} **${l.what === 'stomp' ? 'stomped' : 'cursed'}** ${hero.name}`) : l.melee ? `${l.who} landed a ${l.what} on ${l.target}` : `${l.who} used ${l.what}`)]); // (a rival hero’s casts are its own)
       if (l.warped) lastWarp = log.at(-1);
     }
     fight.enemies.forEach((e, i) => { if (!e.alive && !dead.has(i)) { dead.add(i); kills[stage]++; log.push([+fight.time.toFixed(1), titleCase(`${label(fight, i)} went down`)]); } });
@@ -242,13 +256,13 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
     if (++steps % FRAME_STEPS === 0) { frames.push(snapshot(fight, stage)); slept.clear(); stunned.clear(); }
   };
 
-  const out = runStages(hero, stages, { rng, maxSecondsPerStage: isWaves ? WAVES.secondsPerWave : isSiege ? 900 : isDescend ? DESCEND_SECONDS : 600, watch });
+  const out = runStages(hero, stages, { rng, maxSecondsPerStage: isWaves ? WAVES.secondsPerWave : isSiege ? 900 : isDescend ? maxSeconds ?? DESCEND_SECONDS : 600, watch, allies, minions, ffa });
   frames.push(snapshot(out.fight, Math.min(out.stage, stages.length - 1)));
   const killed = (n) => kills.slice(0, n).reduce((s, k) => s + (k ?? 0), 0);
   const total = isWaves || isDescend ? 0 : isSiege ? SIEGE.stages.reduce((s, st) => s + st.souls, 0) : target.souls;
   if (isDescend) {
     return { key, descend: true, hero: heroName, won: out.won, timedOut: out.timedOut, cleared: out.stage, stageNames: stages.map((s) => s.name), seconds: out.time, kills: killed(out.stage),
-      rejuvsUsed: rejuvs - hero.rejuvs, health: hero.alive ? hero.health / hero.stats.maxHealth : 0, kept: keptAfter(hero), stacks: abilityStacks(hero), frames: downsample(frames, MAX_FRAMES), log, damage: out.damage, taken: out.taken, healing: out.healing, foes: out.foes, kit: startKit };
+      rejuvsUsed: rejuvs - hero.rejuvs, fragileBroke: hero.fragileBroke ?? [], heroStats: Object.fromEntries(Object.entries(hero.stats).filter(([, v]) => typeof v === 'number').map(([k, v]) => [k, +v.toFixed(3)])), health: hero.alive ? hero.health / hero.stats.maxHealth : 0, fled: !!out.fled, minionsLeft: minions.map((m) => m.alive), plotUsed: !!hero.plotUsed, kept: keptAfter(hero), stacks: abilityStacks(hero), frames: downsample(frames, MAX_FRAMES), log, damage: out.damage, taken: out.taken, healing: out.healing, foes: out.foes, kit: startKit };
   }
   if (isWaves) {
     return { key, waves: true, siege: false, hero: heroName, won: out.stage > 0, timedOut: out.timedOut, cleared: out.stage, stageNames: stages.map((s) => s.name), seconds: out.time,
@@ -282,6 +296,7 @@ const fightKit = (r) => ({
   buffs: Object.entries(r.gifts ?? {}).reduce((all, [k, n]) => ({ ...all, [k]: (all[k] ?? 0) + n }), { ...r.buffs }),
   copies: roster().filter((n) => n !== r.hero && !!r.heroes?.[n]), // Sinclair copies the ultimate of one of the member's other unlocked heroes (his call, Oct 5)
   kept: { ...r.kept }, // Glass Cannon's and Trophy Collector's kill stacks (his calls, Oct 22: kept until the hero dies)
+  rebirth: rankOf(r.rebirth),
 });
 
 async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
@@ -319,6 +334,7 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
       if (run.won && LANED.has(key)) h.down[slot] = now + cooldownSeconds(slot) * 1000;
       h.clears[key] = Math.max(0, Math.min(CLEAR_CAP, (h.clears[key] ?? 0) + (run.won ? 1 : -1)));
       h.rejuvs = Math.max(0, Math.min(MAX_REJUVS, h.rejuvs - run.rejuvsUsed + run.rejuvsEarned));
+      if (run.siege && run.won) h.sieged = true; // unlocks Rebirth for this hero
       if (run.siege && run.won && !r.siegeTokens.includes(claim.hero) && tokenUseful(r)) { r.siegeTokens.push(claim.hero); r.tokens += 1; run.token = true; } // each hero's first siege win (his call, Oct 2), while a hero is left to unlock
       run.rival = meet(userId, r, run, rng, now);
     }));
@@ -581,4 +597,17 @@ function targetEnemies(record, key, { family, now = Date.now() } = {}) {
   return { sections: [{ units }], note: fam ? 'Every Haunt rolls a trait when the fight starts (Armored, Warded, Ironclad, Brittle or none), which moves its resists.' : null };
 }
 
-module.exports = { TRAITS, tokenUseful, heroOf, offerFor, rivalKitOf, targetEnemies, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, equipLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, hasHero, unlockHero, switchHero, updateFarmUser, updateHero, OLD_OWNER, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, hauntFile, familyName, campFamilies, CAMP_SIZE, simulate, play };
+// Rebirth (rebirth.js), inside a record update: `hero` cleared /descend on `ascension`. Counts only once the hero has won a siege, from Ascension 11, and
+// only above its previous best. Returns { from, to } (ranks) when the rank rose, { locked: true } when a siege win is missing, else null.
+function noteRebirth(r, hero, ascension) {
+  if (ascension < REBIRTH_FIRST) return null;
+  const h = r.hero === hero ? r : heroPart(r.heroes[hero]);
+  if (!h.sieged) return { locked: true };
+  if (ascension <= h.rebirth) return null;
+  const from = rankOf(h.rebirth);
+  h.rebirth = ascension;
+  if (h !== r) r.heroes[hero] = savedPart(h);
+  return { from, to: rankOf(ascension) };
+}
+
+module.exports = { noteRebirth, TRAITS, tokenUseful, heroOf, offerFor, rivalKitOf, targetEnemies, holdOffer, walkAway, fightRival, OFFER_MS, cooldownsActive, corruptItem, setImbue, hatchEgg, afterFight, EGG, dropLegendary, equipLegendary, PER_LANE, slotOf, isDown, walkersDown, lockedBy, hasHero, unlockHero, switchHero, updateFarmUser, updateHero, OLD_OWNER, upgradeAbility, buyItem, sellItem, fightKit, setCooldowns, MAX_REJUVS, getFarmUser, chooseHero, cooldownSeconds, cooldownLeft, hauntFile, familyName, campFamilies, CAMP_SIZE, simulate, play };

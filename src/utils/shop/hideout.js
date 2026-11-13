@@ -89,9 +89,9 @@ async function setCategory(guild, category) {
 
 // Buys a Hideout: checks level, souls and that they don't own one, takes the souls, makes both channels and
 // pins the control panel. Returns null, or why not: 'level' | 'owned' | 'souls'.
-async function buyHideout(member) {
+async function buyHideout(member, price = HIDEOUT_PRICE, minLevel = HIDEOUT_LEVEL) {
   if (!isHomeGuild(member.guild.id)) return 'away'; // Hideouts are a Fairfax feature
-  if ((await getUser(member.id)).level < HIDEOUT_LEVEL) return 'level';
+  if ((await getUser(member.id)).level < minLevel) return 'level';
   let fresh = false;
   await hideouts().update(member.id, (current) => {
     if (current) return current;
@@ -99,7 +99,7 @@ async function buyHideout(member) {
     return { pending: true }; // holds the spot so a double click can't buy twice
   });
   if (!fresh) return 'owned';
-  if (!(await changeSouls(member.id, -HIDEOUT_PRICE, 'hideout'))) {
+  if (!(await changeSouls(member.id, -price, 'hideout'))) {
     await hideouts().delete(member.id);
     return 'souls';
   }
@@ -110,7 +110,7 @@ async function buyHideout(member) {
     return null;
   } catch (error) {
     await hideouts().delete(member.id);
-    await changeSouls(member.id, HIDEOUT_PRICE, 'hideout'); // refund
+    await changeSouls(member.id, price, 'hideout'); // refund
     throw error;
   }
 }
@@ -177,7 +177,7 @@ async function removeHideout(guild, ownerId) {
 
 async function panelMessage(guild, ownerId, hideout, now = Date.now()) {
   const voice = guild.channels.cache.get(hideout.voiceId);
-  const icon = guild.emojis.cache.find((e) => e.name === 'hideout')?.imageURL();
+  const icon = require('../guild').emojiNamed(guild, 'hideout')?.imageURL();
   const nextRename = hideout.renamedAt + RENAME_EVERY_MS;
   const members = hideout.members.length ? `${hideout.members.length}: ${hideout.members.map((id) => `<@${id}>`).join(', ')}` : 'Just you';
   const embed = new EmbedBuilder()

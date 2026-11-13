@@ -1,5 +1,5 @@
 // Run: node --test
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { Fight, enemy, HEAL_RATE, HEAL_POOL, BULLET_LIFESTEAL_VS_NPC, SPIRIT_LIFESTEAL_VS_NPC } = require('../src/utils/farm/engine');
 const { buildHero, heroNames, implemented } = require('../src/utils/farm/hero');
@@ -15,7 +15,7 @@ test('the heroes load with the wiki numbers', () => {
   assert.strictEqual(haze.maxHealth, 730);
   close(haze.bulletDamage * haze.pellets * haze.fireRate, 50.1, 0.01); // wiki DPS
   const abrams = heroStats(HEROES.Abrams);
-  close(abrams.bulletDamage * abrams.pellets * abrams.fireRate, 51.8, 0.02); // 9 pellets
+  close(abrams.bulletDamage * abrams.pellets * abrams.fireRate, 54, 0.02); // 9 pellets
 });
 
 test('boons and items change the stat sheet', () => {
@@ -157,6 +157,44 @@ test('Haze: Bullet Dance speeds the gun and never reloads', () => {
   assert.ok(haze.has('infiniteClip'));
   close(haze.mod('fireRate'), 0.25);
   close(haze.mod('evasion'), 0.3);
+  close(haze.mod('bulletDamage'), 7); // flat per bullet, not +7% (the wiki's table has no %)
+  assert.ok(haze.has('perfect'));
+});
+
+test('Haze: Bullet Dance shoots every enemy in its radius, and a Disarm does not stop it', () => {
+  const haze = buildHero('Haze');
+  haze.abilities.forEach((a) => { a.cdLeft = 1e9; });
+  haze.meleeAt = Infinity;
+  const foes = [0, 1, 2].map((i) => enemy(`Dummy ${i}`, { maxHealth: 1e6, dps: 0, distance: 10 }));
+  let s = 7;
+  const f = new Fight({ heroes: [haze], enemies: foes, rng: () => (s = (s * 16807) % 2147483647) / 2147483647 });
+  haze.abilities[3].cast(f);
+  f.addStatus(haze, { id: 'disarm', duration: 10, tags: ['disarm'], debuff: true });
+  f.run(3);
+  assert.ok(foes.every((e) => e.health < e.stats.maxHealth), 'every enemy took bullets');
+});
+
+test('Haze: Smoke Bomb holds her fire while nobody can see her; close enemies see through it; T3 dispels and gives lifesteal after', () => {
+  const far = buildHero('Haze', { tiers: { 2: 3 } });
+  far.abilities.forEach((a, i) => { if (i !== 1) a.cdLeft = 1e9; });
+  far.meleeAt = Infinity;
+  const foe = enemy('Dummy', { maxHealth: 1e6, dps: 50, distance: 20 });
+  far.health = far.stats.maxHealth * 0.4; // she casts it when hurt
+  const f = fight(far, foe);
+  f.addStatus(far, { id: 'slowed', duration: 5, mods: { slow: 0.3 }, debuff: true });
+  far.abilities[1].cast(f);
+  assert.ok(far.statuses.find((s) => s.id === 'smoke').hold, 'nobody within 18 m: she hides');
+  assert.ok(!far.has('slowed') && far.statuses.every((s) => s.id !== 'slowed' || s.until <= f.time + 1e-9), 'T3 dispelled the slow');
+  f.run(0.5);
+  assert.strictEqual(foe.health, foe.stats.maxHealth, 'no shots while hidden');
+  assert.ok(far.health >= far.stats.maxHealth * 0.4, 'and nothing hits her');
+  const near = buildHero('Haze');
+  const f2 = fight(near, enemy('Dummy', { maxHealth: 1e6, dps: 50, distance: 10 }));
+  near.abilities[1].cast(f2);
+  assert.ok(!near.statuses.find((s) => s.id === 'smoke').hold, 'a close enemy sees her: she shoots');
+  far.statuses.find((s) => s.id === 'smoke').until = 0; // run out
+  f.run(0.3);
+  assert.ok(far.statuses.some((s) => s.id === 'smoke_lifesteal'), 'T3 lifesteal starts when the invisibility ends');
 });
 
 test('Haze: Smoke Bomb hides her until she attacks, and an attacker is revealed', () => {
@@ -301,7 +339,7 @@ test('Bebop: each ability does its job', () => {
   close(2000 - line[2].health, 63 * 0.7);
   assert.ok(line[2].has('stun') && line[2].mod('bulletTaken') === 0.2 && line[0].health === 2000);
 
-  // Hyper Beam: 1 s wind-up, then 160 a second for 11 s through every enemy, half to a boss; the gun is silent meanwhile
+  // Hyper Beam: 1 s wind-up, then 160 a second for 11 s through every enemy, the same to a boss (it is no objective); the gun is silent meanwhile
   const h = buildHero('Bebop', { unlocked: 4 });
   quiet(h, 1, 2, 3);
   h.weapon.reloadLeft = 0;
@@ -313,7 +351,7 @@ test('Bebop: each ability does its job', () => {
   fh.run(5);
   assert.strictEqual(h.weapon.clip, clip, 'no shots while beaming');
   close(before[0] - small.health, 160 * 5, 0.03);
-  close(before[1] - boss.health, 80 * 5, 0.03);
+  close(before[1] - boss.health, 160 * 5, 0.03);
   fh.run(8);
   assert.ok(h.weapon.clip < clip, 'the gun is back after the beam');
 });
@@ -502,7 +540,7 @@ test('Drifter: each ability does its job', () => {
 
   // the gun: 3 pellets, one shot's damage (the wiki's 44 a second)
   const gun = heroStats(HEROES.Drifter);
-  close(gun.bulletDamage * gun.pellets * gun.fireRate, 44.2, 0.01);
+  close(gun.bulletDamage * gun.pellets * gun.fireRate, 45.58, 0.01);
 
   // Rend: 40 spirit to everyone within 16 m, and 1.2 x his light melee (51.5) to those within 8 m; tier 3 silences the close ones
   const r = quiet(buildHero('Drifter', { unlocked: 1 }));
@@ -563,7 +601,7 @@ test('shotguns: every pellet lands up close, about 70% of them from 15 m on; a h
   const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const shoot = (name, distance) => {
     const h = buildHero(name, { unlocked: 0 });
-    h.meleeAt = Infinity; h.stamina = 0; h.stats.stamina = 0;
+    h.meleeAt = Infinity; h.stamina = 0; h.stats.stamina = 0; h.stats.noHeadshot = true; // landing only, no headshot bonus
     const d = enemy('Dummy', { maxHealth: 1e6, dps: 0, distance });
     const f = new Fight({ heroes: [h], enemies: [d], rng });
     const full = f.shotDamage(h, d);
@@ -847,13 +885,13 @@ test('Holliday: each ability does its job', () => {
   fb.run(10);
   assert.strictEqual(stomped[0].health, 1940);
 
-  // Crackshot: a headshot (every bullet here) adds 55 and a 40% slow, then 10 s of cooldown against an NPC
+  // Crackshot: a headshot (every bullet here, each x1.65: engine.js HEADSHOT_BONUS) adds 55 and a 40% slow, then 10 s of cooldown against an NPC
   const c = quiet(buildHero('Holliday', { unlocked: 3 }), 1, 2);
   c.weapon.reloadLeft = 0;
   const target = dummy({ maxHealth: 1e5, distance: 10 });
   const fc = new Fight({ heroes: [c], enemies: [target], rng: () => 0.1 });
   fc.run(2);
-  close(1e5 - target.health, (10 - c.weapon.clip) * 19.7 + 55, 0.001);
+  close(1e5 - target.health, (10 - c.weapon.clip) * 19.7 * 1.65 + 55, 0.001);
   assert.strictEqual(target.mod('slow'), 0.4);
   assert.ok(c.abilities[2].cdLeft > 8 && c.abilities[2].cdLeft < 10);
   // tier 3: each headshot while it is on cooldown takes 3 s off, so every fourth bullet cracks (1st, 5th, 9th)
@@ -884,21 +922,21 @@ test('Infernus: each ability does its job', () => {
   const dummy = (o = {}) => enemy('Dummy', { maxHealth: 2000, dps: 0, distance: 10, ...o });
   const row = () => [dummy(), dummy(), dummy()]; // 4 m apart
 
-  // Napalm: 40 and a 28% slow within 20 m, and 8 s of napalm: +16% damage taken (tier 3: +33%, 33% less healing; tier 2: 15% lifesteal)
+  // Napalm: 40 and a 28% slow within 20 m, and 8 s of napalm: +16% damage taken (tier 3: +33%, 33% less healing; tier 2: 20% lifesteal)
   const n = quiet(buildHero('Infernus', { unlocked: 1, tiers: { 1: 3 } }));
   const coated = row();
   new Fight({ heroes: [n], enemies: coated, rng: () => 0.5 }).run(0.3);
   assert.ok(coated.every((e) => 2000 - e.health === 40 && e.mod('slow') === 0.28));
   close(coated[2].mod('damageTaken'), 0.33);
   close(coated[2].mod('healAmp'), -0.33);
-  close(coated[2].mod('lifestealOn'), 0.15);
+  close(coated[2].mod('lifestealOn'), 0.2);
   assert.strictEqual(n.abilities[0].maxCharges, 2);
 
-  // Flame Dash: the trail burns every enemy for its 4 s at 30 a second, half on a boss
+  // Flame Dash: the trail burns every enemy for its 4 s at 30 a second, the same on a boss (no objective)
   const d = quiet(buildHero('Infernus', { unlocked: 2 }), 1);
   const trail = [dummy(), dummy(), dummy({ maxHealth: 8000 })];
   new Fight({ heroes: [d], enemies: trail, rng: () => 0.5 }).run(6);
-  assert.deepStrictEqual(trail.map((e) => Math.round(e.stats.maxHealth - e.health)), [120, 120, 60]);
+  assert.deepStrictEqual(trail.map((e) => Math.round(e.stats.maxHealth - e.health)), [120, 120, 120]);
 
   // Afterburn: 8.1% a bullet, so the 13th sets the enemy on fire: 14 a second (tier 1: 30) for 3 s, kept going by more bullets; tier 2: -35% spirit damage
   const a = quiet(buildHero('Infernus', { unlocked: 3, tiers: { 3: 2 } }), 1, 2);
@@ -1172,17 +1210,17 @@ test('McGinnis: each ability does its job', () => {
   fg.run(1.5);
   close(g.mod('fireRate'), 1.5, 0.01);
 
-  // Mini Turret: 35 s of 24 a second on the front enemy, half to an NPC and 30% to a boss
+  // Mini Turret: 35 s of 24 a second on the front enemy, 65% to an NPC, a boss included (no objective)
   const t = quiet(buildHero('McGinnis', { unlocked: 1 }));
   t.abilities[0].spin = 0;
   const [small, big] = [dummy({ maxHealth: 1e5 }), dummy({ maxHealth: 1e5 })];
   small.stats.maxHealth = 2000;
   const ft = new Fight({ heroes: [t], enemies: [small], rng: () => 0.5 });
   ft.run(17); // one turret (the second comes at 18 s)
-  close(1e5 - small.health, 24 * 0.5 * 16.5, 0.05);
+  close(1e5 - small.health, 24 * 0.65 * 16.5, 0.05);
   const t2 = quiet(buildHero('McGinnis', { unlocked: 1 }));
   new Fight({ heroes: [t2], enemies: [big], rng: () => 0.5 }).run(17);
-  close(1e5 - big.health, 24 * 0.3 * 16.5, 0.05);
+  close(1e5 - big.health, 1e5 - small.health, 0.01); // the same share as any NPC
   assert.strictEqual(buildHero('McGinnis', { unlocked: 1, tiers: { 1: 2 } }).abilities[0].maxCharges, 3);
 
   // Medicinal Specter: below 75% health, 25 a second for 6.5 s
@@ -1261,13 +1299,13 @@ test('Mirage: each ability does its job', () => {
   fm2.run(6);
   close(1e5 - left.health, 22);
 
-  // Traveler: below half health, 2 s out of reach; tier 1: +20% fire rate after; tier 2: a 400 barrier
+  // Traveler: below half health, 3 s out of reach, a 400 barrier after; tier 1: +20% fire rate after
   const t = quiet(buildHero('Mirage', { unlocked: 4, tiers: { 4: 2 } }), 1, 2, 3);
   t.health = 300;
   const ft2 = new Fight({ heroes: [t], enemies: [dummy({ dps: 50 })], rng: () => 0.5 });
   ft2.run(1);
   assert.ok(!t.targetable && t.cantAct);
-  ft2.run(1.5);
+  ft2.run(2.5);
   assert.ok(t.targetable && t.mod('fireRate') === 0.2 && t.statuses.some((x) => x.barrier > 0));
 });
 
@@ -1277,19 +1315,19 @@ test('Mo & Krill: each ability does its job', () => {
   const row = () => [dummy(), dummy(), dummy(), dummy()]; // 4 m apart
   const MK = 'Mo & Krill';
 
-  // Scorn: 50 within 9 m and a heal of 35% of it; tier 3: each cast leaves +15% damage taken for 16 s, stacking
+  // Scorn: 45 within 9 m and a heal of 35% of it; tier 3: each cast leaves +15% damage taken for 16 s, stacking
   const s = quiet(buildHero(MK, { unlocked: 1 }));
   s.health = 300;
   const scorned = row();
   new Fight({ heroes: [s], enemies: scorned, rng: () => 0.5 }).run(0.4);
-  assert.deepStrictEqual(scorned.map((e) => 2000 - e.health), [50, 50, 50, 0]);
-  close(s.health, 300 + 150 * 0.35);
+  assert.deepStrictEqual(scorned.map((e) => 2000 - e.health), [45, 45, 45, 0]);
+  close(s.health, 300 + 135 * 0.35);
   const s3 = quiet(buildHero(MK, { unlocked: 1, tiers: { 1: 3 } }));
   const stacked = [dummy({ maxHealth: 1e5 })];
   const fs9 = new Fight({ heroes: [s3], enemies: stacked, rng: () => 0.5 });
   fs9.run(9);
   close(stacked[0].mod('damageTaken'), 0.3); // two casts 8 s apart
-  close(1e5 - stacked[0].health, 85 + 85 * 1.15, 0.001);
+  close(1e5 - stacked[0].health, 75 + 75 * 1.15, 0.001); // 45 + tier 1's 30 a cast
 
   // Burrow: 1 s under (60% bullet resist, no shooting), then a 1 s knock-up and 1.5 s of 75 a second within 5 m
   const b = quiet(buildHero(MK, { unlocked: 2 }), 1);
@@ -1311,13 +1349,13 @@ test('Mo & Krill: each ability does its job', () => {
   const sanded = [dummy({ dps: 50 }), dummy({ dps: 50 }), dummy({ dps: 50 })];
   const fd = new Fight({ heroes: [d], enemies: sanded, rng: () => 0.5 });
   fd.run(0.4);
-  assert.deepStrictEqual(sanded.map((e) => 2000 - e.health), [40, 40, 0]);
+  assert.deepStrictEqual(sanded.map((e) => 2000 - e.health), [35, 35, 0]);
   assert.ok(sanded[0].has('disarm') && !sanded[2].has('disarm'));
   const hp = d.health;
   fd.run(2);
   assert.strictEqual(hp - d.health, 100, 'only the third one attacks');
 
-  // Combo: 2.4 s holding the front enemy: stunned, 40 a second; a kill adds 40 max health for the fight
+  // Combo: 2.4 s holding the front enemy: stunned, 40 a second; a kill adds 50 max health for the fight
   const c = quiet(buildHero(MK, { unlocked: 4, tiers: { 4: 1 } }), 1, 2, 3);
   c.health = 500;
   const [victim, other] = [dummy({ maxHealth: 60 }), dummy()];
@@ -1325,8 +1363,8 @@ test('Mo & Krill: each ability does its job', () => {
   fc.run(1);
   assert.ok(victim.has('stun') && victim.health < 60);
   fc.run(1.5);
-  assert.ok(!victim.alive && c.stats.maxHealth === 930 + 40);
-  close(c.health, 500 + 60 * 0.5 + 40, 0.01); // tier 1: half the damage back (an NPC), and the health that comes with the max health
+  assert.ok(!victim.alive && c.stats.maxHealth === 930 + 50);
+  close(c.health, 500 + 60 * 0.5 + 50, 0.01); // tier 1: half the damage back (an NPC), and the health that comes with the max health
 });
 
 test('Paradox: each ability does its job', () => {
@@ -1739,16 +1777,28 @@ test('Venator: each ability does its job', () => {
   assert.deepStrictEqual(trapped.map((e) => 2000 - e.health), [80, 0, 0]);
   assert.ok(trapped[0].has('immobilize'));
 
-  // Ira Domini: three stakes of 120 through every enemy; the last is blessed: +115 pure, and under 8% health (halved for an NPC) more on top
+  // Ira Domini: three stakes of 120 through every enemy; the last is blessed: +95 pure, and under 8% health (halved for an NPC) more on top
   const i = quiet(buildHero('Venator', { unlocked: 4 }), 1, 2, 3);
-  const staked = [dummy(), dummy({ maxHealth: 490 })];
+  const staked = [dummy(), dummy({ maxHealth: 470 })];
   const fi = new Fight({ heroes: [i], enemies: staked, rng: () => 0.5 });
   fi.run(1.9);
   assert.deepStrictEqual(staked.map((e) => e.stats.maxHealth - e.health), [120, 120]);
   fi.run(2);
-  assert.strictEqual(2000 - staked[0].health, 360 + 115);
-  assert.ok(!staked[1].alive, 'left with 15 of 490, under 4%: 4% of its max health more finishes it');
+  assert.strictEqual(2000 - staked[0].health, 360 + 95);
+  assert.ok(!staked[1].alive, 'left with 15 of 470, under 4%: 4% of its max health more finishes it');
   assert.strictEqual(i.abilities[3].status(fi), 'Crossbow');
+
+  // With Ricochet (the wiki): a stake bounces off the first enemy it hits only, not off every one it pierces, and a bounce of the blessed
+  // stake is blessed too
+  const r = quiet(buildHero('Venator', { unlocked: 4, items: ['Ricochet'] }), 1, 2, 3);
+  const bounced = row();
+  const fr = new Fight({ heroes: [r], enemies: bounced, rng: () => 0.5 });
+  fr.run(1.9);
+  const [a, b, c] = bounced.map((e) => 2000 - e.health);
+  close(b - a, a * 0.65);
+  assert.strictEqual(b, c, 'the two behind took one bounce each, none came back from them');
+  fr.run(2);
+  assert.ok(bounced[0].health - bounced[1].health > 3 * a * 0.65 + 1, 'the bounce of the last stake was blessed: more than the three bounces alone');
 });
 
 test('Victor: each ability does its job', () => {
@@ -1962,20 +2012,20 @@ test('Warden: each ability does its job', () => {
   // his gun fires 0.21% faster per spirit power (the wiki's scaling)
   close(heroStats(HEROES.Warden, { boons: 10 }).fireRate, 3.8095 * (1 + 0.0021 * 11), 0.001);
 
-  // Alchemical Flask: 60 and a 16% slow within 5.5 m, and 25% less weapon damage for 7 s; tier 1: they can't attack for 1 s
+  // Alchemical Flask: 60 and a 16% slow within 5.5 m, and 30% less weapon damage for 7 s; tier 1: they can't attack for 1 s
   const f = quiet(buildHero('Warden', { unlocked: 1, tiers: { 1: 1 } }));
   const soaked = [dummy({ dps: 100 }), dummy({ dps: 100, damageType: 'spirit' }), dummy()];
   const ff = new Fight({ heroes: [f], enemies: soaked, rng: () => 0.5 });
   ff.run(0.3);
   assert.deepStrictEqual(soaked.map((e) => 2000 - e.health), [60, 60, 0]);
-  assert.ok(soaked[0].mod('damageDealt') === -0.25 && soaked[1].mod('damageDealt') === 0 && soaked[0].has('disarm') && soaked[0].mod('slow') === 0.16);
+  assert.ok(Math.abs(soaked[0].mod('damageDealt') + 0.3) < 1e-9 && soaked[1].mod('damageDealt') === 0 && soaked[0].has('disarm') && soaked[0].mod('slow') === 0.16);
 
   // Willpower: a 125 barrier and 15% move speed for 5 s
   const w = quiet(buildHero('Warden', { unlocked: 2 }), 1);
   const fw = new Fight({ heroes: [w], enemies: [dummy({ dps: 50 })], rng: () => 0.5 });
   fw.run(2.05);
   assert.ok(w.health === 805 && w.statuses.find((x) => x.barrier > 0).barrier === 25);
-  close(w.mod('moveSpeed'), 6.3 * 0.15);
+  close(w.mod('moveSpeed'), 6.3 * 0.2);
 
   // Binding Word: 2.8 s later 110 and a 1.75 s immobilize on the front enemy; tier 1: it takes 20% more bullet damage for 5 s
   const b = quiet(buildHero('Warden', { unlocked: 3, tiers: { 3: 1 } }), 1, 2);
@@ -2033,7 +2083,7 @@ test('Wraith: each ability does its job', () => {
   const fp = new Fight({ heroes: [p], enemies: [dummy({ dps: 50 })], rng: () => 0.5 });
   fp.run(1.5);
   assert.ok(!p.targetable && p.cantAct);
-  fp.run(1.6); // 0.75 s to cast, 2 s away
+  fp.run(1.9); // 1 s to cast, 2 s away
   assert.ok(!p.cantAct && !p.targetable && p.statuses.some((x) => x.barrier > 0), 'back, and they still cannot find her');
   fp.run(1);
   assert.ok(p.targetable);
@@ -2192,7 +2242,7 @@ test('Celeste: each ability does its job', () => {
   assert.ok(brute.has('silence') && !t.statuses.some((s) => s.id === 'prism'));
   close(1e5 - brute.health, 50);
 
-  // Radiant Daggers: explodes after 1.4 s for 55 on every enemy around; each one hit is a stack of +7% spirit damage
+  // Radiant Daggers: explodes after 1.4 s for 55 on every enemy around; each one hit is a stack of +6% spirit damage
   const r = quiet(buildHero('Celeste', { unlocked: 3 }), 1, 2);
   const pack = [dummy(), dummy(), dummy()];
   const fr = new Fight({ heroes: [r], enemies: pack, rng: () => 0.5 });
@@ -2200,24 +2250,24 @@ test('Celeste: each ability does its job', () => {
   assert.ok(pack.every((e) => e.health === 1e5), 'still forming');
   fr.run(0.5);
   pack.forEach((e) => close(1e5 - e.health, 55));
-  close(r.mod('spiritDealt'), 0.21);
-  close(fr.damage(r, pack[0], 100, 'spirit'), 121);
+  close(r.mod('spiritDealt'), 0.18);
+  close(fr.damage(r, pack[0], 100, 'spirit'), 118);
   assert.strictEqual(fr.damage(r, pack[0], 100, 'bullet'), 100);
   assert.strictEqual(buildHero('Celeste', { unlocked: 3, tiers: { 3: 1 } }).abilities[2].maxCharges, 3);
 
-  // Shining Wonder: 140 and a slow, bouncing 8 times round a group; one hit on a lone enemy
+  // Shining Wonder: 125 and a slow, bouncing 8 times round a group; one hit on a lone enemy
   const w = quiet(buildHero('Celeste', { unlocked: 4 }), 1, 2, 3);
   const trio = [dummy(), dummy(), dummy()];
   const fw = new Fight({ heroes: [w], enemies: trio, rng: () => 0.5 });
   fw.run(5);
-  trio.forEach((e) => close(1e5 - e.health, 140 * 3));
+  trio.forEach((e) => close(1e5 - e.health, 125 * 3));
   const lone = dummy();
   const w1 = quiet(buildHero('Celeste', { unlocked: 4 }), 1, 2, 3);
   const f1 = new Fight({ heroes: [w1], enemies: [lone], rng: () => 0.5 });
   f1.run(1);
-  assert.ok(lone.mod('slow') === 0.32);
+  assert.ok(lone.mod('slow') === 0.28);
   f1.run(5);
-  close(1e5 - lone.health, 140);
+  close(1e5 - lone.health, 125);
   // with the tier 3 prism she keeps the orb for it, and it bounces back onto the lone enemy while the prism stands
   const w3 = quiet(buildHero('Celeste', { unlocked: 4, tiers: { 2: 3 } }), 1, 3);
   w3.abilities[1].cdLeft = 1e9;
@@ -2227,7 +2277,7 @@ test('Celeste: each ability does its job', () => {
   assert.strictEqual(boss.health, 1e5, 'waiting for the prism');
   w3.abilities[1].cdLeft = 0;
   f3.run(6);
-  close(1e5 - boss.health, 140 * 9); // nothing broke the prism: 0.75 s to launch, 8 bounces 0.3 s apart, inside its 4 s
+  close(1e5 - boss.health, 125 * 9); // nothing broke the prism: 0.75 s to launch, 8 bounces 0.3 s apart, inside its 4 s
 });
 
 test('Mina: each ability does its job', () => {
@@ -2276,7 +2326,7 @@ test('Mina: each ability does its job', () => {
   assert.strictEqual(b.abilities[3].bonus, 2);
   assert.strictEqual(b.abilities[2].status(fb), '0% Built Up');
 
-  // Nox Nostra: 75 bats in 2.5 s at 4.6 each, shared by the enemies, silencing them; half damage to a boss
+  // Nox Nostra: 75 bats in 2.5 s at 4.6 each, shared by the enemies, silencing them; full damage to a boss (no objective)
   const n = quiet(buildHero('Mina', { unlocked: 4 }), 1, 2);
   n.abilities[2].build = () => {}; // the bats alone
   const pack = [enemy('A', { maxHealth: 2000, dps: 0 }), enemy('B', { maxHealth: 2000, dps: 0 })];
@@ -2289,7 +2339,7 @@ test('Mina: each ability does its job', () => {
   nb.abilities[2].build = () => {};
   const big = enemy('Boss', { maxHealth: 20000, dps: 0 });
   new Fight({ heroes: [nb], enemies: [big], rng: () => 0.5 }).run(5);
-  close(20000 - big.health, 75 * 4.6 * 0.5, 0.02);
+  close(20000 - big.health, 75 * 4.6, 0.02);
 });
 
 test('Abrams: the shotgun reloads shell by shell and matches the wiki, and each ability does its job', () => {
@@ -2323,7 +2373,7 @@ test('Abrams: the shotgun reloads shell by shell and matches the wiki, and each 
   fc.step();
   fc.step();
   assert.ok(brute.has('stun') && c.mod('bulletDamage') === 1.5);
-  close(fc.shotDamage(c, brute), (3.6 + 1.5) * 9 * (1 - 0.9 * (15 - 17 > 0 ? 1 : 0)));
+  close(fc.shotDamage(c, brute), (3.78 + 1.5) * 9 * (1 - 0.9 * (15 - 17 > 0 ? 1 : 0)));
 
   // Infernal Resilience: +1 regen, tier 1 +200 health, and 13% of the health lost comes back over 20 s
   const plain = buildHero('Abrams', { unlocked: 2 });
@@ -2363,18 +2413,18 @@ test('farm targets: the wiki numbers and his cooldowns', () => {
   assert.strictEqual(ROAM_COOLDOWN / 60, 30);
   const big = TARGETS['large-camp'].enemies();
   assert.strictEqual(big.length, 3);
-  assert.strictEqual(big[0].stats.maxHealth, 1133);
+  assert.strictEqual(big[0].stats.maxHealth, 1246);
   close(big[0].stats.bulletResist, 0.6);
-  assert.strictEqual(TARGETS['small-camp'].souls, 3 * 41);
+  assert.strictEqual(TARGETS['small-camp'].souls, 3 * 45);
   assert.strictEqual(TARGETS.guardian.souls, 1375);
   assert.strictEqual(TARGETS.walker.souls, 3675);
-  assert.strictEqual(TARGETS['mid-boss'].enemies()[0].stats.maxHealth, 13000);
+  assert.strictEqual(TARGETS['mid-boss'].enemies()[0].stats.maxHealth, 15600);
   close(TARGETS.walker.enemies()[0].stats.bulletResist, 0.35);
 });
 
 test('farm economy: payouts are a share of the wiki souls and there is no daily cap', () => {
   assert.ok(PAYOUT_SCALE > 0 && PAYOUT_SCALE <= 1, 'a share of the wiki souls'); // 5% x the souls scale
-  assert.strictEqual(payout(TARGETS['small-camp'].souls), Math.round(123 * PAYOUT_SCALE));
+  assert.strictEqual(payout(TARGETS['small-camp'].souls), Math.round(135 * PAYOUT_SCALE));
   assert.ok(!('DAILY_CAP' in require('../src/utils/farm/targets')));
 });
 
@@ -2423,7 +2473,9 @@ test('Precision and Headshot Precision: 25 flat points each to start, a permanen
   const headshot = stats(HEROES.Haze, { items: ['Headshot Booster', 'Headhunter'] });
   assert.deepStrictEqual([headshot.headshot, headshot.precision], [25 + 5 + 5, 25]);
   const speed = stats(HEROES.Haze, { items: ['High-Velocity Rounds'] });
-  assert.deepStrictEqual([speed.precision, speed.headshot], [35, 28], '+60% velocity: +10 and +3');
+  assert.deepStrictEqual([speed.precision, speed.headshot], [33, 27], '+45% velocity: +8 and +2');
+  const enhancedSpeed = stats(HEROES.Haze, { items: ['High-Velocity Rounds'], enhanced: ['High-Velocity Rounds'] });
+  assert.deepStrictEqual([enhancedSpeed.precision, enhancedSpeed.headshot], [40, 29], 'enhanced: +90% velocity, +15 and +4');
   const sharp = stats(HEROES.Haze, { items: ['Sharpshooter'] });
   assert.deepStrictEqual([sharp.precision, sharp.headshot], [35, 28], 'Sharpshooter from its velocity only');
   assert.deepStrictEqual([stats(HEROES.Haze, { items: ['Extra Health'] }).precision, stats(HEROES.Haze, { items: ['Extra Health'] }).headshot], [25, 25]);
@@ -2438,6 +2490,19 @@ test('Precision and Headshot Precision: 25 flat points each to start, a permanen
   const near = foe('Near', { distance: 10 });
   assert.strictEqual(fo.shotDamage(sharpEye, near), fo.shotDamage(base, near), 'nothing changes inside the falloff range');
   assert.deepStrictEqual([stats(HEROES.Haze, { items: ['Infinite Rounds'] }).headshot, stats(HEROES.Haze, { items: ['Crippling Headshot'] }).headshot], [25 + 25, 25 + 15], 'Infinite Rounds beats every headshot item (his call)');
+});
+
+test('Headshot Booster: 45 bonus damage (100 enhanced) that follows falloff; Graves cannot headshot', () => {
+  const { Fight, enemy: foe, headshotChance } = require('../src/utils/farm/engine');
+  const { itemByName, enhancedCard } = require('../src/utils/farm/stats');
+  assert.deepStrictEqual([itemByName('Headshot Booster').Info2.Main[0].Value, enhancedCard(itemByName('Headshot Booster')).Info2.Main[0].Value], [45, 100]);
+  assert.strictEqual(headshotChance(buildHero('Graves')), 0);
+  const haze = buildHero('Haze', { items: ['Headshot Booster'] });
+  const near = foe('Near', { distance: 1 });
+  const far = foe('Far', { distance: 60 });
+  const f = new Fight({ heroes: [haze], enemies: [near, far], rng: () => 0.5 });
+  assert.strictEqual(f.falloffScale(haze, near), haze.stats.falloff.startScale);
+  assert.strictEqual(f.falloffScale(haze, far), haze.stats.falloff.endScale);
 });
 
 test("buffs rotate daily: the same day gives the same buffs, other days differ, and drops come from today's buffs", () => {
@@ -2660,7 +2725,7 @@ test('Baba: each ability does its job', () => {
   ft.damage(t, sapped[0], 10, 'bullet');
   close(1950 - sapped[0].health, 10 + 8 + 0.26 * 52.5, 0.001);
 
-  // Granny Long Legs: +5 m/s and 30% debuff resist, and her heavy melee (116) pounds every enemy within 8 m: +75 spirit damage, a knock-up, a 50% slow
+  // Granny Long Legs: +5 m/s and 25% debuff resist, and her heavy melee (116) pounds every enemy within 8 m: +75 spirit damage, a knock-up, a 50% slow
   const g = quiet(buildHero('Baba', { unlocked: 2 }), 1);
   g.meleeAt = 0.15; // the legs are out from the second step
   const pounded = row();
@@ -2668,7 +2733,7 @@ test('Baba: each ability does its job', () => {
   fg.run(0.3);
   assert.deepStrictEqual(pounded.map((e) => 2000 - e.health), [191, 191, 191]);
   assert.ok(pounded.every((e) => e.has('stun') && e.mod('slow') === 0.5) && g.mod('moveSpeed') === 5);
-  close(g.mod('statusResist'), 0.3);
+  close(g.mod('statusResist'), 0.25);
   close(g.meleeAt, 0.2 + 4.5, 0.001); // about three times as long between pounds
   fg.run(10);
   assert.ok(g.mod('moveSpeed') === 0, 'the legs fold after 10 s');
@@ -2716,26 +2781,26 @@ test('Rat King: each ability does its job', () => {
   const shooter = buildHero('Rat King', { unlocked: 0 });
   shooter.stamina = 0; shooter.nextDash = Infinity; shooter.meleeAt = Infinity;
   const far = dummy({ maxHealth: 1e6, distance: 15 });
-  new Fight({ heroes: [shooter], enemies: [far], rng: () => 0 }).run(1); // every roll a miss: half of 5 shots of 12 still lands
-  close(1e6 - far.health, 30, 0.001);
+  new Fight({ heroes: [shooter], enemies: [far], rng: () => 0 }).run(1); // every roll 0: the second pellet misses, the sure one lands as a headshot (5 shots of 5.8 x 1.65)
+  close(1e6 - far.health, 47.85, 0.001);
 
-  // Scrap Grenade: 70 bullet damage and a 20% slow within 8 m, three times: 0.8 s, 1.5 s and 3 s after the cast
+  // Scrap Grenade: 60 bullet damage and a 20% slow within 8 m, three times: 0.8 s, 1.5 s and 3 s after the cast
   const s = quiet(buildHero('Rat King', { unlocked: 1 }));
   const scrapped = row();
   const fs1 = new Fight({ heroes: [s], enemies: scrapped, rng: () => 0.5 });
   fs1.run(1);
-  assert.deepStrictEqual(lost(scrapped), [70, 70, 70]);
+  assert.deepStrictEqual(lost(scrapped), [60, 60, 60]);
   close(scrapped[0].mod('slow'), 0.2);
   fs1.run(0.8);
-  assert.deepStrictEqual(lost(scrapped), [140, 140, 140]);
+  assert.deepStrictEqual(lost(scrapped), [120, 120, 120]);
   fs1.run(1);
-  assert.deepStrictEqual(lost(scrapped), [140, 140, 140]);
+  assert.deepStrictEqual(lost(scrapped), [120, 120, 120]);
   fs1.run(0.5);
-  assert.deepStrictEqual(lost(scrapped), [210, 210, 210]);
-  const big = quiet(buildHero('Rat King', { unlocked: 1, tiers: { 1: 3 } })); // tier 3: a fourth, bigger one (300)
+  assert.deepStrictEqual(lost(scrapped), [180, 180, 180]);
+  const big = quiet(buildHero('Rat King', { unlocked: 1, tiers: { 1: 3 } })); // tier 3: a fourth, bigger one (275)
   const flattened = row();
   new Fight({ heroes: [big], enemies: flattened, rng: () => 0.5 }).run(4);
-  assert.deepStrictEqual(lost(flattened), [140 * 3 + 300, 140 * 3 + 300, 140 * 3 + 300]);
+  assert.deepStrictEqual(lost(flattened), [120 * 3 + 275, 120 * 3 + 275, 120 * 3 + 275]);
 
   // Rat Swarm: 9 rats dealt round the enemies within 10 m, each biting once a second for 6 s: 8 spirit damage and -1% bullet resist a bite
   const r = quiet(buildHero('Rat King', { unlocked: 2 }), 1);
@@ -2774,7 +2839,7 @@ test('Rat King: each ability does its job', () => {
   assert.deepStrictEqual(lost(ruled), [0, 0, 0]);
   fk.run(0.3);
   assert.deepStrictEqual(lost(ruled), [200, 200, 200]);
-  assert.ok(ruled.every((e) => e.has('stun') && e.mod('slow') === 0.4) && k.mod('moveSpeed') === 3);
+  assert.ok(ruled.every((e) => e.has('stun') && e.mod('slow') === 0.4) && k.mod('moveSpeed') === 4);
   close(k.mod('damageTaken'), -0.15);
   fk.run(1.6);
   assert.strictEqual(k.abilities[1].rats.length, 3);
@@ -2859,22 +2924,22 @@ test('Nurse Harrow: each ability does its job', () => {
   fw.run(0.2);
   assert.strictEqual(w.health, 730 - 4 * 100 * 1.3);
 
-  // Healing Needles: below 60% she swaps (1.3 s) and shoots herself with a clip of 11 syringes, 25 each; the charge is spent
+  // Healing Needles: below 60% she swaps (1.3 s) and shoots herself with a clip of 11 syringes, 22 each; the charge is spent
   const n = quiet(buildHero('Nurse Harrow', { unlocked: 3 }), 1, 2);
   n.health = 300;
   new Fight({ heroes: [n], enemies: [dummy({ maxHealth: 1e6 })], rng: () => 0.5 }).run(6);
-  close(n.health, 300 + 11 * 25);
+  close(n.health, 300 + 11 * 22);
   assert.ok(n.abilities[2].stock === 0 && n.abilities[2].loaded === 0);
 
-  // Lurking Terrors: 1.3 s to open, then 7 s of 60 a second within 35 m, a 30% slow and 30% slower attacks; after 1.3 s of looking, fear
+  // Lurking Terrors: 1.3 s to open, then 7 s of 60 a second within 35 m, a 30% slow and 30% slower attacks; after 2 s of looking, fear
   const t = quiet(buildHero('Nurse Harrow', { unlocked: 4 }), 1, 2, 3);
   const scared = row();
   const ft = new Fight({ heroes: [t], enemies: scared, rng: () => 0.5 });
   ft.run(2);
   assert.ok(scared.every((e) => e.mod('slow') === 0.3 && e.mod('damageDealt') === -0.3 && !e.has('disarm')));
-  ft.run(1);
+  ft.run(1.5);
   assert.ok(scared.every((e) => e.has('disarm') && e.has('silence')));
-  ft.run(6);
+  ft.run(5.5);
   for (const x of lost(scared)) close(x, 60 * 7, 0.02);
   ft.run(1);
   assert.ok(scared.every((e) => e.mod('slow') === 0));
@@ -2953,9 +3018,9 @@ test('Solomon: each ability does its job', () => {
   assert.deepStrictEqual(lost(mated), [480, 240, 240]);
   fq.run(5);
   assert.deepStrictEqual(lost(mated), [720, 360, 360]);
-  assert.ok(q.abilities[3].out && q.abilities[3].cdLeft === 210);
+  assert.ok(q.abilities[3].out && q.abilities[3].cdLeft === 240);
   fq.run(5);
-  assert.ok(!q.abilities[3].out && q.abilities[3].cdLeft < 210);
+  assert.ok(!q.abilities[3].out && q.abilities[3].cdLeft < 240);
   assert.deepStrictEqual(lost(mated), [720, 360, 360]);
   const mate = quiet(buildHero('Solomon', { unlocked: 4, tiers: { 4: 2 } }), 1, 2, 3); // tier 2: Checkmate below 200 health
   const low = dummy();
@@ -3038,4 +3103,60 @@ test("Deadman Danny can't die from his own damage (Kami-Labs), anyone else's sti
   assert.strictEqual(Math.round(danny.health), 1);
   f.damage(f.enemies?.[0] ?? f.foes[0], danny, 1e6, 'true');
   assert.ok(!danny.alive);
+});
+
+test('a headshot deals x1.65 bullet damage (deadlock.wiki/Headshot), less for heroes the wiki gives a lower bonus; one roll per shot', () => {
+  const { HEADSHOT_BONUS } = require('../src/utils/farm/engine');
+  assert.strictEqual(HEADSHOT_BONUS, 0.65);
+  close(buildHero('Haze').stats.headshotBonus, 0.65);
+  close(buildHero('Drifter').stats.headshotBonus, 0.2); // -45 (the wiki)
+  const dealt = (dice) => { // the same dice every step: 0.2 = every shot a headshot (25% chance), 0.5 = none; neither misses (10%)
+    const h = buildHero('Haze', { unlocked: 0 });
+    h.meleeAt = Infinity; h.stamina = 0; h.stats.stamina = 0;
+    const d = enemy('Dummy', { maxHealth: 1e6, dps: 0, distance: 4 });
+    new Fight({ heroes: [h], enemies: [d], rng: () => dice }).run(1);
+    return 1e6 - d.health;
+  };
+  close(dealt(0.2) / dealt(0.5), 1.65, 0.001);
+});
+
+test("Paradox (Nov 6): Kinetic Carbine sets off its on-shot items and saves them in a Carbine build; a bomb build waits for the grenade's amp; Time Wall cuts bullet damage 25%", () => {
+  const { Fight, enemy } = require('../src/utils/farm/engine');
+  const carbine = ['Mystic Shot', 'Express Shot', 'Crippling Headshot', 'Mystic Reverb', 'Mercurial Magnum'];
+  const hero = buildHero('Paradox', { boons: 35, unlocked: 4, tiers: { 3: 3 }, items: carbine, imbues: { 'Mystic Reverb': 3, 'Mercurial Magnum': 3 } });
+  const foe = enemy('Dummy', { maxHealth: 1e7, dps: 0 });
+  const fight = new Fight({ heroes: [hero], enemies: [foe], rng: () => 0.5 });
+  hero.abilities.forEach((a) => { if (a.name !== 'Kinetic Carbine') a.cdLeft = 1e9; });
+  const kc = hero.abilities.find((a) => a.name === 'Kinetic Carbine');
+  const mystic = hero.items.find((i) => i.name === 'Mystic Shot');
+  let saved = true;
+  for (let i = 0; i < 400 && kc.firedAt == null; i++) { fight.step(); if (kc.ready() && mystic.cdLeft > 0 && kc.firedAt == null) saved = false; }
+  assert.ok(kc.firedAt != null, 'the Carbine fired');
+  assert.ok(saved, 'Mystic Shot was not spent on a normal bullet while the Carbine was ready');
+  const by = fight.breakdown.get(hero);
+  assert.ok(by.get('Kinetic Carbine') > 0 && by.get('Mystic Shot') > 0 && by.get('Express Shot') > 0, 'the shot set off Mystic Shot and Express Shot');
+  // a bomb build: no Carbine until a Pulse Grenade's amp is on the target
+  const bomb = buildHero('Paradox', { boons: 20, unlocked: 4, items: ['Improved Spirit', 'Duration Extender', 'Mystic Expansion'] });
+  const f2 = new Fight({ heroes: [bomb], enemies: [enemy('Dummy', { maxHealth: 1e7, dps: 0 })], rng: () => 0.5 });
+  const kc2 = bomb.abilities.find((a) => a.name === 'Kinetic Carbine');
+  bomb.abilities.forEach((a) => { if (a.name !== 'Kinetic Carbine') a.cdLeft = 1e9; });
+  for (let i = 0; i < 200; i++) f2.step();
+  assert.strictEqual(kc2.firedAt, undefined, 'no grenade, no Carbine');
+  // Time Wall: a bullet hit of 100 lands as 75 while the wall stands
+  const p = buildHero('Paradox', { boons: 10, unlocked: 4 });
+  const f3 = new Fight({ heroes: [p], enemies: [enemy('Dummy', { maxHealth: 1e6, dps: 0 })], rng: () => 0.99 });
+  p.abilities.find((a) => a.name === 'Time Wall').cast(f3);
+  const before = p.health;
+  f3.damage(f3.enemies[0], p, 100, 'bullet', { unavoidable: true });
+  assert.ok(Math.abs(before - p.health - 75 * (1 - p.resistNow('bulletResist'))) < 1e-6);
+});
+
+test('Paradox (Nov 6): a magazine too big to run dry in a fight still fires the Carbine (she charges it once ready), and the saved procs are used', () => {
+  const { Fight, enemy } = require('../src/utils/farm/engine');
+  const hero = buildHero('Paradox', { boons: 19, unlocked: 4, tiers: { 3: 3 }, items: ['Titanic Magazine', 'Intensifying Magazine', 'Mystic Shot', 'Express Shot', 'Sharpshooter'] });
+  const fight = new Fight({ heroes: [hero], enemies: [enemy('Dummy', { maxHealth: 1e7, dps: 0 })], rng: () => 0.5 });
+  for (let i = 0; i < 150; i++) fight.step(); // 15 s
+  const by = fight.breakdown.get(hero);
+  assert.ok(by.get('Kinetic Carbine') > 0, 'the Carbine fired');
+  assert.ok(by.get('Mystic Shot') > 0 && by.get('Express Shot') > 0, 'the procs it saved went off');
 });

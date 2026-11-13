@@ -22,8 +22,8 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('lockle')
     .setDescription('Guess the hero from a real high-rank build')
-    .addSubcommand((s) => s.setName('daily').setDescription("Today's build, same for everyone. Only you see it; pays Souls"))
-    .addSubcommand((s) => s.setName('practice').setDescription('A new build every time, for fun')),
+    .addSubcommand((s) => s.setName('daily').setDescription("Today's randomized lockle build!"))
+    .addSubcommand((s) => s.setName('practice').setDescription('A random build picked from a wide selection of games!')),
   execute: runGame,
   runGame,
 };

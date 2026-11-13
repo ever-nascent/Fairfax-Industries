@@ -382,8 +382,15 @@ function header(g, rnd, x, y, w, h) {
 }
 
 // The Shop's items as cards (name, tag, art), for the shelf and the item pages.
-function itemCards(g, { rejuv, souls }) {
+function itemCards(g, { rejuv, souls, swatch = '#e39a3b' }) {
   return {
+    // A drop of paint in the colour on sale (the member's own colour once they have a Color Role).
+    colorRole: { name: 'Color Role', tag: 'YOUR COLOR', art: (cx, cy) => {
+      g.save(); g.shadowColor = swatch; g.shadowBlur = 18; g.fillStyle = swatch;
+      g.beginPath(); g.moveTo(cx, cy - 46); g.bezierCurveTo(cx + 44, cy + 2, cx + 40, cy + 40, cx, cy + 40);
+      g.bezierCurveTo(cx - 40, cy + 40, cx - 44, cy + 2, cx, cy - 46); g.fill();
+      g.restore();
+    } },
     soulBoost: { name: 'Soul Boost', tag: '2× · 1 HR', artBg: '#bf9a5c', art: (cx, cy) => {
       g.save(); g.shadowColor = '#3fe0a8'; g.shadowBlur = 16;
       drawSouls(g, souls, cx - 22, cy - 46, 76);
@@ -537,8 +544,8 @@ const PAGE_H = 540;
 // One item's Shop page, on the shop-page paper. Left: a close-up of its tier panel with a big card.
 // Right: title, subtitle, what you get (`lines`: each a string, or [text, bold text, text]), then a dark box of
 // `cells`: { kind: 'level' | 'souls' | 'text', label, value, sub?, ok? } (ok true/false draws a tick/cross).
-// item: 'soulBoost' | 'rejuv' | 'hideout'. Returns a PNG buffer.
-async function renderItemPage({ item, tier, price, title, subtitle, lines, cells, level = 0, fill = 0 }) {
+// item: 'soulBoost' | 'rejuv' | 'hideout' | 'colorRole' (`swatch`: its colour). Returns a PNG buffer.
+async function renderItemPage({ item, tier, price, title, subtitle, lines, cells, level = 0, fill = 0, swatch }) {
   const { rejuv, souls } = await loadArt();
   const rnd = seeded(9);
   const c = createCanvas(PAGE_W, PAGE_H);
@@ -567,7 +574,7 @@ async function renderItemPage({ item, tier, price, title, subtitle, lines, cells
     g.fillText(`TIER ${tier}`, tx + plateW - 2, ty - 2);
   }
   const scale = 1.5;
-  card(g, rnd, tier, tx + (tw - CARD.w * scale) / 2, ty + (tier === 4 ? 100 : 70), itemCards(g, { rejuv, souls })[item], scale);
+  card(g, rnd, tier, tx + (tw - CARD.w * scale) / 2, ty + (tier === 4 ? 100 : 70), itemCards(g, { rejuv, souls, swatch })[item], scale);
 
   // right: what you get
   const rx = 420;

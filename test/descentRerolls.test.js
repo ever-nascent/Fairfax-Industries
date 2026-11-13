@@ -1,5 +1,5 @@
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-dreroll-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert/strict');
 const D = require('../src/utils/farm/descent');
 const { buildHero } = require('../src/utils/farm/hero');

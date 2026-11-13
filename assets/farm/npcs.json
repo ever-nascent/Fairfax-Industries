@@ -2,7 +2,7 @@
  "npcs": {
   "neutral_trooper_weak": {
    "AttackRangeTarget": 2.54,
-   "GoldReward": 41,
+   "GoldReward": 45,
    "GoldRewardBonusPercentPerMinute": 1.08,
    "InitialSpawnDelay": 120,
    "IntrinsicModifiers": [
@@ -12,7 +12,7 @@
     }
    ],
    "LocUnitName": "#neutral_trash_1",
-   "MaxHealth": 129,
+   "MaxHealth": 142,
    "MaxSquadAttackers": 3,
    "MeleeAttemptRange": 3.81,
    "Name": "neutral_trooper_weak",
@@ -50,7 +50,7 @@
    "WalkSpeed": 3.81,
    "Weapon": {
     "BulletSpeed": 152.4,
-    "BulletDamage": 2.415,
+    "BulletDamage": 2.657,
     "RoundsPerSecond": 2,
     "ClipSize": -1,
     "ReloadTime": 0.25,
@@ -71,15 +71,15 @@
     "HitOnceAcrossAllBullets": false,
     "CanCrit": true,
     "AmmoConsumedPerShot": 1,
-    "DPS": 4.83,
-    "SustainedDPS": 4.83
+    "DPS": 5.314,
+    "SustainedDPS": 5.314
    }
   },
   "neutral_trooper_normal": {
    "AbilityChance01": 0.1,
    "AbilityChance02": 0.05,
    "AttackRangeTarget": 10.16,
-   "GoldReward": 68,
+   "GoldReward": 75,
    "GoldRewardBonusPercentPerMinute": 1.08,
    "InitialSpawnDelay": 300,
    "IntrinsicModifiers": [
@@ -89,7 +89,7 @@
     }
    ],
    "LocUnitName": "#neutral_trash_2",
-   "MaxHealth": 322,
+   "MaxHealth": 354,
    "MeleeAttemptRange": 3.81,
    "Name": "neutral_trooper_normal",
    "NeutralDamageGrowth": {
@@ -126,7 +126,7 @@
    "WalkSpeed": 3.048,
    "Weapon": {
     "BulletSpeed": 152.4,
-    "BulletDamage": 6.125,
+    "BulletDamage": 6.738,
     "RoundsPerSecond": 2,
     "ClipSize": -1,
     "ReloadTime": 0.25,
@@ -147,8 +147,8 @@
     "HitOnceAcrossAllBullets": false,
     "CanCrit": true,
     "AmmoConsumedPerShot": 1,
-    "DPS": 12.25,
-    "SustainedDPS": 12.25
+    "DPS": 13.476,
+    "SustainedDPS": 13.476
    },
    "vNeutralAbilities": [
     "citadel_neutral_attack_lobfire"
@@ -159,7 +159,7 @@
    "AbilityChance02": 0.2,
    "AbilityChance03": 0.1,
    "AttackRangeTarget": 15.24,
-   "GoldReward": 181,
+   "GoldReward": 199,
    "GoldRewardBonusPercentPerMinute": 1.08,
    "InitialSpawnDelay": 480,
    "IntrinsicModifiers": [
@@ -169,7 +169,7 @@
     }
    ],
    "LocUnitName": "#neutral_trash_3",
-   "MaxHealth": 1133,
+   "MaxHealth": 1246,
    "MeleeAttemptRange": 3.81,
    "Name": "neutral_trooper_strong",
    "NeutralDamageGrowth": {
@@ -206,7 +206,7 @@
    "WalkSpeed": 2.032,
    "Weapon": {
     "BulletSpeed": 152.4,
-    "BulletDamage": 9.1,
+    "BulletDamage": 10.01,
     "RoundsPerSecond": 2,
     "ClipSize": -1,
     "ReloadTime": 0.25,
@@ -227,8 +227,8 @@
     "HitOnceAcrossAllBullets": false,
     "CanCrit": true,
     "AmmoConsumedPerShot": 1,
-    "DPS": 18.2,
-    "SustainedDPS": 18.2
+    "DPS": 20.02,
+    "SustainedDPS": 20.02
    },
    "vNeutralAbilities": [
     "citadel_neutral_attack_lobfire"
@@ -1511,14 +1511,15 @@
     }
    },
    "DyingDuration": 1.4,
-   "HealthGainPerMinute": 195,
+   "HealthGainPerMinute": 234,
    "InitialSpawnDelay": 0,
    "IntrinsicModifiers": [
     {
      "HEALTH_REGEN_PER_SECOND": 15,
      "ABILITY_DAMAGE_REDUCTION_PERCENT": 0,
      "BULLET_ARMOR_DAMAGE_RESIST": 15,
-     "STATUS_RESISTANCE": 35
+     "STATUS_RESISTANCE": 35,
+     "RESIST_REDUCTION_RESISTANCE": 50
     },
     {
      "DamageResistancePerSecond": 35,
@@ -1540,7 +1541,7 @@
    "SightRangePlayers": 38.1,
    "SpawnInterval": 420,
    "SpawnOnGround": true,
-   "StartingHealth": 13000,
+   "StartingHealth": 15600,
    "TrackOutOfCombatStatus": false,
    "Weapon": {
     "BulletSpeed": 330.2,

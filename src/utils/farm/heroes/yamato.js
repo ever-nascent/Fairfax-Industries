@@ -1,7 +1,7 @@
 // Yamato's abilities (deadlock.wiki/Yamato, checked Oct 5 2026; page updated Sept 30). Numbers come from the wiki data through Ability.value();
 // this file is only what each ability does. Standing rules used: "on hero hit / kill" is any enemy; a slower fire rate on an NPC is that much
 // less damage from it. (This is the hero; the betting game she hosts is src/utils/games/yamato.js.)
-const { Ability } = require('./../ability');
+const { Ability, anyReady } = require('./../ability');
 const { DT, MELEE } = require('./../engine');
 
 // 1. Power Slash: a charge without shooting (bullet resist meanwhile), then a sword strike through every enemy in its length for spirit damage.
@@ -66,7 +66,7 @@ class ShadowTransformation extends Ability {
     this.until = 0;
   }
 
-  want(fight) { return fight.foes.length > 0; }
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, PowerSlash, FlyingSlash, CrimsonSlash); } // combo first (his ask, Nov 6): the slashes go first, so the form makes them ready again
   status(fight) { return fight && fight.time < this.until ? 'Shadow Form' : super.status(fight); }
 
   cast(fight) {

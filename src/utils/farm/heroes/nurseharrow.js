@@ -6,7 +6,7 @@
 // she loads her syringes below NEEDLES_BELOW of her health and puts them away at full health (the rest of the clip is refunded as a partial charge);
 // her syringes heal the moment they land; Lurking Terrors fears every enemy in its reach once per cast (enemies on a farm always face her).
 // Not simulated: the leeches' hunting and crawling, headshots, the fear's direction.
-const { Ability } = require('./../ability');
+const { Ability, anyReady } = require('./../ability');
 const { DT } = require('./../engine');
 
 const LEECH_RETURN = 1; // ponytail: seconds a fed leech takes to crawl back to her; placeholder
@@ -42,7 +42,7 @@ class LeechTherapy extends Ability {
   stackText() {
     if (!this.stacks) return null;
     const spirit = this.stacks * this.value('SpiritPowerPerLeechStack');
-    return `${this.stacks} leeches: +${+(this.stacks * this.regenPer).toFixed(1)} Health Regen, +${+(this.stacks * this.data.FireRatePerLeechPickup).toFixed(1)}% Fire Rate${spirit ? `, +${+spirit.toFixed(1)} Spirit Power` : ''}`;
+    return `${this.stacks} Leeches: +${+(this.stacks * this.regenPer).toFixed(1)} Health Regen, +${+(this.stacks * this.data.FireRatePerLeechPickup).toFixed(1)}% Fire Rate${spirit ? `, +${+spirit.toFixed(1)} Spirit Power` : ''}`;
   }
 
   // The game: 25% of her leech stacks are lost on death (here: the hit that sends her to a Rejuv).
@@ -196,7 +196,7 @@ class HealingNeedles extends Ability {
     if (!this.loaded || fight.time < this.swapAt || u.cantAct || u.has('stun')) return;
     if (u.health >= u.stats.maxHealth) { this.putAway(fight); return; }
     u.busyUntil = Math.max(u.busyUntil, fight.time + DT * 1.5);
-    this.shot += u.stats.fireRate * (1 + u.mod('fireRate')) * dt;
+    this.shot += u.fireRateNow() * dt;
     while (this.shot >= 1 && this.loaded > 0) {
       this.shot -= 1;
       this.loaded--;
@@ -248,7 +248,7 @@ class LurkingTerrors extends Ability {
     this.terror = new Map(); // enemy -> seconds looked at her this cast, or 'feared'
   }
 
-  want(fight) { return fight.foes.length > 0; }
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, LeechTherapy); } // combo first (his ask, Nov 6): the leeches go first: the fear lasts longer with every one she keeps
   status(fight) { return fight && fight.time < this.until ? 'Channeling' : super.status(fight); }
 
   reach(fight) {

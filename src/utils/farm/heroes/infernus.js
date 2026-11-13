@@ -3,8 +3,7 @@
 // (enemies here stand still). A bullet is a headshot with the chance the headshot items use (his "treat it as a crit" call for Holliday).
 const { Ability } = require('./../ability');
 const { DT, MELEE, LIFESTEAL_VS_NPC } = require('./../engine');
-const { isBoss } = require('./../items');
-const { headshotChance } = require('./../engine');
+const { isHeadshot } = require('./../engine');
 
 // 1. Napalm: spirit damage and a slow on the enemies in reach, and a coat of napalm: they take more damage for a while.
 // T1: a second charge. T2: lifesteal against the napalmed. T3: even more damage taken, and they heal less.
@@ -25,7 +24,7 @@ class Napalm extends Ability {
 }
 
 // 2. Flame Dash: a dash through the enemies that leaves a burning trail under all of them for the whole trail time (his call): spirit damage
-// every tick, less to bosses (the game's "objectives"). He is right among them while he dashes. T2: a hotter, longer trail. T3: two charges.
+// every tick, the same to bosses (the game's "less to objectives" doesn't apply: bosses, Walkers and Shrines aren't objectives here, his call Oct 31). He is right among them while he dashes. T2: a hotter, longer trail. T3: two charges.
 class FlameDash extends Ability {
   constructor(...args) {
     super(...args);
@@ -46,7 +45,7 @@ class FlameDash extends Ability {
     for (const b of this.burns) {
       if (fight.time + 1e-9 < b.next) continue;
       b.next += this.data.TickRate;
-      fight.damage(this.unit, b.e, this.value('DPS') * this.data.TickRate * (b.e.team !== 'hero' && isBoss(b.e) ? this.data.BossDamageScale : 1), 'spirit');
+      fight.damage(this.unit, b.e, this.value('DPS') * this.data.TickRate, 'spirit');
     }
   }
 }
@@ -82,7 +81,7 @@ class Afterburn extends Ability {
   on(event, fight, p) {
     if (p.source !== this.unit) return;
     if (event === 'bulletHit') {
-      const head = fight.rng() < headshotChance(this.unit);
+      const head = isHeadshot(fight, this.unit, p);
       this.struck(fight, p.target, head ? this.data.CritBuildup : this.data.BuildUpBulletPercentPerHit, head ? this.data.RefillDurationCrit : this.data.RefillDuration);
     } else if (event === 'melee') this.struck(fight, p.target, MELEE_BUILD, 0);
     else if (event === 'damage' && p.opts.ability && p.opts.ability !== this) { // one of his abilities: the burn is back at its base time

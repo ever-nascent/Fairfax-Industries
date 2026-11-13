@@ -1,7 +1,7 @@
 // Run: node --test (npm test). The in-memory rules that used to be one for the whole bot are now one per server,
 // and the owner's override only works in the home server.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { runInGuild } = require('../src/utils/guildContext');
 const { shouldDrop } = require('../src/utils/economy/soulBag');

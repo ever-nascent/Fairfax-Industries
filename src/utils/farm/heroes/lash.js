@@ -1,7 +1,7 @@
 // Lash's abilities (deadlock.wiki/Lash, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through Ability.value(); this file
 // is only what each ability does. His calls (Oct 5): a Grapple sets up a Ground Strike dive from DIVE metres (there is no height in these fights);
 // Death Slam's tier 1 (a longer throw, useless here) leaves the slammed enemies THROWN seconds from getting back into the fight.
-const { Ability } = require('./../ability');
+const { Ability, anyReady } = require('./../ability');
 const { isBoss } = require('./../items');
 
 const find = (unit, Cls) => unit.abilities.find((a) => a instanceof Cls);
@@ -79,7 +79,7 @@ class DeathSlam extends Ability {
     this.until = 0;
   }
 
-  want(fight) { return fight.foes.length > 0; }
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, GroundStrike, Flog); } // combo first (his ask, Nov 6): Grapple into Ground Strike and Flog go first
   status(fight) { return fight && fight.time < this.until ? 'Channelling' : super.status(fight); }
 
   cast(fight) {

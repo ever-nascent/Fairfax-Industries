@@ -152,6 +152,13 @@
      "Daddy's going to be disappointed.",
      "I don't care if you're Dauphin, Apollo! Come at my people, and I beat you down."
     ],
+    "Baba": [
+     "I stopped the Pigeon Lady!",
+     "That was one mean old lady.",
+     "Took out the old lady!",
+     "Never trust a bird lady.",
+     "I don’t even wanna know what her deal is."
+    ],
     "Bebop": [
      "Golem's down!",
      "Took out the scrap golem.",
@@ -179,6 +186,13 @@
      "Damn it, Celeste! You should've come to me for help.",
      "Celeste, what the hell are you doing here?",
      "She should've stayed on Coney."
+    ],
+    "Deadman Danny": [
+     "I stopped the skeleton.",
+     "He'll be back, and I'll be ready.",
+     "He's used to things not going his way.",
+     "Nice try, Danny!",
+     "Fairfax is gonna need a new toy."
     ],
     "The Doorman": [
      "Took down the Doorman!",
@@ -291,6 +305,13 @@
      "Almost had me!",
      "I'll make it up to those guys another time."
     ],
+    "Nurse Harrow": [
+     "Took down the nurse!",
+     "Go back to whatever creepy hospital you came out of.",
+     "Hate to see that lady work with kids.",
+     "\"Do no harm\" my ass!",
+     "Yeah, I don't think I need any of her... tender care."
+    ],
     "Paige": [
      "Your dad was supposed to tell you to stay away from the Tome!",
      "I can't let you have this book, Paige.",
@@ -354,6 +375,13 @@
      "I took down Sinclair!",
      "I'm too old for magic tricks."
     ],
+    "Solomon": [
+     "This ain't Central Park.",
+     "Stick to chess.",
+     "Took out the chess guy!",
+     "Nothin' personal, buddy.",
+     "Shouldn’t you be in Central Park hustling tourists or something?"
+    ],
     "Venator": [
      "You got a lot of balls showing your face in my city, Father.",
      "I stopped the Venator!",
@@ -374,6 +402,13 @@
      "You made me do this, Vindicta!",
      "Your anger is justified. But your methods are not.",
      "There’s other ways to get what you want, Vindicta."
+    ],
+    "Violet": [
+     "Took out the art student.",
+     "Stay in school!",
+     "Shouldn’t you be in life drawing class or something?",
+     "Can’t you find an artist commune to hang out in?",
+     "Picked a bad day to leave the studio, kid."
     ],
     "Viscous": [
      "Sorry, Viscous.",
@@ -409,7 +444,35 @@
      "I'm sorry about your brother, but this book can't help you.",
      "Yamato's dead!"
     ]
-   }
+   },
+   "streak": [
+    "This is how it starts.",
+    "Run while you still can!",
+    "Don't come begging for mercy.",
+    "I'm not backing down.",
+    "No one's taking me down.",
+    "Come on! Try to kill me!",
+    "Give up!",
+    "You guys getting the message yet?",
+    "I'm unstoppable!",
+    "You aren't worthy to fight me.",
+    "Keep throwing your lives away! It's fine by me."
+   ],
+   "win": [
+    "They never had a chance.",
+    "Well, that wrapped up nicely.",
+    "They were never gonna stop us.",
+    "Case closed!",
+    "We did it!",
+    "They fought hard. They couldn't match us.",
+    "Maybe trusting people isn't so bad after all.",
+    "Good work everyone.",
+    "Nice fight.",
+    "They put up a fight.",
+    "We completed the ritual.",
+    "That wasn't easy.",
+    "Drinks are on me!"
+   ]
   }
  },
  {
@@ -889,7 +952,28 @@
      "I've had better sparring partners.",
      "Dispatched Yamato!"
     ]
-   }
+   },
+   "streak": [
+    "Submit to your betters.",
+    "Gods, I'm good.",
+    "The weak always fall to the strong.",
+    "I've been training my whole life for this... you don't have a chance.",
+    "You have no idea who you're up against.",
+    "There's no shame in losing to me.",
+    "Of course they're dying: they're fighting me.",
+    "Will none of you rise to the challenge?",
+    "Guys, you can't stop me! I'm a generational talent!",
+    "Greatness runs in the family.",
+    "Face it: you're outclassed, and outmatched."
+   ],
+   "win": [
+    "Our victory, while expected, is satisfying nonetheless.",
+    "We had this battle won from the moment it began.",
+    "No need to thank me, victory is its own reward.",
+    "I never doubted this would be the outcome.",
+    "Today's glory will not be forgotten.",
+    "Thank you for all your help."
+   ]
   }
  },
  {
@@ -1145,6 +1229,13 @@
      "She was so colorful...",
      "Stopped the unicorn."
     ],
+    "Deadman Danny": [
+     "What a yappy bag o' bones.",
+     "I'm not gonna join your pyramid scheme.",
+     "What an asshole...",
+     "I took out the salesman.",
+     "Yak yak yak."
+    ],
     "The Doorman": [
      "I'm going to miss those mimosas.",
      "Hope he doesn't ban me from The Baroness.",
@@ -1257,6 +1348,13 @@
      "Boys, you're in over your head.",
      "I killed Mo and Krill."
     ],
+    "Nurse Harrow": [
+     "Agh. She reminds me of Mildred.",
+     "Stick to the ward, lady.",
+     "Keep that bag away from me, Harrow.",
+     "Shoulda stayed in your own neighborhood.",
+     "The Soho Coven says hello."
+    ],
     "Paige": [
      "Do ya parents know you're here, young lady?",
      "Street smarts beat book smarts every time.",
@@ -1348,6 +1446,13 @@
      "Do I look like a Hathorne?",
      "I killed Vindicta."
     ],
+    "Violet": [
+     "Don't talk back to me, girl.",
+     "Age before beauty.",
+     "You're grounded, young lady.",
+     "The Patron would eat you up and spit you out.",
+     "I killed the artist."
+    ],
     "Viscous": [
      "I hate tourists...",
      "You won't be able to stop The Adversary like this.",
@@ -1383,7 +1488,21 @@
      "Come at me again, I dare ya!",
      "The Yamato problem's been handled."
     ]
-   }
+   },
+   "streak": [
+    "Don't mess with my city.",
+    "It's not looking too good for these guys.",
+    "I'm a tougher broad than you expected, huh?",
+    "These yahoos aren't on my level.",
+    "Pssh, tourists.",
+    "I'm making the Soho Coven proud.",
+    "Oh, I still got it.",
+    "You never shoulda gotten in my way.",
+    "Mildred, I hope you're watching and you're burning in hell!",
+    "God, I love the maelstrom...",
+    "I forgot how good it feels to just destroy your enemies' will to live."
+   ],
+   "win": []
   }
  },
  {
@@ -1765,7 +1884,32 @@
      "Fall on your sword, Yamato! Save us all some time!",
      "I'm not getting cut up by the likes of you!"
     ]
-   }
+   },
+   "streak": [
+    "If you think I'm gonna slow down, I got bad news for ya!",
+    "What's the matter, organics? Can't hang with ol' Bebop?",
+    "I'm just gettin' started.",
+    "I got hooks for all of ya!",
+    "Oh, you wanted to fight me? Well, here I am!",
+    "Lash wishes he could be this good.",
+    "Try stoppin' me now!",
+    "No one can stop me!",
+    "You don't have a chance in hell!",
+    "Where's my competition at?",
+    "Take a look at me now, Lash. Take a look at me!"
+   ],
+   "win": [
+    "Lash wishes he could be this good.",
+    "Oh, this is bloody great!",
+    "Now we're talkin'!",
+    "No one can stop me!",
+    "We did it!",
+    "Good work everyone.",
+    "Now that was one helluva fight.",
+    "I'm comin' home, Ms. Shelly.",
+    "Time to make things right.",
+    "It was all worth it."
+   ]
   }
  },
  {
@@ -1979,6 +2123,13 @@
      "Relax, Zorro. Nobody gives a shit.",
      "Go cry to daddy-dearest about it."
     ],
+    "Baba": [
+     "Okay, meemaw, time for your pills.",
+     "Old people freak me out...",
+     "Man, screw you and your birds!",
+     "People just stealin' park benches now?!",
+     "Stay retired, Baba."
+    ],
     "Bebop": [
      "Go back to the scrapyard.",
      "You wanna mess with me, Bebop?",
@@ -1999,6 +2150,13 @@
      "\"Unicorn horns are special\", ha! Get real.",
      "Shouldn't you be fleecin' some rubes somewhere?",
      "You're not ready for prime time, lady."
+    ],
+    "Deadman Danny": [
+     "I took out the industry shill.",
+     "I get it. You're a company stooge.",
+     "Took out Fairfax's trash.",
+     "Tell Fairfax he can suck it!",
+     "That's what you get for being a sell-out."
     ],
     "The Doorman": [
      "I hate your stupid hotel.",
@@ -2112,6 +2270,13 @@
      "Go back to diggin' holes, boys!",
      "This city's got a damn mole problem!"
     ],
+    "Nurse Harrow": [
+     "Took out Nurse Harrow!",
+     "Stay outta my business, you quack!",
+     "That lady creeps me out.",
+     "Take your medicine, lady.",
+     "Stay down unless you want another treatment."
+    ],
     "Paige": [
      "There ain't no knight to save you in the real world.",
      "Not the ending you were expecting, huh?",
@@ -2132,6 +2297,13 @@
      "Ain't no such thing as a good Fairfax.",
      "You're just as bad as the rest of your family.",
      "Pocket, don't pretend you're one of us. You're one of them."
+    ],
+    "Rat King": [
+     "\"Monarch\" my ass.",
+     "Bro, you ain't takin' Long Island.",
+     "Leave Long Island alone, you bastard.",
+     "I aint lettin' anything happen to New York, Rat King.",
+     "I killed the Rat King."
     ],
     "Rem": [
      "Sorry kid, life's tough.",
@@ -2168,6 +2340,13 @@
      "My card was the Three of Clubs, but you never guessed it, cause you're a fraud!",
      "Don't you got some kid's birthday party to work?"
     ],
+    "Solomon": [
+     "Go back to your checkers or whatever.",
+     "You don't know me, old man!",
+     "Stop acting like you're better than the rest of us, Solomon.",
+     "Take your bullshit bishops and get outta here!",
+     "That's for pullin' what you did in the park, Solomon!"
+    ],
     "Venator": [
      "Hey Padre, what's the Latin word for \"I just got my ass kicked\"?",
      "Oh, ohh, the Vatican's comin' for me now!",
@@ -2188,6 +2367,13 @@
      "I ain't gettin' picked off by you, Vindicta.",
      "Sniping is some coward shit, Vindicta.",
      "Not so fun when you're not three blocks away, is it?"
+    ],
+    "Violet": [
+     "Sorry, Vi.",
+     "Why'd you make me do that, huh?",
+     "Walk it off, Vi, you'll be alright.",
+     "Bat versus brush ain't really fair.",
+     "Violet ain't a problem no more."
     ],
     "Viscous": [
      "I'll believe the Adversary exists when I see it with my own eyes.",
@@ -2224,7 +2410,28 @@
      "I don't need a sword to beat your ass.",
      "Come at me whenever, Yamato. I'm right here."
     ]
-   }
+   },
+   "streak": [
+    "Time to start a riot!",
+    "I'm taking their team apart, brick by brick!",
+    "Thought you guys were supposed to be hard?",
+    "You're gonna have to do a hell of a lot better than that if you wanna stop me!",
+    "They're gettin' the horns now, baby! Ha ha!",
+    "Don't worry, boys and girls! You're all gonna get a turn.",
+    "Y'all tryin' to silence me, but bad news: The truth doesn't make a noise, baby!",
+    "You want some more?!",
+    "There ain't none of yous who can stop me!",
+    "Let's see which one of you rich assholes has what it takes to stop me!",
+    "I ain't goin' anywhere, baby, I am New York!"
+   ],
+   "win": [
+    "Do I get a thank you? Of course not.",
+    "We killed it!",
+    "Too easy!",
+    "Only way this was gonna end.",
+    "Watch, the Patron ain't gonna fulfil their end of the bargain.",
+    "Maybe you guys don't suck after all."
+   ]
   }
  },
  {
@@ -2678,7 +2885,31 @@
      "You have power, Yamato. You just don't know what to do with it.",
      "Yamato's down."
     ]
-   }
+   },
+   "streak": [
+    "A new era is coming.",
+    "I am superior.",
+    "This is even easier than I expected.",
+    "Hmm. I thought they'd put up a fight. I guess I can be wrong.",
+    "They really are rather pathetic, aren't they?",
+    "This will go much easier if you just accept your fate.",
+    "And this is what success looks like.",
+    "I hold myself to the highest standards.",
+    "I could kill them all day.",
+    "I don't know what people are talking about, subjugating your enemies is rather easy, isn't it?",
+    "Welcome to the age of Calico."
+   ],
+   "win": [
+    "This is rather delightful, isn't it?",
+    "I really am great, aren't I?",
+    "And this is what success looks like.",
+    "You were all lovely to work with.",
+    "I don't suppose any of you want to go to tomorrows matinee of South Pacific? I have an extra ticket.",
+    "Good job, Ava!",
+    "It was a pleasure doing business with you.",
+    "I'm sure our paths will cross again.",
+    "Our future is secured."
+   ]
   }
  },
  {
@@ -2897,6 +3128,13 @@
      "Stop playing with swords.",
      "He was slippery."
     ],
+    "Baba": [
+     "I'm tryin' to respect my elders, but... she's not makin' it easy.",
+     "I bet she could put on a pretty good bird act.",
+     "Her coven better not come after me.",
+     "She should be in a rockin' chair! Not the ritual!",
+     "I took out Baba."
+    ],
     "Bebop": [
      "You're not grabbin' my friends, Bebop.",
      "The scrap golem is out of commission.",
@@ -2917,6 +3155,13 @@
      "You're not takin' my horn, Calico!",
      "Leave me alone, Calico!",
      "It's not gonna be the last time she tries to kill me."
+    ],
+    "Deadman Danny": [
+     "And I thought I was too much...",
+     "He would be such a good barker.",
+     "Your aerials need some work, Danny.",
+     "Now that's a guy who understands the spotlight.",
+     "That man was born for the sideshow."
     ],
     "The Doorman": [
      "Took down the Doorman.",
@@ -3030,6 +3275,13 @@
      "I'm gonna feel terrible about that later.",
      "You picked the wrong day to come out of the sewer, Mo."
     ],
+    "Nurse Harrow": [
+     "Who sucked all the whimsy outta you, lady?",
+     "Sheesh! Talk about a buzzkill!",
+     "Good thing I don't have health insurance. I might have to see her then.",
+     "I took down the nurse!",
+     "That lady creeps me out."
+    ],
     "Paige": [
      "God, she was so adorable...",
      "That poor girl is in over her head.",
@@ -3092,6 +3344,13 @@
      "Tricky bastard...",
      "Both deserve each other."
     ],
+    "Solomon": [
+     "Don't be so full of yourself, Solomon!",
+     "I really don't need an old guy to tell me about my life.",
+     "Took down the chess master.",
+     "Later, gramps!",
+     "Solomon's out!"
+    ],
     "Venator": [
      "Took out the Venator.",
      "The Father was out of his mind!",
@@ -3112,6 +3371,13 @@
      "Their sniper is down.",
      "Should've flown away.",
      "Not so easy when your targets aren't helpless, is it, Vindicta?"
+    ],
+    "Violet": [
+     "Too bad. We probably coulda been friends.",
+     "She seemed kinda cool. Shy, but cool.",
+     "I think she needs some found family.",
+     "Wish we met under different circumstances.",
+     "Violet is dead!"
     ],
     "Viscous": [
      "I can make it up to him later.",
@@ -3148,7 +3414,27 @@
      "Yamato's down!",
      "Watch where you swing that thing, Yamato! You might hurt someone."
     ]
-   }
+   },
+   "streak": [
+    "Enjoyin' the show?",
+    "I'm the greatest act on Coney!",
+    "I'm not even warmed up yet!",
+    "You think this is scary? Just wait for the grand finale.",
+    "I won't let you stop me.",
+    "It's amazin' what someone is capable of, isn't it?",
+    "You guys might wanna give up and save us all some time.",
+    "This is who I was meant to be.",
+    "I can only hide what I am for so long.",
+    "I'm ready to accept my destiny!"
+   ],
+   "win": [
+    "That was amazing.",
+    "Let's do an encore!",
+    "Thanks so much for your help!",
+    "You guys did great.",
+    "I couldn't have done it without you.",
+    "We're friends now, right?"
+   ]
   }
  },
  {
@@ -3275,7 +3561,7 @@
    "What's life without risk!",
    "This is about to get exciting.",
    "Be earthbound no more with the Chimera Mark 1!",
-   "And the best part: There's no federal regulation on jetpacks.",
+   "And the best part: There's no federal regulations on jetpacks.",
    "At Fairfax Industries, the sky is truly the limit!",
    "Now, witness the Chimera in all its glory!",
    "If I die, let it be flying the Chimera Mark 1!",
@@ -3745,7 +4031,21 @@
      "Fairfax Industries wouldn't be caught dead doing business with the Seventh Moon.",
      "What's a sword compared to Fairfax engineering?"
     ]
-   }
+   },
+   "streak": [
+    "Thank you all for coming to this product demonstration!",
+    "I hope you're enjoying the show!",
+    "Ah, but this is just the beginning of what the Chimera Mark 1 is capable of!",
+    "Maximilian Fairfax is a visionary and you're about to see why!",
+    "Are we havin' fun yet?",
+    "As you can see, Fairfax Industries does not disappoint!",
+    "If you think I'm terrifying, just imagine an entire military unit outfitted with jetpacks!",
+    "The future of warfare is now!",
+    "I know what you're thinking: \"Surely this airborne terror has to be finished killing his fellow man\", but the answer, my friends, is no! I'm not!",
+    "Bare witness to the triumph of Fairfax Industries!",
+    "Please, hold your applause until the carnage comes to a complete stop."
+   ],
+   "win": []
   }
  },
  {
@@ -4272,7 +4572,28 @@
      "A wonder people didn't think you were fit to lead.",
      "Your brother's sacrifice was in vain."
     ]
-   }
+   },
+   "streak": [
+    "Old habits die hard, I'm afraid.",
+    "I've come this far, I might as well kill them all, I suppose.",
+    "So, it's to be a day of violence, I see.",
+    "Dispensing gratuitous violence is so much easier than I remembered!",
+    "In time, I will butcher you all!",
+    "I forgot how wonderful it can feel to be feared.",
+    "If you give up now, I'll throw in a free night stay at the Baroness.",
+    "You're running out of time to not be slaughtered like the lambs you are, just surrender!",
+    "I haven't slaughtered man like this for years, what a treat!",
+    "Mortals, your pointless lives are about to come to an end!",
+    "Don't you fools get it? I am the Patron you should worry about angering!"
+   ],
+   "win": [
+    "I must return to the Baroness.",
+    "Another satisfying day.",
+    "Should you have further need of my services, you know where to find me.",
+    "Oh, that was fun!",
+    "It was an honor to complete the ritual with you all.",
+    "Meddling in the Patrons' affairs is always satisfying."
+   ]
   }
  },
  {
@@ -4673,7 +4994,16 @@
      "I ain't scared of someone like you, Yamato!",
      "That was fun!"
     ]
-   }
+   },
+   "streak": [],
+   "win": [
+    "Well, that was satisfying.",
+    "Not a bad way to spend the afternoon.",
+    "Friendly word of advice: you might wanna stay away from Times Square tonight. I plan on celebrating.",
+    "God, I love New York!",
+    "Any you fine folk wanna kill again, let me know.",
+    "I hope to see y'all again real soon."
+   ]
   }
  },
  {
@@ -5132,7 +5462,42 @@
      "New York has enough crime lords, thank you very much.",
      "That woman was really invested in stabbing people."
     ]
-   }
+   },
+   "streak": [
+    "This is goin' pretty good!",
+    "Alright, I think I'm getting the hang of this!",
+    "This is my lucky day!",
+    "Well, this is going swimmingly.",
+    "Turns out morality is subjective.",
+    "I feel like I can do anything!",
+    "Feel free to give up.",
+    "I am surprisingly good at killing people!",
+    "I think the class would be impressed! Or terrified... probably terrified.",
+    "No one will stop me from getting my body back!",
+    "Let's see the provosts cut funding now!"
+   ],
+   "win": [
+    "Looks like I'll be able to meet Marla for dinner after all.",
+    "I couldn't imagine that goin' any better!",
+    "Remarkable effort, everyone!",
+    "See what a positive attitude and a nigh-unlimitless supply of ammunition can do?",
+    "And like that, the ritual is concluded!",
+    "If that doesn't justify my tenure, what does?!",
+    "We did it!",
+    "Well done everyone!",
+    "The ritual's complete!",
+    "I've waited for this moment.",
+    "Phew, that was intense!",
+    "Who was worried? I wasn't worried!",
+    "We did it.",
+    "Everyone did their part.",
+    "We weren't just a team... we were a family.",
+    "Good job, everyone!",
+    "That was unforgettable!",
+    "Good times.",
+    "Oh, thank God.",
+    "It was nice meeting you all, but I have papers to grade."
+   ]
   }
  },
  {
@@ -5600,7 +5965,28 @@
      "I am so sorry, Yamato.",
      "I will make this up to you, Yamato; please don't take it personally."
     ]
-   }
+   },
+   "streak": [
+    "The more they die, the stronger I become!",
+    "The dead are stirring in midtown!",
+    "The bodies just keep piling up!",
+    "You don't have what it takes to stop me.",
+    "I bet the kids at Blackmore are gonna talk a lot less shit now.",
+    "I can feel my power growing!",
+    "It just keeps getting easier and easier!",
+    "You can't stop an advocate of the dead!",
+    "Your lives are offered as tribute to my mentor.",
+    "The demands of the dead will be ignored no longer!",
+    "My mentor thanks you for throwing away your lives."
+   ],
+   "win": [
+    "My mentor will be pleased.",
+    "The ritual is complete!",
+    "And now, the Patron gives us our reward.",
+    "We did it!",
+    "Thanks for helping me.",
+    "This was a team effort!"
+   ]
   }
  },
  {
@@ -6033,7 +6419,31 @@
      "Yamato is no longer a threat!",
      "She'll be looking for revenge soon."
     ]
-   }
+   },
+   "streak": [
+    "Walk away while you still have the chance!",
+    "No one will stand between me and my revenge!",
+    "I don't have the luxury of mercy today!",
+    "They will fall. One. By. One.",
+    "I have enough arrows for all of you!",
+    "New York is my hunting grounds.",
+    "You will drown in the blood of your allies!",
+    "I'm not afraid to die! Are you?",
+    "Today is a day for bloody retribution!",
+    "The death I bring today is nothing compared to what lies in store for Hathorne!",
+    "How much blood must I bathe in before you give up?!"
+   ],
+   "win": [
+    "I'm ready to hunt larger game!",
+    "Well done!",
+    "Good.",
+    "Finally... It's over.",
+    "Maybe now I can find peace.",
+    "All roads led to this moment.",
+    "I owe you all much.",
+    "Time to make my demand of the Patron.",
+    "I couldn't have done this without your help."
+   ]
   }
  },
  {
@@ -6507,7 +6917,33 @@
      "You couldn't hide from me forever, Yamato.",
      "She put up a fight."
     ]
-   }
+   },
+   "streak": [
+    "And so, my work begins.",
+    "Just wait until I get going.",
+    "This is the beginning of something beautiful.",
+    "Keep throwing your lives away. I'll be ready.",
+    "Today, there will be a reaping.",
+    "Challenge me and meet the same fate.",
+    "I'll show you what power really looks like.",
+    "You've been sanctioned by the OSIC.",
+    "No one among you can stop me.",
+    "The Sandman comes for you all.",
+    "There's no escaping death by my hand."
+   ],
+   "win": [
+    "I'm just getting started.",
+    "This is going well.",
+    "I love my job.",
+    "Impressive work.",
+    "The Sandman comes for you all.",
+    "The OSIC appreciates your help.",
+    "Mission complete.",
+    "Another task done to perfection.",
+    "I played my part.",
+    "No one stops the OSIC.",
+    "Victory at any cost."
+   ]
   }
  },
  {
@@ -6699,7 +7135,7 @@
    "any": [
     "Got 'em!",
     "You see that?",
-    "Got 'em good.",
+    "God, I'm good.",
     "Put 'em down.",
     "I'm just gettin' started.",
     "There's more where that came from.",
@@ -6969,7 +7405,32 @@
      "That sword was never gonna get it done.",
      "Yamato's down."
     ]
-   }
+   },
+   "streak": [
+    "Think it's time to remind them who the law is around here!",
+    "You brought this on yourself.",
+    "Made an example out of another one!",
+    "I got somethin' for all of ya!",
+    "Come at me all you want, the result's gonna be the same.",
+    "You guys gettin' the picture yet?",
+    "Just give up, you're only making this worse.",
+    "This really the best you got?!",
+    "There's gonna be a whooole lot of paperwork to fill out by the time this is over.",
+    "Feel free to surrender anytime.",
+    "You're not stopping me. Not now, not ever!"
+   ],
+   "win": [
+    "Got 'em good.",
+    "I'm just gettin' started.",
+    "Couldn't be goin' better!",
+    "And that's how you do it!",
+    "Alright, alright!",
+    "Can't wait to get back to Macomb.",
+    "Way to keep it together, everyone!",
+    "That was fun! Scary... But fun!",
+    "I got a greyhound to catch.",
+    "Goodbye, New York."
+   ]
   }
  },
  {
@@ -7414,7 +7875,31 @@
      "Should've used a gun.",
      "You ain't in charge here, Yamato."
     ]
-   }
+   },
+   "streak": [
+    "Let me show you how it's done.",
+    "You gotta try a lot harder than that!",
+    "There's no escaping me.",
+    "I'll burn all of ya.",
+    "You gonna learn to respect me!",
+    "Just like ridin' a bike.",
+    "None of you are on my level.",
+    "Come at me and see what happens!",
+    "The fires keep burnin' brighter.",
+    "I won't stop 'til all of you are dead!",
+    "No one's gettin' in between me and finishin' the ritual!"
+   ],
+   "win": [
+    "There's no stoppin' this.",
+    "Things are lookin' up!",
+    "That's what I like to see.",
+    "Glad we made it out in one piece.",
+    "Back to the bar.",
+    "Next round's on me! Well... It's on Hank, technically... But you get the idea.",
+    "We all did what we needed to do.",
+    "I can't wait to tell Hank the good news!",
+    "Great work, everyone."
+   ]
   }
  },
  {
@@ -7854,7 +8339,30 @@
      "Stay out of Spanish Harlem!",
      "I took out Mendoza, and I'll take out you!"
     ]
-   }
+   },
+   "streak": [
+    "You never should have come here!",
+    "Welcome to New York!",
+    "Este será un dia largo para tí! (This will be a long day for you!)",
+    "Apenas estoy empezando! (I'm just getting started!)",
+    "I fought tougher!",
+    "I won't let you hurt my friends!",
+    "I'll do whatever it takes to protect my team!",
+    "I bet Sophie and Manny would get a kick out of watching me win!",
+    "New York is under my protection!",
+    "You guys really need to stop fighting me.",
+    "I don't know what to tell you, I'm just better at this than you!"
+   ],
+   "win": [
+    "I knew this was going to work out!",
+    "Keep up the good work!",
+    "I'm feeling good about this!",
+    "I need to get back to the Arroyos.",
+    "We did it!",
+    "Great teamwork, everyone!",
+    "That could have gone real bad!",
+    "I'm just glad we survived in one piece!"
+   ]
   }
  },
  {
@@ -8365,7 +8873,32 @@
      "Yamato is a menace!",
      "A sword was never going to be enough."
     ]
-   }
+   },
+   "streak": [
+    "It would appear that I'm on a roll, yes?",
+    "Things keep going my way!",
+    "It's not your fault that you're not better than me. It's just is what it is!",
+    "If only Ettrick could see me now.",
+    "Will none of you rise to the challenge?!",
+    "Show me some courage, people!",
+    "Show me what you got.",
+    "I came to fight the best, and so far... Eh, I'm sorely disappointed.",
+    "We're having fun, yes?",
+    "Ugh. I almost feel bad for them.",
+    "There's no shame in surrender, friends."
+   ],
+   "win": [
+    "This is a good day!",
+    "I feel alive!",
+    "See what teamwork brings?",
+    "Things keep going my way!",
+    "Well done, everyone!",
+    "We fought with courage, and now we reap the rewards!",
+    "The answers to my condition will no longer elude me.",
+    "They fought well, but it wasn't enough.",
+    "Together we were unstoppable!",
+    "Well done, my friends."
+   ]
   }
  },
  {
@@ -8809,7 +9342,41 @@
      "You have no idea what you're dealing with, Yamato.",
      "We won't be bothered by Yamato for a while."
     ]
-   }
+   },
+   "streak": [
+    "This is only the beginning!",
+    "My reign has just begun.",
+    "They will all fall.",
+    "The blood will flow down Broadway.",
+    "I will not be forgotten!",
+    "It's wise to fear me.",
+    "I lead by example.",
+    "You were fools to fight me!",
+    "Live at my behest... Die at my whim.",
+    "I walk the line between life and death.",
+    "I am Death's sovereign!"
+   ],
+   "win": [
+    "I think I can still make the opera.",
+    "Good.",
+    "As it should be.",
+    "I am perfection in all things!",
+    "Together, we were unbeatable!",
+    "The ritual is complete.",
+    "My time has only just begun.",
+    "Oathkeeper has been sated.",
+    "My power will only grow.",
+    "I always get what I want.",
+    "Death will never find me!",
+    "At last the ritual is complete!",
+    "Finally, we've completed the ritual!",
+    "Now to receive our blessing from the Patron!",
+    "You were all surprisingly competent. Good job.",
+    "Yes, you were the help, but you were solid help.",
+    "I think we should celebrate!",
+    "Our lives are about to change for the better.",
+    "No one can deny me!"
+   ]
   }
  },
  {
@@ -9266,7 +9833,35 @@
      "Oh, that sword is gonna look so good over my fireplace!",
      "Yamato's down."
     ]
-   }
+   },
+   "streak": [
+    "Let me show y'all how it's done.",
+    "I don't know about you guys, but I'm not stoppin' any time soon!",
+    "This is just the beginning.",
+    "You're all about to enter Lash's world!",
+    "What, you think you hate me now? Just wait until I kill you again!",
+    "Winning's my business, and business is - wa-ching! - good!",
+    "You knew what was going to happen the moment you picked a fight with the Lash.",
+    "Don't feel so bad. The world's full of mediocre talent.",
+    "It's cool, everyone. Gettin' killed by me is an honor.",
+    "Don't look so surprised! I-I'm better than all of you.",
+    "You see me now, Bebop?",
+    "Oh, just wait 'till I get it goin'."
+   ],
+   "win": [
+    "Too easy!",
+    "God, I love being the best!",
+    "What a day to be Lash!",
+    "You're welcome.",
+    "This is just the beginning.",
+    "Where is the challenge?",
+    "Good times! Good times.",
+    "You just watched a master at work.",
+    "I hope you all enjoyed sitting underneath the learning tree.",
+    "Ah-ah! No need to thank me. Being amazing is a burden I'm willing to bear.",
+    "Hold on to that memory, boys and girls.",
+    "Part of being great is remaining humble when you deliver a crushing and humiliating defeat to your enemies. You don't need to rub it in that they were outclassed from minute one, that their feeble attempts to stave off the inevitable are laughable at best! No, you shake their hand, you look them in the eye, and you say, \"you're welcome.\""
+   ]
   }
  },
  {
@@ -9319,6 +9914,8 @@
    "I... know a thing or two about building walls.",
    "Time to reshape the battlefield.",
    "Use this right, people will love me. Use it wrong, well... my team will be dead, so it's not like anyone will complain.",
+   "Gotta be careful when I'm usin' this...",
+   "This can buy me the time I'll need.",
    "My team's gonna love me. The other guys... ehh...",
    "Who doesn't love dropping a wall on someone?",
    "Ah, I love the versatility of this thing.",
@@ -9369,6 +9966,9 @@
    "You gonna fight back? Are you really gonna let me do this to you all night?",
    "You guys wanna keep throwing yourselves in the murder pile, that's your business.",
    "Papa Fairfax is giving me a raise after this!",
+   "You can't stop the Occult Industrial Complex.",
+   "This should slow their healing.",
+   "Not feeling too good now, are ya?!",
    "Bullets are gonna bounce off of me!",
    "Bullets aren't gonna hurt me!",
    "Ready to launch some spirits.",
@@ -9402,7 +10002,8 @@
    "They're not paying me enough to die here.",
    "I don't like being exposed here.",
    "Looks like it's all up to me.",
-   "Great... Everyone's dead. Awesome.",
+   "Great. Everyone's dead. Awesome.",
+   "No pressure, Mags! You're just the last one standing...",
    "There's probably too many of 'em...",
    "Hmm... It's a risky engagement.",
    "I'm not likin' the odds here.",
@@ -9461,12 +10062,26 @@
      "God, that took a lot of ammo.",
      "Phew, that took some work."
     ],
+    "Apollo": [
+     "I don't care who your dad is, Apollo.",
+     "I took down the fencer!",
+     "That’s the problem with rich kids, they think having greatness handed to them is the same thing as being a prodigy.",
+     "Turns out nepotism doesn't win fights.",
+     "Failure is good for you, Apollo. It helps you build character."
+    ],
     "Bebop": [
      "Took care o' Bebop.",
      "Get outta here, Bebop.",
      "You should be used to losing by now, Bebop.",
      "I'm not losing to a machine!",
      "The longer this fight goes on, the harder it's going to be to stop Bebop."
+    ],
+    "Billy": [
+     "I handled the goat!",
+     "Bitch about Fairfax Industries all you want, we're not goin' anywhere.",
+     "No one cares about what you have to say, buddy.",
+     "Smile, Billy, I gave you somethin' else to complain about!",
+     "Yeah. I'm shocked the guy with a baseball bat lost."
     ],
     "Calico": [
      "Nice try, Calico.",
@@ -9475,12 +10090,47 @@
      "Crawl back to whatever hole you came out of.",
      "Get with the times, Calico."
     ],
+    "Celeste": [
+     "Took down the unicorn.",
+     "Go back to Coney, Celeste.",
+     "I'm not a circus girl.",
+     "Never got along with horse girls.",
+     "Celeste's been dealt with."
+    ],
+    "The Doorman": [
+     "Looks like we won't have the company Christmas party at The Baroness this year.",
+     "Stopped the Doorman!",
+     "You wanna play on my insecurities? Joke's on you, I got a god complex.",
+     "He seemed real polite until he tried to kill me.",
+     "The Baroness is gonna have to find a new doorman."
+    ],
+    "Drifter": [
+     "Took down the Drifter.",
+     "Glad I'm walkin' out of that fight in one piece.",
+     "Stay away from me, Drifter.",
+     "Anyone who wants to complain about Fairfax being evil needs to meet that guy.",
+     "Welcome to the modern world."
+    ],
     "Dynamo": [
      "Dynamo's down!",
      "Glad we won't be dealin' with a black hole for a while.",
      "Stopped the professor.",
      "You're in over your head, Dynamo.",
      "Sorry, professor."
+    ],
+    "Graves": [
+     "That girl has some issues.",
+     "Now that's how you weaponize the dead, Graves.",
+     "I'd love to experiment on that lich hand.",
+     "That lich needs a better intern.",
+     "Blackmore Academy kids are all the same."
+    ],
+    "Grey Talon": [
+     "It was your time to go, old man.",
+     "Eh. He was probably gonna die soon anyway.",
+     "The Baxter Society's time has passed.",
+     "I took down Grey Talon!",
+     "Stopped the archer!"
     ],
     "Haze": [
      "Gonna have to be faster than that, Haze.",
@@ -9497,8 +10147,11 @@
      "Holliday's down."
     ],
     "Infernus": [
+     "Your bar sucks, Infernus!",
      "That’s one fire put out.",
-     "You're not gonna burn my team."
+     "You're not gonna burn my team.",
+     "Sorry, Infernus.",
+     "Better luck next time, Infernus."
     ],
     "Ivy": [
      "Took out Ivy.",
@@ -9523,7 +10176,17 @@
     ],
     "Lash": [
      "Lash, Lash, Lash, when you gonna learn?",
-     "Jump in all you want, buddy. It ain't gonna go well for ya."
+     "Jump in all you want, buddy. It ain't gonna go well for ya.",
+     "What's the matter, Lash, can't keep up?",
+     "Looks like Bebop isn't the only one who can embarrass him.",
+     "His ego was almost as big as mine!"
+    ],
+    "Mina": [
+     "Took out Mina.",
+     "Entitled brat...",
+     "God, vampires are such a pain in the ass.",
+     "Too bad mommy and daddy can't buy you a win.",
+     "I'm not impressed, Mina."
     ],
     "Mirage": [
      "Took down Mirage.",
@@ -9535,8 +10198,16 @@
     "Mo & Krill": [
      "One less moleman to deal with.",
      "Sorry Krill.",
+     "Nice try, boys.",
      "I tried to be reasonable with you two, but you didn't wanna listen.",
      "I'm never backin' down, Krill."
+    ],
+    "Paige": [
+     "Stopped Paige!",
+     "Took down their support!",
+     "Reading about it is a lot different than living it, isn't it, Paige?",
+     "Nerd.",
+     "She had to be a psychopath; no one is that optimistic."
     ],
     "Paradox": [
      "And you thought you were so clever...",
@@ -9552,6 +10223,13 @@
      "Only way this was gonna end.",
      "Well, kid, you tried."
     ],
+    "Rem": [
+     "Sorry, little man.",
+     "Took out the night terror!",
+     "I don't care how cute Rem is, he had to go.",
+     "Rem won't be botherin' us for a while.",
+     "I don't get what his problem is. I usually get along great with kids!"
+    ],
     "Seven": [
      "So, yeah, Seven is as scary as people say.",
      "Thank god he's dead.",
@@ -9564,6 +10242,35 @@
      "When this is all over, Shiv, we should talk.",
      "You picked a fight with the wrong lady, Shiv.",
      "Quit bein' a tough guy and open up a hair salon or something."
+    ],
+    "Silver": [
+     "I stopped Silver.",
+     "Tough werewolf...",
+     "I thought misanthropes were supposed to stick together, Silver!",
+     "Glad I stopped her before I got mauled.",
+     "Werewolf's down!"
+    ],
+    "Sinclair": [
+     "Took out Sinclair!",
+     "Cute tricks were never gonna get it done.",
+     "That's for tryin' to turn me into a rabbit.",
+     "Your act sucks!",
+     "Try to steal my tech..."
+    ],
+    "Venator": [
+     "Took down the Venator.",
+     "Someone's always tryin' to stop progress...",
+     "Not your day, Padre.",
+     "I don't take orders from the Vatican.",
+     "Go hunt actual monsters, not theoretical ones."
+    ],
+    "Victor": [
+     "Stopped Victor.",
+     "Whoever made him's got talent.",
+     "Took down the cadaver man.",
+     "Stay down, Victor.",
+     "Stay down, Victor.",
+     "You get back up, the same thing's gonna happen."
     ],
     "Vindicta": [
      "Sniper's down.",
@@ -9578,6 +10285,13 @@
      "You don't wanna mess with me, Viscous.",
      "Dibs on Viscous' goo.",
      "You poor, naive, little goo person."
+    ],
+    "Vyper": [
+     "Took down Vyper!",
+     "That lady's lived a life.",
+     "I like my kidneys where they are, thank you very much.",
+     "Not feeling bad about that one.",
+     "I'm not some mark for you to mug, lady."
     ],
     "Warden": [
      "Try changin' the world now.",
@@ -9600,7 +10314,32 @@
      "Tough lady...",
      "Cute sword."
     ]
-   }
+   },
+   "streak": [
+    "Get used to it: this is gonna be happening all night.",
+    "I got enough ammo for the whole team!",
+    "If you don't hate my turrets yet, you're gonna real soon.",
+    "God, I love my job.",
+    "After today, my rates are definitely going up.",
+    "This just keeps getting better and better!",
+    "If you thought I was a problem before, I'm only getting better.",
+    "You gonna fight back? Are you really gonna let me do this to you all night?",
+    "You guys wanna keep throwing yourselves in the murder pile, that's your business.",
+    "Papa Fairfax is giving me a raise after this!",
+    "You can't stop the Occult Industrial Complex.",
+    "I'm not living rent-free in your head: I'm straight up evicting hope."
+   ],
+   "win": [
+    "God, I love my job.",
+    "Oh yeah.",
+    "Not bad!",
+    "We all played our parts.",
+    "Good teamwork!",
+    "We should celebrate!",
+    "We worked for that.",
+    "Earned our paychecks today.",
+    "That was a close one."
+   ]
   }
  },
  {
@@ -9806,11 +10545,11 @@
      "Aww, I thought he was supposed to be tough."
     ],
     "Apollo": [
-     "Nobody stabs me.",
+     "Nobody stabs me!",
      "You're not at my level, Apollo",
      "I expected better of you, Apollo.",
      "Hate to do that to a fellow Blackmore alumni.",
-     "Took out Apollo."
+     "Took out Apollo!"
     ],
     "Bebop": [
      "Destroyed the machine.",
@@ -9835,10 +10574,10 @@
     ],
     "Celeste": [
      "She's weird, but she has a look about her.",
-     "God, I bet she tastes delicious.",
-     "I wanna feed on a unicorn so bad.",
+     "God, I bet she tastes delicious...",
+     "I wanna feed on a unicorn so bad...",
      "I bet her blood tastes like cotton candy and peppermint ice cream.",
-     "The tattoos are ugly as sin, but the hair is great."
+     "The tattoos are ugly as sin, but... the hair is great."
     ],
     "The Doorman": [
      "Killed the help.",
@@ -9863,7 +10602,7 @@
     ],
     "Graves": [
      "Oh look, the weird little goth kid is playing with zombies, I'm shocked.",
-     "Stop being a cliché, Graves.",
+     "Ugh, stop being a cliché, Graves.",
      "I wonder if her parents know that their daughter sucks so much.",
      "What a weirdo.",
      "Necromancy is so lame."
@@ -9967,11 +10706,11 @@
      "Arin, you're the worst!"
     ],
     "Rem": [
-     "I hate feathers.",
-     "Get out of here runt.",
+     "I hate feathers!",
+     "Get out of here, runt!",
      "Sleep is for losers.",
      "The only acceptable time for a pillow fight is a photoshoot, and even that's tacky.",
-     "I handled Rem."
+     "I handled Rem!"
     ],
     "Seven": [
      "He smelled like a dirty subway tunnel.",
@@ -9992,7 +10731,7 @@
      "Hope she didn’t have rabies.",
      "That woman was feral.",
      "I don't do werewolves.",
-     "Down girl."
+     "Down, girl!"
     ],
     "Sinclair": [
      "Magic tricks are stupid, and I'm glad you're dead.",
@@ -10057,7 +10796,28 @@
      "I don't get why people are scared of her.",
      "You lost, Yamato. Deal with it!"
     ]
-   }
+   },
+   "streak": [
+    "This is my time now.",
+    "You are all bearing witness to perfection.",
+    "Trust me. The longer this goes on, the worse it's gonna get for you!",
+    "No one stands between me and my destiny.",
+    "My ascension begins now!",
+    "Think the vampire nation is taking note now?",
+    "Soon, the barony of New York will belong to me!",
+    "My power is only getting stronger! Give up and save us all some time.",
+    "I will sit on a throne of your broken bodies!",
+    "Not even the Viscount could stop me!",
+    "You all suck!"
+   ],
+   "win": [
+    "Like there was ever any doubt.",
+    "How else was this going to end?",
+    "No need to thank me, I know I'm amazing.",
+    "We all played our parts to perfection.",
+    "Hm! You weren't dead weight after all!",
+    "I'd work with you all again."
+   ]
   }
  },
  {
@@ -10272,6 +11032,13 @@
      "He was a brave man.",
      "He had conviction that rivaled my own."
     ],
+    "Apollo": [
+     "Took down Apollo!",
+     "You have much to learn, Apollo.",
+     "I'll have Nashala write his father a letter later.",
+     "This does not bode well for Ixian and Djinn relations.",
+     "In time, you will be a great swordsman, Apollo... but today is not that day."
+    ],
     "Bebop": [
      "Bebop will not stop me.",
      "I take no joy in this, Bebop.",
@@ -10293,6 +11060,13 @@
      "Calico's down.",
      "Never trust someone who owns a sphynx."
     ],
+    "Celeste": [
+     "She was a courageous woman.",
+     "The brightest light often fades the fastest.",
+     "Took down the unicorn.",
+     "I've seen enough of your act, Celeste.",
+     "She was quite the showman."
+    ],
     "The Doorman": [
      "Until today, our stay at the Baroness has been rather pleasant.",
      "He seemed much nicer when he was handling Nashala's bags.",
@@ -10313,6 +11087,13 @@
      "Brilliance only gets you so far.",
      "He seemed like a kind man.",
      "The battlefield is no place for a teacher."
+    ],
+    "Graves": [
+     "You should choose a better master, Graves.",
+     "Took out the necromancer.",
+     "Let the dead rest in peace, Graves.",
+     "American children have strange hobbies.",
+     "Took down the lich's pawn."
     ],
     "Grey Talon": [
      "I took down Grey, Talon.",
@@ -10412,6 +11193,13 @@
      "I'm sorry, child.",
      "You are out of your depth, Pocket."
     ],
+    "Rem": [
+     "Forgive me, child.",
+     "You forced my hand, Rem!",
+     "I stopped Rem!",
+     "Sleep, child.",
+     "Took out their support."
+    ],
     "Seven": [
      "I took down Seven.",
      "I'm not afraid of you, Seven.",
@@ -10425,6 +11213,13 @@
      "You won't be stabbing anyone, Shiv.",
      "Perhaps, in time, he'll become a threat.",
      "I expected more from the Baxter society."
+    ],
+    "Silver": [
+     "Took down the werewolf!",
+     "Fear not, Nashala. The werewolf is dead.",
+     "You are a slave to your vices, Silver.",
+     "She was undisciplined.",
+     "I'm not afraid of you, Silver."
     ],
     "Sinclair": [
      "Killed the magician.",
@@ -10489,7 +11284,30 @@
      "I won't be bullied by the likes of you.",
      "Yamato, your cruelty has brought you the end that you deserve."
     ]
-   }
+   },
+   "streak": [
+    "The power of the Djinn is absolute.",
+    "I didn't choose this fight, but I will finish it.",
+    "Yield now, while you still can.",
+    "Don't force me to kill you all!",
+    "Our victory will be glorious!",
+    "This battle will be over sooner than later.",
+    "You were fools to stand in Nashala's way.",
+    "I'm willing to die for Nashala-- and I am certainly willing to kill for her.",
+    "The Djinn will not be denied.",
+    "Soon Wyoming will be ours!",
+    "You will be humbled before the Djinn."
+   ],
+   "win": [
+    "My actions carry the weight of the Djinn.",
+    "The undisciplined will never beat me.",
+    "Soon, the Djinn will have a place to call their own.",
+    "Nashala will be pleased.",
+    "We have ushered in a new age.",
+    "I am indebted to you all.",
+    "The Djinn will not forget your aid.",
+    "Thank you, my friends."
+   ]
   }
  },
  {
@@ -10922,7 +11740,33 @@
      "Mo, she didn't cut you too bad, did she?",
      "We stopped Yamato!"
     ]
-   }
+   },
+   "streak": [
+    "Maurice and I are just getting started.",
+    "These people wouldn't last two hours in the tunnels!",
+    "I can't believe we were nervous about fighting these people.",
+    "No one is better than us!",
+    "If you're looking for mercy, my friends, I'm afraid it's in short supply.",
+    "You can't hide from Maurice and I!",
+    "No one escapes us!",
+    "Maurice is gonna find youuu...",
+    "They have no chance at stopping us!",
+    "New York belongs to us!",
+    "You know, there's no shame in just giving up."
+   ],
+   "win": [
+    "We're doing great!",
+    "Let's keep this up!",
+    "Things are looking up!",
+    "Wonderful!",
+    "Maurice and I are just getting started.",
+    "Tonight, we toast to victory!",
+    "I couldn't have done it without you, Maurice.",
+    "Another job done to perfection!",
+    "And now we receive what we so richly deserve!",
+    "We could not have done this without all of your help.",
+    "We won! Because we work together, as a team."
+   ]
   }
  },
  {
@@ -11114,7 +11958,7 @@
    "I need to find a place to recover!",
    "You are all under my care.",
    "I do hope you all know how to follow instructions.",
-   "I see the rebel are out in full force.",
+   "I see the rabble are out in full force.",
    "I accept nothing less than total victory.",
    "Can we make this quick? I need to return to the ward as soon as possible."
   ],
@@ -11150,7 +11994,323 @@
     "Behave!",
     "Behave."
    ],
-   "heroes": {}
+   "heroes": {
+    "Abrams": [
+     "Well, he was rather resilient, now wasn't he?",
+     "I handled the detective.",
+     "You're strong, Detective, but I will not be denied.",
+     "You're meddling with things that should not concern you, Detective.",
+     "That tome needs to be destroyed."
+    ],
+    "Apollo": [
+     "I don’t care who your father is.",
+     "Apollo, your name means nothing to me.",
+     "Yes, you're rich, how nice for you.",
+     "Entitled brat...",
+     "I've seen plenty of young men like him, they all break eventually."
+    ],
+    "Baba": [
+     "I killed the old witch.",
+     "It's a shame what she's become.",
+     "You should have stuck to the knitting circle.",
+     "Ms. Yaga, you didn't have a chance.",
+     "Age does not always beget wisdom!"
+    ],
+    "Bebop": [
+     "Dispatched Bebop.",
+     "Bebop is no longer a concern.",
+     "Away with you, golem!",
+     "I will not be intimidated by a scrap golem.",
+     "Your motives do not move me, Bebop."
+    ],
+    "Billy": [
+     "William, William, William...",
+     "Must you be so stubborn?",
+     "The goat boy is not a problem anymore.",
+     "You're a real piece of work, William...",
+     "Be quiet, William!"
+    ],
+    "Calico": [
+     "She couldn't outrun fate forever.",
+     "Actions have consequences, Calico.",
+     "She got exactly what she deserved.",
+     "Oh, what a waste...",
+     "I took out Calico."
+    ],
+    "Celeste": [
+     "Move along, Celeste.",
+     "Get out of my way, Celeste.",
+     "I won't be stopped by circus act.",
+     "\"The Dazzling Celeste\" indeed...",
+     "Defeated the unicorn."
+    ],
+    "Deadman Danny": [
+     "He's lucky I didn't dispel him completely.",
+     "Fairfax standards are clearly slipping.",
+     "That junk belongs in the trash!",
+     "I dealt with the skeleton.",
+     "I killed the fool with the jetpack."
+    ],
+    "The Doorman": [
+     "I just angered something powerful...",
+     "He'll remember that. I need to be careful.",
+     "Hope he doesn't take it too personally; I love high tea at the Baroness.",
+     "Well, that might bite me in the ass later...",
+     "I stopped the Doorman."
+    ],
+    "Drifter": [
+     "Die, Drifter.",
+     "I won't cower before the likes of you.",
+     "I face fear every day, Drifter.",
+     "You picked the wrong victim.",
+     "How does it feel to be powerless, Drifter?"
+    ],
+    "Dynamo": [
+     "I expected more from a Columbia man.",
+     "I thought you were supposed to be responsible, Professor?",
+     "And here I was hoping we'd be friends, Professor.",
+     "You can tell that man coddles his students.",
+     "Dynamo is no threat to us."
+    ],
+    "Graves": [
+     "Teenagers like you are a dime a dozen.",
+     "Give me that hand.",
+     "Stop fighting me, Graves!",
+     "You're not stronger than me, child.",
+     "Well! Somebody wants attention from their parents now, don't they."
+    ],
+    "Grey Talon": [
+     "I'm sorry I couldn't give him a painless death...",
+     "How much time did he have left anyway?",
+     "It's remarkable a man his age managed to hang on as long as he has.",
+     "How dare you hunt me!",
+     "The old man has been put down."
+    ],
+    "Haze": [
+     "I don't care if you work for the government, these people are under my protection!",
+     "You won't lay a finger on those under my care, Haze.",
+     "You're not the only person who has to put people to sleep, Haze.",
+     "The OSIC can investigate all they want. My ward practices are all above board.",
+     "The sandman has met her match."
+    ],
+    "Holliday": [
+     "Come now, Sheriff. You'll have to do better than that.",
+     "Who would have guessed that you'd fail your charges again.",
+     "Sherrif, I will not be bullied by the likes of you.",
+     "You're not in control here, Sheriff.",
+     "She was outmatched from the beginning."
+    ],
+    "Infernus": [
+     "You're not sending me to the burn ward.",
+     "You're not the first firestarter I've had to deal with.",
+     "Took down Infernus!",
+     "I hope I brought along some aloe.",
+     "We have to keep Infernus in check while we can."
+    ],
+    "Ivy": [
+     "What do you think you're doing, Ivy?",
+     "Oh, the nerve of some people...",
+     "And here I thought she was supposed to be a hero.",
+     "Let's see how attacking nurses works for Carlos Arroyo's campaign.",
+     "The gargoyle was no threat."
+    ],
+    "Kelvin": [
+     "I handled the ice wight.",
+     "Discard the rock, Kelvin; die the way nature intended.",
+     "Ahh, the egos of men...",
+     "I think we know who's better at supporting their team.",
+     "Kelvin won't be bothering us for a while."
+    ],
+    "Lady Geist": [
+     "She was living on borrowed time anyway.",
+     "I'd get that ward checked out if I were you, Lady Geist.",
+     "Oathkeeper will not have me!",
+     "You've met your match, Geist.",
+     "Geist, you could only delay the inevitable for so long."
+    ],
+    "Lash": [
+     "Who would have thought a blowhard like him would fail to live up to expectations.",
+     "Let this be a lesson to you, Lash.",
+     "Bravado wilts in the face of reality.",
+     "Lash. The sooner your realize that I am in control, the better you'll be.",
+     "They all break eventually."
+    ],
+    "McGinnis": [
+     "Know your place, Miss McGinnis.",
+     "Fairfax Industries should stay out of my business.",
+     "I'm not impressed, McGinnis.",
+     "You disappoint me.",
+     "It would seem her intelligence is vastly overstated."
+    ],
+    "Mina": [
+     "You will not feast on me, Mina.",
+     "I don't answer to the Viscount, or you!",
+     "She should have been spanked more as a child.",
+     "I'm not your mummy and daddy, Mina. You can't bully me.",
+     "Scream all you want, Mina, the result will be the same."
+    ],
+    "Mirage": [
+     "I can respect a man who takes his job seriously.",
+     "I stopped the Djinn-bearer.",
+     "The dominion of the Djinn is none of my concern.",
+     "Ambassador or no, you will be treated the same as anyone else.",
+     "I took down Mirage."
+    ],
+    "Mo & Krill": [
+     "Who knows what diseases that thing was carrying.",
+     "I really should get a mole man for an orderly.",
+     "I stopped Mo and Krill.",
+     "You will not lay a paw on me.",
+     "Credit where credit is due: The little one had manners."
+    ],
+    "Paige": [
+     "You're a talented bibliomancer, Paige, but stories aren't enough.",
+     "If I were you, I'd stick to Storytime at the library.",
+     "Always a pleasure, Paige.",
+     "It's not personal, Paige, I trust you understand.",
+     "The storyteller is down!"
+    ],
+    "Paradox": [
+     "What an annoying woman.",
+     "Would it kill you to contribute to society?",
+     "I tire of your antics, Paradox!",
+     "Oh yes, you're so mysterious, Paradox- Moving on!",
+     "You'll have to try harder than that, you little thief."
+    ],
+    "Pocket": [
+     "Society really lets some people fall through the cracks, doesn't it?",
+     "Someone really needs to do something about the homeless youth population.",
+     "That case is evil.",
+     "No one possessing what's in that briefcase is up to anything good.",
+     "At least I stopped Pocket before they did something terrible."
+    ],
+    "Rat King": [
+     "Exterminated the rat.",
+     "I need to wash my hands after that...",
+     "Unhygienic and uncivilized.",
+     "You cannot be allowed to infest New York.",
+     "You won't rule over me."
+    ],
+    "Rem": [
+     "It's time for beddy-bye.",
+     "Night-night, Rem.",
+     "Sleep well, Rem.",
+     "The little figment needs to go back where he belongs.",
+     "Insolent child."
+    ],
+    "Seven": [
+     "Oh, he's a powerful one.",
+     "Oh, you poor thing.",
+     "You don't get to play God, Seven. That's my job.",
+     "He got what he deserved.",
+     "I put an end to Seven!"
+    ],
+    "Shiv": [
+     "I handled Shiv.",
+     "You have the gall to try and stab me?",
+     "Only one of us is practicing bloodletting today, Shiv.",
+     "The wicked deserve to suffer!",
+     "Death is a mercy for the likes of him!"
+    ],
+    "Silver": [
+     "Heel!",
+     "Compose yourself, Silver.",
+     "Give me 3 months with Silver, and I'll sort her out.",
+     "Now, if she was a were-wolfspider, I'd be concerned.",
+     "I've dealt with my share of lycanthropes."
+    ],
+    "Sinclair": [
+     "I'm a nurse, not a couples therapist.",
+     "I took out Sinclair!",
+     "Why don't you two go bother someone else?",
+     "At best, you're a pale imitation of the real thing.",
+     "Mm, you two deserve each other."
+    ],
+    "Solomon": [
+     "Solomon... you shouldn't have gotten involved.",
+     "He's never faced someone like me.",
+     "I took out Solomon!",
+     "No wonder he's not a grandmaster yet!",
+     "What were you trying to accomplish, Solomon?"
+    ],
+    "Venator": [
+     "Not today, Venator.",
+     "I won't have you questioning my methods, Father.",
+     "You failed, Venator.",
+     "Conviction is not a substitute for common sense.",
+     "Stay out of my business, Venator."
+    ],
+    "Victor": [
+     "Well, at least he should be well acquainted with the morgue!",
+     "Victor will be back, but I bought us some time.",
+     "Sometimes, death is a mercy.",
+     "I put him out his misery.",
+     "Let me help with the pain, Victor."
+    ],
+    "Vindicta": [
+     "This world is for the living.",
+     "Your time has passed, Vindicta.",
+     "I'm not afraid of some vengeful spirit.",
+     "Resisting my authority has consequences, Vindicta.",
+     "Their sniper has been dealt with."
+    ],
+    "Violet": [
+     "Not good enough!",
+     "You could use some discipline.",
+     "I think you need more practice.",
+     "Talent doesn't supersede experience.",
+     "Spare the rod, spoil the child!"
+    ],
+    "Viscous": [
+     "I'll have to look into the healing properties of The Cube.",
+     "What a fascinating creature.",
+     "The goo wasn't malicious, just incompetent.",
+     "A pity our Patron couldn't have gotten to him first.",
+     "Seek me when this is over, Viscous."
+    ],
+    "Vyper": [
+     "What a loathsome woman.",
+     "Ugh, you disgust me.",
+     "Someone haul that woman off to jail already!",
+     "Someone needed to put Vyper out of her misery.",
+     "Vyper, you are a drain on society."
+    ],
+    "Warden": [
+     "I appreciate his conviction.",
+     "Warden has been stopped.",
+     "He fought with courage.",
+     "He was principled. Disciplined.",
+     "A shame we couldn't work together as allies. I think we'd rather enjoy each other."
+    ],
+    "Wraith": [
+     "Gambling is for degenerates.",
+     "I took down Wraith.",
+     "You thought you had me, didn't you, Wraith?",
+     "New York will be better off without her.",
+     "You prey on the weak, Wraith; well, I am not weak."
+    ],
+    "Yamato": [
+     "Criminal swine.",
+     "How dare you try to stab me?",
+     "Stopped Yamato!",
+     "That woman had no class.",
+     "I'm glad I'm walking away in one piece."
+    ]
+   },
+   "streak": [
+    "I see a firm hand is in order.",
+    "If I must be the bad guy, so be it.",
+    "Pain is just part of the process.",
+    "Don't try to fight me, it's pointless.",
+    "I will do what I must.",
+    "Don't try to get in my way!",
+    "Fight treatment all you like; you won't win.",
+    "In the end, I always get my way.",
+    "In case it's not apparent yet, nurses don't take the Hippocratic Oath.",
+    "If you've survived this long, congratulations. You've beat the odds.",
+    "Don't worry. Your suffering will end soon."
+   ],
+   "win": []
   }
  },
  {
@@ -11358,6 +12518,13 @@
      "He finally went down.",
      "Abrams isn't making it easy for us."
     ],
+    "Apollo": [
+     "I thought princes were supposed to be charming?",
+     "Would it kill you to be nicer, Apollo?",
+     "I bet, deep inside, he's probably a good guy.",
+     "I stopped Apollo!",
+     "All princes can't be like him, right?"
+    ],
     "Bebop": [
      "Stopped the automaton!",
      "Bebop won't be pulling us for a while.",
@@ -11379,6 +12546,13 @@
      "I don't think Calico's gonna take that very well.",
      "That woman was a nightmare."
     ],
+    "Celeste": [
+     "Sorry, Celeste!",
+     "God, she is so cool...",
+     "Her hair's so pretty!",
+     "Took down the unicorn!.. Oh... I took down the unicorn...",
+     "I wanna be your friend!"
+    ],
     "The Doorman": [
      "I took down the Doorman!",
      "I stopped the Doorman!",
@@ -11399,6 +12573,13 @@
      "He always seemed so polite at the library.",
      "He'll forgive me!",
      "Dealt with the professor."
+    ],
+    "Graves": [
+     "She reminded me of Bryce.",
+     "Took down Graves!",
+     "I took out the necromancer!",
+     "I know you just wanna help, Graves, but there's gotta be a better way!",
+     "I think she just needs a hug."
     ],
     "Grey Talon": [
      "It's over, Grey Talon.",
@@ -11498,6 +12679,13 @@
      "Now that right there was someone with a whole lot of feelings.",
      "Why couldn't they just keep an angsty journal, like most people?"
     ],
+    "Rem": [
+     "Awww. He was so cute!",
+     "I am so sorry, little guy!",
+     "I feel really guilty...",
+     "It's okay, Paige, ha, don't feel bad! You just... read him a bedtime story! Ha ha...",
+     "Took out Rem!"
+    ],
     "Seven": [
      "I won't let my brother end up like you, Seven!",
      "Seven had to be stopped.",
@@ -11511,6 +12699,13 @@
      "Stopped the biker.",
      "I think one of his knives might be stuck in my books.",
      "Sorry, Shiv. That pompadour could only get you so far."
+    ],
+    "Silver": [
+     "Be nicer to people, Silver!",
+     "Stopped the werewolf!",
+     "Oh! Okay, that could've gone real bad!",
+     "I am not looking forward to seeing her again.",
+     "I took out Silver!"
     ],
     "Venator": [
      "I thought you were supposed to hunt monsters!",
@@ -11568,7 +12763,28 @@
      "And I thought Wraith was mean.",
      "She's definitely gonna come back and murder me."
     ]
-   }
+   },
+   "streak": [
+    "I think I'm getting the hang of this!",
+    "This story's starting to get good!",
+    "Can't wait to see how this story plays out!",
+    "I won't let you stop me from summoning the Patron!",
+    "I am gonna complete this ritual, and there is nothing you can do about it!",
+    "So this is what it feels like to be a hero!",
+    "You guys can give up whenever you want.",
+    "No one's hurting my friends.",
+    "Guys, you can't kill me, I've got plot armor!",
+    "Don't you get it? I'm the protagonist! I always win!",
+    "It's Saint Crispin's day, baby!"
+   ],
+   "win": [
+    "I knew we could do it!",
+    "Great job, everyone.",
+    "Thanks so much for your help!",
+    "We worked great as a team!",
+    "Great teamwork!",
+    "I couldn't have done it without you!"
+   ]
   }
  },
  {
@@ -11725,6 +12941,20 @@
      "This ends when you give me the Tome.",
      "That Tome will belong to Paradox!"
     ],
+    "Apollo": [
+     "Messing with royals is the best.",
+     "Nice try, Apollo!",
+     "Daddy is going to be so disappointed in you.",
+     "That Blackmore twat got what was coming to him.",
+     "I'm better than you, Apollo. Just accept it."
+    ],
+    "Baba": [
+     "And here I usually like antiques.",
+     "She couldn't keep up after all.",
+     "Oh, I'm not leaving here without that bench!",
+     "I took out Baba!",
+     "The old witch is dead."
+    ],
     "Bebop": [
      "See you, Bebop!",
      "Robot's down!",
@@ -11746,6 +12976,20 @@
      "Calico isn't a real threat.",
      "Calico didn't have what it takes."
     ],
+    "Celeste": [
+     "Took down Celeste!",
+     "If this were an aerial silks competition, I'd be worried.",
+     "Shame. I liked her style.",
+     "That woman would be a great cat burglar if she toned down the glitter.",
+     "Well, she was fun to play with."
+    ],
+    "Deadman Danny": [
+     "That jetpack's going to be mine.",
+     "Wonderful of Fairfax to supply a new weak point.",
+     "One day, I'm going to steal that skeleton!..",
+     "Danny Danny Danny, when are you going to learn?",
+     "Took out the skeleton salesman."
+    ],
     "The Doorman": [
      "I stopped The Doorman.",
      "I will learn the secrets of The Baroness, Doorman.",
@@ -11766,6 +13010,13 @@
      "I took out the professor!",
      "Don't have to worry about that black hole for a while...",
      "You're out of your league, Dynamo!"
+    ],
+    "Graves": [
+     "I'm taking that lich hand, one way or another.",
+     "What a fascinating relic, Graves.",
+     "The hand has piqued my interest.",
+     "Necromancers think they're clever, but it's the same shtick over and over again.",
+     "Graves, just go to law school and make your mummy and daddy proud."
     ],
     "Grey Talon": [
      "He was a legend...",
@@ -11851,6 +13102,13 @@
      "Sorry, Krill.",
      "Nothing personal, boys!"
     ],
+    "Nurse Harrow": [
+     "Ya don't scare me, Harrow!",
+     "You're not going to have that bag forever, Harrow.",
+     "Goodbye, Nurse.",
+     "Your bedside manner needs a lot of work.",
+     "I took out the nurse!"
+    ],
     "Paige": [
      "Bet she has some rare books worth stealin'.",
      "I took care of the bookworm.",
@@ -11865,6 +13123,20 @@
      "Just give me the case, Pocket, save us all some time!",
      "You can change your name, Arin, but I know who you really are."
     ],
+    "Rat King": [
+     "I'm not gonna let you steal a whole island before I do.",
+     "You were always doomed to fail, Rat King.",
+     "Keep those rabid vermin away from me!",
+     "Your crown will be a nice addition to the Paradox Museum.",
+     "Took out the so-called king!"
+    ],
+    "Rem": [
+     "Took out Rem!",
+     "What a fascinating creature!",
+     "If the ritual goes bad, I should kidnap him for the Paradox museum.",
+     "I'll have to remember to investigate that creature further.",
+     "I'll sleep when I'm dead."
+    ],
     "Seven": [
      "Seven's been handled.",
      "I don't fear you, Seven.",
@@ -11878,6 +13150,27 @@
      "You have knives, I have time! It was never going to be a fair fight.",
      "Nice try, Shiv!",
      "You're not gonna be stoppin' me, Shiv!"
+    ],
+    "Silver": [
+     "I don't scare easily, Silver.",
+     "That's the woman who thinks she can stop Paradox?! Ha!",
+     "Yes, Silver. You are a very scary bounty hunter.",
+     "The werewolf wasn't a problem.",
+     "Sliver, if you wanna keep throwing away your life... I can't stop you."
+    ],
+    "Sinclair": [
+     "Killed the cut-rate magician.",
+     "Your act kind of sucks, Sinclair.",
+     "No one turns me into a rabbit!",
+     "Stopped the magician!",
+     "You don't belong here, Sinclair!"
+    ],
+    "Solomon": [
+     "Guess he was a move behind.",
+     "There's a fine line between wisdom and hubris.",
+     "You need more practice, Solomon.",
+     "I wiped that smug look off his face!",
+     "Solomon's dead."
     ],
     "Venator": [
      "Was wondering when they'd send you after me.",
@@ -11899,6 +13192,13 @@
      "I have your number, Vindicta!",
      "Vindicta, you're out of time.",
      "You've picked the wrong target, Vindicta!"
+    ],
+    "Violet": [
+     "Given more time to cook, she may become someone worth stealing from.",
+     "That's not gonna help her confidence any.",
+     "Not good enough, Violet.",
+     "There are other ways to get noticed.",
+     "I killed the artist."
     ],
     "Viscous": [
      "Viscous is down!",
@@ -11935,7 +13235,32 @@
      "I can't wait to steal that sword!",
      "Yamato will never stop me!"
     ]
-   }
+   },
+   "streak": [
+    "I'm just getting started!",
+    "This... is only the beginning!",
+    "You think I'm bad now? Wait until I get going!",
+    "No one's stopping me!",
+    "There's more where that came from.",
+    "How are you gonna stop me, I manipulate time!",
+    "You guys could at least try to stop me!",
+    "I'll walk all over them.",
+    "Welcome, to the dawn of Paradox!",
+    "No one's my equal.",
+    "There's no one better than me!"
+   ],
+   "win": [
+    "That's what I like to see.",
+    "Now, that was satisfying!",
+    "No one's my equal.",
+    "There's no one better than me!",
+    "Can't wait to tell the Paradox Council about this.",
+    "This is going to make a hell of an exhibit in the museum.",
+    "What did I tell you? Paradox... is inevitable.",
+    "Time to talk to a god!",
+    "We made history.",
+    "It was fun working with you all, we should run another job sometime."
+   ]
   }
  },
  {
@@ -12115,12 +13440,26 @@
      "That could've gone real bad.",
      "Today's gonna be exhausting, isn't it?"
     ],
+    "Apollo": [
+     "I don't miss Blackmore Academy.",
+     "Stop living your father's life, Apollo.",
+     "I know the pressure of greatness all too well.",
+     "I took down the fencer.",
+     "A little humility is good for you, Apollo."
+    ],
     "Bebop": [
      "I stopped Bebop!",
      "He's lucky. At least he has a mother who'll mourn him.",
      "Well, if I don't retake my company at least I have a future in the Bear Pit.",
      "You're a good son, Bebop.",
      "Scrap golem's down!"
+    ],
+    "Billy": [
+     "I took out Billy!",
+     "You're being used, Billy.",
+     "The world isn't black and white, Billy.",
+     "I get it! I hate Fairfax Industries too.",
+     "We have the same goals. It’s a shame we couldn't work together."
     ],
     "Calico": [
      "I was wondering when I'd see you again.",
@@ -12129,12 +13468,40 @@
      "Don't worry, I'll take care of Ava.",
      "I suppose this was inevitable."
     ],
+    "Celeste": [
+     "I stopped Celeste.",
+     "Life isn't all rainbows, Celeste.",
+     "I used to love going to Coney...",
+     "I'm not letting you stop me, Celeste!",
+     "Took down the unicorn."
+    ],
+    "The Doorman": [
+     "You seemed a lot less creepy when I was a kid.",
+     "No more games, Doorman.",
+     "I feel like he's still inside my head...",
+     "I took down the Doorman.",
+     "And I used to love going to the Baroness, too..."
+    ],
+    "Drifter": [
+     "That thing was pure evil.",
+     "Never thought I'd meet the man who'd make my father seem like a good guy.",
+     "You're not hurting anybody, Drifter.",
+     "You're a monster, Drifter.",
+     "I stopped the Drifter!"
+    ],
     "Dynamo": [
      "I knew I couldn't count on you.",
      "Why are you making me do this?",
      "It was never supposed to be this way.",
      "I should've known you'd take my father's side.",
      "Professor Dynamo is dead."
+    ],
+    "Graves": [
+     "I'm sorry, Graves.",
+     "I feel like we had a lot in common.",
+     "Graves, find me when this is over. I want to help you.",
+     "The necromancer's down!",
+     "I'd be a hypocrite if I lectured her."
     ],
     "Grey Talon": [
      "Took down Grey Talon!",
@@ -12199,6 +13566,13 @@
      "You're complicit, McGinnis.",
      "Fairfax Industries needs to die."
     ],
+    "Mina": [
+     "She's worse than I remembered.",
+     "I didn't want our reunion to be like this, Mina.",
+     "She's gonna be stewing on that for months...",
+     "I'm sorry for what happened, Mina.",
+     "Mina Ha has been dealt with."
+    ],
     "Mirage": [
      "Stopped Mirage!",
      "The Djinn will have to wait. I'm sorry.",
@@ -12213,12 +13587,26 @@
      "I thought we were friends.",
      "I'm a monster."
     ],
+    "Paige": [
+     "You deserve better than this, Paige.",
+     "You're a good person, Paige. I'm sorry.",
+     "She didn't give me a choice.",
+     "I took down Paige!",
+     "I stopped the storyteller!"
+    ],
     "Paradox": [
      "I took out Paradox!",
      "You can dress up however you want but at the end of the day, you're just another rich asshole.",
      "I used to be a big fan!",
      "Maybe my dad was right about you guys.",
      "I really didn't want to make enemies with Paradox today."
+    ],
+    "Rem": [
+     "What have I become?..",
+     "I'm so sorry, Rem.",
+     "Oh God, I'm a monster...",
+     "Stopped Rem.",
+     "He didn't give me a choice."
     ],
     "Seven": [
      "Took down Seven!",
@@ -12234,12 +13622,33 @@
      "Stay away from me!",
      "We won't be seeing Shiv for a while."
     ],
+    "Silver": [
+     "Took out Silver.",
+     "You think I'm scared of werewolves? I live with a mole man.",
+     "She was a tough woman.",
+     "That lady has some demons.",
+     "Did my father send you?"
+    ],
     "Sinclair": [
      "Took down Sinclair.",
      "Now's not the time for whimsy.",
      "The magicians are dead.",
      "That was one of the weirder fights I've been in.",
      "They needed a better assistant."
+    ],
+    "Venator": [
+     "That guy is out of his damn mind.",
+     "You want to hunt monsters, Venator? Then hunt my father.",
+     "I handled the Venator.",
+     "Get out of my city.",
+     "I won't let you stop me, Venator."
+    ],
+    "Victor": [
+     "You'll have to find answers another day, Victor.",
+     "I brought down Victor.",
+     "He doesn't realize how lucky he is for not knowing his past.",
+     "I wish there was another way. I'm sorry.",
+     "I hope someday you find what you're looking for, Victor."
     ],
     "Vindicta": [
      "I stopped their sniper!",
@@ -12283,7 +13692,31 @@
      "Thought she almost had me...",
      "I made a powerful enemy."
     ]
-   }
+   },
+   "streak": [
+    "I didn't want it to come to this.",
+    "You're making me do this.",
+    "I'm becoming someone I didn't want to be.",
+    "If this is what I have to do, so be it!",
+    "Just stay out of my way!",
+    "Please give up. Don't make me kill you.",
+    "This is the price I have to pay to do the right thing.",
+    "Surrender. Don't throw your lives away any more than you already have.",
+    "I am the rightful heir of Fairfax Industries and it will be mine.",
+    "I'm building a new legacy.",
+    "The war is over! You've lost!"
+   ],
+   "win": [
+    "I did what I had to do.",
+    "I make my own luck.",
+    "We can build a better world.",
+    "Nice job.",
+    "We all did our best.",
+    "Wasn't the outcome I was expecting.",
+    "That was exciting...",
+    "That coulda gone either way.",
+    "I'm glad I trusted you guys."
+   ]
   }
  },
  {
@@ -12628,6 +14061,13 @@
      "Glitter's disgustin'!",
      "You make me sick, Celeste!"
     ],
+    "Deadman Danny": [
+     "A little payback for ya, Danny!",
+     "Danny, your boney ass is mine!",
+     "Fairfax shill!",
+     "I took out Danny.",
+     "I'm comin' for all of ya Fairfax bastards!"
+    ],
     "The Doorman": [
      "You think you're better than me cause you work for a hotel?",
      "After we're done here, I'm chewin' up all the duvets in The Baroness.",
@@ -12740,6 +14180,13 @@
      "You had your chance to work for me.",
      "Mo and Krill ain't got shit on me."
     ],
+    "Nurse Harrow": [
+     "You can't do squat, Harrow!",
+     "I don't like whatever it is she's got in that bag.",
+     "Where's your vaccine for that, lady?!",
+     "Harrow's down!",
+     "I killed the creepy nurse."
+    ],
     "Paige": [
      "Looks like those books ain't helping ya now.",
      "I thought you were supposed to be sooo smart?",
@@ -12796,6 +14243,13 @@
      "Your magic act stinks, Sinclair.",
      "Took out the magician."
     ],
+    "Solomon": [
+     "Ya can't stop us, Solomon!",
+     "Time for a dirt nap, chess boy!",
+     "Who do ya think you were messin' with?!",
+     "I killed Solomon!",
+     "You're just a crumbum, Solomon! Always have been!"
+    ],
     "Venator": [
      "Holier than thou, crumbum!",
      "Go do some Hail Marys or somethin'.",
@@ -12816,6 +14270,13 @@
      "You think you can assassinate me?!",
      "Killed their sniper.",
      "You're pickin' the wrong fights, lady."
+    ],
+    "Violet": [
+     "Outta my way, kid!",
+     "You're in over your head.",
+     "You ain't cut out for this, Violet.",
+     "Christ, she makes a mess...",
+     "I killed the art student."
     ],
     "Viscous": [
      "Stop talking about The Cube, ya goo-faced crumbum!",
@@ -12852,7 +14313,21 @@
      "Took out Yamato!",
      "Don't know what kinda operation you think you're runnin', lady, but it ain't shit compared to mine."
     ]
-   }
+   },
+   "streak": [
+    "Hope you topsiders are payin' attention.",
+    "I'm done rulin' from the shadows!",
+    "You crumbums don't have a chance in hell.",
+    "You thought rats were scary before? Just wait...",
+    "Don't mess with the king.",
+    "Long Island, here I come.",
+    "Those bastards weren't ready for someone like me.",
+    "My people are gonna eat your people's bones.",
+    "I'm killin' all you crumbums!",
+    "No one can kill the king.",
+    "The rats are takin' over, baby!"
+   ],
+   "win": []
   }
  },
  {
@@ -13036,6 +14511,13 @@
      "Be nicer to people, Apollo!",
      "His clothes are so fancy."
     ],
+    "Baba": [
+     "Aw, I wanna play with her more...",
+     "I bet she has snacks in her pocket!",
+     "Sweet dreams, Baba!",
+     "I wanna ride her bench sometime.",
+     "I wish she was my grandma."
+    ],
     "Bebop": [
      "Nice robot got broken!",
      "I liked his metal handshake.",
@@ -13062,7 +14544,15 @@
      "She's pretty.",
      "I love the circus.",
      "I love glitter!",
-     "Great show, Celeste!"
+     "Great show, Celeste!",
+     "She smelled like peppermint."
+    ],
+    "Deadman Danny": [
+     "He really likes his toys.",
+     "Sorry if I broke your stuff!",
+     "Sorry Danny, we'll play some more later.",
+     "One day, I'll get to play with Fairfax toys for a job!",
+     "See you later, dead man!"
     ],
     "The Doorman": [
      "He's so silly!",
@@ -13176,6 +14666,13 @@
      "You're a nice mole, Mo!",
      "You're a nice not-mole, Krill."
     ],
+    "Nurse Harrow": [
+     "She smells like stale lollipops.",
+     "I don't think she wants to be friends.",
+     "She should get a pillow instead of that bag.",
+     "Cheer up, lady!",
+     "Her dreams are wrong..."
+    ],
     "Paige": [
      "She needs to read me a bedtime story.",
      "I want her to read me every day, but not today.",
@@ -13231,6 +14728,13 @@
      "Do the trick where you die again!",
      "Oh, I don't know if those two are gonna make it."
     ],
+    "Solomon": [
+     "Chess is stupid.",
+     "His games are too complicated.",
+     "I bet he's more fun in the park!",
+     "I wanna hear his stories.",
+     "Goodnight, Solomon!"
+    ],
     "Venator": [
      "I don't know much about priests, but I don't think they're supposed to shoot people.",
      "He was like a big leprechaun with a gun.",
@@ -13251,6 +14755,13 @@
      "Her dress looks nice.",
      "I wish I could fly like her.",
      "I don't like her birds!"
+    ],
+    "Violet": [
+     "She was pretty.",
+     "I wonder if my mom would adopt her too?",
+     "I like painting, but fun painting, not her scary painting.",
+     "Maybe she'd have better luck with pottery!",
+     "Violet's going to sleep now."
     ],
     "Viscous": [
      "Cuuuubbbeee.",
@@ -13286,7 +14797,33 @@
      "She doesn’t look like a Yamato...",
      "She smells like her brother."
     ]
-   }
+   },
+   "streak": [
+    "This is exciting.",
+    "I'm doin' pretty good!",
+    "You can't stop us!",
+    "I got a good feeling 'bout this!",
+    "I'm glad I'm awake to see this!",
+    "Of course they can't stop me, I've brought my lucky pillow!",
+    "No one's better than us!",
+    "This is like a dream...",
+    "No one stops me from goin' home!",
+    "My friends are gonna win!",
+    "This is a nice dream.",
+    "They should be nicer to me...",
+    "I'm not scared, you're scared.",
+    "I can keep doin' this, sure!..",
+    "Sorry, I keep breaking his things...",
+    "I'll be home soon...",
+    "I'm happy to help!..",
+    "I dunno why they keep fighting, they're dumb.",
+    "I guess I keep winning then!.."
+   ],
+   "win": [
+    "They say if you snooze, you lose, but that's not true cause I snooze all the time and look at me now!",
+    "Why yes, Mr. Darcy, I will marry you...",
+    "An interesting theory, Mr. Poirot, but I know who really killed Jay Gatsby..."
+   ]
   }
  },
  {
@@ -13496,6 +15033,13 @@
      "You never even considered failure! Did you, Apollo?",
      "Dispatched the fencer!"
     ],
+    "Baba": [
+     "Put her out of her misery.",
+     "I just did the city a favor.",
+     "Ugh, birds... I hate birds!",
+     "I've killed the crone.",
+     "She put up more of a fight than I was expecting."
+    ],
     "Bebop": [
      "Scrapped Bebop.",
      "At the end of the day, Bebop, you're just a machine.",
@@ -13523,6 +15067,13 @@
      "Ugh, glitter.",
      "She has more power than she lets on...",
      "Killed the unicorn!"
+    ],
+    "Deadman Danny": [
+     "Silence, you buffoon.",
+     "Fairfax will only let you down.",
+     "I've killed the barker!",
+     "Your tools cannot save you!",
+     "That will buy us some quiet time."
     ],
     "The Doorman": [
      "Today has gotten rather interesting now, hasn't it?",
@@ -13635,6 +15186,13 @@
      "I told you Maurice, Krill is holding you back.",
      "The moleman is down."
     ],
+    "Nurse Harrow": [
+     "Your air of authority is meaningless to me.",
+     "I've suffered your kind enough!",
+     "\"Physician, heal thyself\".",
+     "Stay down, Harrow.",
+     "Join your friend in perdition, Harrow."
+    ],
     "Paige": [
      "Know your limits, Paige!",
      "Optimism will get you nowhere, Paige.",
@@ -13655,6 +15213,13 @@
      "Return to the gutter.",
      "I tire of the urchin.",
      "Pocket's been dispatched."
+    ],
+    "Rat King": [
+     "You are the king of nothing!",
+     "Contemptible vermin.",
+     "More trash for the gutter.",
+     "I've had to live among filth like you for too long.",
+     "And so, our arrangement has come to an end."
     ],
     "Rem": [
      "Pitiable creature.",
@@ -13683,6 +15248,13 @@
      "Party tricks were never going to stop me.",
      "The magician is dead."
     ],
+    "Solomon": [
+     "You should know when to surrender.",
+     "You had no chance, Solomon.",
+     "You shouldn't have gotten involved.",
+     "Your sacrifice means nothing!",
+     "Spare me your fortune cookie wisdom."
+    ],
     "Venator": [
      "Today keeps getting better and better!",
      "Vatican dog!",
@@ -13703,6 +15275,13 @@
      "Vindicta won't be a problem anymore.",
      "You shouldn't have missed.",
      "Goodbye, Vindicta."
+    ],
+    "Violet": [
+     "Such a waste of potential.",
+     "Your mistake was challenging me.",
+     "I cannot be stopped.",
+     "I killed Violet.",
+     "Stay out of my way, child!"
     ],
     "Viscous": [
      "Return to the deep, Viscous.",
@@ -13739,7 +15318,35 @@
      "Took down Yamato.",
      "The Seventh Moon should never have gotten in my way."
     ]
-   }
+   },
+   "streak": [
+    "Watch... and learn.",
+    "You will see what true power looks like!",
+    "Be humbled.",
+    "Be honored to die at my hand.",
+    "Walk away from this. It won't get better.",
+    "Has the futility set in yet?",
+    "The city will know my brilliance!",
+    "Feel free to hide. It only delays the inevitable.",
+    "You are witnesses to perfection.",
+    "This city belongs to me now!",
+    "A new era has begun!"
+   ],
+   "win": [
+    "That should send a message.",
+    "I won't be denied.",
+    "It's a good day.",
+    "Delightful!",
+    "My confidence was well-founded.",
+    "You are witnesses to perfection.",
+    "Their best wasn't good enough.",
+    "My ascension is nigh!",
+    "You all played your parts to perfection.",
+    "My greatness will no longer be denied.",
+    "Soon, the Patrons will bow to me.",
+    "Glory awaits me.",
+    "Look on the face of your new god!"
+   ]
   }
  },
  {
@@ -13773,8 +15380,31 @@
    "I'll be gone before they know what hit 'em.",
    "By the time they see me comin' it will be too late.",
    "I'll tear through their army.",
+   "Ready to fill the reliquary!",
    "Bloodletting's almost ready.",
    "Bloodletting's on cooldown. That's odd.",
+   "Once I get going, there's no slowing me down.",
+   "Gotta keep that momentum up.",
+   "Kill one, move on to the next.",
+   "I'm gonna bounce from target to target.",
+   "I don't need to hide to heal.",
+   "Take one out, fix my hair, take out another one.",
+   "They don't have what it takes to kill me.",
+   "The more people I drop, the better.",
+   "They're gonna have a hell of a time gettin' rid of me!",
+   "Better men have tried to kill me.",
+   "The reliquary grows stronger.",
+   "I almost forgot how good this feels.",
+   "Takes a lot more than that, friend.",
+   "I ain't' dyin' without a fight.",
+   "This'll keep me in the fight.",
+   "Gotta try to outlast 'em.",
+   "I'm not backin' down anytime soon.",
+   "Gotta stay in the mix as long as I can!",
+   "I keep the pressure on 'em.",
+   "Gotta push through the pain.",
+   "Just need a little more time!",
+   "The reliquary will heal me.",
    "Ready to land the killing blow.",
    "Ready to give them a red smile.",
    "I'm gonna rip them apart.",
@@ -13786,6 +15416,14 @@
    "I'll do whatever it takes to win!",
    "Killing Blow's almost ready.",
    "Killing Blow's on cooldown.",
+   "The weak won't last long.",
+   "It takes a monster to stop a monster.",
+   "Things are about to get ugly.",
+   "I'll put 'em out of their misery.",
+   "There's a reason the Baxter Society keeps me around.",
+   "Time to tap into my basa' instincts.",
+   "I'll show 'em the tricks of the trade.",
+   "The wolf fears nothin' from the lamb.",
    "You wanna play rough? Fine by me!",
    "Buckle up, boys and girls!",
    "You really shouldn'ta made me mad!",
@@ -13809,6 +15447,8 @@
    "Welcome to my world, boys and girls.",
    "New York is under my protection now!",
    "Gettin' chilly 'round here!",
+   "Let's play, boys and girls!",
+   "They're about to be helpless.",
    "I'll meld into the shadows.",
    "Time to bring down the mighty.",
    "They won't have their tricks for much longer!",
@@ -13900,11 +15540,25 @@
      "Thought you were supposed to be a tough big guy.",
      "Dropped Abrams!"
     ],
+    "Apollo": [
+     "He seemed like an asshole.",
+     "That kid thought he was God's gift.",
+     "Apolluh, you ain't got nothin' on me.",
+     "Took down the rich kid.",
+     "Mommy and daddy can't bail you outta this, Apolluh."
+    ],
     "Bebop": [
      "Took down Bebop!",
      "Stopped the golem!",
      "Bebop's scrapped.",
      "Bebop's outta commission for a little while."
+    ],
+    "Billy": [
+     "What's the matter, Billy? Thought you were a bad man?",
+     "You talked shit to the wrong killer.",
+     "I don’t got time for you, Billy.",
+     "Took down the goat.",
+     "Punkass..."
     ],
     "Calico": [
      "I hate cats.",
@@ -13913,6 +15567,27 @@
      "Calico won't be bothering us.",
      "Calico, you're not half as dangerous as you think you are."
     ],
+    "Celeste": [
+     "Sorry, pretty lady.",
+     "I dealt with Celeste.",
+     "No need to worry about the unicorn.",
+     "What's the problem, Celeste? Thought you circus folk like knife throwin'?",
+     "Gonna take more than the power of positive thinkin' to stop someone like me, Celeste."
+    ],
+    "The Doorman": [
+     "Who the hell is that guy?",
+     "That guy gives me the creeps.",
+     "That guy was trouble.",
+     "I know a sociopath when I see one.",
+     "Took out the Doorman."
+    ],
+    "Drifter": [
+     "You're dead, you son of a bitch.",
+     "You deserved a lot worse than that, friend.",
+     "I'm never gonna be under your thumb again!",
+     "I've changed. But you're the same sick bastard you've always been, Drifter.",
+     "Hey, Drifter... how's it feel to be on the receivin' end?"
+    ],
     "Dynamo": [
      "Stopped the professor!",
      "You belong in the classroom, not a fight!",
@@ -13920,8 +15595,18 @@
      "Dynamo's down!",
      "No black holes for you, Dynamo."
     ],
+    "Graves": [
+     "You need a better role model than that hand, kid.",
+     "That girl is gonna be trouble.",
+     "I hate necromancers...",
+     "I stopped the necromancer.",
+     "Didn't ya hear, Graves? I'm not scared of dead things."
+    ],
     "Grey Talon": [
      "Old man's tough as hell!",
+     "Forgive me, Wesley.",
+     "What the hell's gotten into you, Talon?",
+     "I'm gonna owe the Baxter Society an explanation after that...",
      "Rest, old man."
     ],
     "Haze": [
@@ -13980,6 +15665,13 @@
      "I killed their engineer!",
      "If I don't see another turret again, it will be too soon."
     ],
+    "Mina": [
+     "Little lady: When it comes to vampires, you don't crack the top 50.",
+     "Mina, you're crazy if you think you can replace Simon Pardoner as Viscount.",
+     "Few things more annoyin' than a vampire with an ego.",
+     "I know scary vampires. You, Mina? You ain't scary.",
+     "Killed Mina."
+    ],
     "Mirage": [
      "Nice try, Mirage.",
      "Not your day, Mirage.",
@@ -13993,6 +15685,13 @@
      "Ya think between the two of ya, ya could've come up with a better plan than \"die\".",
      "Keep tryin' boys, one of these days ya might win.",
      "Took out Krill!"
+    ],
+    "Paige": [
+     "Sorry, Paige.",
+     "She deserved better than what she got.",
+     "Took out the storyteller!",
+     "She won't be supportin' her team for a while.",
+     "I handled Paige."
     ],
     "Paradox": [
      "Time thief is dead.",
@@ -14008,12 +15707,47 @@
      "I know that your parents are monsters, Pocket, but I can't let you win.",
      "I feel for the kid."
     ],
+    "Rem": [
+     "Little runt thought he could throw a pillow at me?",
+     "Think it's time for your nap, Rem.",
+     "Throwin' knives is a little more dangerous than throwin' pillows, kid.",
+     "Stopped their support!",
+     "Damn that kid was annoyin'..."
+    ],
     "Seven": [
      "That was one evil son of a bitch.",
      "I don't get shook, but that was one scary bastard.",
      "That coulda gone bad...",
      "That should keep his ego in check.",
      "Some mastermind he turned out to be."
+    ],
+    "Silver": [
+     "Helluva reunion, Lilah.",
+     "You're stuck in the past, Silver.",
+     "You were never better than me, Lilah.",
+     "Silver: You couldn't kill me when I had nothin' to live for. Ya sure as hell can't stop me now.",
+     "Killed the werewolf."
+    ],
+    "Sinclair": [
+     "Took down Sinclair!",
+     "One less magician to worry about.",
+     "No one's turnin' me into a rabbit!",
+     "You need to work on your act, Sinclair.",
+     "You can try to copy me, but you'll never be me."
+    ],
+    "Venator": [
+     "I don't need the Baxter Society's protection to stop someone like you.",
+     "Finally caught up with me, eh, Venator?",
+     "Stopped the Vatican assassin.",
+     "Let the Baxter Society do its job, Venator.",
+     "You never shoulda come for me, Venator."
+    ],
+    "Victor": [
+     "That guy took a lotta punishment.",
+     "He's not stayin' down for long.",
+     "Glad Victor's outta your hair.",
+     "Nothin' worse than a corpse with nothin' to lose.",
+     "I'm getting real tired of dealin' with dead people..."
     ],
     "Vindicta": [
      "Took down the sniper!",
@@ -14029,8 +15763,15 @@
      "Maybe you should stick to the Deep.",
      "I think the pile of goo thought he had a chance."
     ],
+    "Vyper": [
+     "That lady's trouble...",
+     "Took care of Vyper.",
+     "She might be worse than Drifter.",
+     "You can't reason with a person like her.",
+     "There's always someone scarier, Vyper."
+    ],
     "Warden": [
-     "Picked a bad day to fight, Warden.",
+     "Picked a bad day to fight, Warden!",
      "I'm not lettin' you destroy this city, Warden!",
      "Warden ain't so tough.",
      "You're not as dangerous as you think you are, Warden.",
@@ -14050,7 +15791,31 @@
      "Yamato's down!",
      "I just finished the fight you started, Yamato."
     ]
-   }
+   },
+   "streak": [
+    "Let's get this show on the road.",
+    "Took out another one.",
+    "I'll be stackin' bodies all night!",
+    "The Baxter Society has your number.",
+    "One more body for the pile!",
+    "Like I told ya, no one's better than me.",
+    "I'm not even close to finished.",
+    "Welcome to my world, boys and girls.",
+    "New York is under my protection now!",
+    "You live at my leisure!",
+    "Feels good to be king!"
+   ],
+   "win": [
+    "Didn't even mess up my hair.",
+    "All accordin' to plan.",
+    "Professionals get it done.",
+    "I did what I came here to do.",
+    "Of course I killed a god!",
+    "Time to celebrate! Who's buyin'?",
+    "Think the Baxter Society's gonna be lookin' at me different, now!",
+    "Never doubted us for a second!",
+    "I proved my worth."
+   ]
   }
  },
  {
@@ -14520,7 +16285,28 @@
      "You don't run this town, Yamato.",
      "Well, that lady kinda scares the hell outta me..."
     ]
-   }
+   },
+   "streak": [
+    "I'm gonna hunt you all down.",
+    "Try to hide all you want. Eventually I'm gonna find you.",
+    "Today's just not going your way, is it?",
+    "It's only gonna get worse for you!",
+    "Who else wants a turn?",
+    "Give up.",
+    "Y'all are goin' down!",
+    "Shouldn't have pissed off a werewolf!",
+    "Nobody's stoppin' me from completing the ritual!",
+    "I was expectin' things to be a little tougher.",
+    "There's no way in hell you guys kill me."
+   ],
+   "win": [
+    "Let's do this again some time.",
+    "Anytime you wanna get into some trouble, you give me a call.",
+    "Thanks for all your help.",
+    "We won this as a team.",
+    "Thanks for comin' through.",
+    "Glad to work with you guys."
+   ]
   }
  },
  {
@@ -14583,7 +16369,9 @@
   ],
   "kills": {
    "any": [],
-   "heroes": {}
+   "heroes": {},
+   "streak": [],
+   "win": []
   }
  },
  {
@@ -14821,6 +16609,13 @@
      "She is relentless; she'll be back.",
      "I stopped Celeste."
     ],
+    "Deadman Danny": [
+     "Okay... I probably shouldn't have enjoyed that.",
+     "I shut up the skeleton!",
+     "I better be careful before Fairfax puts a bounty on me.",
+     "He's probably been through worse.",
+     "I'm sure he's got good insurance benefits."
+    ],
     "The Doorman": [
      "Didn't expect to see you outside The Baroness.",
      "What happened to impartiality, Doorman?",
@@ -14933,6 +16728,12 @@
      "Today, we are enemies, but tomorrow? All will be right with the world.",
      "I hate that the Patrons have pitted us against each other."
     ],
+    "Nurse Harrow": [
+     "I killed the nurse.",
+     "She did not like that at all.",
+     "Your services are no longer needed.",
+     "I took out Nurse Harrow."
+    ],
     "Paige": [
      "You're young. You have plenty of time to improve.",
      "I took down Paige.",
@@ -15017,6 +16818,13 @@
      "I laid the spirit to rest.",
      "Hopefully she'll stay dead."
     ],
+    "Violet": [
+     "Young lady, you shouldn't be doin' this!",
+     "How is this helping your art?",
+     "Violet, please go back to school.",
+     "This isn't going to help her authority issues.",
+     "Sorry. I'm not ready for a coffin portrait."
+    ],
     "Viscous": [
      "The Deep's problems can wait.",
      "You have a kind soul, Viscous. I'm sorry.",
@@ -15052,7 +16860,21 @@
      "New York isn't your plaything, Yamato!",
      "I took out Yamato!"
     ]
-   }
+   },
+   "streak": [
+    "You guys are so predictable!",
+    "I'll do what I have to to protect New York!",
+    "Losin' is good for ya! It builds grit!",
+    "Today is going to be a good day, I can feel it.",
+    "God, I love this city...",
+    "They're really going to let me walk all over them, aren't they?",
+    "I don't know what people were nervous about. The Maelstrom is going great for me!",
+    "Don't get angry. It's only a game.",
+    "Lose with some dignity!",
+    "They keep fallin' for trap after trap!",
+    "We're not at the same level."
+   ],
+   "win": []
   }
  },
  {
@@ -15494,7 +17316,28 @@
      "She knows how to use a sword, I'll give her that.",
      "I'm not losing to you, Yamato."
     ]
-   }
+   },
+   "streak": [
+    "I have my orders.",
+    "The Righteous have nothing to fear from me.",
+    "A Venator will not be denied.",
+    "The tithe will be paid in blood.",
+    "My resolve is endless.",
+    "No one is going to stop me!",
+    "I won't stop until all of them are dead.",
+    "A Venator shows no mercy.",
+    "Sodom will burn...",
+    "Gomorrah will fall...",
+    "I am the flood that washes the earth clean..."
+   ],
+   "win": [
+    "The work is done.",
+    "No price was too high.",
+    "We were blessed today.",
+    "The Lord provides.",
+    "Thank you for your help.",
+    "Thank you for fighting beside me today. The Venators will not forget this."
+   ]
   }
  },
  {
@@ -15690,6 +17533,20 @@
      "Took a lot to stop him.",
      "Took care of the detective."
     ],
+    "Apollo": [
+     "That's someone who knows exactly where they came from.",
+     "Okay, maybe knowing yourself too well causes its own problems.",
+     "Apollo's down.",
+     "If it makes you feel better, I think the part of me that killed you was Ixian.",
+     "I took out the fencer."
+    ],
+    "Baba": [
+     "Great, now I'm beating up old women.",
+     "Ma'am, you're not why I'm here.",
+     "I'm surprised she lasted that long, to be honest.",
+     "I think I just disappointed a lot of local grandkids.",
+     "I stopped the park lady."
+    ],
     "Bebop": [
      "Took down Bebop.",
      "Bebop's going back to the scrap pile.",
@@ -15711,6 +17568,20 @@
      "Sorry, Ava. Your owner is kind of an asshole.",
      "Thought she was supposed to be a scary assassin?"
     ],
+    "Celeste": [
+     "No one needs that much glitter in their life.",
+     "I stopped the carny.",
+     "Probably shouldn't go to Coney for a while.",
+     "Now I'm beating up unicorns. Great.",
+     "Sorry Celeste, I've got my own people to fight for."
+    ],
+    "Deadman Danny": [
+     "I broke the skeleton.",
+     "That guy seems more like a cultist than an employee.",
+     "I bet he'd still hire me.",
+     "I'll have to ask him if that hurt.",
+     "Can't tell if I killed him, or the jetpack did."
+    ],
     "The Doorman": [
      "Took out the Doorman.",
      "What the hell was that thing?",
@@ -15731,6 +17602,13 @@
      "Dynamo is outta commission.",
      "He seemed nice enough.",
      "Go home to your wife, Dynamo."
+    ],
+    "Graves": [
+     "I don't want that hand anywhere near me.",
+     "Your parents better not sue me.",
+     "I took out the Blackmore necromancer.",
+     "I need to find Graves when this is all over...",
+     "Damn. I was hoping she would have been able to help me."
     ],
     "Grey Talon": [
      "Took out Grey Talon.",
@@ -15816,6 +17694,13 @@
      "Sorry, boys.",
      "Think I might have popped a seam."
     ],
+    "Nurse Harrow": [
+     "I killed the exorcist nurse.",
+     "She's gonna come after me, isn't she.",
+     "Maybe I should have let someone else do that...",
+     "Why do I feel like she's done worse?",
+     "You really creep me out, lady."
+    ],
     "Paige": [
      "All she could do was delay the inevitable.",
      "Go back to the library, kid.",
@@ -15837,6 +17722,20 @@
      "That kid has some demons.",
      "I don't even wanna know what they got in that case."
     ],
+    "Rat King": [
+     "I killed the king of the rats.",
+     "That was a lotta dead rats.",
+     "I don't think your Long Island plan's going to work out.",
+     "I'm not one of your subjects you can just push around.",
+     "I got enough problems without adding rabies to the mix."
+    ],
+    "Rem": [
+     "There's got to be a better way to get home, Rem.",
+     "I killed Rem. I knew I was a monster, but damn...",
+     "I'm fighting children now..?",
+     "Stay down, Rem. Please.",
+     "I hate that it's come to this, Rem."
+    ],
     "Seven": [
      "I'm glad I survived that.",
      "Even you have limits, Seven.",
@@ -15851,12 +17750,26 @@
      "He thought he could outlast me.",
      "He's going to come back, and he's going to be pissed."
     ],
+    "Silver": [
+     "Must be nice only having two sides of yourself to worry about.",
+     "Silver, you're a good reminder not to give up on myself.",
+     "I know how to deal with self-loathing people.",
+     "The last thing I need is a werewolf using my leg as a chew toy.",
+     "I took out the werewolf."
+    ],
     "Sinclair": [
      "Stopped the magician.",
      "Took out Sinclair.",
      "Guess they didn't copy my power.",
      "That's for trying to turn me into a rabbit.",
      "You guys really need counselling."
+    ],
+    "Solomon": [
+     "Shouldn't have fought me, Solomon.",
+     "It's not too late to give up, Solomon.",
+     "Go home while you still can.",
+     "I killed Solomon.",
+     "I'm gonna get a reputation for assaulting old folks."
     ],
     "Venator": [
      "Stopped the Venator.",
@@ -15871,6 +17784,13 @@
      "Vindicta's been handled.",
      "What a waste...",
      "You should have picked better friends, Vindicta."
+    ],
+    "Violet": [
+     "Too bad, she was nice.",
+     "Sorry, Violet. I owe you a sitting.",
+     "The artist is down.",
+     "Don't take that the wrong way, Violet.",
+     "Maybe you shouldn't have come here."
     ],
     "Viscous": [
      "He had no idea what he was getting into, did he?",
@@ -15907,7 +17827,28 @@
      "That fight could have gone real bad for me.",
      "That woman's gonna come looking for revenge."
     ]
-   }
+   },
+   "streak": [
+    "You started this fight, I'm just ending it.",
+    "Don't make me hurt you.",
+    "I won't stop until I get what I came for!",
+    "I'll show no mercy.",
+    "You can't stop me.",
+    "Now's a good time to give up.",
+    "This isn't gonna end well for you!",
+    "Why are you picking a fight you can't win?",
+    "Don't you get it? I can't die!",
+    "You don't have what it takes to stop me.",
+    "I didn't come all the way to New York just to lose."
+   ],
+   "win": [
+    "Finally.",
+    "Maybe now I can find peace.",
+    "We did what we had to do.",
+    "No price was too high to pay for victory.",
+    "We did it.",
+    "I couldn't have done it without you."
+   ]
   }
  },
  {
@@ -15974,6 +17915,7 @@
    "I really hope they try to run.",
    "Vengeance comes for them.",
    "You're going down with me!",
+   "Well they know I'm here...",
    "They won't be bothering us for a while.",
    "If only killing Hathorne was this easy...",
    "No one is getting in my way.",
@@ -16083,9 +18025,9 @@
      "Keep your distance, detective."
     ],
     "Apollo": [
-     "You were outclassed from the beginning, Apollo.",
-     "A swordsman couldn't kill a sniper, I'm shocked.",
-     "The powerful will kneel.",
+     "You were outclassed from the beginning, Apollo!",
+     "A swordsman couldn't kill a sniper. I'm shocked.",
+     "The powerful will kneel!",
      "I know well the danger a teenager can bring.",
      "You picked the wrong side, Apollo."
     ],
@@ -16140,7 +18082,7 @@
     ],
     "Graves": [
      "The necromancer's dead.",
-     "You shouldn't have tried to stop me, Graves.",
+     "You shouldn't have tried to stop me, Graves!",
      "Graves, I thought you were supposed to help the dead. Why are you fighting me?",
      "Focus on your schooling, Graves. It's much safer.",
      "Your mentor has led you astray, Graves."
@@ -16251,8 +18193,8 @@
      "Probably should have hid in your case."
     ],
     "Rem": [
-     "There are no inncocents.",
-     "The little night terror is dead.",
+     "There are no innocents!",
+     "The little night terror is dead!",
      "Just because he's cute doesn't mean he's not dangerous.",
      "War is ugly business.",
      "I took down Rem."
@@ -16281,9 +18223,9 @@
     "Sinclair": [
      "I stopped Sinclair!",
      "I have no time for your petty squabbles!",
-     "Ugh, magicians.",
+     "Ugh! Magicians...",
      "If they got their act together, they might actually be a threat.",
-     "Dispatched Sinclair."
+     "Dispatched Sinclair!"
     ],
     "Venator": [
      "I respect you, Venator.",
@@ -16334,7 +18276,30 @@
      "I'm not letting you cut down my friends, Yamato.",
      "The Seventh Moon fails to impress."
     ]
-   }
+   },
+   "streak": [
+    "I'm just getting started.",
+    "I'll stack as many bodies as it takes to win.",
+    "No mercy comes for you today.",
+    "And so the blood begins to flow down Manhattan.",
+    "I'm coming for you.",
+    "It only gets worse from here.",
+    "I hope Hathorne is watching.",
+    "No quarter will be given.",
+    "You're all going to die!",
+    "I am undeniable.",
+    "How many of you have to die before you realise it's hopeless?!"
+   ],
+   "win": [
+    "Death comes for everyone, eventually. I'm just giving time a... helping hand.",
+    "Like fish in a barrel...",
+    "It's almost over.",
+    "Finally! I'll get the retribution I deserve.",
+    "No more hiding, Hathorne!",
+    "The cost was worth it!",
+    "And now we usher in the Patron!",
+    "We were undeniable."
+   ]
   }
  },
  {
@@ -16342,7 +18307,7 @@
   "slug": "violet",
   "lines": [
    "I worked too hard to get here, I can't stop now.",
-   "I know I can do this, I just need the chance to prove it",
+   "I know I can do this, I just need the chance to prove it.",
    "Thank you, I can't wait to show you who I really am.",
    "Too late to back out now, right?",
    "I'd be crazy to pass this opportunity up.",
@@ -17037,7 +19002,21 @@
      "That lady's a goddamn psychopath!",
      "I doubt she's here for anything good..."
     ]
-   }
+   },
+   "streak": [
+    "I'm gonna make a name for myself.",
+    "I'm better at this than I thought.",
+    "Looks like I might not be a fraud after all...",
+    "I gotta stay in the zone as long as I can!",
+    "I'm ready to leave my mark on the world!",
+    "The hits keep coming!",
+    "I'm damn good at what I do!",
+    "This is so much more exciting than a gallery opening.",
+    "Hope you all are keeping your portraits. They'll be worth a lot after I win.",
+    "I think I cured my imposter syndrome!",
+    "Let's see my parents forget I exist now."
+   ],
+   "win": []
   }
  },
  {
@@ -17066,6 +19045,7 @@
    "Alt3: Today, I'll explore the mysteries of Secaucus.",
    "I can't just rely on my weapon.",
    "I don't get why people think it's gross.",
+   "The surface can get dangerous quick.",
    "They won't like being splattered.",
    "I need to be able to defend myself.",
    "I can't be defensive all the time!",
@@ -17134,6 +19114,7 @@
    "How embarrassing for them!",
    "I'm not worried about their weapons.",
    "Bullets aren't going to hurt me!",
+   "I'm going to be a sphere!",
    "I'm going to steal their life!",
    "I need to find a place to train.",
    "I can afford some new gear.",
@@ -17226,10 +19207,17 @@
     ],
     "Apollo": [
      "Took down Apollo!",
-     "You can't stab the Cube, silly!",
+     "You can't stab The Cube, silly!",
      "Apollo was so fancy!",
      "Stop stabbing people, Apollo!",
      "Shouldn't you be in school, Apollo?"
+    ],
+    "Baba": [
+     "Old people are mean.",
+     "I thought tea was supposed to calm you down?",
+     "I'm glad The Deep doesn't have pigeons...",
+     "I don't think I like birds.",
+     "I stopped Baba!"
     ],
     "Bebop": [
      "I stopped a robot!",
@@ -17258,6 +19246,13 @@
      "I liked her hair.",
      "Until she was dead, she seemed like a happy person.",
      "She was a unicorn!"
+    ],
+    "Deadman Danny": [
+     "That skeleton talked a lot.",
+     "He really liked his job.",
+     "He loves Fairfax Industries as much as I love The Cube!",
+     "What a salesman...",
+     "Bye Danny!"
     ],
     "The Doorman": [
      "I took down The Doorman.",
@@ -17371,6 +19366,13 @@
      "I bet before he was dead, Mo gave nice hugs.",
      "I hope they'll be my friend later."
     ],
+    "Nurse Harrow": [
+     "If you had The Cube, maybe you wouldn’t have died.",
+     "Human medicine is good, but it's not The Cube!",
+     "Landwalker nurses aren't very nice.",
+     "I stopped Nurse Harrow!",
+     "I thought nurses were supposed to help people."
+    ],
     "Paige": [
      "I like your sweater, Paige. It's green!",
      "I hope she reads me a story that won't hurt me sometime.",
@@ -17391,6 +19393,13 @@
      "They had sad eyes.",
      "Bye Pocket.",
      "Can we still be friends, Pocket?"
+    ],
+    "Rat King": [
+     "I took down the Rat King.",
+     "I never realized that rats were so big!",
+     "Good luck with Long Island!",
+     "I don't know if I like Ratannia.",
+     "Bye, Fat Face!"
     ],
     "Rem": [
      "Sorry, Rem!",
@@ -17427,6 +19436,13 @@
      "I'm not a rabbit. I'm goo!",
      "They had marriage problems, but that doesn't matter because now they're dead."
     ],
+    "Solomon": [
+     "Chess is too complicated.",
+     "He seemed nice too.",
+     "He must not be very good at protecting New York.",
+     "Sorry Solomon!",
+     "It's okay. Old people die all the time."
+    ],
     "Venator": [
      "Took down the Venator.",
      "I don't think he was very happy.",
@@ -17447,6 +19463,13 @@
      "I killed a sniper!",
      "Their sniper's dead!",
      "She should've flown away."
+    ],
+    "Violet": [
+     "She had pretty colors.",
+     "Sorry Violet.",
+     "I thought we were going to be friends.",
+     "I took down the artist.",
+     "Maybe I just don't get human art."
     ],
     "Vyper": [
      "She's green, but mean green!",
@@ -17476,7 +19499,28 @@
      "She had a sword. It didn't help.",
      "I took down Yamato!"
     ]
-   }
+   },
+   "streak": [
+    "Time to keep this streak going.",
+    "I'm doing rather well, aren't I?",
+    "I love surprising people!",
+    "The Deep will be silent no longer!",
+    "Do I have your attention now?",
+    "Even in a borrowed body, no one can stop me.",
+    "Surface dwellers aren't so scary after all!",
+    "I'm rather good at violence, aren't I?",
+    "The Deep has proven it's dominance.",
+    "They will remember the name Viscous.",
+    "How embarrassing for them!"
+   ],
+   "win": [
+    "Hooray!",
+    "We're alive, and they're dead!",
+    "The Deep will be safe once more.",
+    "Good work, everyone!",
+    "You're all my new best friends!",
+    "You're all welcome in the Deep, but you'd probably drown."
+   ]
   }
  },
  {
@@ -17936,7 +19980,39 @@
      "You know, I need to get in with the Seventh Moon, I bet there's a lot of growth opportunities there.",
      "Oof, that is one scary broad."
     ]
-   }
+   },
+   "streak": [
+    "The momentum's going my way!",
+    "Let's get this party started!",
+    "Oh, no one's getting in our way.",
+    "Maybe now people will start taking me seriously.",
+    "Just give up, baby. No one's better than V!",
+    "It's my time to shine, baby!",
+    "Yeah, these guys ain't putting up much of a fight.",
+    "This party ain't stopping anytime soon!",
+    "I'm gonna mow you all down!",
+    "Guys, why do you keep fighting me? You know what's gonna happen!",
+    "I feel like Lash in a room full of Bebops."
+   ],
+   "win": [
+    "Oh, like I've never had to fight for my life before.",
+    "Done, and done!",
+    "I'm sorry, I thought these guys were supposed to be tough?",
+    "They wouldn't last two minutes in a prison riot!",
+    "That's what they get when they mess with me, baby!",
+    "Easy-breezy!",
+    "I'll be honest, I wasn't worried.",
+    "Gets easier every time.",
+    "Yeah, 'cuz they've never fought someone like me.",
+    "God, I should'a put money on this thing.",
+    "And my P.O. thinks I don't have marketable skills.",
+    "Alright, who's buying?!",
+    "I'd be happy to break the law with any of yous!",
+    "Time to celebrate!",
+    "See, who said I'm bad luck?!",
+    "Time to get what I'm owed.",
+    "The Patron better deliver."
+   ]
   }
  },
  {
@@ -18272,7 +20348,30 @@
      "I won't let the Seventh Moon get a foothold in New York!",
      "This city is under my protection, Yamato!"
     ]
-   }
+   },
+   "streak": [
+    "I will lead by example.",
+    "My resolve is unmatched.",
+    "I'll give my life for the cause, but first I'll take yours.",
+    "Who among you will stand and face me?",
+    "My work isn't finished yet.",
+    "No one will stop me!",
+    "The righteous do not fall.",
+    "Don't feel bad. I've trained my whole life for this.",
+    "One by one, my enemies fall!",
+    "Not even the Patrons can stop me!",
+    "I... am... unbreakable!"
+   ],
+   "win": [
+    "The righteous do not fall.",
+    "Too easy.",
+    "Hard fought!",
+    "We did it!",
+    "The team came together.",
+    "They put up quite the fight...",
+    "Our courage never wavered!",
+    "Good job, everyone."
+   ]
   }
  },
  {
@@ -18636,7 +20735,33 @@
      "We could have been friends, Yamato.",
      "Your dreams of expansion have come to an end."
     ]
-   }
+   },
+   "streak": [
+    "I'm just gettin' warmed up.",
+    "This is only the beginning.",
+    "If you think this is impressive, wait until I get going.",
+    "Feel free to give up anytime.",
+    "No one is stopping me from getting what I want.",
+    "Go home and save us all some time.",
+    "You'll never be my equal.",
+    "New York belongs to me.",
+    "No one is better than me. No one.",
+    "You could at least try to make it a challenge.",
+    "You'll never stop me!"
+   ],
+   "win": [
+    "No one is my equal.",
+    "There's no one better at what I do!",
+    "Now that's a job well done!",
+    "Things are lookin' up.",
+    "I'm just gettin' warmed up.",
+    "Good work, everyone!",
+    "I'd be happy to put any of you on my payroll!",
+    "That was one hell of a fight!",
+    "Glad it went the way it did.",
+    "That could have gone bad, but we kept it together!",
+    "It was fun working with you guys."
+   ]
   }
  },
  {
@@ -19121,7 +21246,33 @@
      "She's never fought someone like me.",
      "Your operations will belong to the Seventh Moon."
     ]
-   }
+   },
+   "streak": [
+    "No challenge at all.",
+    "I'll take you all down, one by one!",
+    "No one can escape the grasp of the Seventh Moon.",
+    "You cannot escape from me.",
+    "You're a fool to fight me.",
+    "Surrender, and I'll give you a quick death.",
+    "I will show no mercy.",
+    "You pathetic lamb.",
+    "New York belongs to the Seventh Moon.",
+    "I will carve the name of Yamato into this world!",
+    "Your lives belong to me!"
+   ],
+   "win": [
+    "I'm above the law.",
+    "You think scrap like you can kill me?",
+    "You can't stop me.",
+    "Who's next?",
+    "Too easy.",
+    "You weren't useless after all.",
+    "All of this is for my brother.",
+    "Those fools were weak.",
+    "As expected.",
+    "I showed no mercy.",
+    "Thank you for your help."
+   ]
   }
  }
 ]

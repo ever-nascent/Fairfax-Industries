@@ -31,10 +31,12 @@ src/                  the bot
     server/           LFG, member roles, reaction roles, go-live alerts, the censor
     audit/            #audit-log
     farm/             Hero Farming and Descend (section 7); itemInfo.js is /item (any shop item, by name)
+    help.js           every page of /help (the text, and the "How To Use" fields built from each command's own options)
     *.js              small helpers everything uses: format.js (numbers, souls text), embeds.js, guild.js, art.js, random.js ...
 test/                 automated checks (section 9); they never touch data/
 tools/                simulations and bug sweeps you run by hand (balance, game odds), and the startup check
 assets/               pictures, fonts and downloaded game data
+  emojis/             every emoji the bot shows, <name>.png; add one here and restart (utils/appEmojis.js uploads it)
 data/                 LIVE data: members' XP, souls, heroes. Never edit or delete while the bot runs
 ```
 
@@ -46,7 +48,8 @@ data/                 LIVE data: members' XP, souls, heroes. Never edit or delet
 2. Backs up the souls files (`utils/economy/backup.js`) and runs one-time money migrations (`utils/economy/economy.js`).
 3. `handlers/loadCommands.js` loads every file in `src/commands/`; `handlers/loadEvents.js` loads every file in `src/events/`.
 4. Registers the slash commands with Discord if one changed (`deploy-commands.js`).
-5. Logs in. Discord sends `clientReady`, and every event file named `clientReady` runs its startup work (find emojis, create missing roles, start timers ...).
+5. Uploads any new or changed picture in `assets/emojis/` as the bot's own emoji (`utils/appEmojis.js`).
+6. Logs in. Discord sends `clientReady`, and every event file named `clientReady` runs its startup work (find emojis, create missing roles, start timers ...).
 
 **There are no lists to update:** a new file in `commands/` or `events/` is picked up by itself. Components are the one exception: a new route file is added to the list in `components/index.js`.
 
@@ -130,9 +133,9 @@ Convention: a constant in CAPITALS near the top of a file is a knob meant to be 
 
 ## 9. Making a change safely
 
-1. Change the file.
+1. Change the file. **A new command also needs a page in `utils/help.js`** (`test/help.test.js` fails until it has one); its options show up in /help by themselves.
 2. `node --check path/to/file.js` catches typos without running anything. **Never run `node src/index.js` yourself while the bot is running elsewhere:** that starts a second copy of the bot.
-3. `node --test` runs every check in `test/` (a few minutes, in a throwaway data folder). `node --test test/xp.test.js` runs one file.
+3. `npm test` runs every check in `test/` (about a minute, in a throwaway data folder). Each file counts as one test; when one fails, it lists which of its checks broke. `node --test test/xp.test.js` runs one file.
 4. For farm balance: `node tools/farm-sim.js ...`; for Descend bugs: `node tools/descend-smoke.js` (each tool's top comment says how).
 5. Restart the bot (close its window, double-click `Start Bot.bat`).
 6. Commit and push with GitHub Desktop. `Start Bot.bat` pulls `main`, so whatever is pushed is what runs.

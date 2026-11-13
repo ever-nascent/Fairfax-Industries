@@ -1,7 +1,7 @@
 // Run: node --test. Don't Wake the Bookwyrm (Paige's Hangman): the rules, the payout, a game from bet to payout, the picture, the timeout.
 // Throwaway data folder, never the live data/.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
 const { getUser } = require('../src/utils/economy/xp');

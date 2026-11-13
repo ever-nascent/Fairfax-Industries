@@ -1,7 +1,7 @@
 // Stacks the game keeps for good (his call, Oct 28): in Descend an ability's stacks last the run (the run's `kept`, by ability name), on the
 // farm a fight starts without them; Glass Cannon's and Trophy Collector's are kept everywhere. The screens list them (views.js stackLines).
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { buildHero } = require('../src/utils/farm/hero');
 const { abilityStacks } = require('../src/utils/farm/ability');
@@ -18,7 +18,7 @@ test('a hero built with a run\'s stacks has them, hands them back, and lists the
 
 test('stacks that change the hero when it is built: Combo\'s max health, Still Life\'s health sketches, Leech Therapy\'s regen', () => {
   const combo = buildHero('Mo & Krill', { kept: { Combo: 2 } });
-  assert.strictEqual(combo.stats.maxHealth - buildHero('Mo & Krill', {}).stats.maxHealth, 80);
+  assert.strictEqual(combo.stats.maxHealth - buildHero('Mo & Krill', {}).stats.maxHealth, 100);
   assert.strictEqual(combo.health, combo.stats.maxHealth);
   assert.strictEqual(buildHero('Violet', { kept: { 'Still Life': { health: 1 } } }).stats.maxHealth - buildHero('Violet', {}).stats.maxHealth, 20);
   const harrow = buildHero('Nurse Harrow', { kept: { 'Leech Therapy': 5 } });

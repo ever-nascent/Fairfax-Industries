@@ -1,9 +1,12 @@
 // /shop's section dropdown and buy buttons. Button / dropdown / pop-up routes: each route has `matches` (is this click mine? usually by the customId prefix) and `execute`. components/index.js lists every route file.
 // What each buy does: utils/shop/shop.js.
 const { MessageFlags } = require('discord.js');
-const { heroCardsView, SECTION_VIEWS, STYLES, SECTION_ID, SELECT_ID, STYLE_ID, BUY_ID, EQUIP_ID, BOOST_ID, REJUV_ID, HIDEOUT_BUY_ID, receipts, FAILED } = require('../utils/shop/shop');
+const { heroCardsView, SECTION_VIEWS, STYLES, SECTION_ID, SELECT_ID, STYLE_ID, BUY_ID, EQUIP_ID, BOOST_ID, REJUV_ID, HIDEOUT_BUY_ID, COLOR_ID, DEAL_ID, receipts, FAILED } = require('../utils/shop/shop');
 const { buyCard, equipCard, buyBoost, buyRejuv } = require('../utils/economy/xp');
 const { buyHideout, getHideout } = require('../utils/shop/hideout');
+const { shopConfig } = require('../utils/shop/shopSettings');
+const { MODAL_ID, getColorRole, colorModal, buyColorRole } = require('../utils/shop/colorRole');
+const { dealOf, buyDeal } = require('../utils/shop/dailyDeal');
 const { replyEmbed } = require('../utils/embeds');
 
 // /shop's dropdowns and buttons redraw the Shop message with `view(member)`.
@@ -21,13 +24,19 @@ async function redraw(interaction, view, before) {
   await interaction.editReply({ ...(await view(interaction.member)), attachments: [] });
 }
 
-// A purchase: `buy()` runs after the owner check, the Shop is redrawn, then the buyer privately gets the Shopkeeper's
-// receipt (`receipt(result)`), or `failed` if the purchase threw (it's logged).
-async function purchase(interaction, view, buy, receipt, failed = FAILED.card) {
+// A purchase from Shop section `section`: `buy(cfg)` runs after the owner check (`cfg` = this server's Shop settings,
+// prices included), the Shop is redrawn, then the buyer privately gets the Shopkeeper's receipt (`receipt(result, cfg)`),
+// or `failed` if the purchase threw (it's logged). A section staff turned off sells nothing.
+async function purchase(interaction, section, view, buy, receipt, failed = FAILED.card) {
   let text;
   await redraw(interaction, view, async () => {
     try {
-      text = await receipt(await buy());
+      const cfg = await shopConfig(interaction.member.guild.id);
+      if (!cfg.on(section)) {
+        text = "That's not for sale here anymore.";
+        return;
+      }
+      text = await receipt(await buy(cfg), cfg);
     } catch (error) {
       console.error(`[shop] ${interaction.customId.split(':')[0]} failed:`, error);
       text = failed;
@@ -67,7 +76,13 @@ module.exports = [
     execute: (interaction) => {
       const [, , slug, style] = interaction.customId.split(':');
       if (!STYLES[style]) return;
-      return purchase(interaction, (m) => heroCardsView(m, slug, style), () => buyCard(interaction.user.id, `${slug}:${style}`, STYLES[style].price), (r) => receipts.card(r, slug, style));
+      return purchase(
+        interaction,
+        'hero-cards',
+        (m) => heroCardsView(m, slug, style),
+        (cfg) => buyCard(interaction.user.id, `${slug}:${style}`, cfg.price(style)),
+        (r, cfg) => receipts.card(r, slug, style, cfg.price(style)),
+      );
     },
   },
   {
@@ -85,14 +100,28 @@ module.exports = [
     label: 'Soul Boost buy',
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${BOOST_ID}:`),
     // The redraw shows the result (time left, or Buy greyed out if they couldn't afford it).
-    execute: (interaction) => purchase(interaction, SECTION_VIEWS['soul-boost'], () => buyBoost(interaction.user.id), receipts.boost),
+    execute: (interaction) =>
+      purchase(
+        interaction,
+        'soul-boost',
+        SECTION_VIEWS['soul-boost'],
+        (cfg) => buyBoost(interaction.user.id, Date.now(), cfg.price('boost')),
+        (r, cfg) => receipts.boost(r, cfg.price('boost')),
+      ),
   },
   {
     name: 'shop-rejuv',
     label: 'Rejuv buy',
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${REJUV_ID}:`),
     // The redraw shows the result (carrying one more, or Buy greyed out).
-    execute: (interaction) => purchase(interaction, SECTION_VIEWS.rejuv, () => buyRejuv(interaction.user.id), receipts.rejuv),
+    execute: (interaction) =>
+      purchase(
+        interaction,
+        'rejuv',
+        SECTION_VIEWS.rejuv,
+        (cfg) => buyRejuv(interaction.user.id, cfg.price('rejuv')),
+        (r, cfg) => receipts.rejuv(r, cfg.price('rejuv')),
+      ),
   },
   {
     name: 'shop-hideout',
@@ -102,10 +131,64 @@ module.exports = [
     execute: (interaction) =>
       purchase(
         interaction,
+        'hideout',
         SECTION_VIEWS.hideout,
-        () => buyHideout(interaction.member),
-        async (result) => receipts.hideout(result, result ? null : await getHideout(interaction.user.id)),
+        (cfg) => buyHideout(interaction.member, cfg.price('hideout'), cfg.hideoutLevel),
+        async (result, cfg) => receipts.hideout(result, result ? null : await getHideout(interaction.user.id), cfg.price('hideout'), cfg.hideoutLevel),
         FAILED.hideout,
       ),
+  },
+  {
+    name: 'shop-deal',
+    label: 'Daily Deal buy',
+    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${DEAL_ID}:`),
+    // Buys today's deal (worked out again at the click, so a screen left open past midnight sells today's, at today's price).
+    execute: (interaction) => {
+      let deal;
+      return purchase(
+        interaction,
+        'daily-deal',
+        SECTION_VIEWS['daily-deal'],
+        async (cfg) => {
+          deal = dealOf(cfg, interaction.member.guild.id);
+          return deal ? buyDeal(interaction.user.id, deal) : { ok: false };
+        },
+        (r) => receipts.deal(r, deal),
+      );
+    },
+  },
+  {
+    name: 'shop-color',
+    label: 'Color Role button',
+    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${COLOR_ID}:`),
+    // Opens the pop-up (name + hex colour), filled in with the role they have now.
+    async execute(interaction) {
+      const [, ownerId] = interaction.customId.split(':');
+      if (interaction.user.id !== ownerId) return interaction.reply({ content: 'Open your own with `/shop`.', flags: MessageFlags.Ephemeral });
+      if (!(await shopConfig(interaction.member.guild.id)).on('color-role')) {
+        return interaction.reply({ embeds: [replyEmbed("That's not for sale here anymore.")], flags: MessageFlags.Ephemeral });
+      }
+      return interaction.showModal(colorModal(ownerId, await getColorRole(interaction.member.guild, ownerId)));
+    },
+  },
+  {
+    name: 'shop-color-modal',
+    label: 'Color Role pop-up',
+    matches: (interaction) => interaction.isModalSubmit() && interaction.customId.startsWith(`${MODAL_ID}:`),
+    // Makes or recolors the role, then the Shop is redrawn and the buyer gets a private receipt.
+    execute: (interaction) => {
+      let price;
+      return purchase(
+        interaction,
+        'color-role',
+        SECTION_VIEWS['color-role'],
+        async (cfg) => {
+          price = cfg.price((await getColorRole(interaction.member.guild, interaction.user.id)) ? 'recolor' : 'color');
+          return buyColorRole(interaction.member, interaction.fields.getTextInputValue('name'), interaction.fields.getTextInputValue('color'), cfg);
+        },
+        (r) => receipts.color(r, price),
+        FAILED.color,
+      );
+    },
   },
 ];

@@ -1,7 +1,7 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const { SCALE } = require('../src/utils/economy/economy');
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
 const { changeSouls, getUser } = require('../src/utils/economy/xp');

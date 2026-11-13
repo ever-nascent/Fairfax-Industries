@@ -1,7 +1,7 @@
 // Seven's abilities (deadlock.wiki/Seven, checked Oct 5 2026; page updated Oct 2). Numbers come from the wiki data through Ability.value(); this
 // file is only what each ability does. Lightning Ball follows his call for Infernus' Flame Dash (Oct 5): enemies here stand still, so the ball
 // stays on them for its whole life.
-const { Ability } = require('./../ability');
+const { Ability, anyReady } = require('./../ability');
 const { isBoss } = require('./../items');
 const { HEROES } = require('./../stats');
 
@@ -44,7 +44,7 @@ class StaticCharge extends Ability {
 }
 
 // 3. Power Surge: for a while every burst of the gun (three bullets) shocks its target for spirit damage, and the shock jumps to the enemies
-// near it. T2: faster, more damage. T3: longer, and the shocked lose spirit resist.
+// near it. Held while Storm Cloud is ready (his ask, Nov 6): the channel stops the gun, so it goes after the ult. T2: faster, more damage. T3: longer, and the shocked lose spirit resist.
 class PowerSurge extends Ability {
   constructor(...args) {
     super(...args);
@@ -52,7 +52,7 @@ class PowerSurge extends Ability {
     this.bullets = 0;
   }
 
-  want(fight) { return fight.foes.length > 0; }
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, StormCloud); }
   status(fight) { return fight && fight.time < this.until ? 'Surging' : super.status(fight); }
 
   cast(fight) {
@@ -74,7 +74,8 @@ class PowerSurge extends Ability {
 }
 
 // 4. Storm Cloud: a channel (no shooting or casting): a cloud around Seven that grows from its first radius to its full one, spirit damage
-// every interval to every enemy it has reached (half to bosses), and one lightning strike on the front enemy at the start.
+// every interval to every enemy it has reached (half to bosses), and one lightning strike on the front enemy at the start. Combo first (his ask,
+// Nov 6): it waits until Static Charge and Lightning Ball are both used (on cooldown or locked), so the stun and the ball land before the channel.
 // T1: bullet resist while channelling. T2: longer, bigger. T3: more damage.
 class StormCloud extends Ability {
   constructor(...args) {
@@ -84,7 +85,7 @@ class StormCloud extends Ability {
     this.next = 0;
   }
 
-  want(fight) { return fight.foes.length > 0; }
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, StaticCharge, LightningBall); }
   status(fight) { return fight && fight.time < this.until ? 'Channelling' : super.status(fight); }
 
   cast(fight) {

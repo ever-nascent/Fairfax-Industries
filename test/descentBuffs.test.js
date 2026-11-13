@@ -1,7 +1,7 @@
 // Run: node --test test/descentBuffs.test.js
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-descend-buffs-'));
 process.env.FARM_FRAME_MS = '0';
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert/strict');
 const D = require('../src/utils/farm/descent');
 const views = require('../src/utils/farm/descentViews');
@@ -48,10 +48,8 @@ test('little finds add one permanent stack and appear on the result and Build sc
   assert.equal(d.buffs[find.key], 1);
   assert.equal(D.runKit(d).buffs[find.key], 1);
   assert.notDeepEqual(buildHero('Haze', D.runKit(d)).stats, buildHero('Haze', { ...D.runKit(d), buffs: {} }).stats);
-  const result = await views.offerView(member, d, { run: { seconds: 2 } });
-  assert.match(result.embeds[0].toJSON().description, /Found a Buff\.\n\*\*.+\*\*\nPermanent for this run\./);
-  const redraw = await views.offerView(member, d);
-  assert.match(redraw.embeds[0].toJSON().description, /Found a Buff\.\n\*\*.+\*\*\nPermanent for this run\./);
+  const window = await views.screen(member, { descent: { ...d, phase: 'ready' } }); // the Buff has a window of its own after the pick (Nov 10)
+  assert.match(window.embeds[0].toJSON().description, /Found a Buff\.\n\*\*.+\*\*\nPermanent for this run\./);
   const build = await views.buildView(member, d);
   assert.match(build.embeds[0].toJSON().fields.find((f) => f.name === 'Permanent Buffs (This Run)').value, new RegExp(BUFFS[find.key].name));
   D.afterWin(d, won({ room: 5, floor: 1, kind: 'boss', boss: 'guardian' }));
@@ -65,11 +63,11 @@ test('big finds boost the remaining floor fights, then expire after its boss', a
   D.afterWin(d, won(spec));
   assert.deepEqual(d.bridge, ['survival']);
   assert.deepEqual(D.runKit(d).bridge, ['survival']);
-  assert.equal(buildHero('Haze', D.runKit(d)).stats.maxHealth - buildHero('Haze', { ...D.runKit(d), bridge: [] }).stats.maxHealth, 200);
+  assert.equal(buildHero('Haze', { ...D.runKit(d), tuning: 0 }).stats.maxHealth - buildHero('Haze', { ...D.runKit(d), tuning: 0, bridge: [] }).stats.maxHealth, 200); // without Haze's Descend tuning (descendTuning.json)
   const nextFight = D.fightRoom(d, fightSpec(seed, 4), () => 0.5);
   assert.equal(nextFight.frames[0].hero.max, buildHero('Haze', D.runKit(d)).stats.maxHealth);
-  const result = await views.offerView(member, d, { run: { seconds: 2 } });
-  assert.match(result.embeds[0].toJSON().description, /reached \*\*Level 1\*\*\.\n\nFound a Buff\.\n\*\*Survival Bridge Buff\*\*\n\+200 Max Health, \+4 Health Regen\nLasts through Floor \*\*1\*\*\.\n\nPick/);
+  const window = await views.screen(member, { descent: { ...d, phase: 'ready' } }); // the Buff has a window of its own after the pick (Nov 10)
+  assert.match(window.embeds[0].toJSON().description, /Found a Buff\.\n\*\*Survival Bridge Buff\*\*\n\+200 Max Health, \+4 Health Regen\nLasts through Floor \*\*1\*\*\./);
   const build = await views.buildView(member, d);
   assert.match(build.embeds[0].toJSON().fields.find((f) => f.name === 'Big Buffs (This Floor)').value, new RegExp(BRIDGE.survival.name));
   D.afterWin(d, won({ room: 5, floor: 1, kind: 'boss', boss: 'guardian' }));

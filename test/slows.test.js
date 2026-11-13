@@ -1,4 +1,4 @@
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert/strict');
 const { Fight, enemy } = require('../src/utils/farm/engine');
 const { buildHero } = require('../src/utils/farm/hero');

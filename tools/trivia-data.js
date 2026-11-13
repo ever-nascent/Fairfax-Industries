@@ -68,17 +68,20 @@ function saidOn(rows, i) {
 
 // What a hero says on a kill (his call, Oct 16: a duel's winner speaks about the hero it beat): `any` from the Generic rows of "Kill Enemy Hero",
 // `heroes[<name>]` from the "Kill" rows under "Hero-Specific Voice Lines > Enemies".
+// Also `streak` (the "Killstreak" rows) and `win` ("Post-Game" pings and "Win MVP"): Nov 5, his ask, so a won fight and a cleared run speak
+// lines meant for that moment instead of any line on the page (a death groan, an item reminder ...).
 function killLines(text) {
-  const kills = { any: [], heroes: {} };
+  const kills = { any: [], heroes: {}, streak: [], win: [] };
   const rows = text.split('\n');
-  let part = null; // 'any', 'enemies' or null
+  let part = null; // 'any', 'enemies', 'streak', 'situational', 'win' or null
   let hero = null;
   let kind = null;
   rows.forEach((row, i) => {
     const heading = row.match(/^(=+)\s*(.*?)\s*=+\s*$/);
     if (heading) {
       const title = heading[2].toLowerCase();
-      part = /^(kill enemy hero|generic kill voice lines)$/.test(title) ? 'any' : title === 'enemies' ? 'enemies' : null;
+      part = /^(kill enemy hero|generic kill voice lines)$/.test(title) ? 'any' : title === 'enemies' ? 'enemies'
+        : title === 'killstreak' ? 'streak' : title === 'situational' ? 'situational' : title === 'post-game' ? 'win' : null;
       hero = kind = null;
       return;
     }
@@ -94,6 +97,8 @@ function killLines(text) {
     const line = saidOn(rows, i);
     if (!line || '(['.includes(line[0]) || line.includes('[')) return;
     if (part === 'any') { if (kind === 'generic') kills.any.push(line); } // not melee, assist, revenge ...
+    else if (part === 'streak' || part === 'win') { if (!kills[part].includes(line)) kills[part].push(line); }
+    else if (part === 'situational') { if (kind === 'win mvp' && !kills.win.includes(line)) kills.win.push(line); }
     else if (hero && kind === 'kill') (kills.heroes[hero] ??= []).push(line);
   });
   return kills;
@@ -341,4 +346,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { voiceLines, killLines, cleanWikiText, changes, fileOf, abilityIcons };
+module.exports = { voiceLines, killLines, cleanWikiText, changes, fileOf, abilityIcons, pageTexts };

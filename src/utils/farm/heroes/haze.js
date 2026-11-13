@@ -29,23 +29,38 @@ class SleepDagger extends Ability {
   }
 }
 
-// 2. Smoke Bomb: invisible, enemies can't target her. Attacking ends it (and she is seen for 1.5 s after being hit
-// or attacking). T2: a second charge (ability.js charges). T3: dispel + bullet lifesteal after.
+// 2. Smoke Bomb: invisible, enemies can't target her, except those within SpottedRadius (18 m: they see through it). Attacking ends it (and she is
+// seen for 1.5 s after being hit or attacking); using an item doesn't, and neither does Sleep Dagger. An escape: cast when hurt and (T1+) nobody can see
+// her, she holds her fire (engine.js `hold`: no gun, daggers still fly) until she has healed to 80% or it runs out. T2: a second charge (ability.js
+// charges). T3: dispels her debuffs on use and gives bullet lifesteal for PostInvisBuffDuration after the invisibility ends.
+// ponytail: spotting is by the enemy's own distance (a lone enemy 18 m or closer always sees her), not a per-moment check.
 class SmokeBomb extends Ability {
+  hiddenFrom(e) { return (e.stats.distance ?? 15) > this.value('SpottedRadius'); }
+
   want(fight) {
-    return fight.enemies.some((e) => e.alive) && this.unit.health < this.unit.stats.maxHealth * 0.5; // an escape, when hurt
+    const foes = fight.enemies.filter((e) => e.alive);
+    return foes.length > 0 && this.unit.health < this.unit.stats.maxHealth * 0.5 && (foes.every((e) => this.hiddenFrom(e)) || this.value('BulletLifesteal') > 0); // an escape, when hurt
   }
 
   cast(fight) {
-    fight.addStatus(this.unit, { id: 'smoke', duration: this.value('AbilityDuration'), tags: ['invisible'], mods: { moveSpeed: this.value('InvisMoveSpeedMod') } }); // T1: faster while unseen
-    if (this.value('BulletLifesteal')) {
-      fight.addStatus(this.unit, { id: 'smoke_lifesteal', duration: this.value('AbilityDuration') + this.value('PostInvisBuffDuration'), mods: { lifesteal: this.value('BulletLifesteal') / 100 } });
+    if (this.value('DispelOnUse')) fight.cleanse(this.unit, 1); // T3 (a curse can't be cleansed)
+    const hold = fight.enemies.every((e) => !e.alive || this.hiddenFrom(e));
+    fight.addStatus(this.unit, { id: 'smoke', duration: this.value('AbilityDuration'), tags: ['invisible'], spot: this.value('SpottedRadius'), hold, mods: { moveSpeed: this.value('InvisMoveSpeedMod') } }); // T1: faster while unseen
+    this.was = true;
+  }
+
+  tick(fight) {
+    const smoke = this.unit.statuses.find((s) => s.id === 'smoke');
+    if (smoke?.hold && this.unit.health >= this.unit.stats.maxHealth * 0.8) smoke.hold = false; // healed enough: come out shooting
+    if (this.was && !smoke) { // the invisibility is over (broken or run out)
+      this.was = false;
+      if (this.value('BulletLifesteal')) fight.addStatus(this.unit, { id: 'smoke_lifesteal', duration: this.value('PostInvisBuffDuration'), mods: { lifesteal: this.value('BulletLifesteal') / 100 } });
     }
   }
 
   on(event, fight, { source, target, opts }) {
     if (event !== 'damage') return;
-    if (source === this.unit && !opts.keepsStealth && this.unit.has('invisible')) this.reveal(fight);
+    if (source === this.unit && !opts.keepsStealth && !fight.by?.card && this.unit.has('invisible')) this.reveal(fight); // `by.card`: an item's damage doesn't break it (the wiki)
     if (target === this.unit && this.unit.has('invisible')) this.reveal(fight);
   }
 
@@ -99,19 +114,20 @@ class Fixation extends Ability {
   }
 }
 
-// 4. Bullet Dance: a 3.5 s channel with +25% fire rate, +7% weapon damage, 30% evasion, never reloading.
-// ponytail: "perfect accuracy at nearby enemies" is already how the engine shoots; no slide / channel movement.
+// 4. Bullet Dance: a 3.5 s channel (no other cast meanwhile: ability.js lockout) with +25% fire rate, +7 bullet damage (flat per bullet, T1 +7 more:
+// the wiki's table has no %), 30% evasion, never reloading, perfect accuracy, immune to Disarm; each shot goes to any enemy within its 16 m radius
+// (engine.js fireWeapon: `spread`), and every bullet procs bullet items and Fixation like a normal one.
+// ponytail: the 65 degree cone isn't modelled (enemies stand in a line); no slide / channel movement.
 class BulletDance extends Ability {
   want(fight) {
-    const target = fight.enemies.find((e) => e.alive);
-    return !!target && target.health > 0 && this.unit.health < this.unit.stats.maxHealth * 0.7;
+    return fight.enemies.some((e) => e.alive) && !this.unit.statuses.some((s) => s.hold); // as soon as it is ready (his call Oct 30), never while she hides
   }
 
   cast(fight) {
     fight.addStatus(this.unit, {
-      id: 'bullet_dance', duration: this.value('AbilityDuration'), tags: ['infiniteClip'],
+      id: 'bullet_dance', duration: this.value('AbilityDuration'), tags: ['infiniteClip', 'perfect'], spread: this.value('Radius'),
       mods: {
-        fireRate: this.value('BonusFireRate') / 100, weaponDamage: this.value('WeaponDamageBonus') / 100,
+        fireRate: this.value('BonusFireRate') / 100, bulletDamage: this.value('WeaponDamageBonus'),
         evasion: this.value('EvasionPercent') / 100,
       },
     });

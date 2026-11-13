@@ -118,13 +118,20 @@ class IraDomini extends Ability {
     for (let i = 0; i < stakes; i++) {
       fight.at(DRAW + i * RELOAD, () => fight.running(this, () => {
         if (!this.unit.alive || this.unit.cantAct || this.unit.has('disarm') || fight.time > this.until + 1e-9) return; // interrupted: until was cut short
-        const blessed = i === stakes - 1 || this.value('AllStakesBlessed') > 0;
-        for (const e of fight.foes) {
-          fight.damage(this.unit, e, this.value('Damage'), 'bullet');
-          if (blessed) bless(fight, this.unit, e);
-        }
+        this.blessing = i === stakes - 1 || this.value('AllStakesBlessed') > 0;
+        // the stake pierces every enemy but only bounces (Ricochet) off the first (the wiki)
+        fight.foes.forEach((e, n) => {
+          fight.damage(this.unit, e, this.value('Damage'), 'bullet', n ? { pierced: true } : {});
+          if (this.blessing) bless(fight, this.unit, e);
+        });
+        this.blessing = false;
       }));
     }
+  }
+
+  // Ricochet: a bounced bolt of a blessed stake is blessed too and can execute, the 8% not reduced (the wiki)
+  on(event, fight, p) {
+    if (event === 'bulletHit' && this.blessing && p.opts.ricochet && p.source === this.unit) bless(fight, this.unit, p.target);
   }
 }
 

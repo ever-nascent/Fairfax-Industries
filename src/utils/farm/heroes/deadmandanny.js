@@ -50,14 +50,14 @@ class StrixSalvo extends Ability {
     return fight.foes.find((e) => this.marks.has(e));
   }
 
-  status(fight) { const n = fight ? [...this.marks.values()].reduce((s, l) => s + l.filter((t) => t > fight.time).length, 0) : 0; return n ? `${super.status(fight)}  -  ${n} marked` : super.status(fight); }
+  status(fight) { const n = fight ? [...this.marks.values()].reduce((s, l) => s + l.filter((t) => t > fight.time).length, 0) : 0; return n ? `${super.status(fight)}  -  ${n} Marked` : super.status(fight); }
 
   tick(fight) {
     const u = this.unit;
     const w = u.weapon;
     if (this.charging || w.reloadLeft > 0 || w.clip < CHARGED.ammo || fight.time < u.busyUntil || u.cantAct || u.has('stun') || u.has('disarm')) return;
     if (!this.marked(fight)) return;
-    const rate = u.stats.fireRate * (1 + u.mod('fireRate'));
+    const rate = u.fireRateNow();
     const wait = (CHARGE_TIME * HEROES[u.name].Weapon.RoundsPerSecond) / Math.max(0.1, rate);
     this.charging = true;
     u.busyUntil = fight.time + wait; // the gun is held while it charges
@@ -154,7 +154,7 @@ class JettisonFuel extends Ability {
   tick(fight, dt) {
     if (fight.time > this.until + 1e-9 || this.unit.cantAct || this.unit.has('stun')) return;
     const u = this.unit;
-    const landed = dt * u.stats.fireRate * (1 + u.mod('fireRate')); // build-up like the shots it replaces (taken by me)
+    const landed = dt * u.fireRateNow(); // build-up like the shots it replaces (taken by me)
     for (const e of this.inReach(fight)) {
       fight.damage(u, e, this.value('DPS') * dt, 'bullet', { landed, ...(e.team === 'hero' ? { attack: true } : {}) });
       fight.addStatus(e, { id: 'jettison_shred', duration: this.value('DebuffDuration'), mods: { bulletResist: this.value('BulletResistReduction') / 100 }, debuff: true });

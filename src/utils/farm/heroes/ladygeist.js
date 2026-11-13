@@ -4,11 +4,10 @@
 const { Ability } = require('./../ability');
 const { MELEE } = require('./../engine');
 const { npcShare } = require('./../items');
-const { stackResist } = require('./../buffs');
 
 // The health an ability costs her: spirit damage her own resist softens, never lethal (the wiki).
 function pay(unit, amount) {
-  const resist = Math.min(0.9, stackResist(unit.stats.spiritResist, unit.mod('spiritResist')));
+  const resist = Math.min(0.9, unit.resistNow('spiritResist'));
   unit.health = Math.max(1, unit.health - amount * (1 - resist));
 }
 

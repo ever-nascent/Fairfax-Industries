@@ -69,7 +69,7 @@
   "StaminaRegenPerSecond": 0.238095,
   "TechDuration": 0,
   "TechRange": 0,
-  "Type": "Marksman",
+  "Type": "Mystic",
   "Weapon": {
    "BulletSpeed": 762,
    "BulletDamage": 7.31,
@@ -359,14 +359,14 @@
   "IsRecommended": false,
   "IsSelectable": true,
   "LevelScaling": {
-   "BulletDamage": 0.52,
+   "BulletDamage": 0.61,
    "MaxHealth": 31,
    "PowerIncreases": 1,
    "TechPower": 1.1,
    "LightMeleeDamage": 1.2,
    "HeavyMeleeDamage": 3.4286,
-   "DPS": 1.04,
-   "SustainedDPS": 0.76632
+   "DPS": 1.22,
+   "SustainedDPS": 0.89895
   },
   "LightMeleeDamage": 42,
   "Lore": "hero_bookworm_lore",
@@ -388,10 +388,10 @@
   "StaminaRegenPerSecond": 0.222222,
   "TechDuration": 0,
   "TechRange": 0,
-  "Type": "Mystic",
+  "Type": "Healer",
   "Weapon": {
    "BulletSpeed": 43.43,
-   "BulletDamage": 35,
+   "BulletDamage": 32,
    "RoundsPerSecond": 2,
    "ClipSize": 14,
    "ReloadTime": 2.5,
@@ -414,8 +414,8 @@
    "AmmoConsumedPerShot": 1,
    "ExplosionRadius": 0.635,
    "ExplosionDamageScaleAtMaxRadius": 1,
-   "DPS": 70,
-   "SustainedDPS": 51.579,
+   "DPS": 64,
+   "SustainedDPS": 47.158,
    "NameKey": "citadel_weapon_bookworm_set",
    "WeaponTypes": [
     "Attribute_EWeaponAttribute_RapidFire",
@@ -496,7 +496,7 @@
   "Type": "Brawler",
   "Weapon": {
    "BulletSpeed": 609.6,
-   "BulletDamage": 3.6,
+   "BulletDamage": 3.78,
    "RoundsPerSecond": 1.5873,
    "ClipSize": 9,
    "ReloadTime": 0.3525,
@@ -517,8 +517,8 @@
    "HitOnceAcrossAllBullets": false,
    "CanCrit": true,
    "AmmoConsumedPerShot": 1,
-   "DPS": 51.429,
-   "SustainedDPS": 30.542,
+   "DPS": 54,
+   "SustainedDPS": 32.069,
    "NameKey": "citadel_weapon_atlas_set",
    "DescKey": "citadel_weapon_atlas_set_desc",
    "WeaponTypes": [
@@ -1118,7 +1118,7 @@
   "Type": "Assassin",
   "Weapon": {
    "BulletSpeed": 508,
-   "BulletDamage": 19.5,
+   "BulletDamage": 20.1,
    "RoundsPerSecond": 2.2676,
    "ClipSize": 12,
    "ReloadTime": 2.444,
@@ -1139,8 +1139,8 @@
    "HitOnceAcrossAllBullets": true,
    "CanCrit": true,
    "AmmoConsumedPerShot": 1,
-   "DPS": 44.218,
-   "SustainedDPS": 30.248,
+   "DPS": 45.579,
+   "SustainedDPS": 31.179,
    "NameKey": "citadel_weapon_drifter_set",
    "WeaponTypes": [
     "Attribute_EWeaponAttribute_Spreadshot",
@@ -1219,7 +1219,7 @@
   "StaminaRegenPerSecond": 0.222222,
   "TechDuration": 0,
   "TechRange": 0,
-  "Type": "Mystic",
+  "Type": "Healer",
   "Weapon": {
    "BulletSpeed": 320,
    "BulletDamage": 12.6,
@@ -1297,19 +1297,19 @@
   "IsRecommended": true,
   "IsSelectable": true,
   "LevelScaling": {
-   "BulletDamage": 0.054,
+   "BulletDamage": 0.052,
    "MaxHealth": 35,
    "PowerIncreases": 1,
    "TechPower": 1.1,
    "LightMeleeDamage": 1.58,
    "HeavyMeleeDamage": 3.6656,
-   "DPS": 0.52941,
-   "SustainedDPS": 0.31395
+   "DPS": 0.5098,
+   "SustainedDPS": 0.30233
   },
   "LightMeleeDamage": 50,
   "Lore": "hero_necro_lore",
   "MaxHealth": 730,
-  "MaxMoveSpeed": 7,
+  "MaxMoveSpeed": 6.7,
   "MoveAcceleration": 4,
   "Name": "Graves",
   "OOCHealthRegen": 0,
@@ -1432,7 +1432,7 @@
   "StaminaRegenPerSecond": 0.222222,
   "TechDuration": 0,
   "TechRange": 0,
-  "Type": "Marksman",
+  "Type": "Mystic",
   "Weapon": {
    "BulletSpeed": 495.3,
    "BulletDamage": 23.51,
@@ -1639,7 +1639,7 @@
   "StaminaRegenPerSecond": 0.222222,
   "TechDuration": 0,
   "TechRange": 0,
-  "Type": "Marksman",
+  "Type": "Mystic",
   "Weapon": {
    "BulletSpeed": 660.4,
    "BulletDamage": 5.5,
@@ -1743,7 +1743,7 @@
   "StaminaRegenPerSecond": 0.222222,
   "TechDuration": 0,
   "TechRange": 0,
-  "Type": "Marksman",
+  "Type": "Healer",
   "Weapon": {
    "BulletSpeed": 571.5,
    "BulletDamage": 4.45,
@@ -1847,7 +1847,7 @@
   "StaminaRegenPerSecond": 0.18181,
   "TechDuration": 0,
   "TechRange": 0,
-  "Type": "Brawler",
+  "Type": "Healer",
   "Weapon": {
    "BulletSpeed": 160,
    "BulletDamage": 18.6,
@@ -2342,14 +2342,14 @@
   "IsRecommended": false,
   "IsSelectable": true,
   "LevelScaling": {
-   "BulletDamage": 0.0847,
+   "BulletDamage": 0.0881,
    "MaxHealth": 65,
    "PowerIncreases": 1,
-   "TechPower": 1.1,
+   "TechPower": 0.6,
    "LightMeleeDamage": 1.58,
    "HeavyMeleeDamage": 3.6656,
-   "DPS": 1.7926,
-   "SustainedDPS": 1.0267
+   "DPS": 1.8645,
+   "SustainedDPS": 1.0679
   },
   "LightMeleeDamage": 50,
   "Lore": "hero_krill_lore",
@@ -2680,7 +2680,7 @@
   "StaminaRegenPerSecond": 0.222222,
   "TechDuration": 0,
   "TechRange": 0,
-  "Type": "Mystic",
+  "Type": "Healer",
   "Weapon": {
    "BulletSpeed": 160,
    "BulletDamage": 16,
@@ -2860,7 +2860,7 @@
   "IsSelectable": true,
   "LevelScaling": {
    "BulletDamage": 0.165,
-   "BulletDamageAltFire": 0.24,
+   "BulletDamageAltFire": 0.228,
    "MaxHealth": 46,
    "PowerIncreases": 1,
    "TechPower": 1.1,
@@ -2955,7 +2955,7 @@
   "AirDashDistanceInMeters": 8,
   "AirDashDuration": 0.47,
   "AirDashSpeed": 17,
-  "BaseHealthRegen": 2.5,
+  "BaseHealthRegen": 3,
   "BaseWeaponDamageIncrease": 0,
   "BoundAbilities": {
    "1": {
@@ -3058,7 +3058,7 @@
    "AirDashDistanceInMeters": 8,
    "AirDashDuration": 0.47,
    "AirDashSpeed": 17,
-   "BaseHealthRegen": 2.5,
+   "BaseHealthRegen": 3,
    "BaseWeaponDamageIncrease": 0,
    "BoundAbilities": {
     "1": {
@@ -3095,18 +3095,18 @@
    "IsSelectable": true,
    "LevelScaling": {
     "BulletDamage": 0.7735,
-    "MaxHealth": 46,
+    "MaxHealth": 31,
     "PowerIncreases": 1,
     "TechPower": 1.1,
     "LightMeleeDamage": 1.58,
     "HeavyMeleeDamage": 3.6656,
     "DPS": 1.547,
-    "SustainedDPS": 1.2376
+    "SustainedDPS": 1.547
    },
    "LightMeleeDamage": 50,
    "Lore": "hero_werewolf_transformed_lore",
-   "MaxHealth": 955,
-   "MaxMoveSpeed": 8.2,
+   "MaxHealth": 830,
+   "MaxMoveSpeed": 6.7,
    "MoveAcceleration": 4,
    "Name": "Silver (Transformed)",
    "OOCHealthRegen": 0,
@@ -3126,8 +3126,8 @@
     "BulletSpeed": 254,
     "BulletDamage": 25,
     "RoundsPerSecond": 2,
-    "ClipSize": 12,
-    "ReloadTime": 1.5,
+    "ClipSize": 0,
+    "ReloadTime": 0,
     "ReloadMovespeed": 1,
     "ReloadDelay": 0,
     "ReloadSingle": false,
@@ -3146,7 +3146,7 @@
     "CanCrit": true,
     "AmmoConsumedPerShot": 1,
     "DPS": 50,
-    "SustainedDPS": 40,
+    "SustainedDPS": 50,
     "WeaponTypes": [
      "Attribute_EWeaponAttribute_Spreadshot",
      "Attribute_EWeaponAttribute_MediumRange"
@@ -3627,7 +3627,7 @@
   "IsSelectable": true,
   "LevelScaling": {
    "BulletDamage": 0.36,
-   "BulletDamageAltFire": 1.44,
+   "BulletDamageAltFire": 1.512,
    "MaxHealth": 45,
    "PowerIncreases": 1,
    "TechPower": 1.3,
@@ -3654,7 +3654,7 @@
   "StaminaRegenPerSecond": 0.222222,
   "TechDuration": 0,
   "TechRange": 0,
-  "Type": "Mystic",
+  "Type": "Brawler",
   "Weapon": {
    "BulletSpeed": 254,
    "BulletDamage": 10.34,
@@ -4220,8 +4220,8 @@
    "MaxHealth": 45,
    "PowerIncreases": 1,
    "TechPower": 1.1,
-   "LightMeleeDamage": 0.7,
-   "HeavyMeleeDamage": 1.624,
+   "LightMeleeDamage": 0.63,
+   "HeavyMeleeDamage": 1.4616,
    "DPS": 1.3226,
    "SustainedDPS": 0.86014
   },
@@ -4237,7 +4237,7 @@
   "ReloadSpeed": 0,
   "Role": "hero_baba_role",
   "SpiritScaling": {
-   "TechResist": 0.1
+   "TechResist": 0.05
   },
   "SprintSpeed": 1.6,
   "Stamina": 2,
@@ -4322,14 +4322,14 @@
   "IsRecommended": false,
   "IsSelectable": true,
   "LevelScaling": {
-   "BulletDamage": 0.18,
+   "BulletDamage": 0.144,
    "MaxHealth": 50,
    "PowerIncreases": 1,
    "TechPower": 1.1,
    "LightMeleeDamage": 1.58,
    "HeavyMeleeDamage": 3.6656,
-   "DPS": 1.8,
-   "SustainedDPS": 1.1368
+   "DPS": 1.44,
+   "SustainedDPS": 0.936
   },
   "LightMeleeDamage": 50,
   "Lore": "hero_ratking_lore",
@@ -4352,9 +4352,9 @@
   "Type": "Brawler",
   "Weapon": {
    "BulletSpeed": 203.2,
-   "BulletDamage": 6,
+   "BulletDamage": 5.8,
    "RoundsPerSecond": 5,
-   "ClipSize": 24,
+   "ClipSize": 26,
    "ReloadTime": 2.8,
    "ReloadMovespeed": 1,
    "ReloadDelay": 0,
@@ -4373,8 +4373,8 @@
    "HitOnceAcrossAllBullets": false,
    "CanCrit": true,
    "AmmoConsumedPerShot": 1,
-   "DPS": 60,
-   "SustainedDPS": 37.895,
+   "DPS": 58,
+   "SustainedDPS": 37.7,
    "NameKey": "citadel_weapon_ratking_set",
    "WeaponTypes": [
     "Attribute_EWeaponAttribute_RapidFire",
@@ -4409,7 +4409,7 @@
     "Key": "ability_chessmaster_queen"
    }
   },
-  "CritDamageBonusPercent": 0,
+  "CritDamageBonusPercent": -20,
   "CritDamageReceivedPercent": 0,
   "CrouchSpeed": 4.75,
   "GravityChange": -25,
@@ -4460,7 +4460,7 @@
   "Type": "Mystic",
   "Weapon": {
    "BulletSpeed": 355.6,
-   "BulletDamage": 30,
+   "BulletDamage": 25,
    "RoundsPerSecond": 2,
    "ClipSize": 8,
    "ReloadTime": 3,
@@ -4483,8 +4483,8 @@
    "AmmoConsumedPerShot": 1,
    "ExplosionRadius": 1.016,
    "ExplosionDamageScaleAtMaxRadius": 1,
-   "DPS": 60,
-   "SustainedDPS": 34.286,
+   "DPS": 50,
+   "SustainedDPS": 28.571,
    "NameKey": "citadel_weapon_chessmaster_set",
    "WeaponTypes": [
     "Attribute_EWeaponAttribute_RapidFire",
@@ -4671,10 +4671,10 @@
   "StaminaRegenPerSecond": 0.222222,
   "TechDuration": 0,
   "TechRange": 0,
-  "Type": "Marksman",
+  "Type": "Healer",
   "Weapon": {
    "BulletSpeed": 508,
-   "BulletDamage": 14.858,
+   "BulletDamage": 14.442,
    "RoundsPerSecond": 2.6316,
    "ClipSize": 11,
    "ReloadTime": 1.9,
@@ -4696,8 +4696,8 @@
    "CanCrit": true,
    "AmmoConsumedPerShot": 1,
    "ExplosionDamageScaleAtMaxRadius": 0.3,
-   "DPS": 39.1,
-   "SustainedDPS": 26.881,
+   "DPS": 38.006,
+   "SustainedDPS": 26.129,
    "NameKey": "citadel_weapon_nurse_set",
    "WeaponTypes": [
     "Attribute_EWeaponAttribute_RapidFire",

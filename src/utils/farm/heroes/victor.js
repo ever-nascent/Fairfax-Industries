@@ -7,10 +7,12 @@ const { DT } = require('./../engine');
 const { isBoss } = require('./../items');
 const { HEROES } = require('./../stats');
 
-// What an ability costs him: pure damage that never kills, and that charges Pain Battery like any other damage he takes.
-function pay(unit, amount) {
+// What an ability costs him: pure damage that never kills, and that charges Pain Battery like any other damage he takes. Shown on Enemy Damage.
+function pay(fight, ability, amount) {
+  const unit = ability.unit;
   const taken = Math.min(amount, Math.max(0, unit.health - 1));
   unit.health -= taken;
+  fight.selfDamage(unit, ability.name, taken);
   unit.abilities.find((a) => a instanceof PainBattery)?.charge(taken);
 }
 
@@ -57,7 +59,7 @@ class Jumpstart extends Ability {
 
   cast(fight) {
     const duration = this.value('AbilityDuration');
-    pay(this.unit, (this.unit.health * this.data.CurrentHealthPercentDamage) / 100);
+    pay(fight, this, (this.unit.health * this.data.CurrentHealthPercentDamage) / 100);
     if (this.value('StatusResistancePercent')) fight.cleanse(this.unit, this.value('StatusResistancePercent') / 100);
     fight.addStatus(this.unit, { id: 'jumpstart', duration, regen: this.value('TotalHealthRegen') / duration, mods: { moveSpeed: this.value('BonusMoveSpeed'), statusResist: this.value('StatusResistancePercent') / 100 } });
   }
@@ -78,7 +80,7 @@ class AuraOfSuffering extends Ability {
 
   dps(name) { return [this.data, ...this.data.Upgrades.slice(0, this.tier)].reduce((sum, x) => sum + (x[name]?.Value ?? x[name] ?? 0) + (x[name]?.Scale?.Value ?? 0) * this.spirit(), 0); }
   want(fight) { return fight.foes.length > 0 && fight.time >= this.until && this.unit.health > this.unit.stats.maxHealth * AURA_ON; }
-  status(fight) { return fight && fight.time < this.until ? 'Suffering' : super.status(fight); }
+  status(fight) { return fight && fight.time < this.until ? 'Active' : super.status(fight); } // 'Active' while held (Nov 4, his ask: it said "Suffering")
 
   cast(fight) {
     this.from = fight.time;
@@ -96,7 +98,7 @@ class AuraOfSuffering extends Ability {
       fight.damage(this.unit, e, damage * (e.team !== 'hero' && isBoss(e) ? this.data.BossDamageScale : 1), 'spirit');
       fight.addStatus(e, { id: 'aura_of_suffering', duration: this.data.DebuffDuration, mods: { slow: this.value('SlowPercent') / 100, damageTaken: this.value('IncomingDamagePercent') / 100 }, debuff: true });
     }
-    pay(this.unit, (damage * this.data.SelfDamagePercentage) / 100);
+    pay(fight, this, (damage * this.data.SelfDamagePercentage) / 100);
   }
 }
 

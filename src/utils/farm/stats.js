@@ -4,8 +4,9 @@
 // Data comes from `npm run farm-data` (assets/farm/*.json). Rules: server-plan.md ("Hero Farming").
 const path = require('node:path');
 const { ASSETS } = require('../art');
-const { applyBuffs, BRIDGE, stackResist } = require('./buffs');
-const { PRECISION } = require('./engine');
+const { applyBuffs, BRIDGE, KIT_BUFFS, stackResist } = require('./buffs');
+const { PRECISION, HEADSHOT_BONUS } = require('./engine');
+const { statMult } = require('./rebirth');
 
 const load = (name) => require(path.join(ASSETS, 'farm', `${name}.json`));
 const HEROES = load('heroes');
@@ -33,15 +34,18 @@ const ITEM_HEADSHOT = { 'Crippling Headshot': 15, 'Headshot Booster': 5, 'Weaken
 const VELOCITY = { precision: 1 / 6, headshot: 1 / 20, headshotMax: 4 }; // ponytail: my placeholders
 const velocityOf = (card) => num(Object.values(card).filter((info) => info?.Type).flatMap((info) => [...(info.Main ?? []), ...(info.Alt ?? [])])
   .find((l) => l.Key === 'BonusBulletSpeedPercent')?.Value);
-for (const card of [...ITEMS, ...LEGENDARIES]) {
+// Written (or rewritten) from the card's own velocity, so an enhanced / corrupted card with more velocity gets more Precision (his call, Oct 31).
+function setPrecision(card) {
   const innate = Object.values(card).find((info) => info?.Type === 'Innate');
-  if (!innate) continue;
+  if (!innate) return;
+  innate.Main = innate.Main.filter((l) => l.Key !== 'Precision' && l.Key !== 'HeadshotPrecision');
   const v = velocityOf(card);
   const precision = (ITEM_PRECISION[card.Name] ?? 0) + Math.round(v * VELOCITY.precision);
   const headshot = ITEM_HEADSHOT[card.Name] ?? Math.min(VELOCITY.headshotMax, Math.round(v * VELOCITY.headshot));
   if (precision) innate.Main.push({ Key: 'Precision', Value: precision, Label: 'Precision', Prefix: '{s:sign}', Postfix: '' });
   if (headshot) innate.Main.push({ Key: 'HeadshotPrecision', Value: headshot, Label: 'Headshot Precision', Prefix: '{s:sign}', Postfix: '' });
 }
+for (const card of [...ITEMS, ...LEGENDARIES]) setPrecision(card);
 // Innate item stat -> change to the stat sheet. Values are the wiki's: flat amounts, or percents (divided here).
 // Anything not listed (zoom, bullet speed, gravity, footsteps, melee resist: nothing on a farm uses them) is ignored.
 const ITEM_STATS = {
@@ -49,7 +53,7 @@ const ITEM_STATS = {
   BonusBaseHealth: (s, v) => { s.baseHealthPct += v / 100; }, // Colossus: % more of the hero's own health
   BonusHealthRegen: (s, v) => { s.healthRegen += v; },
   BaseAttackDamagePercent: (s, v) => { s.weaponDamageMult += v / 100; },
-  BonusFireRate: (s, v) => { s.fireRate *= 1 + v / 100; },
+  BonusFireRate: (s, v) => { s.fireBonus += v / 100; }, // fire rate increases add up (the wiki; his call Oct 31); heroStats turns the sum into fireRate
   BonusClipSizePercent: (s, v) => { s.clip *= 1 + v / 100; },
   BulletResist: (s, v) => { s.bulletResist = stackResist(s.bulletResist, v / 100); }, // each resist takes its share of what the others let through
   TechResist: (s, v) => { s.spiritResist = stackResist(s.spiritResist, v / 100); },
@@ -145,6 +149,7 @@ function upgradedCard(card, field) {
     if (!innate) { innate = { Type: 'Innate', Main: [], Alt: [] }; out.InfoCorrupted = innate; }
     innate.Alt.push({ Key: key, Value: d });
   }
+  setPrecision(out);
   upgradedCards.set(cacheKey, out);
   return out;
 }
@@ -164,16 +169,35 @@ const DRAWBACKS = {
   bulletResist: { name: 'Bullet Resist', unit: '%', range: [[12, 17], [16, 21]], apply: (s, v) => { s.bulletResist = stackResist(s.bulletResist, -v / 100); } },
   spiritResist: { name: 'Spirit Resist', unit: '%', range: [[12, 17], [16, 21]], apply: (s, v) => { s.spiritResist = stackResist(s.spiritResist, -v / 100); } },
   weaponDamage: { name: 'Weapon Damage', unit: '%', range: [[34, 46], [47, 64]], apply: (s, v) => { s.weaponDamageMult -= v / 100; } },
-  fireRate: { name: 'Fire Rate', unit: '%', range: [[22, 29], [26, 35]], apply: (s, v) => { s.fireRate *= 1 - v / 100; } },
+  fireRate: { name: 'Fire Rate', unit: '%', range: [[22, 29], [26, 35]], apply: (s, v) => { s.fireMult *= 1 - v / 100; } },
 };
 const drawbackText = ({ drawback, amount }) => `-${+amount.toFixed(2)}${DRAWBACKS[drawback].unit} ${DRAWBACKS[drawback].name}`;
 
 // The card an item fights with: its corrupted card if it is the hero's corrupted item.
 // `corrupted`: { name, drawback, amount }, null, or a list of them (a /descend run can carry several, his call Oct 30; a farm hero has one).
 const corruptedList = (corrupted) => [].concat(corrupted ?? []);
-const cardFor = (name, corrupted, enhanced = []) => {
+// A Fragile Item (his ask, Oct 30; descent.js, the Broker's stall): the Broker's cracked gift, weaker until he mends it. Its innate stat lines (the
+// numbers on the card's stat list) are scaled by FRAGILE; its passive and active effects are left alone. ponytail: scale effect numbers too if this is too mild.
+const FRAGILE = 0.7;
+const FRAGILE_BREAK = 0.10; // a hero under this share of its health shatters its Fragile Items, mid-fight (hero.js; his call, Oct 30)
+function fragileCard(card) {
+  if (!card) return card;
+  const cacheKey = `fragile:${card.Name}`;
+  if (upgradedCards.has(cacheKey)) return upgradedCards.get(cacheKey);
+  const out = structuredClone(card);
+  for (const info of Object.keys(out).filter((k) => k.startsWith('Info')).map((k) => out[k]).filter((i) => i.Type === 'Innate')) {
+    for (const e of [...info.Main, ...info.Alt]) {
+      if (typeof e.Value === 'number') e.Value *= FRAGILE;
+      else if (/^-?[\d.]+m$/.test(e.Value)) e.Value = `${parseFloat(e.Value) * FRAGILE}m`;
+    }
+  }
+  upgradedCards.set(cacheKey, out);
+  return out;
+}
+const cardFor = (name, corrupted, enhanced = [], fragile = []) => {
   let card = itemByName(name);
   if (enhanced.includes(name)) card = enhancedCard(card);
+  if (fragile.includes(name)) card = fragileCard(card);
   return corruptedList(corrupted).some((c) => c.name === name) ? corruptCard(card) : card;
 };
 
@@ -185,7 +209,7 @@ const SURE_PELLETS = { 'Rat King': 1 };
 
 // Stat sheet for a wiki hero (an entry of heroes.json) with `boons` level-ups, a list of item names, the member's permanent
 // buffs ({ key: count }, buffs.js) and its corrupted item ({ name, drawback, amount } | null).
-function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corrupted = null, enhanced = [] } = {}) {
+function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corrupted = null, enhanced = [], fragile = [], rebirth = 0 } = {}) {
   const w = hero.Weapon;
   const ls = hero.LevelScaling || {};
   const s = {
@@ -194,7 +218,9 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
     bulletDamage: w.BulletDamage + (ls.BulletDamage || 0) * boons, // per bullet
     pellets: w.HitOnceAcrossAllBullets ? 1 : w.BulletsPerShot, // Drifter's 3 pellets deal one shot's damage however many hit (the wiki)
     surePellets: SURE_PELLETS[hero.Name] ?? 0,
-    fireRate: w.RoundsPerSecond,
+    fireRate: w.RoundsPerSecond, // the final rate, set at the end from fireBonus and fireMult
+    fireBonus: 0, // the sum of every fire rate increase (items, buffs, Warden's spirit)
+    fireMult: 1, // decreases (a corrupted drawback) multiply
     clip: w.ClipSize,
     reload: w.ReloadTime,
     falloff: { start: w.FalloffStartRange, end: w.FalloffEndRange, startScale: w.FalloffStartScale, endScale: NO_FALLOFF.has(hero.Name) ? w.FalloffStartScale : w.FalloffEndScale },
@@ -233,7 +259,8 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
     attackRange: 0,
     precision: PRECISION.base, // flat points: above the base, more spread pellets landing (engine.js)
     headshot: PRECISION.base, // Headshot Precision: the headshot chance in % (engine.js headshotChance; his call, Oct 28: apart from Precision)
-    noHeadshot: hero.Weapon?.CanCrit === false, // the wiki: Deadman Danny and Paige can't headshot (Oct 29, his call for Danny)
+    headshotBonus: HEADSHOT_BONUS + (hero.CritDamageBonusPercent || 0) / 100, // a headshot's bonus bullet damage (engine.js HEADSHOT_BONUS)
+    noHeadshot: hero.Weapon?.CanCrit === false || hero.Name === 'Graves', // Graves: the wiki says she can't crit, her beam's data says it can // the wiki: Deadman Danny and Paige can't headshot (Oct 29, his call for Danny)
     bonusCharges: 0,
     chargedSpirit: 0,
     chargedCdr: 0,
@@ -245,7 +272,7 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
   const baseHealth = s.maxHealth;
   const levels = s.spirit; // the spirit power the hero's own levels give
   for (const name of items) {
-    const card = cardFor(name, corrupted, enhanced);
+    const card = cardFor(name, corrupted, enhanced, fragile);
     if (!card) throw new Error(`Unknown item: ${name}`);
     const [bullet, spirit, weapon, power] = [s.lifesteal, s.spiritLifesteal, s.weaponDamageMult, s.spirit];
     for (const [key, value] of innateStats(card)) ITEM_STATS[key]?.(s, value);
@@ -257,19 +284,24 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
   }
   for (const c of corruptedList(corrupted)) if (items.includes(c.name)) DRAWBACKS[c.drawback]?.apply(s, c.amount);
   applyBuffs(s, buffs);
-  for (const key of bridge) BRIDGE[key]?.apply(s);
+  for (const key of bridge) KIT_BUFFS[key]?.apply(s); // the bridge buffs, and the Soul Urn's carrier (buffs.js)
+  const reborn = statMult(rebirth); // Rebirth (rebirth.js): a permanent bonus to health, weapon damage and spirit power
+  s.weaponDamageMult *= reborn;
+  s.spiritMult *= reborn;
   s.spirit *= s.spiritMult;
   for (const name of Object.keys(s.spiritBy)) s.spiritBy[name] *= s.spiritMult;
   if (levels > 0) s.spiritBy.Levels = levels * s.spiritMult;
-  s.maxHealth = Math.max(1, (s.maxHealth + baseHealth * s.baseHealthPct) * (1 + s.healthMult));
+  s.maxHealth = Math.max(1, (s.maxHealth + baseHealth * s.baseHealthPct) * (1 + s.healthMult) * reborn);
   s.bulletDamage += (hero.SpiritScaling?.BulletDamage || 0) * s.spirit; // Grey Talon: +0.08 bullet damage and a little move speed per spirit power (wiki)
   s.moveSpeed += ((hero.SpiritScaling?.MaxMoveSpeed || 0) + (hero.SpiritScaling?.SprintSpeed || 0)) * s.spirit; // sprint speed counts like move speed (Wraith: 0.05 a point)
   s.healthRegen += (hero.SpiritScaling?.BaseHealthRegen || 0) * s.spirit; // Victor: 0.08 a second per spirit power (wiki)
-  s.fireRate *= 1 + ((hero.SpiritScaling?.FireRate || 0) * s.spirit) / 100; // Warden: 0.21% fire rate per spirit power (wiki)
+  s.fireBonus += ((hero.SpiritScaling?.FireRate || 0) * s.spirit) / 100; // Warden: 0.21% fire rate per spirit power (wiki)
+  s.fireRate = w.RoundsPerSecond * (1 + s.fireBonus) * s.fireMult;
   for (const [key, stat] of [['BulletResist', 'bulletResist'], ['TechResist', 'spiritResist']]) s[stat] = stackResist(s[stat], ((hero.SpiritScaling?.[key] || 0) * s.spirit) / 100); // Venator: 0.12% of each per spirit power (wiki)
+  s.clip = Math.ceil(s.clip - 1e-9); // the wiki (Extended Magazine): the ammo a percentage adds is rounded up (1e-9 keeps 10 x 1.3 at 13)
   s.clip = Math.floor(s.clip + (hero.SpiritScaling?.ClipSize || 0) * s.spirit); // Haze: +0.5 rounds per spirit power (wiki)
   if (w.ReloadSingle) s.reload = w.ReloadDelay + w.ReloadTime * s.clip; // shell by shell (Abrams): a pause, then ReloadTime for every round
   return s;
 }
 
-module.exports = { HEROES, ABILITIES, ITEMS, LEGENDARIES, itemByName, innateStats, heroStats, ITEM_STATS, effectValue, corruptCard, enhancedCard, cardFor, DRAWBACKS, drawbackText };
+module.exports = { HEROES, ABILITIES, ITEMS, LEGENDARIES, itemByName, innateStats, heroStats, ITEM_STATS, effectValue, corruptCard, enhancedCard, fragileCard, FRAGILE, FRAGILE_BREAK, cardFor, DRAWBACKS, drawbackText };

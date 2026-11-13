@@ -6,7 +6,7 @@ const { Fight, damageBreakdown, enemyDamage, healBreakdown } = require('./engine
 const { buildHero, roster } = require('./hero');
 const { keptAfter } = require('./items');
 const { abilityStacks } = require('./ability');
-const { TIER_COSTS, MAX_TIER, ITEM_POOL, canBuy } = require('./levels');
+const { TIER_COSTS, MAX_TIER, ITEM_POOL, canBuy, sameLine } = require('./levels');
 const { itemByName } = require('./stats');
 const { isWolf } = require('./heroes/silver');
 const { pickRandom } = require('../random');
@@ -40,7 +40,7 @@ function rivalKit(kit, rng = Math.random, hero = null) {
   const items = [];
   for (const name of kit.items) {
     const tier = Math.min(4, itemByName(name).Tier);
-    const choices = ITEM_POOL.filter((n) => itemByName(n).Tier === tier && !items.includes(n) && canBuy(hero, n));
+    const choices = ITEM_POOL.filter((n) => itemByName(n).Tier === tier && !items.some((m) => m === n || sameLine(m, n)) && canBuy(hero, n)); // never an item and its upgrade (his rule, Nov 5)
     if (choices.length) items.push(pickRandom(choices, rnd));
   }
   // as many enhanced items as the member has (Descend; the farm has none), on random ones of its own
@@ -68,7 +68,7 @@ function duel(heroName, kit, rivalName, theirs, { rng = Math.random, rejuvs = 0 
     t: fight.time, stage: 0,
     hero: { hp: hero.health, max: hero.stats.maxHealth, respawning: hero.has('rejuv') }, rejuvs: hero.rejuvs,
     enemies: [{ name: rivalName, hp: rival.health, max: rival.stats.maxHealth, asleep: asleep || rival.has('sleep'), stunned: stunned || rival.has('stun'), ...(rivalName === 'Silver' && isWolf(rival) && { wolf: true }) }],
-    abilities: hero.abilities.filter((a) => !a.hidden).map((a) => ({ name: a.name, status: a.status(fight) })),
+    ...require('./icons').loadoutOf(hero, fight),
     log: lastWarp && !log.slice(-4).includes(lastWarp) ? [lastWarp, ...log.slice(-3)] : log.slice(-4),
   });
   frames.push(snapshot());

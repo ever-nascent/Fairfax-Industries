@@ -1,7 +1,7 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 process.env.FARM_FRAME_MS = '0';
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const D = require('../src/utils/farm/descent');
 const dviews = require('../src/utils/farm/descentViews');
@@ -195,6 +195,11 @@ test('picks: an upgrade replaces its part in place, a full build needs an item g
   assert.deepStrictEqual(D.skipChoice(d).buffs, []);
   assert.strictEqual(d.health, 0.5 + D.SKIP_HEAL);
   assert.strictEqual(Object.values(d.buffs).reduce((sum, count) => sum + count, 0), before);
+  // skipping a legendary (after a boss's full heal): 6 buffs, no heal
+  d.phase = 'offer';
+  d.offer = { kind: 'legendaries', choices: LEGENDARY_NAMES.slice(0, 3), room: 15 };
+  assert.strictEqual(D.skipChoice(d).buffs.length, D.LEGEND_SKIP_BUFFS);
+  assert.strictEqual(d.health, 0.5 + D.SKIP_HEAL);
 });
 
 test('rerolls: 3 a floor, the same new offer every time for a seed, never below 0, boss rewards stay, a boss win refills them', () => {
@@ -381,7 +386,8 @@ test('the last room: the Patron then the Weakened Patron in one fight; beating i
   try {
     const { run } = await D.fight(id, { rng: seeded(3) });
     assert.ok(run.won && run.complete);
-    assert.deepStrictEqual(run.stageNames, ['Patron', 'Weakened Patron']);
+    assert.ok(D.PATRONS.includes(run.spec.patron), 'the Archmother or the Hidden King (Nov 4)');
+    assert.deepStrictEqual(run.stageNames, [D.BOSSES[run.spec.patron].name, D.BOSSES[`${run.spec.patron}-weak`].name]);
     assert.strictEqual(run.complete.clears, 1);
     const r = await getFarmUser(id);
     assert.strictEqual(r.descent, undefined, 'the run is over');
@@ -464,7 +470,7 @@ test('the start screen uses the requested paragraphs and separates the best run 
   const e = view.embeds[0].toJSON();
   assert.match(e.description, /\*\*8 Floors, 40 Rooms,\*\* starting/);
   assert.match(e.description, /Room\*\* is \*\*Cleared/);
-  assert.match(e.description, /\*\*The Patron\*\* waits at the bottom/);
+  assert.match(e.description, /A \*\*Patron\*\* \(the Archmother or the\nHidden King\) waits at the bottom/);
   assert.deepStrictEqual(e.fields.map((f) => [f.name, f.value]), [
     ['Your Best Runs', 'Vyper  -  **29 Rooms**'],
     ['Other Runs.', 'Haze  -  **18 Rooms**\nAbrams  -  **7 Rooms**'],
@@ -475,11 +481,11 @@ test('the start screen uses the requested paragraphs and separates the best run 
 test('the buttons: begin, fight, pick, build, back, abandon; only the runner may press them', async () => {
   const id = 'd4';
   const cmd = fake(id);
-  await descend.execute({ ...cmd, options: { getSubcommand: () => 'run' } });
+  await descend.execute({ ...cmd, options: { getSubcommand: () => 'run', getString: () => null, getInteger: () => null } });
   assert.match(cmd.log.at(-1)[1].embeds[0].toJSON().title, /Pick Your Hero/, 'a first hero comes from /base');
   await chooseHero(id, 'Haze');
   const start = fake(id);
-  await descend.execute({ ...start, options: { getSubcommand: () => 'run' } });
+  await descend.execute({ ...start, options: { getSubcommand: () => 'run', getString: () => null, getInteger: () => null } });
   assert.strictEqual(start.log.at(-1)[1].embeds[0].toJSON().footer.text, 'Pick a Hero that you have unlocked.');
   const sel = fake(id, `farm_dhero:${id}`, { values: ['Haze'] });
   await route('Descend hero select').execute(sel);
@@ -496,19 +502,19 @@ test('the buttons: begin, fight, pick, build, back, abandon; only the runner may
   const [, result] = go.log.findLast(([k]) => k === 'followUp');
   if ((await D.getRun(id))?.phase === 'offer') {
     const resultEmbed = result.embeds[0].toJSON();
-    assert.equal(resultEmbed.author.name, 'Descend - Room 1 Cleared');
+    assert.equal(resultEmbed.author.name, 'Descend  -  Ascension 0');
     assert.equal(resultEmbed.title, undefined);
     assert.match(resultEmbed.description, /reached \*\*Level 1\*\*\.(?:\n\nFound[\s\S]+?)?\n\nPick \*\*1 of 3\*\* items, or Skip: Heal \*\*25%\*\* and \*\*3 Perma-Buffs\*\*\./);
     assert.equal(resultEmbed.fields.find((field) => field.name === 'Level').value, '**1**');
     assert.ok(result.files.some((f) => f.name === 'pick.gif'), 'the cylinder spins the first time');
     const rows = result.components.map((r) => r.toJSON().components.map((c) => c.label).filter(Boolean));
     assert.ok(rows.some((labels) => labels.length === 3 && !labels.some((label) => label.startsWith('Skip'))), 'the three item picks share the first row');
-    assert.ok(rows.some((labels) => labels.includes('Skip ; Heal 25% and gain 3 Buffs') && labels.includes('Your Build') && labels.includes('Reroll (3 left)')), 'Skip, Build and Reroll share the second row');
+    assert.ok(rows.some((labels) => labels.includes('Skip ; Heal 25% and gain 3 Buffs') && labels.includes('Your Build') && labels.includes('Reroll (3 Left)')), 'Skip, Build and Reroll share the second row');
     assert.ok(go.log.some(([kind, payload]) => kind === 'editReply' && payload.components?.some((r) => r.toJSON().components.some((c) => c.label === 'Damage Breakdown'))), 'the completed fight holds Damage Breakdown');
     const reroll = fake(id, `farm_dreroll:${id}:1`);
     await route('Descend reroll button').execute(reroll);
     assert.ok(reroll.log.at(-1)[1].files.some((f) => f.name === 'pick.gif'), 'a reroll spins the cylinder again');
-    assert.ok(reroll.log.at(-1)[1].components.some((r) => r.toJSON().components.some((c) => c.label === 'Reroll (2 left)')));
+    assert.ok(reroll.log.at(-1)[1].components.some((r) => r.toJSON().components.some((c) => c.label === 'Reroll (2 Left)')));
     const take = fake(id, `farm_dtake:${id}:1:1`);
     await route('Descend pick button').execute(take);
     assert.match(take.log.at(-1)[1].embeds[0].toJSON().description, /^Took \*\*/);
@@ -562,7 +568,7 @@ test('View Enemy Build in a room: Fight / Flee / Your Build, then View Enemy Bui
   await chooseHero(id, 'Haze');
   await route('Descend begin button').execute(fake(id, `farm_dbegin:${id}:Haze`));
   const room = await dviews.roomView(member(id), await D.getRun(id));
-  assert.deepStrictEqual(room.components.map((r) => r.toJSON().components.map((c) => c.label)), [['Fight', 'Your Build'], ['View Enemy Build', 'Abandon Run']]);
+  assert.deepStrictEqual(room.components.map((r) => r.toJSON().components.map((c) => c.label)), [['Fight', 'Abandon Run'], ['Your Build', "Enemy's Build"]]);
   const ask = async (customId) => { const i = fake(id, customId); await route('Descend enemy build button').execute(i); return i.log.find(([k]) => k === 'editReply')[1]; };
   const fight = await ask(`farm_denemy:${id}:1`);
   checkLimits(fight, 'fight room build');
@@ -576,9 +582,9 @@ test('View Enemy Build in a room: Fight / Flee / Your Build, then View Enemy Bui
   const built = theirBuild.log.find(([k]) => k === 'editReply')[1];
   assert.ok(theirBuild.log[0][0] === 'deferReply' && built.components.length === 0 && built.content === `<@${id}>'s run.`);
   // a boss room and a rival room (found by walking the seed): the boss lists its crowd control, the rival draws its card
-  const seed = Array.from({ length: 500 }, (_, i) => i + 1).find((n) => Array.from({ length: 12 }, (_, r) => D.roomSpec(n, r + 3, 'Haze')).some((sp) => sp.kind === 'rival')); // a seed with a rival early
+  const seed = Array.from({ length: 500 }, (_, i) => i + 1).find((n) => Array.from({ length: 12 }, (_, r) => D.roomSpec(n, r + 3, 'Haze', 0, D.newRun('Haze', 1).v)).some((sp) => sp.kind === 'rival')); // a seed with a rival early (the run's own version: hero rooms take some rival rooms)
   await updateFarmUser(id, (r) => { r.descent.seed = seed; });
-  const roomOfKind = (kind) => Array.from({ length: 40 }, (_, i) => i + 1).find((r) => D.roomSpec(seed, r, 'Haze').kind === kind);
+  const roomOfKind = (kind) => Array.from({ length: 40 }, (_, i) => i + 1).find((r) => D.roomSpec(seed, r, 'Haze', 0, D.newRun('Haze', 1).v).kind === kind);
   for (const kind of ['boss', 'rival']) {
     const n = roomOfKind(kind);
     assert.ok(n, `this seed has a ${kind} room`);
@@ -738,7 +744,7 @@ test('the Broker\'s stall (his ask, Oct 30): from room 6, never a boss room or b
   assert.ok(ids.includes(`${dviews.DCORRUPT_ID}:stall:${room}`) && ids.includes(`${dviews.DWALK_ID}:stall:${room}`), 'a dropdown to corrupt and Leave');
   assert.ok(ids.includes(`${dviews.DBVIEW_ID}:stall:${room}`), 'a View Item dropdown');
   const about = (v) => v.embeds[0].toJSON().fields.find((f) => f.name === 'Corrupted Effects').value;
-  assert.match(about(view), /Select an item/, 'nothing is listed until one is picked');
+  assert.match(about(view), /Select an Item/, 'nothing is listed until one is picked');
   const picked = await dviews.roomView(member('stall'), d, { viewing: name });
   checkLimits(picked, 'the stall viewing an item');
   assert.ok(about(picked).startsWith(`**${name}**`), 'the picked item effects');
@@ -762,4 +768,93 @@ test('the Broker\'s stall (his ask, Oct 30): from room 6, never a boss room or b
   assert.ok(require('../src/utils/farm/hero').buildHero('Haze', { ...D.runKit(d), boons: 6 }).stats.maxHealth > 0, 'the hero builds with both');
   d.room = room;
   assert.strictEqual(D.corrupt(d, name).error, 'item', 'nothing left to corrupt');
+});
+
+test('Fragile Items (his ask, Oct 30): a stall forces one on a hero with no tier 3 or 4 item, it is weaker, a Rejuv shatters it, a later stall mends it into an Enhanced one', async () => {
+  const { buildHero } = require('../src/utils/farm/hero');
+  const { FRAGILE_BREAK } = require('../src/utils/farm/stats');
+  let seed = 1;
+  let room;
+  for (; !room; seed++) room = Array.from({ length: D.LAST_ROOM }, (_, i) => i + 1).find((r) => D.roomSpec(seed, r, 'Haze').kind === 'broker');
+  seed -= 1;
+  const d = { ...D.newRun('Haze', seed), room, level: 6 };
+  assert.ok(D.fragileDue(d), 'nothing worth working on: he forces one');
+  const view = await dviews.roomView(member('stall'), d);
+  checkLimits(view, 'the forced stall');
+  assert.strictEqual(view.embeds[0].toJSON().image.url, 'attachment://fragile.jpg', 'the cracked item is shown');
+  assert.ok(view.files.some((f) => f.name === 'fragile.jpg'));
+  assert.ok(view.embeds[0].toJSON().description.includes(D.fragileGift(d)), 'it names the item');
+  const ids = view.components.flatMap((r) => r.toJSON().components.map((c) => c.custom_id));
+  assert.ok(ids.includes(`${dviews.DFRAGILE_ID}:stall:${room}:take`) && !ids.includes(`${dviews.DWALK_ID}:stall:${room}`), 'Take replaces Leave');
+  assert.deepStrictEqual(D.mendFragile(structuredClone(d)), { error: 'none' }, 'nothing to mend yet');
+
+  const taken = D.takeFragile(d);
+  assert.ok(taken.ok);
+  const name = taken.name;
+  assert.deepStrictEqual([d.fragile, d.room, D.runKit(d).fragile], [[name], room + 1, [name]]);
+  assert.ok(Object.values(d.items).flat().includes(name), 'it is in the build');
+  checkLimits(await dviews.buildView(member('stall'), d), 'the build with a Fragile Item');
+
+  const kit = (fragile) => ({ items: ['Extra Health'], fragile });
+  assert.ok(buildHero('Haze', kit(['Extra Health'])).stats.maxHealth < buildHero('Haze', kit([])).stats.maxHealth, 'weaker than the real thing');
+
+  d.room = room; // the next stall: he mends it, and the hero stays to deal again
+  assert.ok(!D.fragileDue(d), 'one at a time');
+  assert.ok(!D.corruptibles(d).includes(name), 'never corrupted while cracked');
+  const mend = await dviews.roomView(member('stall'), d);
+  checkLimits(mend, 'the mending stall');
+  assert.ok(mend.components.flatMap((r) => r.toJSON().components.map((c) => c.custom_id)).includes(`${dviews.DFRAGILE_ID}:stall:${room}:mend`));
+  const shattering = structuredClone(d);
+  assert.deepStrictEqual(D.mendFragile(d), { ok: true, name });
+  assert.deepStrictEqual([d.fragile, d.enhanced, d.room], [[], [name], room]);
+
+  const fightRoom = Array.from({ length: D.LAST_ROOM }, (_, i) => i + 1).find((r) => D.roomSpec(seed, r, 'Haze').kind === 'fight');
+  Object.assign(shattering, { room: fightRoom, phase: 'fighting' });
+  D.afterWin(shattering, { spec: D.specOf(shattering), health: 0.5, rejuvsUsed: 1, kept: {}, stacks: {} });
+  assert.deepStrictEqual([shattering.fragile, Object.values(shattering.items).flat().includes(name), shattering.shattered.names], [[], false, [name]], 'a Rejuv shatters it');
+  const lowHealth = { ...structuredClone(d), fragile: [name], enhanced: [], room: fightRoom, phase: 'fighting' };
+  lowHealth.items[Object.keys(lowHealth.items)[0]].push(name);
+  D.afterWin(lowHealth, { spec: D.specOf(lowHealth), health: 0.5, rejuvsUsed: 0, fragileBroke: [name], kept: {}, stacks: {} });
+  assert.deepStrictEqual([lowHealth.fragile, lowHealth.shattered.why], [[], 'health'], 'so does one that broke mid-fight');
+  const fine = { ...structuredClone(d), fragile: [name], room: fightRoom, phase: 'fighting' };
+  D.afterWin(fine, { spec: D.specOf(fine), health: 0.5, rejuvsUsed: 0, fragileBroke: [], kept: {}, stacks: {} });
+  assert.deepStrictEqual(fine.fragile, [name], 'but not otherwise');
+
+  // only tier 3 or 4, whatever the seed
+  for (let s = 1; s <= 200; s++) assert.ok(itemByName(D.fragileGift({ ...D.newRun('Haze', s), room })).Tier >= 3, 'a gift worth taking');
+
+  // mid-fight: under 10% health the item's stats and effects go, once
+  const mid = buildHero('Haze', { items: ['Extra Health', 'Close Quarters'], fragile: ['Extra Health', 'Close Quarters'], boons: 6 });
+  const [maxBefore, itemsBefore] = [mid.stats.maxHealth, mid.items.length];
+  mid.shatter();
+  assert.ok(!mid.fragileBroke && mid.stats.maxHealth === maxBefore, 'healthy: it holds');
+  mid.health = maxBefore * (FRAGILE_BREAK - 0.01);
+  mid.shatter();
+  assert.deepStrictEqual([mid.fragileBroke, mid.items.length, mid.shatter], [['Extra Health', 'Close Quarters'], itemsBefore - 1, null], 'it breaks and is gone (an item with an effect is taken out of the fight)');
+  assert.ok(mid.stats.maxHealth < maxBefore && mid.health <= mid.stats.maxHealth && mid.health > 0, 'its max health goes, the hero lives');
+  assert.strictEqual(mid.stats.maxHealth, buildHero('Haze', { boons: 6 }).stats.maxHealth, 'the sheet is what it would be without the item');
+});
+
+test('Monster Rounds: its vs-NPC bonuses are halved in /descend (npcScale), whole elsewhere', () => {
+  const { buildHero } = require('../src/utils/farm/hero');
+  const [full, half] = [{}, { npcScale: 0.5 }].map((o) => buildHero('Haze', { items: ['Monster Rounds'], ...o }).stats);
+  assert.deepStrictEqual([full.weaponDamageMult, half.weaponDamageMult, full.bulletResist, half.bulletResist], [1.25, 1.125, 0.25, 0.125]);
+});
+
+test('/descend run hero: starts at once; a hero not unlocked or an ascension not reached is refused privately (Nov 4)', async () => {
+  const id = 'd-direct';
+  await chooseHero(id, 'Haze');
+  const opts = (hero, asc = null) => ({ getSubcommand: () => 'run', getString: () => hero, getInteger: () => asc });
+  const locked = fake(id);
+  await descend.execute({ ...locked, options: opts('Abrams') });
+  assert.match(locked.log.at(-1)[1].content, /haven't unlocked \*\*Abrams\*\*/);
+  const high = fake(id);
+  await descend.execute({ ...high, options: opts('haze', 5) });
+  assert.match(high.log.at(-1)[1].content, /up to \*\*Ascension 0\*\*/);
+  assert.strictEqual((await getFarmUser(id)).descent, undefined, 'nothing started');
+  const go = fake(id);
+  await descend.execute({ ...go, options: opts('haze') });
+  const d = (await getFarmUser(id)).descent;
+  assert.ok(d && d.hero === 'Haze' && d.ascension === 0 && d.room === 1, 'the run started with no dropdown');
+  assert.match(go.log.at(-1)[1].embeds[0].toJSON().title, /Room 1/);
 });

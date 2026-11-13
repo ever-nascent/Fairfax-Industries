@@ -58,10 +58,10 @@ function progress(totalXp) {
 // cards: owned hero cards as '<slug>:<style>'; card: the one /rank shows (null = plain card).
 // boostUntil: when their Soul Boost runs out (ms timestamp; 0 = never bought).
 // triviaStreak: right answers in a row; triviaDay / triviaPaid: the UTC day and how many right answers paid on it.
-// rejuvs: Rejuvs they carry (0-3).
+// rejuvs: Rejuvs they carry (0-3). dealDay: the UTC day they last took the Shop's Daily Deal (shop/dailyDeal.js).
 const blankUser = () => ({
   xp: 0, level: 0, souls: 0, lastXpAt: 0, urnDay: null, urnStreak: 0, cards: [], card: null, boostUntil: 0,
-  triviaStreak: 0, triviaDay: null, triviaPaid: 0, rejuvs: 0,
+  triviaStreak: 0, triviaDay: null, triviaPaid: 0, rejuvs: 0, dealDay: null,
 });
 
 // 2 while a Soul Boost is running, else 1. Doubles chat/voice XP, level-up souls, /urn and /trivia; never game winnings.
@@ -172,15 +172,15 @@ async function claimUrn(userId, now = new Date(), { rejuv } = {}) {
 }
 
 // Buys a Rejuv (saves a broken /urn streak). Returns { ok: true, user } or { ok: false, reason: 'full' | 'souls' }.
-async function buyRejuv(userId) {
+async function buyRejuv(userId, price = REJUV_PRICE) {
   const result = await updateUser(userId, (user) => {
     if (user.rejuvs >= REJUV_MAX) return { ok: false, reason: 'full' };
-    if (user.souls < REJUV_PRICE) return { ok: false, reason: 'souls' };
-    user.souls -= REJUV_PRICE;
+    if (user.souls < price) return { ok: false, reason: 'souls' };
+    user.souls -= price;
     user.rejuvs++;
     return { ok: true, user };
   });
-  if (result.ok) ledger.record(userId, -REJUV_PRICE, 'shop:rejuv', result.user.souls);
+  if (result.ok) ledger.record(userId, -price, 'shop:rejuv', result.user.souls);
   return result;
 }
 
@@ -234,14 +234,14 @@ async function triviaAnswer(userId, right, now = new Date()) {
 }
 
 // Buys an hour of Soul Boost (added on top of any time left). Returns { ok: true, user } or { ok: false, reason: 'souls' }.
-async function buyBoost(userId, now = Date.now()) {
+async function buyBoost(userId, now = Date.now(), price = BOOST_PRICE) {
   const result = await updateUser(userId, (user) => {
-    if (user.souls < BOOST_PRICE) return { ok: false, reason: 'souls' };
-    user.souls -= BOOST_PRICE;
+    if (user.souls < price) return { ok: false, reason: 'souls' };
+    user.souls -= price;
     user.boostUntil = Math.max(now, user.boostUntil) + BOOST_MS;
     return { ok: true, user };
   });
-  if (result.ok) ledger.record(userId, -BOOST_PRICE, 'shop:boost', result.user.souls);
+  if (result.ok) ledger.record(userId, -price, 'shop:boost', result.user.souls);
   return result;
 }
 
@@ -366,6 +366,7 @@ module.exports = {
   loadSoulsEmoji,
   MAX_LEVEL,
   URN_MAX_DAYS,
+  URN_BASE, URN_PER_DAY, TRIVIA_BASE, TRIVIA_STEP, TRIVIA_DAILY, // read by /help (utils/help.js)
   BOOST_PRICE,
   BOOST_MS,
   TRIVIA_MAX_STREAK,
@@ -381,6 +382,7 @@ module.exports = {
   soulsFor,
   progress,
   getUser,
+  updateUser,
   getSettings,
   updateSettings,
   addXp,

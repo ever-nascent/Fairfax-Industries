@@ -7,8 +7,7 @@ const { EmbedBuilder, MessageFlags } = require('discord.js');
 const { getStore } = require('../../storage');
 const { SCALE } = require('./economy');
 const { changeSouls } = require('./xp');
-const { replyEmbed } = require('../embeds');
-const { soulsText, boldSouls } = require('../format');
+const { soulsText } = require('../format');
 const { REPLY_COLOR } = require('../../config');
 
 const DAILY_SOULS = 40 * SCALE;
@@ -17,22 +16,22 @@ const DAILY_COUNT = 3;
 const WEEKLY_COUNT = 2;
 // kind = what track() is told; goal = how many; text = how the quest reads.
 const DAILY = [
-  { kind: 'chat', goal: 10, text: 'Send 10 messages that earn XP' },
-  { kind: 'game', goal: 3, text: 'Play 3 betting games' },
-  { kind: 'fight', goal: 3, text: 'Win 3 Hero Farming fights' },
-  { kind: 'descend', goal: 3, text: 'Clear 3 Descend rooms' },
-  { kind: 'trivia', goal: 3, text: 'Answer 3 trivia questions right' },
-  { kind: 'urn', goal: 1, text: 'Claim your Soul Urn' },
-  { kind: 'lockle', goal: 1, text: 'Solve the daily Lockle' },
+  { kind: 'chat', goal: 10, text: 'Send 10 Messages That Earn XP' },
+  { kind: 'game', goal: 3, text: 'Play 3 Betting Games' },
+  { kind: 'fight', goal: 3, text: 'Win 3 Hero Farming Fights' },
+  { kind: 'descend', goal: 3, text: 'Clear 3 Descend Rooms' },
+  { kind: 'trivia', goal: 3, text: 'Answer 3 Trivia Questions Right' },
+  { kind: 'urn', goal: 1, text: 'Claim Your Soul Urn' },
+  { kind: 'lockle', goal: 1, text: 'Solve the Daily Lockle' },
 ];
 const WEEKLY = [
-  { kind: 'chat', goal: 60, text: 'Send 60 messages that earn XP' },
-  { kind: 'game', goal: 20, text: 'Play 20 betting games' },
-  { kind: 'fight', goal: 15, text: 'Win 15 Hero Farming fights' },
-  { kind: 'descend', goal: 20, text: 'Clear 20 Descend rooms' },
-  { kind: 'trivia', goal: 15, text: 'Answer 15 trivia questions right' },
-  { kind: 'urn', goal: 5, text: 'Claim your Soul Urn on 5 days' },
-  { kind: 'lockle', goal: 4, text: 'Solve the daily Lockle 4 times' },
+  { kind: 'chat', goal: 60, text: 'Send 60 Messages That Earn XP' },
+  { kind: 'game', goal: 20, text: 'Play 20 Betting Games' },
+  { kind: 'fight', goal: 15, text: 'Win 15 Hero Farming Fights' },
+  { kind: 'descend', goal: 20, text: 'Clear 20 Descend Rooms' },
+  { kind: 'trivia', goal: 15, text: 'Answer 15 Trivia Questions Right' },
+  { kind: 'urn', goal: 5, text: 'Claim Your Soul Urn on 5 Days' },
+  { kind: 'lockle', goal: 4, text: 'Solve the Daily Lockle 4 Times' },
 ];
 
 const store = () => getStore('quests'); // user id -> { day, week, p: { quest id: progress } }
@@ -106,8 +105,11 @@ async function withQuests(interaction, handler) {
   const completed = [];
   const result = await noted.run(completed, handler);
   if (completed.length) {
-    const text = completed.map((q) => `Quest done: **${q.text}**. ${boldSouls(q.souls)} paid.`).join('\n');
-    const payload = { embeds: [replyEmbed(text)], flags: MessageFlags.Ephemeral };
+    const embed = new EmbedBuilder()
+      .setColor(REPLY_COLOR)
+      .setTitle(completed.length > 1 ? 'Quests Complete' : 'Quest Complete')
+      .addFields(completed.map((q) => ({ name: q.text, value: `${soulsText(q.souls)} Earned`, inline: true })));
+    const payload = { embeds: [embed], flags: MessageFlags.Ephemeral };
     try {
       await (interaction.replied || interaction.deferred ? interaction.followUp(payload) : interaction.reply(payload));
     } catch (error) {
@@ -127,8 +129,8 @@ async function questsEmbed(userId, now = new Date()) {
     .setColor(REPLY_COLOR)
     .setTitle('Quests')
     .addFields(
-      { name: `Daily (new ones <t:${nextDay(now) / 1000}:R>)`, value: lines('daily') },
-      { name: `Weekly (new ones <t:${nextWeek(now) / 1000}:R>)`, value: lines('weekly') },
+      { name: `Daily (Refreshes In <t:${nextDay(now) / 1000}:R>)`, value: lines('daily') },
+      { name: `Weekly (Refreshes In <t:${nextWeek(now) / 1000}:R>)`, value: lines('weekly') },
     )
     .setFooter({ text: 'Do the work and I pay on the spot.' });
 }

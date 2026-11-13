@@ -116,7 +116,7 @@ class StillLife extends Ability {
 
   pick(fight) { const e = fight.foes[0]; return e && fight.distance(this.unit, e) <= this.value('AbilityCastRange') ? e : null; }
   want(fight) { return !!this.pick(fight); }
-  status(fight) { return this.subject ? 'Drawing' : this.sketches ? `${super.status(fight)}  -  ${this.sketches} sketched` : super.status(fight); }
+  status(fight) { return this.subject ? 'Drawing' : this.sketches ? `${super.status(fight)}  -  ${this.sketches} Sketched` : super.status(fight); }
 
   cast(fight) {
     this.subject = this.pick(fight);

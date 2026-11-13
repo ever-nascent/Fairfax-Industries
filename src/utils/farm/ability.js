@@ -155,6 +155,10 @@ class Unimplemented extends Ability {
   get passive() { return true; }
 }
 
+// True while one of the unit's abilities of these kinds is ready to cast: an ultimate's want() uses it to wait for its combo (his ask, Nov 6:
+// Seven ulted before his stun and ball). A locked or cooling-down one doesn't hold it.
+const anyReady = (unit, ...kinds) => unit.abilities.some((a) => kinds.some((K) => a instanceof K) && a.ready());
+
 // An ability the hero hasn't unlocked yet (levels.js): it never fires and does nothing.
 class Locked extends Ability {
   get passive() { return true; }
@@ -173,4 +177,4 @@ function spinUp(state, weapon, fight, dt) {
 // What a fight leaves of the hero's ability stacks: { ability name: what its keep() gives }.
 const abilityStacks = (hero) => Object.fromEntries(hero.abilities.filter((a) => a.keep).map((a) => [a.data.Name, a.keep()]));
 
-module.exports = { Ability, Unimplemented, Locked, MIN_COOLDOWN, spinUp, abilityStacks };
+module.exports = { Ability, Unimplemented, Locked, anyReady, MIN_COOLDOWN, spinUp, abilityStacks };

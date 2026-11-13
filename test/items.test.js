@@ -1,5 +1,5 @@
 // Run: node --test
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { Fight, enemy, SPIRIT_LIFESTEAL_VS_NPC } = require('../src/utils/farm/engine');
 const { buildHero } = require('../src/utils/farm/hero');
@@ -40,8 +40,8 @@ test('Return Fire sends part of the bullet damage taken back at the attacker', (
 });
 
 test('resists multiply instead of adding, and an enemy that deals spirit damage is slowed by spirit resist, not bullet resist', () => {
-  const two = buildHero('Haze', { items: ['Bullet Resilience', 'Cultist Sacrifice'] }).stats.bulletResist; // 30% and 30%
-  assert.ok(Math.abs(two - 0.51) < 1e-9, `30% and 30% make 51%, got ${two}`);
+  const two = buildHero('Haze', { items: ['Bullet Resilience', 'Cultist Sacrifice'] }).stats.bulletResist; // 35% and 30%
+  assert.ok(Math.abs(two - (1 - 0.65 * 0.7)) < 1e-9, `35% and 30% make 54.5%, got ${two}`);
   const taken = (items, damageType) => {
     const hero = buildHero('Haze', { items, unlocked: 0 });
     const foe = enemy('Dummy', { maxHealth: 1e6, dps: 50, damageType });
@@ -157,7 +157,7 @@ test('procs: Mystic Shot adds spirit damage once per cooldown; Ricochet hits the
   run(plain.fight, 7);
   const extra = ms.fight.dealt.get(ms.hero) - plain.fight.dealt.get(plain.hero);
   assert.ok(extra > 35 && extra < 60, `one proc in 7 s: ${extra.toFixed(0)}`);
-  const ric = setup(['Ricochet'], { foes: 3, hp: 2000 }); // camp-sized: bullets don't bounce off a boss
+  const ric = setup(['Ricochet'], { foes: 3, hp: 2000 });
   run(ric.fight, 3);
   assert.ok(ric.enemies[1].health < ric.enemies[1].stats.maxHealth && ric.enemies[2].health < ric.enemies[2].stats.maxHealth);
 });
@@ -253,6 +253,7 @@ test('"vs. NPCs" items do nothing against a rival hero: Monster Rounds; Restorat
 
   const shot = duel(['Restorative Shot']);
   shot.hero.health = 100;
+  shot.fight.emit('shot', { source: shot.hero, target: shot.rival });
   shot.fight.emit('bulletHit', { source: shot.hero, target: shot.rival, amount: 1, opts: {} });
   assert.strictEqual(shot.hero.health, 150);
 });
@@ -275,4 +276,50 @@ test('item audit batch 2: Slowing Bullets builds like the wiki table, Stalker pr
   dash.fight.emit('dash', { source: dash.hero });
   dash.fight.emit('dash', { source: dash.hero });
   assert.strictEqual(dash.hero.weapon.clip, clip + 6);
+});
+
+test("Monster Rounds' NPC weapon damage also lifts McGinnis' turrets (a summon), and not against a rival hero", () => {
+  const turretDamage = (items, enhanced = []) => {
+    const s = setup(items, { hero: 'McGinnis', enhanced });
+    const turret = s.hero.abilities[0];
+    turret.deploy(s.fight, 10);
+    s.fight.time = 5; // past the deploy time
+    const before = s.enemies[0].health;
+    turret.tick(s.fight, 0.1);
+    return before - s.enemies[0].health;
+  };
+  const plain = turretDamage([]);
+  assert.ok(plain > 0);
+  assert.ok(Math.abs(turretDamage(['Monster Rounds']) / plain - 1.25) < 1e-6, '+25% vs NPCs');
+  assert.ok(Math.abs(turretDamage(['Monster Rounds'], ['Monster Rounds']) / plain - 1.6) < 1e-6, 'enhanced +60%');
+});
+
+test('Restorative Shot goes on cooldown on a missed bullet too (Graves starts it only on a hit)', () => {
+  const afterMiss = (hero) => {
+    const s = setup(['Restorative Shot'], { hero });
+    s.hero.health = s.hero.stats.maxHealth * 0.5;
+    s.fight.emit('shot', { source: s.hero, target: s.enemies[0] }); // a bullet fired that misses: no hit follows
+    return [s.hero.items[0].cdLeft > 0, s.hero.health === s.hero.stats.maxHealth * 0.5];
+  };
+  assert.deepStrictEqual(afterMiss('Haze'), [true, true]);
+  assert.deepStrictEqual(afterMiss('Graves'), [false, true], 'Graves: the cooldown waits for a hit');
+});
+
+test('resists stack multiplicatively, shreds multiply among themselves then come off the resist, fire rate bonuses add up', () => {
+  const { heroStats } = require('../src/utils/farm/stats');
+  const { HEROES } = require('../src/utils/farm/stats');
+  const plain = heroStats(HEROES.Haze, {});
+  const two = heroStats(HEROES.Haze, { items: ['Rapid Rounds', 'Rapid Rounds'], buffs: { fireRate: 2 } });
+  assert.ok(Math.abs(two.fireRate / plain.fireRate - (1 + 0.09 * 2 + 0.03)) < 1e-9, 'fire rate: +9% +9% +3% is +21%, not 1.09 x 1.09 x 1.03');
+  const { hero } = setup([]);
+  hero.stats.bulletResist = 0.5;
+  assert.ok(Math.abs(hero.resistNow('bulletResist') - 0.5) < 1e-9);
+  hero.statuses.push({ id: 'a', mods: { bulletResist: -0.2 } }, { id: 'b', mods: { bulletResist: -0.1 } });
+  assert.ok(Math.abs(hero.resistNow('bulletResist') - (0.5 - (1 - 0.8 * 0.9))) < 1e-9, '50% resist under 20% and 10% shreds: 50% - 28% = 22%');
+  hero.statuses.push({ id: 'c', mods: { bulletResist: 0.2 } });
+  assert.ok(Math.abs(hero.resistNow('bulletResist') - (1 - 0.5 * 0.8 - 0.28)) < 1e-9, 'a temporary resist multiplies with the sheet\'s, then the shred comes off');
+  hero.stats.bulletResist = 0.1;
+  hero.statuses.length = 0;
+  hero.statuses.push({ id: 'd', mods: { bulletResist: -0.4 } });
+  assert.ok(hero.resistNow('bulletResist') < 0, 'more shred than resist is extra damage taken');
 });

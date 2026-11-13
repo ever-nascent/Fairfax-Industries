@@ -150,13 +150,6 @@ function createJsonStore(collection) {
         await writeCollection(collection, data);
       });
     },
-    // Replaces the whole collection in one write (the per-server migration rekeys every entry at once).
-    async replaceAll(data) {
-      return withLock(collection, async () => {
-        cache.set(collection, structuredClone(data));
-        await writeCollection(collection, data);
-      });
-    },
   };
 }
 

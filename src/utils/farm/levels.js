@@ -57,7 +57,7 @@ const POOL = Object.fromEntries(SLOTS.map((slot) => [slot, ITEMS
   .map((c) => c.Name)]));
 const ITEM_POOL = SLOTS.flatMap((slot) => POOL[slot]);
 // Items a hero can't buy (the wiki: Deadman Danny can't buy Ricochet; his call Oct 29). Shop, buyItem, Descend's offers and a rival's kit all ask canBuy.
-const NO_BUY = { 'Deadman Danny': new Set(['Ricochet']) };
+const NO_BUY = { 'Deadman Danny': new Set(['Ricochet', 'Headshot Booster']), Graves: new Set(['Headshot Booster']) }; // Headshot Booster: neither can deal critical damage (the wiki)
 const canBuy = (hero, name) => !NO_BUY[hero]?.has(name);
 
 // ---- corruption (his calls, Oct 3): The Broker corrupts one owned tier 3 or 4 item per hero, for its price again, while he is open ----
@@ -94,10 +94,12 @@ function priceFor(card, items) {
 // The owned item that already holds `name` as a component, at any depth (an upgrade keeps its components' stats, so a second copy is refused;
 // his call, Oct 3), or undefined.
 const BY_NAME = new Map(ITEMS.map((c) => [c.Name, c]));
+const builtFrom = (card, name) => componentsOf(card).some((c) => c.Name === name || builtFrom(c, name));
 function heldIn(name, items) {
-  const inside = (card) => componentsOf(card).some((c) => c.Name === name || inside(c));
-  return SLOTS.flatMap((slot) => items[slot] ?? []).find((owned) => BY_NAME.has(owned) && inside(BY_NAME.get(owned)));
+  return SLOTS.flatMap((slot) => items[slot] ?? []).find((owned) => BY_NAME.has(owned) && builtFrom(BY_NAME.get(owned), name));
 }
+// Whether two items are in one upgrade line (either is built from the other, at any depth): no build holds both (his rule, Nov 5).
+const sameLine = (a, b) => BY_NAME.has(a) && BY_NAME.has(b) && (builtFrom(BY_NAME.get(a), b) || builtFrom(BY_NAME.get(b), a));
 
 // Legendaries (his calls, Oct 2): all 17 of the game's Tier 5 items (Street Brawl's) can drop. Every enemy killed in a fight the hero wins
 // (a wave run: the waves it cleared) has a 0.5% chance (his call, Oct 25); a legendary can't be sold.
@@ -119,7 +121,7 @@ function rollLegendary(kills, rng = Math.random, owned = [], chance = LEGENDARY_
 const itemsOf = (items = {}) => Object.fromEntries(SLOTS.map((slot) => [slot, [].concat(items[slot] ?? []).filter(Boolean)]));
 
 module.exports = {
-  THRESHOLDS, MAX_LEVEL, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, LEGENDARY_NAMES, rollLegendary, SIEGE_LEGENDARY_CHANCE, SLOT_OF, sellPrice, POOL, ITEM_POOL, canBuy, itemsOf,
+  THRESHOLDS, MAX_LEVEL, TIER_COSTS, MAX_TIER, SLOTS, MAX_ITEMS, countItems, priceFor, heldIn, sameLine, LEGENDARY_NAMES, rollLegendary, SIEGE_LEGENDARY_CHANCE, SLOT_OF, sellPrice, POOL, ITEM_POOL, canBuy, itemsOf,
   BROKER, brokerOpen, brokerNext, brokerCloses, corruptible, corruptPrice, rollDrawback,
   progress, pointsSpent, unlockLevel, campMultiplier, UNLOCKS, POINTS,
 };

@@ -21,6 +21,7 @@ const SCENES = [
   () => Array.from({ length: 5 }, (_, i) => enemy(`Haunt ${i + 1}`, { maxHealth: 500, dps: 6, distance: 10, souls: 41 })),
   () => [enemy('Tank', { maxHealth: 20000, dps: 35, distance: 20, healthRegen: 15, blast: { every: 6, damage: 300, maxHealthPct: 0.1, curse: 2, type: 'spirit', what: 'stomp' }, damageType: 'spirit' })],
   // a long, hard one with a Rejuv: heavy weapon hits, frequent blasts, a death (Eternal Gift's shorter wait), time for big ability hits
+  () => [enemy('Brawler', { maxHealth: 4000, dps: 30, distance: 2, damageType: 'melee' })], // a melee attacker (Rebuttal only parries melee swings)
   Object.assign(() => [enemy('Brute', { maxHealth: 60000, dps: 300, distance: 8, blast: { every: 3, damage: 50, maxHealthPct: 0, curse: 0.5 } })], { rejuvs: 1, boons: 35 }),
 ];
 

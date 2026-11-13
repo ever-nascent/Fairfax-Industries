@@ -12,12 +12,19 @@ async function openBase(interaction) {
   return interaction.editReply(record.hero ? await homeView(interaction.member, record) : await pickView(interaction.member));
 }
 
-// /hero: the hero screen (level, abilities, stats, items). No hero yet: pick one first.
+// /hero view: the hero screen (level, abilities, stats, items). No hero yet: pick one first.
 async function openHero(interaction) {
   await start(interaction);
   const record = await getFarmUser(interaction.user.id);
   if (!record.hero) return interaction.editReply(await pickView(interaction.member));
   return interaction.editReply(await heroView(interaction.member, record));
+}
+
+// /hero unlock: the Unlock Hero screen (the Switch Hero screen's Unlock Hero button). No hero yet: pick one first (the first is free).
+async function openUnlock(interaction) {
+  await start(interaction);
+  const record = await getFarmUser(interaction.user.id);
+  return interaction.editReply(await pickView(interaction.member, null, record.hero ? record : null, 'unlock'));
 }
 
 // A target's details screen with Send (a camp, a lane's Guardian or Walker, the Mid-Boss or the siege). No hero yet: pick one first.
@@ -37,4 +44,4 @@ async function runRoam(interaction) {
   return interaction.editReply(await roamView(result.haul));
 }
 
-module.exports = { openBase, openHero, openTarget, runRoam };
+module.exports = { openBase, openHero, openUnlock, openTarget, runRoam };

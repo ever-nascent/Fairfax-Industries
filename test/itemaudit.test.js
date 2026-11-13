@@ -2,7 +2,7 @@
 // The item audit (server-plan.md "Item audit"): each item's effect, checked with the wiki's exact numbers (his ask, Oct 22: "make sure that their
 // exact effects are taking place"). One test per item, grouped by audit batch.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-')); // never the live data/
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { Fight, enemy } = require('../src/utils/farm/engine');
 const { buildHero } = require('../src/utils/farm/hero');
@@ -115,24 +115,24 @@ test('Spirit Rend: bullets take 8% spirit resist for 8 s; a headshot every 2 s a
   assert.ok(!status(body.enemies[0], 'Spirit Rend:rend'), 'a body shot adds no stack');
 });
 
-test('Point Blank: within 15 m, +50% weapon damage and bullets slow 20% for 2 s', () => {
+test('Point Blank: within 15 m, +50% weapon damage and bullets slow 20% for 2.5 s', () => {
   const { enemies, fight, it, hit } = setup(['Point Blank'], { distance: 10 });
   near(it().weaponBonus(fight, enemies[0]), 0.5);
   hit();
   const slow = status(enemies[0], 'Point Blank:slow');
-  near(slow.mods.slow, 0.2); near(slow.until - fight.time, 2);
+  near(slow.mods.slow, 0.2); near(slow.until - fight.time, 2.5);
   const far = setup(['Point Blank'], { distance: 20 });
   near(far.it().weaponBonus(far.fight, far.enemies[0]), 0);
 });
 
-test('Toxic Bullets: Haze builds 7.4% a bullet; the 14th bleeds 1.9% of max health a second for 4 s (half on a camp creep), 35% less healing', () => {
+test('Toxic Bullets: Haze builds 7.4% a bullet; the 14th bleeds 1.9% of max health a second for 4 s (half on a camp creep), 40% less healing', () => {
   const { enemies, fight, it, hit } = setup(['Toxic Bullets'], { hp: 2000 }); // a camp creep, not a boss
   for (let i = 0; i < 13; i++) hit();
   assert.strictEqual(it().dots.length, 0);
   hit();
   const [dot] = it().dots;
   near(dot.perSecond, 0.019 * 2000 * 0.5); near(dot.until - fight.time, 4);
-  near(status(enemies[0], 'Toxic Bullets:heal').mods.healAmp, -0.35);
+  near(status(enemies[0], 'Toxic Bullets:heal').mods.healAmp, -0.4);
 });
 
 test("Hunter's Aura: enemies within 15 m lose 10% bullet resist and fire 15% slower; doubled on a lone enemy", () => {
@@ -147,15 +147,24 @@ test("Hunter's Aura: enemies within 15 m lose 10% bullet resist and fire 15% slo
   near(status(one.enemies[0], "Hunter's Aura:aura").mods.damageDealt, -0.3);
 });
 
-test('Shadow Weave: invisible for 13 s; attacking out of it gives +25% fire rate, +25 spirit power and +25% melee damage for 5 s', () => {
-  const { hero, enemies, fight, it } = setup(['Shadow Weave']);
-  it().cast(fight);
-  assert.ok(hero.has('invisible'));
-  near(status(hero, 'Shadow Weave:stealth').until - fight.time, 13);
-  fight.damage(hero, enemies[0], 10, 'bullet');
-  assert.ok(!hero.has('invisible'), 'attacking ends it');
-  const ambush = status(hero, 'Shadow Weave:ambush');
-  near(ambush.mods.fireRate, 0.25); near(ambush.mods.spirit, 25); near(ambush.mods.meleeDamage, 0.25); near(ambush.until - fight.time, 5);
+test('Shadow Weave: invisible for 13 s; attacking out of it gives up to +50% weapon damage and +25 spirit power for 5 s, full after 6 s in stealth', () => {
+  const ambushAfter = (seconds) => {
+    const { hero, enemies, fight, it } = setup(['Shadow Weave']);
+    hero.weapon.clip = 0; hero.weapon.reloadLeft = 1e9;
+    it().cast(fight);
+    assert.ok(hero.has('invisible'));
+    near(status(hero, 'Shadow Weave:stealth').until - fight.time, 13);
+    while (fight.time < seconds - 1e-9) fight.step();
+    fight.damage(hero, enemies[0], 10, 'bullet');
+    assert.ok(!hero.has('invisible'), 'attacking ends it');
+    const ambush = status(hero, 'Shadow Weave:ambush');
+    near(ambush.until - fight.time, 5);
+    return ambush.mods;
+  };
+  const full = ambushAfter(6);
+  near(full.weaponDamage, 0.5); near(full.spirit, 25); assert.ok(!full.fireRate && !full.meleeDamage, 'no fire rate or melee damage since the patch');
+  const half = ambushAfter(3);
+  near(half.weaponDamage, 0.25, 'half way to full'); near(half.spirit, 12.5);
 });
 
 test('Alchemical Fire: 45 spirit damage a second rising 7 a 0.5 s tick (all + spirit scaling) to 95, for 5 s; half on NPCs; bullet resist -7%', () => {
@@ -247,11 +256,11 @@ test('Frenzy: below 50% health, +4 m/s, +40% fire rate and +40% debuff resist fo
   near(it().cdLeft, 16);
 });
 
-test('Crippling Headshot: a headshot takes 16% bullet and spirit resist and 35% healing for 12 s', () => {
+test('Crippling Headshot: a headshot takes 16% bullet and spirit resist and 40% healing for 12 s', () => {
   const { enemies, fight, hit } = setup(['Crippling Headshot'], { rng: () => 0.1 });
   hit();
   const shred = status(enemies[0], 'Crippling Headshot:shred');
-  near(shred.mods.bulletResist, -0.16); near(shred.mods.spiritResist, -0.16); near(shred.mods.healAmp, -0.35); near(shred.until - fight.time, 12);
+  near(shred.mods.bulletResist, -0.16); near(shred.mods.spiritResist, -0.16); near(shred.mods.healAmp, -0.4); near(shred.until - fight.time, 12);
 });
 
 test('Lucky Shot: 25% of bullets deal 100% bonus weapon damage, which cannot be evaded', () => {
@@ -264,7 +273,7 @@ test('Lucky Shot: 25% of bullets deal 100% bonus weapon damage, which cannot be 
   near(not.enemies[0].health, 1e6);
 });
 
-test('Ricochet: bullets bounce to 2 enemies within 13 m for 65%; a bounce never headshots or bounces off a boss', () => {
+test('Ricochet: bullets bounce to 2 enemies within 13 m for 65%; a bounce never headshots; bullets on a boss bounce too', () => {
   const { enemies, hit } = setup(['Ricochet', 'Weakening Headshot'], { foes: 4, hp: 2000, rng: () => 0.1 });
   enemies.forEach((e) => { e.offset = 0; });
   hit(enemies[0], 100);
@@ -273,7 +282,7 @@ test('Ricochet: bullets bounce to 2 enemies within 13 m for 65%; a bounce never 
   const boss = setup(['Ricochet'], { foes: 2, hp: 1e6 });
   boss.enemies.forEach((e) => { e.offset = 0; e.stats.maxHealth = 20000; });
   boss.hit(boss.enemies[0], 100);
-  near(boss.enemies[1].health, 1e6, 'no bounce off an objective');
+  near(1e6 - boss.enemies[1].health, 65, 'bounces off an objective too');
 });
 
 test('Spiritual Overflow: Haze builds 8.8% a bullet (the wiki table): the 12th gives +25% fire rate, +30 spirit power, +10% spirit lifesteal for 15 s; no build-up meanwhile', () => {
@@ -287,10 +296,10 @@ test('Spiritual Overflow: Haze builds 8.8% a bullet (the wiki table): the 12th g
   near(it().bars.get(fight.enemies[0]) ?? 0, 0, 'nothing builds while it runs');
 });
 
-test('Glass Cannon: +80% weapon damage, -13% max health; each kill +7% fire rate, up to 8', () => {
+test('Glass Cannon: +85% weapon damage, -13% max health; each kill +7% fire rate, up to 8', () => {
   const plain = setup([]);
   const { hero, enemies, fight, it } = setup(['Glass Cannon']);
-  near(hero.stats.weaponDamageMult - plain.hero.stats.weaponDamageMult, 0.8);
+  near(hero.stats.weaponDamageMult - plain.hero.stats.weaponDamageMult, 0.85);
   near(hero.stats.maxHealth / plain.hero.stats.maxHealth, 0.87);
   for (let i = 0; i < 10; i++) fight.emit('kill', { source: hero, target: enemies[0] });
   near(it().dynamicMods(fight).fireRate, 0.56);
@@ -428,23 +437,26 @@ test('Melee Lifesteal: +12% melee damage; the next melee heals 100 (30% of it of
   near(hero.health, 230);
 });
 
-test('Rebuttal: +75 health; parries the front enemy\'s hit every 2.75 s (4.5 - 1.75): heals it, sends it back, +30% damage for 6 s', () => {
+test('Rebuttal: +75 health; parries the front enemy\'s melee swing every 3.25 s (4.5 - 1.25): heals it, sends it back, +30% damage for 6 s', () => {
   const plain = setup([]);
   const { hero, enemies, fight, it } = setup(['Rebuttal']);
   near(hero.stats.maxHealth - plain.hero.stats.maxHealth, 75);
   hero.health = 100;
   fight.damage(enemies[0], hero, 40, 'bullet', { attack: true });
+  near(hero.health, 60, 'a bullet is never parried (his call, Oct 31)');
+  hero.health = 100;
+  fight.damage(enemies[0], hero, 40, 'melee', { attack: true });
   near(hero.health, 140, 'no damage taken, healed the 40');
   near(1e6 - enemies[0].health, 40, 'sent back');
   const buff = status(hero, 'Rebuttal:rebuttal');
   near(buff.mods.damageDealt, 0.3); near(buff.until - fight.time, 6);
-  near(it().cdLeft, 2.75);
+  near(it().cdLeft, 3.25);
   const parried = status(enemies[0], 'Rebuttal:parried'); // the parry itself (his call, Oct 22)
   assert.ok(enemies[0].has('stun')); near(parried.until - fight.time, 2.75); near(parried.mods.damageTaken, 0.25);
   for (const name of ['Walker', 'Mid-Boss', 'Shrine', 'Second Shrine', 'Patron', 'Weakened Patron']) { // his call, Oct 22
     const boss = setup(['Rebuttal']);
     boss.enemies[0].name = name;
-    boss.fight.damage(boss.enemies[0], boss.hero, 40, 'bullet', { attack: true });
+    boss.fight.damage(boss.enemies[0], boss.hero, 40, 'melee', { attack: true });
     assert.ok(!status(boss.enemies[0], 'Rebuttal:parried') && boss.it().cdLeft === 0, `${name} cannot be parried`);
   }
 });
@@ -485,21 +497,21 @@ test('Healing Rite: 300 health over 20 s and +2 m/s; damage from a boss or a riv
 const sheet = (items) => buildHero('Haze', { items }).stats;
 const BASE = buildHero('Haze').stats;
 
-test('Bullet Lifesteal: +13% lifesteal, +90 health, +6% weapon damage; lifesteals stack multiplicatively (the wiki)', () => {
+test('Bullet Lifesteal: +15% lifesteal, +90 health, +10% weapon damage; lifesteals stack multiplicatively (the wiki)', () => {
   const s = sheet(['Bullet Lifesteal']);
-  near(s.lifesteal, 0.13); near(s.maxHealth - BASE.maxHealth, 90); near(s.weaponDamageMult - BASE.weaponDamageMult, 0.06);
-  near(sheet(['Bullet Lifesteal', 'Leech']).lifesteal, 1 - 0.87 * (1 - sheet(['Leech']).lifesteal));
+  near(s.lifesteal, 0.15); near(s.maxHealth - BASE.maxHealth, 90); near(s.weaponDamageMult - BASE.weaponDamageMult, 0.1);
+  near(sheet(['Bullet Lifesteal', 'Leech']).lifesteal, 1 - 0.85 * (1 - sheet(['Leech']).lifesteal));
 });
 
 test('lifesteal heals in full off a rival hero; off an NPC bullet lifesteal works at 60%, spirit at 40% (the wiki)', () => {
   const { hero, enemies, fight } = setup(['Bullet Lifesteal']);
   hero.health = 100;
   fight.damage(hero, enemies[0], 100, 'bullet');
-  near(hero.health, 100 + 100 * 0.13 * 0.6);
+  near(hero.health, 100 + 100 * 0.15 * 0.6);
   const rival = buildHero('Abrams', {});
   hero.health = 100; hero.healPool = 1e9;
   const dealt = fight.damage(hero, rival, 100, 'bullet');
-  near(hero.health, 100 + dealt * 0.13);
+  near(hero.health, 100 + dealt * 0.15);
 });
 
 test('Debuff Reducer: +90 health, +25% debuff resist', () => {
@@ -507,9 +519,9 @@ test('Debuff Reducer: +90 health, +25% debuff resist', () => {
   near(s.maxHealth - BASE.maxHealth, 90); near(s.statusResist, 0.25);
 });
 
-test('Healing Booster: +3 health regen, +1 out-of-combat regen, +20% healing (heals and temporary regen, not the constant regen)', () => {
+test('Healing Booster: +2 out-of-combat regen, +20% healing (heals and temporary regen, not the constant regen)', () => {
   const s = sheet(['Healing Booster']);
-  near(s.healthRegen - BASE.healthRegen, 3); near(s.oocRegen, 1); near(s.healAmp, 0.2);
+  near(s.healthRegen - BASE.healthRegen, 0); near(s.oocRegen, 2); near(s.healAmp, 0.2);
   const { hero, fight } = setup(['Healing Booster']);
   hero.health = 100;
   fight.heal(hero, 50);
@@ -546,17 +558,17 @@ test('Weapon Shielding: 250 weapon (or melee) damage within 4 s puts up a 300 ba
   near(b.barrier, 300); near(b.mods.bulletResist, 0.18); near(b.until - fight.time, 8); near(it().cdLeft, 35);
 });
 
-test('Spirit Shielding: 225 spirit damage within 3.5 s puts up a 300 barrier and +18% spirit resist for 8 s, every 45 s', () => {
+test('Spirit Shielding: 225 spirit damage within 3.5 s puts up a 300 barrier and +15% spirit resist for 8 s, every 45 s', () => {
   const { hero, enemies, fight, it } = setup(['Spirit Shielding']);
   fight.emit('damage', { source: enemies[0], target: hero, amount: 230, dealt: 230, type: 'spirit', opts: {} });
   const b = status(hero, 'Spirit Shielding:barrier');
-  near(b.barrier, 300); near(b.mods.spiritResist, 0.18); near(b.until - fight.time, 8); near(it().cdLeft, 45);
+  near(b.barrier, 300); near(b.mods.spiritResist, 0.15); near(b.until - fight.time, 8); near(it().cdLeft, 45);
 });
 
-test('Battle Vest: +18% bullet resist, +3 out-of-combat regen; above 65% health +18% weapon damage and +7% fire rate', () => {
+test('Battle Vest: +18% bullet resist, +3 out-of-combat regen; above 65% health +22% weapon damage and +7% fire rate', () => {
   const { hero, fight, it } = setup(['Battle Vest']);
   near(1 - (1 - hero.stats.bulletResist) / (1 - BASE.bulletResist), 0.18); near(hero.stats.oocRegen, 3);
-  assert.deepStrictEqual(it().dynamicMods(fight), { weaponDamage: 0.18, fireRate: 0.07 });
+  assert.deepStrictEqual(it().dynamicMods(fight), { weaponDamage: 0.22, fireRate: 0.07 });
   hero.health = hero.stats.maxHealth * 0.6;
   assert.strictEqual(it().dynamicMods(fight), null);
 });
@@ -569,20 +581,20 @@ test("Enchanter's Emblem: +18% spirit resist, +2 out-of-combat regen; above 65% 
   assert.strictEqual(it().dynamicMods(fight), null);
 });
 
-test('Return Fire: for 6.5 s, +10% bullet resist; 65% of bullet and 25% of spirit damage (before resists) goes back, every 23 s', () => {
+test('Return Fire: +10% bullet resist (innate since the Nov 2026 patch); for 6.5 s, 65% of bullet and 25% of spirit damage (before resists) goes back, every 23 s', () => {
   const { hero, enemies, fight, it } = setup(['Return Fire']);
   it().cast(fight);
   const buff = status(hero, 'Return Fire:reflect');
-  near(buff.mods.bulletResist, 0.1); near(buff.until - fight.time, 6.5); near(it().cooldown, 23);
+  near(1 - (1 - hero.stats.bulletResist) / (1 - BASE.bulletResist), 0.1); assert.ok(!buff.mods?.bulletResist, 'not on the active'); near(buff.until - fight.time, 6.5); near(it().cooldown, 23);
   fight.emit('damage', { source: enemies[0], target: hero, amount: 100, dealt: 0, type: 'bullet', opts: {} });
   near(1e6 - enemies[0].health, 65, 'in full, even when nothing got through');
   fight.emit('damage', { source: enemies[0], target: hero, amount: 100, dealt: 50, type: 'spirit', opts: {} });
   near(1e6 - enemies[0].health, 90);
 });
 
-test('Spirit Lifesteal: +13% spirit lifesteal, +90 health, +6 spirit power', () => {
+test('Spirit Lifesteal: +15% spirit lifesteal, +90 health, +8 spirit power', () => {
   const s = sheet(['Spirit Lifesteal']);
-  near(s.spiritLifesteal, 0.13); near(s.maxHealth - BASE.maxHealth, 90); near(s.spirit - BASE.spirit, 6);
+  near(s.spiritLifesteal, 0.15); near(s.maxHealth - BASE.maxHealth, 90); near(s.spirit - BASE.spirit, 8);
 });
 
 test('Healbane: +7 spirit power; spirit damage cuts healing 35% for 8 s; a kill under it heals 275', () => {
@@ -594,7 +606,7 @@ test('Healbane: +7 spirit power; spirit damage cuts healing 35% for 8 s; a kill 
   near(bane.mods.healAmp, -0.35); near(bane.until - fight.time, 8);
   fight.damage(hero, enemies[0], 100, 'spirit');
   assert.ok(!enemies[0].alive);
-  near(hero.health, 375);
+  near(hero.health, 270); // 100 + the patch's 170 heal on a kill (+3 a boon; none here)
 });
 
 test('Restorative Locket: +8% spirit resist; a stack per enemy blast or spirit hit (max 25); the active heals 16 a stack and gives back 0.12 stamina a stack', () => {
@@ -651,14 +663,14 @@ test('Dispel Magic: +10% spirit resist; used on a debuff: purges it, heals 250 a
   near(it().cooldown, 45);
 });
 
-test('Bullet / Spirit Resilience: +30% resist and +3 out-of-combat regen; below 50% health the item gives 45% (one bonus, not stacked)', () => {
-  for (const [name, stat] of [['Bullet Resilience', 'bulletResist'], ['Spirit Resilience', 'spiritResist']]) {
+test('Bullet / Spirit Resilience: +35% / +30% resist and +5 / +3 out-of-combat regen; below 50% health 15 more (one bonus, not stacked)', () => {
+  for (const [name, stat, resist, regen] of [['Bullet Resilience', 'bulletResist', 0.35, 5], ['Spirit Resilience', 'spiritResist', 0.3, 3]]) {
     const { hero, fight, it } = setup([name]);
-    near(1 - (1 - hero.stats[stat]) / (1 - BASE[stat]), 0.3); near(hero.stats.oocRegen, 3);
+    near(1 - (1 - hero.stats[stat]) / (1 - BASE[stat]), resist); near(hero.stats.oocRegen, regen);
     assert.strictEqual(it().dynamicMods(fight), null);
     hero.health = hero.stats.maxHealth * 0.4;
     const extra = it().dynamicMods(fight)[stat];
-    near(1 - (1 - hero.stats[stat]) * (1 - extra) / (1 - BASE[stat]), 0.45, name);
+    near(1 - (1 - hero.stats[stat]) * (1 - extra) / (1 - BASE[stat]), resist + 0.15, name);
   }
 });
 
@@ -721,22 +733,22 @@ test('Majestic Leap: a 200 barrier for 8 s and a leap; the landing slows the ene
   near(slow.mods.slow, 0.32);
 });
 
-test('Healing Nova: +5% ability range, +8 spirit power; heals 325 over 2 s, every 60 s', () => {
+test('Healing Nova: +5% ability range, +8 spirit power; heals 325 (+1.1 x spirit) over 2 s, every 60 s', () => {
   const { hero, fight, it } = setup(['Healing Nova']);
   near(hero.stats.rangeMult - BASE.rangeMult, 0.05); near(hero.stats.spirit - BASE.spirit, 8);
   it().cast(fight);
   const regen = status(hero, 'Healing Nova:regen');
-  near(regen.regen * 2, 325); near(regen.until - fight.time, 2); near(it().cooldown, 60);
+  near(regen.regen * 2, 325 + 1.1 * hero.stats.spirit); near(regen.until - fight.time, 2); near(it().cooldown, 60);
 });
 
-test('Fury Trance: +14% lifesteal, +100 health, +6% weapon damage; +32% fire rate, +40% spirit resist, +1 m/s for 6.5 s, silenced meanwhile; used when no ability is ready; every 18 s', () => {
+test('Fury Trance: +15% lifesteal, +100 health, +10% weapon damage; +32% fire rate, +40% spirit resist, +1.5 m/s for 6.5 s, silenced meanwhile; used when no ability is ready; every 18 s', () => {
   const s = sheet(['Fury Trance']);
-  near(s.lifesteal, 0.14); near(s.maxHealth - BASE.maxHealth, 100); near(s.weaponDamageMult - BASE.weaponDamageMult, 0.06);
+  near(s.lifesteal, 0.15); near(s.maxHealth - BASE.maxHealth, 100); near(s.weaponDamageMult - BASE.weaponDamageMult, 0.1);
   const { hero, fight, it } = setup(['Fury Trance']); // its abilities are on cooldown (setup)
   assert.ok(it().want(fight));
   it().cast(fight);
   const buff = status(hero, 'Fury Trance:trance');
-  near(buff.mods.fireRate, 0.32); near(buff.mods.spiritResist, 0.4); near(buff.mods.moveSpeed, 1); near(buff.until - fight.time, 6.5);
+  near(buff.mods.fireRate, 0.32); near(buff.mods.spiritResist, 0.4); near(buff.mods.moveSpeed, 1.5); near(buff.until - fight.time, 6.5);
   assert.ok(hero.has('silence')); near(it().cooldown, 18);
   hero.abilities[0].cdLeft = 0;
   hero.statuses = [];
@@ -775,7 +787,7 @@ test('spirit lifesteal off an NPC works at 40% (the wiki); Trophy Collector brin
   const { hero, enemies, fight } = setup(['Spirit Lifesteal']);
   hero.health = 100;
   fight.damage(hero, enemies[0], 100, 'spirit');
-  near(hero.health, 100 + 100 * 0.13 * 0.4);
+  near(hero.health, 100 + 100 * 0.15 * 0.4);
   const t = setup(['Trophy Collector'], { kept: { 'Trophy Collector': 4 } });
   near(t.it().dynamicMods(t.fight).moveSpeed, 4 * 0.15, 'starts with the 4 it brought');
   t.hero.rejuvs = 1;
@@ -816,9 +828,9 @@ test('Siphon Bullets: +15% weapon damage, +10% bullet resist; a hit steals 2.5% 
   near(hero.stats.maxHealth, max, 'all back');
 });
 
-test('Leech: +28% bullet and spirit lifesteal, +180 health, +12% weapon damage, +12 spirit power', () => {
+test('Leech: +30% bullet and spirit lifesteal, +180 health, +12% weapon damage, +12 spirit power', () => {
   const s = sheet(['Leech']);
-  near(s.lifesteal, 0.28); near(s.spiritLifesteal, 0.28); near(s.maxHealth - BASE.maxHealth, 180); near(s.weaponDamageMult - BASE.weaponDamageMult, 0.12); near(s.spirit - BASE.spirit, 12);
+  near(s.lifesteal, 0.3); near(s.spiritLifesteal, 0.3); near(s.maxHealth - BASE.maxHealth, 180); near(s.weaponDamageMult - BASE.weaponDamageMult, 0.12); near(s.spirit - BASE.spirit, 12);
 });
 
 test('Phantom Strike: +15% weapon damage, +8 spirit power; 75 + 0.93 x spirit damage, disarmed and slowed 40% for 3 s, every 35 s', () => {
@@ -841,16 +853,16 @@ test('Cheat Death: +200 health, +15% bullet resist; a lethal hit leaves it at 1,
   assert.ok(status(hero, 'antiheal').until <= fight.time, 'debuff ended');
 });
 
-test('Infuser: +13% spirit lifesteal, +10% spirit resist, +100 health, +6 spirit power; the active +70% spirit lifesteal and +30 spirit power for 7 s, every 30 s', () => {
+test('Infuser: +15% spirit lifesteal, +10% spirit resist, +100 health, +8 spirit power; the active +75% spirit lifesteal and +30 spirit power for 7 s, every 30 s', () => {
   const s = sheet(['Infuser']);
-  near(s.spiritLifesteal, 0.13); near(s.maxHealth - BASE.maxHealth, 100); near(s.spirit - BASE.spirit, 6);
+  near(s.spiritLifesteal, 0.15); near(s.maxHealth - BASE.maxHealth, 100); near(s.spirit - BASE.spirit, 8);
   const { hero, fight, it } = setup(['Infuser']);
   it().cast(fight);
   const buff = status(hero, 'Infuser:infuse');
-  near(buff.mods.spiritLifesteal, 0.7); near(buff.mods.spirit, 30); near(buff.until - fight.time, 7); near(it().cooldown, 30);
+  near(buff.mods.spiritLifesteal, 0.75); near(buff.mods.spirit, 30); near(buff.until - fight.time, 7); near(it().cooldown, 30);
 });
 
-test('Divine Barrier: +10% ability range, +1.5 out-of-combat regen; a 600 barrier and +2.75 m/s for 6 s, non-stun debuffs end, every 45 s', () => {
+test('Divine Barrier: +10% ability range, +1.5 out-of-combat regen; a 600 barrier and +2.75 m/s for 6 s, non-stun debuffs end, every 55 s', () => {
   const { hero, fight, it } = setup(['Divine Barrier']);
   near(hero.stats.rangeMult - BASE.rangeMult, 0.1);
   fight.addStatus(hero, { id: 'antiheal', duration: 9, mods: { healAmp: -0.2 }, debuff: true });
@@ -858,7 +870,7 @@ test('Divine Barrier: +10% ability range, +1.5 out-of-combat regen; a 600 barrie
   it().cast(fight);
   near(status(hero, 'Divine Barrier:barrier').barrier, 600); near(status(hero, 'Divine Barrier:speed').mods.moveSpeed, 2.75); near(status(hero, 'Divine Barrier:speed').until - fight.time, 6);
   assert.ok(status(hero, 'antiheal').until <= fight.time && status(hero, 'curse').until > fight.time, 'the stun stays');
-  near(it().cooldown, 45);
+  near(it().cooldown, 55);
 });
 
 test('Unstoppable: +25% debuff resist, +125 health; 5.5 s immune to crowd control, existing debuffs end; every 60 s', () => {
@@ -879,14 +891,14 @@ test('Colossus: +25% base health, +15% weapon damage; the active +35% bullet and
   near(status(enemies[0], 'Colossus:slow').mods.slow, 0.24); near(it().cooldown, 37);
 });
 
-test('Vampiric Burst: +13% lifesteal, +10% bullet resist, +100 health, +6% weapon damage; the active +70% lifesteal and +34% fire rate for 5 s and 75% more rounds past the clip, every 30 s', () => {
+test('Vampiric Burst: +15% lifesteal, +10% bullet resist, +100 health, +10% weapon damage; the active +75% lifesteal and +34% fire rate for 5 s and 75% more rounds past the clip, every 30 s', () => {
   const s = sheet(['Vampiric Burst']);
-  near(s.lifesteal, 0.13); near(s.maxHealth - BASE.maxHealth, 100);
+  near(s.lifesteal, 0.15); near(s.maxHealth - BASE.maxHealth, 100);
   const { hero, fight, it } = setup(['Vampiric Burst']);
   hero.weapon.reloadLeft = 1;
   it().cast(fight);
   const buff = status(hero, 'Vampiric Burst:burst');
-  near(buff.mods.lifesteal, 0.7); near(buff.mods.fireRate, 0.34); near(buff.until - fight.time, 5);
+  near(buff.mods.lifesteal, 0.75); near(buff.mods.fireRate, 0.34); near(buff.until - fight.time, 5);
   assert.strictEqual(hero.weapon.reloadLeft, 0);
   assert.strictEqual(hero.weapon.clip, hero.stats.clip + Math.round(hero.stats.clip * 0.75));
   near(it().cooldown, 30);
@@ -962,9 +974,9 @@ test('Spellbreaker: +18% spirit resist, +25% debuff resist, +90 health; the next
   near(hitFor(200), 70); near(it().cdLeft, 9);
 });
 
-test('Juggernaut: 50% slow resist, +2.5 m/s, +8 regen; an enemy that shoots the holder fires 40% slower for 4 s', () => {
+test('Juggernaut: 50% slow resist, +2.5 m/s, +15 regen; an enemy that shoots the holder fires 40% slower for 4 s', () => {
   const s = sheet(['Juggernaut']);
-  near(s.slowResist, 0.5); near(s.moveSpeed - BASE.moveSpeed, 2.5); near(s.healthRegen - BASE.healthRegen, 8);
+  near(s.slowResist, 0.5); near(s.moveSpeed - BASE.moveSpeed, 2.5); near(s.healthRegen - BASE.healthRegen, 15);
   const { hero, enemies, fight } = setup(['Juggernaut']);
   fight.emit('damage', { source: enemies[0], target: hero, amount: 10, dealt: 10, type: 'bullet', opts: { attack: true } });
   const d = status(enemies[0], 'Juggernaut:slowfire');
@@ -1046,9 +1058,9 @@ test('Spirit Strike: a melee hit deals 40 (+0.372 x spirit) spirit damage and ta
   near(1e6 - enemies[0].health, 40 + (40 + 37.2) * 1.06, 'scales with spirit (and the first hit took 6% resist)');
 });
 
-test('Golden Goose Egg: -15% damage dealt, +1 m/s, +1 out-of-combat regen', () => {
+test('Golden Goose Egg: -12% damage dealt, +1 m/s, +1 out-of-combat regen', () => {
   const s = sheet(['Golden Goose Egg']);
-  near(s.damageDealt - BASE.damageDealt, -0.15); near(s.moveSpeed - BASE.moveSpeed, 1); near(s.oocRegen - BASE.oocRegen, 1);
+  near(s.damageDealt - BASE.damageDealt, -0.12); near(s.moveSpeed - BASE.moveSpeed, 1); near(s.oocRegen - BASE.oocRegen, 1);
 });
 
 // ===== Batch 10: Spirit tier 2 (Quicksilver Reload: above) =====
@@ -1099,12 +1111,12 @@ test('Slowing Hex: +0.5 m/s; the active slows one enemy 16% for 3.5 s, every 29 
   near(d.mods.slow, 0.16); near(d.until - fight.time, 3.5); near(it().cooldown, 29);
 });
 
-test('Spirit Sap: +50 health; the active takes 9% spirit resist and 30 spirit power off an enemy for 12 s, every 18 s', () => {
+test('Spirit Sap: +50 health; the active takes 9% spirit resist and 30 spirit power off an enemy for 12 s, every 22 s', () => {
   near(sheet(['Spirit Sap']).maxHealth - BASE.maxHealth, 50);
   const { enemies, fight, it } = setup(['Spirit Sap']);
   it().cast(fight);
   const d = status(enemies[0], 'Spirit Sap:sap');
-  near(d.mods.spiritResist, -0.09); near(d.mods.spirit, -30); near(d.until - fight.time, 12); near(it().cooldown, 18);
+  near(d.mods.spiritResist, -0.09); near(d.mods.spirit, -30); near(d.until - fight.time, 12); near(it().cooldown, 22);
 });
 
 test('Arcane Surge: +1 stamina, +12% stamina recovery; a dash-jump gives the next ability cast within 7 s +12% range, +15% duration, +20 spirit, kept by that cast', () => {
@@ -1151,8 +1163,8 @@ test('Suppressor: +6 spirit, +8% bullet resist; spirit damage cuts fire rate 28%
 });
 
 // ===== Batch 11: Spirit tier 3 =====
-test('Silence Wave: +50 health; the active deals 75 (+0.7 x spirit) spirit damage and silences every enemy in its path for 3 s, every 42 s', () => {
-  near(sheet(['Silence Wave']).maxHealth - BASE.maxHealth, 50);
+test('Silence Wave: +90 health; the active deals 75 (+0.7 x spirit) spirit damage and silences every enemy in its path for 3 s, every 42 s', () => {
+  near(sheet(['Silence Wave']).maxHealth - BASE.maxHealth, 90);
   const { enemies, fight, it } = setup(['Silence Wave'], { foes: 3 });
   it().cast(fight);
   for (const e of enemies) { near(1e6 - e.health, 75); assert.ok(e.has('silence')); near(status(e, 'Silence Wave:silence').until - fight.time, 3); }
@@ -1200,7 +1212,7 @@ test('Disarming Hex: +75 health, +0.75 m/s; the active disarms one enemy and tak
   assert.ok(enemies[0].has('disarm')); near(d.mods.bulletResist, -0.13); near(d.until - fight.time, 4.25); near(it().cooldown, 16);
 });
 
-test('Decay: +8 spirit, +65 health; 1.95% (+0.003 x spirit) of current health a second for 12 s (a share on NPCs), non-lethal, -50% healing, every 30 s', () => {
+test('Decay: +8 spirit, +65 health; 1.95% (+0.003 x spirit) of current health a second for 12 s (a share on NPCs), non-lethal, -55% healing, every 30 s', () => {
   const s = sheet(['Decay']);
   near(s.spirit - BASE.spirit, 8); near(s.maxHealth - BASE.maxHealth, 65);
   const { enemies, fight, it } = setup(['Decay'], { hp: 2000 });
@@ -1208,7 +1220,7 @@ test('Decay: +8 spirit, +65 health; 1.95% (+0.003 x spirit) of current health a 
   const dot = it().dots[0];
   near(dot.perSecond, (0.0195 + 0.00003 * 8) * 0.5); near(dot.until - fight.time, 12); assert.ok(dot.ofCurrent && dot.nonLethal);
   const d = status(enemies[0], 'Decay:heal');
-  near(d.mods.healAmp, -0.5); near(d.until - fight.time, 12); near(it().cooldown, 30);
+  near(d.mods.healAmp, -0.55); near(d.until - fight.time, 12); near(it().cooldown, 30);
   enemies[0].health = 1;
   it().tick(fight, 1);
   assert.ok(enemies[0].alive, 'non-lethal');
@@ -1252,7 +1264,7 @@ test('Spirit Snatch: +7% melee, +75 health; a melee hit deals 50 (+0.84 x spirit
   assert.ok(!status(hero, 'Spirit Snatch:snatch'), 'gone with the enemy it came from');
 });
 
-test('Radiant Regeneration: +90 health; spirit damage gives 4 (+0.035 x spirit) regen for 7 s per enemy; a cast heals 65 (+1.7 a boon) and gives +1.75 m/s for 3 s, every 6 s', () => {
+test('Radiant Regeneration: +90 health; spirit damage gives 4 (+0.025 x spirit) regen for 7 s per enemy; a cast heals 40 (+1.4 a boon) and gives +1.75 m/s for 3 s, every 6 s', () => {
   near(sheet(['Radiant Regeneration']).maxHealth - BASE.maxHealth, 90);
   const { hero, enemies, fight, it } = setup(['Radiant Regeneration'], { foes: 2 });
   fight.damage(hero, enemies[0], 10, 'spirit'); fight.damage(hero, enemies[1], 10, 'spirit'); fight.damage(hero, enemies[0], 10, 'spirit');
@@ -1261,11 +1273,11 @@ test('Radiant Regeneration: +90 health; spirit damage gives 4 (+0.035 x spirit) 
   for (const r of regens) { near(r.regen, 4); near(r.until - fight.time, 7); }
   hero.health = 100; hero.healPool = 1e9;
   fight.emit('cast', { source: hero, ability: hero.abilities[0] });
-  near(hero.health, 165);
+  near(hero.health, 140);
   const sp = status(hero, 'Radiant Regeneration:speed');
   near(sp.mods.moveSpeed, 1.75); near(sp.until - fight.time, 3); near(it().procLeft, 6);
   fight.emit('cast', { source: hero, ability: hero.abilities[0] });
-  near(hero.health, 165, 'not again within 6 s');
+  near(hero.health, 140, 'not again within 6 s');
 });
 
 test('Surge of Power: the imbued ability gets +28 spirit; casting it gives +20% fire rate and +1.75 m/s for 8 s, every 14 s', () => {
@@ -1328,14 +1340,14 @@ test('Transcendent Cooldown: +25% ability and +25% item cooldown reduction, +4 o
   near(hero.items.find((i) => i.name === 'Mercurial Magnum').cooldown, 14);
 });
 
-test('Focus Lens: +10% fire rate; silences an enemy 4.5 s and then deals 35% of the damage it took meanwhile; -9% spirit resist and -30 spirit for 12 s; every 45 s', () => {
+test('Focus Lens: +10% fire rate; silences an enemy 4.5 s and then deals 35% of the damage it took meanwhile; -9% spirit resist and -30 spirit for 12 s; every 40 s', () => {
   near(sheet(['Focus Lens']).fireRate / BASE.fireRate, 1.1);
   const { hero, enemies, fight, it } = setup(['Focus Lens']);
   const e = enemies[0];
   it().cast(fight);
   assert.ok(e.has('silence')); near(status(e, 'Focus Lens:silence').until - fight.time, 4.5);
   const d = status(e, 'Focus Lens:focus');
-  near(d.mods.spiritResist, -0.09); near(d.mods.spirit, -30); near(d.until - fight.time, 12); near(it().cooldown, 45);
+  near(d.mods.spiritResist, -0.09); near(d.mods.spirit, -30); near(d.until - fight.time, 12); near(it().cooldown, 40);
   fight.damage(hero, e, 1000, 'true');
   wait(fight, hero, 4.5);
   near(1e6 - e.health, 1000 + 350 * 1.09, '35% of it, through the -9% spirit resist');
@@ -1544,12 +1556,14 @@ test('Seraphim Wings: +120% stamina recovery; airborne, +40% damage dealt and -4
   assert.deepStrictEqual(it().dynamicMods(fight), { damageDealt: 0.4, damageTaken: -0.4 });
 });
 
-test('Mystical Piano: 1.7 s later, enemies within 12 m are stunned 2 s, then dazed 2 s (slowed, disarmed, silenced, no items); every 23 s', () => {
+test('Mystical Piano: 1.7 s later, enemies within 12 m are stunned 6 s (3x the game 2 s, his call Nov 4), then dazed 2 s (slowed, disarmed, silenced, no items); every 23 s', () => {
   const { hero, enemies, fight, it } = setup(['Mystical Piano'], { foes: 5 });
   it().cast(fight);
   wait(fight, hero, 1.75);
   assert.deepStrictEqual(enemies.map((e) => e.has('stun')), [true, true, true, true, false], 'the 5th stands 16 m back');
-  wait(fight, hero, 2);
+  wait(fight, hero, 5.5);
+  assert.ok(enemies[0].has('stun'), 'still stunned 5.5 s in');
+  wait(fight, hero, 0.5);
   assert.deepStrictEqual(status(enemies[0], 'Mystical Piano:daze').tags, ['disarm', 'silence', 'noItems']);
   near(it().cooldown, 23);
 });
@@ -1650,7 +1664,7 @@ test('Prism Blast: 6 s untouchable, its beams dealing 270 (+1.75 x spirit) a sec
   assert.deepStrictEqual(far.enemies.map((e) => +(1e6 - e.health).toFixed(6)), [270, 270, 270, 270, 0, 0], '15 m away: the last two are past 30 m');
 });
 
-test('Unstable Concoction: 4 s unstoppable with +3000 health, +10 m/s, +150 spirit, +150% weapon damage, then 30% of max health to enemies within 22 m, a 3 s stun, and the hero at 1 health; every 25 s', () => {
+test('Unstable Concoction: 4 s unstoppable with +3000 health, +10 m/s, +150 spirit, +150% weapon damage, then 30% of max health to enemies within 22 m, a 3 s stun, and the hero at half health (his pick Nov 4); every 25 s', () => {
   const { hero, enemies, fight, it } = setup(['Unstable Concoction'], { foes: 2 });
   const max = hero.stats.maxHealth;
   fight.useItem(it());
@@ -1659,7 +1673,7 @@ test('Unstable Concoction: 4 s unstoppable with +3000 health, +10 m/s, +150 spir
   near(b.mods.moveSpeed, 10); near(b.mods.spirit, 150); near(b.mods.weaponDamage, 1.5); assert.ok(hero.has('unstoppable')); near(it().cooldown, 25);
   wait(fight, hero, 4.05);
   for (const e of enemies) { near(1e6 - e.health, 0.3 * (max + 3000)); assert.ok(e.has('stun')); }
-  near(hero.health, 1); near(hero.stats.maxHealth, max);
+  near(hero.health, max / 2); near(hero.stats.maxHealth, max);
 });
 
 test('Frostbite Charm: the imbued ability gets 50% cooldown reduction and +70 spirit; its hit freezes 1 s and deals 200, each enemy at most every 10 s', () => {

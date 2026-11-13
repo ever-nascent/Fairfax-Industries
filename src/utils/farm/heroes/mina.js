@@ -97,8 +97,8 @@ class LoveBites extends Ability {
   }
 }
 
-// 4. Nox Nostra: a cloud of bats, so many a second, shared out over the enemies in reach: each deals spirit damage (half to bosses, the game's
-// "objectives"), silences (a silenced boss holds its blast) and builds Love Bites. T3: each bat also takes a share of current health (capped on bosses).
+// 4. Nox Nostra: a cloud of bats, so many a second, shared out over the enemies in reach: each deals spirit damage (full to bosses: they aren't
+// "objectives" here, his call Oct 31), silences (a silenced boss holds its blast) and builds Love Bites. T3: each bat also takes a share of current health (capped on bosses).
 // ponytail: the bats are shared evenly; the game's lock-on isn't simulated.
 class NoxNostra extends Ability {
   constructor(...args) {
@@ -131,7 +131,7 @@ class NoxNostra extends Ability {
     for (const e of foes) {
       const boss = isBoss(e);
       const ofHealth = (e.health * this.value('CurrentHealthPercent')) / 100;
-      const perBat = this.value('Damage') * (boss ? this.data.BossDamageScale : 1) + (boss ? Math.min(ofHealth, this.data.CurrentHealthDamageCapToBosses) : ofHealth);
+      const perBat = this.value('Damage') + (boss ? Math.min(ofHealth, this.data.CurrentHealthDamageCapToBosses) : ofHealth);
       fight.damage(this.unit, e, perBat * each, 'spirit');
       fight.addStatus(e, { id: 'nox_silence', duration: this.value('DebuffDuration'), tags: ['silence'], debuff: true });
       bites?.build(fight, e, this.data.BuildUpPerBat * this.data.BatEffectiveness * each);

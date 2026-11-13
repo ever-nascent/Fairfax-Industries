@@ -1,10 +1,38 @@
 // Paradox's abilities (deadlock.wiki/Paradox, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through Ability.value();
-// this file is only what each ability does. His calls (Oct 5): Time Wall does nothing against enemy attacks (the game only delays their bullets);
-// Kinetic Carbine follows his rule for Kelvin's beam: charged when the gun runs dry, through the reload.
+// this file is only what each ability does. His calls: Time Wall cuts the bullet damage she takes by WALL_BLOCK while it stands (Nov 6: the game
+// freezes every enemy bullet that touches it, so she steps out of the way; "half is too strong"; until then it did nothing against enemies);
+// Kinetic Carbine is charged the moment it is ready (his call, Nov 6; it used to follow his rule for Kelvin's beam: charged when the gun ran dry).
+const WALL_BLOCK = 0.25;
+const FIRED_SHOWN = 1.5; // seconds the live fight shows Kinetic Carbine as Fired
 const { Ability } = require('./../ability');
-const { MELEE } = require('./../engine');
+const { MELEE, headshotChance } = require('./../engine');
 const { isBoss, npcShare } = require('./../items');
-const { HEROES } = require('./../stats');
+const { HEROES, itemByName } = require('./../stats');
+
+// Kinetic Carbine and her build (his calls, Nov 6). The game's on-shot items that work on the Carbine shot (the wiki's Kinetic Carbine page; the
+// rest, Headshot Booster, Tesla Bullets, Toxic Bullets ..., don't).
+const CARBINE_PROCS = new Set(['Restorative Shot', 'Mystic Shot', 'Weakening Headshot', 'Crippling Headshot', 'Hollow Point', 'Haunting Shot']); // Haunting Shot: his ask Nov 6 (a next-bullet item like Mystic Shot; the wiki doesn't say)
+// Express Shot too (his ask, Nov 6), the wiki's way: the Carbine shot gets its smaller secondary-fire bonus, and it fires one regular bullet with its bigger one.
+// In a gun build she saves these procs (their own cooldowns) for the Carbine shot instead of spending them on a normal bullet just before it.
+const SAVED_PROCS = new Set(['Restorative Shot', 'Mystic Shot', 'Weakening Headshot', 'Crippling Headshot', 'Express Shot', 'Haunting Shot']);
+// What makes a gun (Carbine) build: on-hit gun items (the Weapon items that react to bullet hits) and anything imbued into the Carbine. A bomb
+// (Pulse Grenade) build: spirit power and ability duration items (more pulses) and anything imbued into the grenade. Not every Spirit item: the
+// Carbine build (deadlocklabs.gg "Carbine Paradox", his example Nov 6) runs Mystic Burst, Tankbuster, Spirit Burn and Mystic Reverb off the
+// Carbine's big spirit hit. Whichever she holds more of, with at least 2 (a tie, or fewer: the Carbine just fills her reloads). ponytail: my
+// picks, his to change.
+const BOMB = new Set(['Extra Spirit', 'Improved Spirit', 'Boundless Spirit', 'Duration Extender', 'Superior Duration', 'Mystic Expansion', 'Greater Expansion',
+  'Escalating Exposure', 'Mystic Vulnerability', 'Arcane Surge', 'Surge of Power', 'Echo Shard']);
+const ON_HIT = new Set(['Hollow Point', 'Point Blank', 'Escalating Resilience', 'Mystic Shot', 'Express Shot', 'Headshot Booster', 'Headhunter', 'Weakening Headshot',
+  'Crippling Headshot', 'Lucky Shot', 'Ricochet', 'Tesla Bullets', 'Capacitor', 'Armor Piercer', 'Infinite Rounds', 'Restorative Shot', 'Burst Fire', 'Spirit Shredder',
+  'Spirit Rend', 'Haunting Shot', 'Toxic Bullets', 'Silencer', 'Slowing Bullets', 'Weighted Shots', 'Stalker', 'Split Shot', 'Recharging Rush']);
+const find = (unit, Cls) => unit.abilities.find((a) => a instanceof Cls);
+function buildOf(unit) {
+  const held = unit.held ?? [];
+  const into = (slot) => unit.items.filter((it) => it.imbueSlot === slot).length;
+  const gun = held.filter((n) => ON_HIT.has(n)).length + into(3);
+  const bomb = held.filter((n) => BOMB.has(n)).length + into(1);
+  return gun >= 2 && gun > bomb ? 'gun' : bomb >= 2 && bomb > gun ? 'bomb' : null;
+}
 
 // 1. Pulse Grenade: a grenade on the front enemy that pulses: each pulse reaches a little further, deals spirit damage (half to bosses), slows
 // for a moment and leaves a stack: the enemy takes more damage, no limit on stacks. T2: more damage. T3: more per stack, more pulses.
@@ -37,14 +65,20 @@ class PulseGrenade extends Ability {
   }
 }
 
-// 2. Time Wall: a wall between her and the enemies: her bullets pass through it and deal more weapon damage while it stands; the enemies it
-// lands on (within half its width of the front one) are slowed. The enemies' own shots are only delayed by it, so nothing changes for them (his
-// call). T1: longer, wider. T2: more weapon damage, and it silences the enemies it lands on. T3: charges (one wall at a time).
+// 2. Time Wall: a wall between her and the enemies: her bullets pass through it and deal more weapon damage while it stands, and the enemies'
+// bullets freeze in it, so she takes WALL_BLOCK less bullet damage meanwhile (his call, Nov 6); the enemies it lands on (within half its width of
+// the front one) are slowed. T1: longer, wider. T2: more weapon damage, and it silences the enemies it lands on. T3: charges (one wall at a time).
+// She shoots the Carbine through it (his ask, Nov 6): the wall goes up as the Carbine starts charging, so the shot gets its weapon damage; otherwise only
+// when the wall would be back before the Carbine is.
 class TimeWall extends Ability {
-  want(fight) { return fight.foes.length > 0 && !this.unit.statuses.some((s) => s.id === 'time_wall'); }
+  want(fight) {
+    if (!fight.foes.length || this.unit.statuses.some((s) => s.id === 'time_wall')) return false;
+    const carbine = find(this.unit, KineticCarbine);
+    return !carbine || !!carbine.fireAt || carbine.cdLeft > this.cooldown;
+  }
 
   cast(fight) {
-    fight.addStatus(this.unit, { id: 'time_wall', duration: this.value('AbilityDuration'), mods: { weaponDamage: this.value('FriendlyBulletDamageBonus') / 100 } });
+    fight.addStatus(this.unit, { id: 'time_wall', duration: this.value('AbilityDuration'), mods: { weaponDamage: this.value('FriendlyBulletDamageBonus') / 100, bulletTaken: -WALL_BLOCK } });
     for (const e of fight.near(this.value('TimeWallWidth') / 2)) {
       fight.addStatus(e, { id: 'time_wall_slow', duration: this.value('AuraEffectDuration'), mods: { slow: this.data.MovementSlowPct / 100 }, debuff: true });
       fight.addStatus(e, { id: 'time_wall_silence', duration: this.value('DebuffDuration'), tags: ['silence'], debuff: true });
@@ -52,17 +86,26 @@ class TimeWall extends Ability {
   }
 }
 
-// 3. Kinetic Carbine: started when the gun runs dry and charged through the reload; then one shot of spirit damage: a full burst's weapon damage
-// times the wiki's factor (x2.25 fully charged), and a time-stop (a stun). Once charged she moves faster for a while. T1: a longer time-stop.
-// T2: shorter cooldown. T3: a bigger factor.
+// 3. Kinetic Carbine: charged the moment it is ready (2.5 s, no shooting meanwhile); then one shot of spirit damage: a full burst's weapon damage
+// times the wiki's factor (x2.25 fully charged; +14% on a headshot), and a time-stop (a stun). Once charged she moves faster for a while. T1: a
+// longer time-stop. T2: shorter cooldown. T3: a bigger factor. The shot sets off CARBINE_PROCS like a bullet (the wiki). Her build (buildOf):
+// a gun build holds SAVED_PROCS for it while it is ready or charging; a bomb build charges it only once a Pulse Grenade has stacked damage amp
+// on the target (then at once, reload or not), so the shot gets the bonus.
 class KineticCarbine extends Ability {
   constructor(...args) {
     super(...args);
     this.fireAt = 0;
   }
 
-  want(fight) { return fight.foes.length > 0 && this.unit.weapon.reloadLeft > 0; }
-  status(fight) { return fight && this.fireAt ? 'Charging' : super.status(fight); }
+  // Charged the moment it is ready (his call, Nov 6: "why would Carbine only fire if you're out of ammo"; until then it waited for a reload, and a
+  // big magazine never ran dry in a room fight, so it never fired); a bomb build waits for the grenade's amp.
+  want(fight) {
+    const target = fight.foes[0];
+    if (!target) return false;
+    return buildOf(this.unit) === 'bomb' ? target.statuses.some((s) => s.id === 'pulse_amp') : true;
+  }
+  // the live fight shows it Charging, then Fired for a moment after the shot, then its cooldown (his ask, Nov 6)
+  status(fight) { return fight && this.fireAt ? 'Charging' : fight && this.firedAt != null && fight.time - this.firedAt < FIRED_SHOWN ? 'Fired' : super.status(fight); }
 
   cast(fight) {
     this.fireAt = fight.time + this.data.MaxChargeDuration;
@@ -70,12 +113,21 @@ class KineticCarbine extends Ability {
   }
 
   tick(fight) {
+    this.unit.heldProcs = buildOf(this.unit) === 'gun' && (this.fireAt || this.ready()) ? SAVED_PROCS : null; // the engine keeps them off her normal bullets (only for the charge: she charges it once ready)
     if (!this.fireAt || fight.time + 1e-9 < this.fireAt) return;
     this.fireAt = 0;
     const target = fight.foes[0];
     if (!target || this.unit.cantAct || this.unit.has('disarm')) return;
+    this.firedAt = fight.time;
     const factor = [this.data, ...this.data.Upgrades.slice(0, this.tier)].reduce((sum, x) => sum + (x.MaxBonusBulletDamage?.Scale?.Value ?? 0), 0) / 100;
-    fight.damage(this.unit, target, fight.shotDamage(this.unit, target) * HEROES[this.unit.name].Weapon.BulletsPerBurst * (1 + factor), 'spirit');
+    const opts = { headshot: fight.rng() < headshotChance(this.unit), carbine: true };
+    const express = this.unit.items.find((i) => i.name === 'Express Shot');
+    const expressed = !!express?.fire();
+    const amount = fight.shotDamage(this.unit, target) * HEROES[this.unit.name].Weapon.BulletsPerBurst * (1 + factor) * (opts.headshot ? 1 + (this.data.HeadshotBonus ?? 0) / 100 : 1) * (expressed ? 1 + express.pct('ProcBaseAttackDamagePercentAltFire') : 1);
+    const dealt = fight.damage(this.unit, target, amount, 'spirit');
+    if (expressed && target.alive) fight.as(express, () => fight.damage(this.unit, target, fight.shotDamage(this.unit, target) * (1 + express.pct('ProcBaseAttackDamagePercent')), 'bullet', { events: false }));
+    const hit = { source: this.unit, target, amount, dealt, type: 'bullet', opts }; // the on-shot items hear it as a bullet that landed
+    for (const it of this.unit.items.filter((i) => CARBINE_PROCS.has(i.name))) fight.as(it, () => { it.on('shot', fight, hit); if (target.alive) it.on('bulletHit', fight, hit); });
     fight.addStatus(target, { id: 'time_stop', duration: this.value('MaxSlowDuration'), tags: ['stun'], debuff: true });
     fight.addStatus(this.unit, { id: 'carbine_speed', duration: this.value('SpeedBoostDuration'), mods: { moveSpeed: (this.unit.stats.moveSpeed * this.value('SpeedChange')) / 100 } });
   }
@@ -111,7 +163,7 @@ class ParadoxicalSwap extends Ability {
 // What the hero pick shows: each ability's general description, in slot order (the 4th is the Ultimate). No pronouns, on purpose.
 const info = [
   ['Pulse Grenade', 'Throws a grenade that pulses: each pulse damages and makes enemies take more damage.'],
-  ['Time Wall', 'Raises a time-warping wall: bullets fired through it hit harder, and enemies it lands on are slowed.'],
+  ['Time Wall', 'Raises a time-warping wall: bullets fired through it hit harder, enemy bullets freeze in it, and enemies it lands on are slowed.'],
   ['Kinetic Carbine', 'Charges a powerful shot while reloading that stops the enemy in time.'],
   ['Paradoxical Swap', 'Swaps places with an enemy, damaging it.'],
 ];

@@ -19,7 +19,10 @@ async function handle(interaction, client) {
   // feature owns its own handlers.
   const route = findComponentRoute(interaction);
   if (route) {
-    await withQuests(interaction, () => route.execute(interaction)).catch((error) => console.error(`[${route.name}] ${route.label} failed:`, error));
+    await withQuests(interaction, () => route.execute(interaction)).catch((error) => {
+      console.error(`[${route.name}] ${route.label} failed:`, error);
+      return tellFailed(interaction, 'Something went wrong. Try that again.'); // without this Discord only shows "This interaction failed"
+    });
     return;
   }
 
@@ -46,15 +49,16 @@ async function handle(interaction, client) {
     await withQuests(interaction, () => command.execute(interaction, client));
   } catch (error) {
     console.error(`[command] Error running /${interaction.commandName}:`, error);
-    const payload = { content: 'Something went wrong running that command.', flags: MessageFlags.Ephemeral };
-    try {
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(payload);
-      } else {
-        await interaction.reply(payload);
-      }
-    } catch (replyError) {
-      console.error(`[command] Failed to report error for /${interaction.commandName}:`, replyError.message);
-    }
+    await tellFailed(interaction, 'Something went wrong running that command.');
+  }
+}
+
+// Tells the member, privately, that their command or click failed (the error itself is in the console).
+async function tellFailed(interaction, content) {
+  const payload = { content, flags: MessageFlags.Ephemeral };
+  try {
+    await (interaction.replied || interaction.deferred ? interaction.followUp(payload) : interaction.reply(payload));
+  } catch (replyError) {
+    console.error('[interaction] Could not report the error:', replyError.message);
   }
 }

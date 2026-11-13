@@ -6,9 +6,9 @@ const { GUILD_ID } = require('../config');
 const isHomeGuild = (guildId) => guildId === GUILD_ID;
 const ourGuild = (client) => client.guilds.cache.get(GUILD_ID) ?? null;
 
-// The emoji called `name` in `guild`, else in the home server: the bot's emojis (heroes, :souls: ...) live in Fairfax, and the bot
-// can show them in other servers. Undefined if neither has it.
-const emojiNamed = (guild, name) => guild?.emojis.cache.find((e) => e.name === name) ?? (guild?.client?.guilds && ourGuild(guild.client))?.emojis.cache.find((e) => e.name === name);
+// The emoji called `name`: the bot's own app emoji (assets/emojis, uploaded at startup by appEmojis.js; works in every server), else
+// the one in `guild`, else the home server's. Undefined if none has it.
+const emojiNamed = (guild, name) => require('./appEmojis').appEmoji(name) ?? guild?.emojis.cache.find((e) => e.name === name) ?? (guild?.client?.guilds && ourGuild(guild.client))?.emojis.cache.find((e) => e.name === name);
 
 // The channel with `savedId`, else the one named `options.name` of `options.type`, else a new one made with
 // `options` (as for guild.channels.create). Looks in the channel cache, so fetch the channels first.
@@ -21,8 +21,8 @@ async function findOrCreateChannel(guild, options, savedId) {
   return channel;
 }
 
-// The server emoji called `name`. Emojis live in Discord (upload new ones with setup.py *-emojis), so this only
-// looks them up; it throws if one is missing, and the caller keeps its plain fallback.
+// The emoji called `name` (emojiNamed). New ones: add a <name>.png to assets/emojis and restart. Throws if it is missing, and the
+// caller keeps its plain fallback.
 function findEmoji(guild, name) {
   const found = emojiNamed(guild, name);
   if (!found) throw new Error(`no :${name}: emoji in the server`);

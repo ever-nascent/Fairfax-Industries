@@ -8,7 +8,7 @@
 // Resists multiply, they don't add (his call, Oct 2, like the game): 30% and 30% make 51%, so stacking them is worth less each time.
 const stackResist = (resist, more) => 1 - (1 - resist) * (1 - more);
 const BUFFS = {
-  fireRate: { name: 'Fire Rate', odds: 10, amount: 1.5, unit: '%', apply: (s, v) => { s.fireRate *= 1 + v / 100; } },
+  fireRate: { name: 'Fire Rate', odds: 10, amount: 1.5, unit: '%', apply: (s, v) => { s.fireBonus += v / 100; } },
   maxAmmo: { name: 'Max Ammo', odds: 10, amount: 3, unit: '%', apply: (s, v) => { s.clip *= 1 + v / 100; } },
   cooldownReduction: { name: 'Cooldown Reduction', odds: 10, amount: 0.5, unit: '%', apply: (s, v) => { s.cdr += v / 100; } },
   weaponDamage: { name: 'Weapon Damage', odds: 10, amount: 3, unit: '%', apply: (s, v) => { s.weaponDamageMult += v / 100; } },
@@ -59,11 +59,15 @@ const rollAnyBuff = (rng = Math.random) => pickBuff(Object.keys(BUFFS), rng);
 // ponytail: the wiki's 160 s timer isn't used (a fight is shorter), and Movement's stamina isn't simulated (its sprint speed counts as move speed).
 const BRIDGE = {
   casting: { name: 'Casting', text: '+15 Spirit Power, +12% Cooldown Reduction', apply: (s) => { s.spirit += 15; s.cdr += 0.12; } },
-  gun: { name: 'Gun', text: '+12% Fire Rate, +35% Max Ammo', apply: (s) => { s.fireRate *= 1.12; s.clip *= 1.35; } },
+  gun: { name: 'Gun', text: '+12% Fire Rate, +35% Max Ammo', apply: (s) => { s.fireBonus += 0.12; s.clip *= 1.35; } },
   movement: { name: 'Movement', text: '+2 Stamina, +1.5 m/s Sprint Speed', apply: (s) => { s.moveSpeed += 1.5; } },
   survival: { name: 'Survival', text: '+200 Max Health, +4 Health Regen', apply: (s) => { s.maxHealth += 200; s.healthRegen += 4; } },
 };
+// The Soul Urn's carrier (/descend's Urn event, Nov 4; the wiki's Soul Urn page): +2 m/s move speed, +1 stamina, +25% stamina regen, 100% slow
+// resist, no parry (+10% dash distance isn't simulated). Not a bridge buff (never found or held), so it is apart from BRIDGE; stats.js applies both.
+const URN_CARRIER = { name: 'Soul Urn', text: '+2 m/s Move Speed, +1 Stamina, +25% Stamina Regen, Slow Immunity, No Parry', apply: (s) => { s.moveSpeed += 2; s.stamina += 1; s.staminaRegen += 0.25; s.slowResist = 1; s.noParry = true; } };
+const KIT_BUFFS = { ...BRIDGE, urn: URN_CARRIER };
 const HOUR = 3600 * 1000;
 const bridgeNow = (now = Date.now()) => Object.keys(BRIDGE)[Math.floor(now / HOUR) % 4];
 
-module.exports = { stackResist, BUFFS, BRIDGE, DAILY_BUFFS, buffText, applyBuffs, dailyBuffs, rollBuff, rollAnyBuff, bridgeNow };
+module.exports = { URN_CARRIER, KIT_BUFFS, stackResist, BUFFS, BRIDGE, DAILY_BUFFS, buffText, applyBuffs, dailyBuffs, rollBuff, rollAnyBuff, bridgeNow };

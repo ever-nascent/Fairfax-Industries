@@ -13,7 +13,10 @@ if not "%~1"=="updated" (
   if errorlevel 1 (
     echo Git was not found, starting with the files on this PC.
   ) else (
-    "%GIT%" rev-parse --abbrev-ref HEAD | findstr /x main >nul
+    rem for /f, not findstr /x: git ends its lines with LF only, and findstr /x never matched them (Nov 7: nothing had been pulled since Oct 16)
+    set "BRANCH="
+    for /f "delims=" %%b in ('call "%GIT%" rev-parse --abbrev-ref HEAD') do if "%%b"=="main" set "BRANCH=main"
+    call :onmain
     if errorlevel 1 (
       echo This folder is not on the main branch, so nothing was pulled. Switch it to main once ^(GitHub Desktop: Current branch^). It is on:
       "%GIT%" branch --show-current
@@ -41,3 +44,9 @@ call npm start
 :fail
 echo.
 pause
+exit /b
+
+rem Is this folder on main? (read after the for /f above has set BRANCH: inside a ( ) block %BRANCH% would be the value from before it)
+:onmain
+if "%BRANCH%"=="main" exit /b 0
+exit /b 1

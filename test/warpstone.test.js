@@ -1,6 +1,6 @@
 // Run: node --test test/warpstone.test.js
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-warp-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert/strict');
 const { Fight, enemy } = require('../src/utils/farm/engine');
 const { buildHero } = require('../src/utils/farm/hero');

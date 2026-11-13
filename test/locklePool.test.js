@@ -1,7 +1,7 @@
 // Run: node --test. Lockle when deadlock-api.com is down, the hidden match number, and the practice cap.
 // The API is faked (global fetch); throwaway data folder, never the live data/.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
 const L = require('../src/utils/games/lockle');

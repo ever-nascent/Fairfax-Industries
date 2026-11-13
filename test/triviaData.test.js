@@ -1,6 +1,6 @@
 // Run: node --test. The /trivia data refresh (tools/trivia-data.js): reading a wiki voice-lines page and listing
 // what a refresh would change. No network.
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { voiceLines, killLines, cleanWikiText, changes, fileOf, abilityIcons } = require('../tools/trivia-data');
 
@@ -41,6 +41,8 @@ test('kill lines: generic ones, and each enemy hero\'s "Kill" rows only', () => 
   assert.deepStrictEqual(killLines(page), {
     any: ['One down.', 'Dead.'],
     heroes: { Wraith: ["You should've run, Wraith.", 'Finally, a worthy target.'], 'The Doorman': ['You overstepped, Doorman.'] },
+    streak: ['Unstoppable.'],
+    win: [],
   });
 });
 

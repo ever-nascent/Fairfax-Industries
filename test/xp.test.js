@@ -2,7 +2,7 @@
 // Uses a throwaway data folder so the bot's real XP is never touched.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const { SCALE } = require('../src/utils/economy/economy');
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { progress, xpToNext, soulsFor, addXp, claimUrn, getUser, applyEdit, editUser, MAX_LEVEL } = require('../src/utils/economy/xp');
 const { getStore } = require('../src/storage');

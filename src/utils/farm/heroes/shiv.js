@@ -4,7 +4,6 @@
 const { Ability } = require('./../ability');
 const { DT, MELEE } = require('./../engine');
 const { npcShare } = require('./../items');
-const { stackResist } = require('./../buffs');
 
 const enraged = (unit) => !!unit.abilities.find((a) => a instanceof KillingBlow)?.full;
 const share = (e) => (e.team === 'hero' ? 1 : npcShare(e));
@@ -103,7 +102,7 @@ class Bloodletting extends Ability {
     if (event !== 'attacked' || hit.target !== this.unit || !(hit.amount > 0) || hit.source === this.unit) return;
     const put = (hit.amount * (this.value('DamagePctDeferred') + (enraged(this.unit) ? this.data.DamagePctDeferredMaxRage : 0))) / 100;
     hit.amount -= put;
-    const resist = hit.type === 'bullet' ? stackResist(this.unit.stats.bulletResist, this.unit.mod('bulletResist')) : hit.type === 'spirit' ? stackResist(this.unit.stats.spiritResist, this.unit.mod('spiritResist')) : 0;
+    const resist = hit.type === 'bullet' ? this.unit.resistNow('bulletResist') : hit.type === 'spirit' ? this.unit.resistNow('spiritResist') : 0;
     const duration = this.value('DeferredDamageDuration');
     this.owed.push({ perSecond: (put * (1 - Math.min(0.9, resist))) / duration, until: fight.time + duration });
   }

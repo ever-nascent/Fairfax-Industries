@@ -1,7 +1,7 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 process.env.FARM_FRAME_MS = '0';
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { getUser } = require('../src/utils/economy/xp');
 const { getFarmUser, chooseHero, play, simulate, upgradeAbility, buyItem, sellItem, updateFarmUser: changeRecord } = require('../src/utils/farm/play');
@@ -376,6 +376,7 @@ test('Deadman Danny can not buy Ricochet (the wiki), in the shop or in a rival k
   const { rivalKit } = require('../src/utils/farm/encounter');
   assert.strictEqual(canBuy('Deadman Danny', 'Ricochet'), false);
   assert.strictEqual(canBuy('Haze', 'Ricochet'), true);
+  assert.deepStrictEqual(['Graves', 'Deadman Danny', 'Haze'].map((h) => canBuy(h, 'Headshot Booster')), [false, false, true], 'the wiki: Graves and Danny cannot crit');
   assert.strictEqual(canBuy('Deadman Danny', 'Extra Health'), true);
   await chooseHero('rico', 'Deadman Danny');
   await giveSouls('rico', 100000);

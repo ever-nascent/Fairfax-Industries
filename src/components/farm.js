@@ -7,6 +7,7 @@ const { npcBuildView, rivalBuildView, heroBuildView } = require('../utils/farm/e
 const { TARGETS, LANES } = require('../utils/farm/targets');
 const { drawbackLine } = require('../utils/farm/corruption');
 const { buffText } = require('../utils/farm/buffs');
+const { bonusLines } = require('../utils/farm/corruption');
 const { fmt } = require('../utils/format');
 const { shortId } = require('../utils/random');
 const { DAMAGE_ID, DAMAGETAB_ID, damageButton, damageTabs, damageView, enemyDamageView, healingView, DUEL_ID, WALK_ID, withRival, duelView, duelResultView, HERO_ID, PICK_ID, TARGET_ID, SEND_ID, ENEMY_ID, BACK_ID, HEROCARD_ID, UPGRADE_ID, ITEM_ID, BUY_ID, SHOPMODE_ID, SELL_ID, SWITCH_ID, SWITCHTO_ID, UNLOCK_ID, IMBUE_ID, IMBUESET_ID, SHOPTAB_ID, CORRUPT_ID, HATCH_ID, LEGEND_ID, ROOM_ID, titleCase, timeLeft, pickView, homeView, heroView, shopView, targetView, fightView, resultView, legendaryView, tokenView, notReady } = require('../utils/farm/views');
@@ -32,11 +33,13 @@ const NOT_YOURS = {
   [SWITCH_ID]: `switch their hero. ${BASE}`, [SWITCHTO_ID]: `switch their hero. ${BASE}`, [UNLOCK_ID]: `spend their Character Unlock Token. ${BASE}`,
   [DUEL_ID]: 'fight this rival: it is waiting for them. Rivals find you after won fights from `/base`.', [WALK_ID]: 'let this rival go: it is waiting for them.',
   [dviews.DHERO_ID]: `pick the hero for this descent. ${RUN}`, [dviews.DASC_ID]: `pick the Ascension for this descent. ${RUN}`, [dviews.DBEGIN_ID]: `start this descent. ${RUN}`,
-  [dviews.DFIGHT_ID]: `fight this room. ${RUN}`, [dviews.DWALK_ID]: `flee from this rival or leave this stall. ${RUN}`, [dviews.DBVIEW_ID]: `look at this stall's items. ${RUN}`, [dviews.DCORRUPT_ID]: `deal with the Broker in this run. ${RUN}`, [dviews.DTAKE_ID]: `pick this run's reward. ${RUN}`,
-  [dviews.DSWAP_ID]: `choose what this run gives up. ${RUN}`, [dviews.DSKIP_ID]: `skip this run's reward. ${RUN}`, [dviews.DREROLL_ID]: `reroll this run's items. ${RUN}`,
+  [dviews.DFIGHT_ID]: `fight this room. ${RUN}`, [dviews.DWALK_ID]: `flee from this rival or leave this stall. ${RUN}`, [dviews.DBVIEW_ID]: `look at this stall's items. ${RUN}`, [dviews.DCORRUPT_ID]: `deal with the Broker in this run. ${RUN}`, [dviews.DFRAGILE_ID]: `deal with the Broker in this run. ${RUN}`, [dviews.DTAKE_ID]: `pick this run's reward. ${RUN}`,
+  [dviews.DFEED_ID]: `feed this run's Lil Helper. ${RUN}`,
+  [dviews.DSWAP_ID]: `choose what this run gives up. ${RUN}`, [dviews.DSKIP_ID]: `skip this run's reward. ${RUN}`, [dviews.DRECRUIT_ID]: `recruit the rival they beat. ${RUN}`, [dviews.DREROLL_ID]: `reroll this run's items. ${RUN}`,
   [dviews.DPOINT_ID]: `spend this run's ability points. ${RUN}`, [dviews.DBACK_ID]: `go back on this screen. ${RUN}`, [dviews.DQUIT_ID]: `abandon this run. ${RUN}`,
   [dviews.DAGAIN_ID]: `start another descent from here. ${RUN}`, [dviews.DIMBUE_ID]: `choose where this run's item is imbued. ${RUN}`,
   [dviews.DBONUSSWAP_ID]: `choose this run's bonus item. ${RUN}`,
+  [dviews.DREST_ID]: `choose in this run's room. ${RUN}`, [dviews.DDEAL_ID]: `deal in this run's room. ${RUN}`, [dviews.DTINKER_ID]: `tinker with this run's items. ${RUN}`, [dviews.DTVIEW_ID]: `look at this rest stop's items. ${RUN}`,
 };
 const ownerOf = (interaction) => interaction.customId.split(':')[1];
 async function mine(interaction) {
@@ -149,6 +152,7 @@ function picked(result) {
   if (result.kind === 'buffs') return `Took **${dviews.buffLine(result.name, result.stacks)}** for this run.`;
   const name = `${result.enhanced ? 'Enhanced ' : ''}${result.name}`;
   if (result.kind === 'legendaries') return `**${name}** is in the legendary slot.`;
+  if (result.enhancedHeld) return `You Enhanced **${result.name}**.`; // the enhanced copy of an item already held (his wording, Nov 5)
   if (result.used?.length) return `Upgraded ${result.used.join(' + ')} into **${name}**.${result.bonus ? ` BONUS: **${result.bonus}**.` : ''}`;
   return result.replaced ? `Gave up ${result.replaced} for **${name}**.` : `Took **${name}**.`;
 }
@@ -164,7 +168,7 @@ async function descendFight(interaction) {
   }
   const result = await descent.fight(interaction.user.id);
   if (result.error) {
-    const say = { busy: 'That room is already being fought.', broker: 'The Broker has no fight. Corrupt an item or leave.', none: 'You have no run going. Start one with `/descend run`.', offer: 'Pick your reward first.' }[result.error];
+    const say = { busy: 'That room is already being fought.', broker: 'The Broker has no fight. Corrupt an item or leave.', rest: 'A rest stop has no fight. Rest or tinker.', breather: 'Nothing here wants a fight. Break the crates open.', urn: 'This room has no fight.', wounded: 'This room has no fight.', dealer: 'This room has no fight.', patron: 'This room has no fight.', teleporter: 'This room has no fight.', visit: 'This hero is not here to fight. Accept or turn them down.', none: 'You have no run going. Start one with `/descend run`.', offer: 'Pick your reward first.' }[result.error];
     return interaction.followUp({ content: say, flags: MessageFlags.Ephemeral });
   }
   const { run } = result;
@@ -174,9 +178,21 @@ async function descendFight(interaction) {
     await sleep(FRAME_MS);
   }
   if (run.over) return interaction.followUp(await dviews.overView(interaction.member, run));
+  if (run.fled) { // the Rift lost (Nov 6): the hero fled and the run goes on, to the next room
+    const record = await getFarmUser(interaction.user.id);
+    return interaction.followUp(await dviews.screen(interaction.member, record, { note: `You fled the Rift with **${Math.round(record.descent.health * 100)}%** health. No Rift Troopers this time.` }));
+  }
+  if (run.rescued) { // Ivy's Rescue (his ask, Nov 7): the fight is lost, the run goes on, back at a Rest Stop
+    const record = await getFarmUser(interaction.user.id);
+    return interaction.followUp(await dviews.screen(interaction.member, record, { note: `**Ivy** dropped in and pulled you out of Room ${run.rescued.until}. She set you down at a Rest Stop in Room ${run.rescued.back} with **${Math.round(record.descent.health * 100)}%** Health.` }));
+  }
   if (run.complete) {
     await interaction.followUp(await dviews.completeView(interaction.member, run));
     return run.token ? interaction.followUp({ ...dviews.tokenView(run.hero), flags: MessageFlags.Ephemeral }) : null;
+  }
+  if (run.next.phase === 'ready') { // a room fought again after Ivy's Rescue: no Level and no pick
+    const record = await getFarmUser(interaction.user.id);
+    return interaction.followUp(await dviews.screen(interaction.member, record, { note: 'You cleared this room again. There is no Level and no pick for a room you already cleared.' }));
   }
   await interaction.followUp(await dviews.offerView(interaction.member, run.next, { run, animate: true }));
   if (run.token) await interaction.followUp({ ...dviews.tokenView(run.hero), flags: MessageFlags.Ephemeral });
@@ -232,7 +248,7 @@ const descentRoutes = [
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DREROLL_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
       const result = await descent.reroll(interaction.user.id, roomOf(interaction));
-      return result.ok ? { animate: true } : result.error === 'empty' ? { say: 'You have no rerolls left on this floor.' } : STALE;
+      return result.ok ? { animate: true } : result.error === 'empty' ? { say: 'You have no rerolls left on this Floor.' } : STALE;
     }),
   },
   {
@@ -284,6 +300,58 @@ const descentRoutes = [
   },
   {
     name: 'farm',
+    label: 'Descend event button', // an event room's choices (Nov 4): rest, break, urn, recruit, bless, step (the Teleporter), leave
+    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DREST_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const action = interaction.customId.split(':')[3];
+      if (action === 'found') return (await descent.seenFind(interaction.user.id)).ok ? {} : STALE; // the Buff window, on to the next room
+      if (action === 'continue') return (await descent.seen(interaction.user.id, roomOf(interaction))).ok ? { animate: true } : STALE; // Violet's result screen, on to the pick
+      const result = await descent.eventChoice(interaction.user.id, roomOf(interaction), action);
+      if (result.error === 'carrying') return { say: action === 'step' ? "You carry the Soul Urn: the Teleporter won't take you." : 'You are already carrying the Soul Urn.' };
+      if (result.error === 'ally') return { say: 'You already have an ally.' };
+      if (!result.ok) return STALE;
+      if (result.pick) return {}; // McGinnis' Upgrade Item with several to aim for: the screen now asks which
+      if (action === 'step') return { note: 'The Teleporter hums, and the room around you changes.' };
+      return { note: `${dviews.eventText({ action, ...result })}${result.replay ? '' : ' You gained a level.'}` }; // (the pick screen that follows says it too)
+    }),
+  },
+  {
+    name: 'farm',
+    label: 'Descend dealer select', // the Curiosity Dealer: swap an item for a pick a tier higher, or sell one for a full heal (Nov 4)
+    matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DDEAL_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const action = interaction.customId.split(':')[3];
+      const result = await descent.eventChoice(interaction.user.id, roomOf(interaction), action, interaction.values[0]);
+      if (result.error === 'none-higher') return { say: 'He has nothing a tier higher for that one.' };
+      if (!result.ok) return STALE;
+      if (result.pick) return {}; // Violet with a full build: the screen now asks which item to give up for the replica
+      return { note: `${dviews.eventText(result)}${result.replay ? '' : ' You gained a level.'}` };
+    }),
+  },
+  {
+    name: 'farm',
+    label: 'Descend tinker select', // a rest stop's Tinker: try to enhance the picked item
+    matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DTINKER_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const result = await descent.eventChoice(interaction.user.id, roomOf(interaction), 'tinker', interaction.values[0]);
+      if (!result.ok) return STALE;
+      return { note: `${dviews.eventText(result)}${result.replay ? '' : ' You gained a level.'}` };
+    }),
+  },
+  {
+    name: 'farm',
+    label: 'Descend tinker view select', // the owner's message shows that item's enhanced bonuses; anyone else sees them privately
+    matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DTVIEW_ID}:`),
+    async execute(interaction) {
+      const d = (await getFarmUser(ownerOf(interaction))).descent;
+      const name = interaction.values[0];
+      const live = d?.room === roomOf(interaction) && descent.tinkerables(d).includes(name);
+      if (interaction.user.id !== ownerOf(interaction)) return interaction.reply({ content: live ? `**${name}**\n${bonusLines(name, 'enhanced').join('\n') || 'None listed'}`.slice(0, 1900) : 'That rest stop is over.', flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
+      return descentAction(interaction, async () => (live ? { viewing: name } : STALE));
+    },
+  },
+  {
+    name: 'farm',
     label: 'Descend broker view select', // the owner's message shows that item's corrupted effects; anyone else sees them privately
     matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DBVIEW_ID}:`),
     async execute(interaction) {
@@ -306,6 +374,19 @@ const descentRoutes = [
   },
   {
     name: 'farm',
+    label: 'Descend broker fragile button',
+    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DFRAGILE_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const action = interaction.customId.split(':')[3];
+      const result = await descent.dealBroker(interaction.user.id, roomOf(interaction), action);
+      if (!result.ok) return STALE;
+      return { note: action === 'take'
+        ? `The Broker pressed a **Fragile ${result.name}** into your hands. "Don't say I never gave ya nothin'." It's cracked and weaker than it should be, and it shatters if a Rejuv goes off or a fight leaves you under 10% health. Keep it until the next stall.`
+        : `The Broker mended your **${result.name}** into an **Enhanced** one. On the house.` };
+    }),
+  },
+  {
+    name: 'farm',
     label: 'Descend pick button',
     matches: (interaction) => (interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith(`${dviews.DTAKE_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
@@ -313,6 +394,16 @@ const descentRoutes = [
       const result = await descent.choose(interaction.user.id, roomOf(interaction), index);
       if (result.error === 'full') return { replace: index };
       return result.ok ? { note: picked(result) } : STALE;
+    }),
+  },
+  {
+    name: 'farm',
+    label: 'Descend feed select', // Rem's Lil Helper (Nov 7): feed it an offered Item you are not taking; the pick screen stays
+    matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DFEED_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const result = await descent.feed(interaction.user.id, roomOf(interaction), Number(interaction.values[0]));
+      if (!result.ok) return STALE;
+      return result.done ? { note: 'You fed the Lil Helper every Item on offer. There is nothing left to pick.' } : {};
     }),
   },
   {
@@ -331,10 +422,18 @@ const descentRoutes = [
     execute: (interaction) => descentAction(interaction, async () => {
       const result = await descent.skip(interaction.user.id, roomOf(interaction));
       if (!result.ok) return STALE;
-      const got = {};
-      for (const b of result.buffs) got[b] = (got[b] ?? 0) + 1;
-      const healed = `Skip: Healed **${Math.round(result.healed * 100)}%** of max health.`;
-      return { note: result.buffs.length ? [`${healed} Perma-Buffs:`, ...Object.entries(got).map(([k, n]) => buffText(k, n))].join('\n') : healed };
+      const healed = result.healed > 0 ? `Skip: Healed **${Math.round(result.healed * 100)}%** of max health.` : 'Skip:';
+      return { note: result.buffs.length ? [`${healed} Perma-Buffs:`, ...result.buffs.map((k) => buffText(k, 1))].join('\n') : healed };
+    }),
+  },
+  {
+    name: 'farm',
+    label: 'Descend recruit button', // a beaten rival fights beside you for a few fights (no item)
+    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DRECRUIT_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const result = await descent.recruit(interaction.user.id, roomOf(interaction));
+      if (result.error === 'ally') return { say: 'You already have an ally.' };
+      return result.ok ? { note: `**${result.hero}** joined you for the next **${result.fights} fights**.` } : STALE;
     }),
   },
   {
@@ -343,7 +442,7 @@ const descentRoutes = [
     matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DIMBUE_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
       const result = await descent.imbue(interaction.user.id, Number(interaction.values[0]));
-      return result.ok ? { note: `Imbued **${result.name}** into ability ${result.slot}.` }
+      return result.ok ? { note: `Imbued **${result.name}** into Ability ${result.slot}.` }
         : { locked: { say: "That ability isn't unlocked yet." }, ultimate: { say: 'That item cannot imbue an ultimate.' }, none: STALE }[result.error];
     }),
   },
@@ -392,6 +491,7 @@ const descentRoutes = [
       const d = (await getFarmUser(ownerOf(interaction))).descent;
       if (!d || d.room !== roomOf(interaction) || d.phase === 'offer') return interaction.editReply({ content: STALE.say });
       const spec = descent.specOf(d);
+      if (!['fight', 'boss', 'rival'].includes(spec.kind)) return interaction.editReply({ content: spec.kind === 'rift' ? `The Rift: ${spec.rivals.join(', ')}, everyone against everyone.` : 'Nothing in this room wants a fight.' }); // an event or a hero room (an old button)
       const held = descent.enemiesOf(d, spec);
       const under = d.level - held.kit?.boons;
       return interaction.editReply(held.rival
@@ -572,9 +672,7 @@ module.exports = [
     execute: (interaction) => heroAction(interaction, async () => {
       const result = await hatchEgg(interaction.user.id);
       if (!result.ok) return 'You do not have an egg to hatch.';
-      const got = {};
-      for (const b of result.buffs) got[b] = (got[b] ?? 0) + 1;
-      const lines = [titleCase(`The egg hatched: +${fmt(result.souls)} souls${result.buffs.length ? ', and these permanent buffs:' : '.'}`), ...Object.entries(got).map(([k, n]) => buffText(k, n))];
+      const lines = [titleCase(`The egg hatched: +${fmt(result.souls)} souls${result.buffs.length ? ', and these permanent buffs:' : '.'}`), ...result.buffs.map((k) => buffText(k, 1))];
       return lines.join('\n');
     }),
   },

@@ -1,6 +1,6 @@
 // Run: node --test. /item: the search behind the autocomplete, the item views and the enhanced labels. No network (pictures are already saved).
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { search, choices, resolve, itemView, builtFrom, upgradesInto } = require('../src/utils/farm/itemInfo');
 const { ITEMS, LEGENDARIES } = require('../src/utils/farm/stats');

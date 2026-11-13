@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 process.env.DATA_DIR = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { track, activeQuests, weekOf, questsEmbed, DAILY_SOULS } = require('../src/utils/economy/quests');
 const { changeSouls, getUser, resetAllSouls, totalSouls } = require('../src/utils/economy/xp');

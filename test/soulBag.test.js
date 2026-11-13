@@ -1,7 +1,7 @@
 // Run: node --test
 // Uses a throwaway data folder so the bot's real souls are never touched.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { shouldDrop, rollSouls, onGrab, BAG_MIN, BAG_MAX } = require('../src/utils/economy/soulBag');
 const { getUser, buyBoost, BOOST_PRICE } = require('../src/utils/economy/xp');

@@ -23,6 +23,7 @@ class Dual extends Ability {
   get name() { return isWolf(this.unit) ? this.beast.data.Name : this.data.Name; }
   get cooldown() { return isWolf(this.unit) ? this.beast.cooldown : super.cooldown; }
   get castDelay() { return isWolf(this.unit) ? this.beast.castDelay : super.castDelay; }
+  get meleeScaled() { return isWolf(this.unit) ? this.beast.meleeScaled : super.meleeScaled; } // Go For The Throat / Mauling Leap scale with melee, Slam Fire's human form doesn't
   want(fight) { return fight.foes.length > 0; }
   cast(fight) { return isWolf(this.unit) ? this.wolfCast(fight) : this.humanCast(fight); }
 

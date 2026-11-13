@@ -2,7 +2,7 @@
 // Hero Farming: the systems that let every item work (his calls, Oct 3; server-plan.md "Every item in fights, corruption"): melee, dashes, charges,
 // imbues, crowd control on the hero, silence and slows on enemies, healing, parries, souls items, corruption, the egg and Eternal Gift.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { Fight, enemy, MELEE, dodgeChance } = require('../src/utils/farm/engine');
 const { buildHero } = require('../src/utils/farm/hero');
@@ -237,10 +237,15 @@ test('heal amp: Healing Booster heals more; Toxic Bullets and Nullification Burs
 // ---- hits: parries, deflects, softening ----
 test('hits: Rebuttal parries and returns one, Plated Armor deflects some, Spellbreaker softens a big spirit hit, Juggernaut slows a shooter', () => {
   const r = setup(['Rebuttal'], { dps: 100 });
+  r.enemies[0].stats.meleeRange = 20; // its swings are melee: only those can be parried (his call, Oct 31)
   r.hero.meleeAt = Infinity;
   const hp = r.hero.health;
   steps(r.fight, 10);
   assert.ok(r.hero.health >= hp && r.enemies[0].health < r.enemies[0].stats.maxHealth && r.hero.mod('damageDealt') > 0, 'parried, returned, stronger');
+  const shot = setup(['Rebuttal'], { dps: 100 });
+  shot.hero.meleeAt = Infinity;
+  steps(shot.fight, 10);
+  assert.ok(shot.hero.health < shot.hero.stats.maxHealth && shot.hero.mod('damageDealt') === 0 && !shot.enemies[0].has('stun'), 'a bullet is not parried');
   const plated = setup(['Plated Armor'], { dps: 100, rng: seeded(5) });
   plated.hero.stats.maxHealth = plated.hero.health = 1e6;
   const bare = setup([], { dps: 100, rng: seeded(5) });
@@ -259,7 +264,7 @@ test('hits: Rebuttal parries and returns one, Plated Armor deflects some, Spellb
 });
 
 // ---- void, escapes, concoction ----
-test('Ethereal Shift / Prism Blast: untouchable; Magic Carpet flies off when low; Unstable Concoction explodes and leaves 1 health', () => {
+test('Ethereal Shift / Prism Blast: untouchable; Magic Carpet flies off when low; Unstable Concoction explodes and leaves half health', () => {
   const e = setup(['Ethereal Shift'], { dps: 100 });
   e.hero.health = 100;
   e.fight.step();
@@ -277,7 +282,7 @@ test('Ethereal Shift / Prism Blast: untouchable; Magic Carpet flies off when low
   u.fight.step();
   assert.ok(u.hero.stats.maxHealth > 3000 && u.hero.has('unstoppable'));
   steps(u.fight, 45);
-  assert.ok(u.hero.alive && u.hero.health < 10, 'left at 1 health (plus a moment of regen)');
+  assert.ok(u.hero.alive && Math.abs(u.hero.health - u.hero.stats.maxHealth / 2) < 50, 'left at half health (plus a moment of regen)');
   assert.ok(u.enemies[0].health < 5000 - 1000 && u.enemies[0].has('stun'), 'the explosion hurt and stunned');
   assert.ok(u.hero.stats.maxHealth < 3000, 'the bonus health is gone');
 });
@@ -389,4 +394,16 @@ test('Golden Goose Egg grows with fight time and hatches for souls and a buff pe
   assert.ok(!after.items.spirit.includes('Golden Goose Egg') && after.egg === 0);
   assert.strictEqual(Object.values(after.buffs).reduce((a, b) => a + b, 0), 5);
   assert.strictEqual((await hatchEgg(id)).error, 'missing');
+});
+
+test('Close Quarters boosts melee-scaled abilities by half its bonus, in the wolf form too', () => {
+  const bite = (items) => {
+    const s = setup(items, { hero: 'Silver', distance: 10, boons: 10 });
+    s.hero.abilities.find((a) => a.data.Name === 'Lycan Curse').turn(s.fight);
+    const slam = s.hero.abilities[0];
+    s.fight.as(slam, () => s.fight.damage(s.hero, s.enemies[0], 100, 'melee'));
+    return s.enemies[0].stats.maxHealth - s.enemies[0].health;
+  };
+  const ratio = bite(['Close Quarters']) / bite([]);
+  assert.ok(Math.abs(ratio - 1.1) < 0.005, `Go For The Throat gets +10% (got ${ratio})`);
 });

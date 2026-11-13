@@ -1,7 +1,7 @@
 // Run: node --test (npm test). The bot works in any server: commands everywhere (Fairfax-only ones stay in Fairfax), the home
 // server's emojis show in other servers, LFG is set up on request, and Hideouts stay a Fairfax feature.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { runInGuild } = require('../src/utils/guildContext');
 const { GUILD_ID } = require('../src/config');

@@ -1,6 +1,6 @@
 process.env.WIKI_GAP_MS = '0';
 process.env.WIKI_RETRY_WAITS_MS = '1,1';
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { wikiFetch } = require('../src/utils/wikiFetch');
 

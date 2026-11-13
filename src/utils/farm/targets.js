@@ -161,7 +161,7 @@ const trooper = (key, name) => (wave) => {
   const melee = key === 'trooper_melee'; // charges in and only swings (the game data's MeleeChargeRange)
   return enemy(name, { maxHealth: n.MaxHealth * k, dps: n.VSPlayer.BaseDPS * WAVE.hardness * k, distance: melee ? n.MeleeHitRange : 15, damageType: melee ? 'melee' : 'bullet', meleeRange: n.MeleeAttemptRange, bulletResist: resist, spiritResist: resist, souls: TROOPER_SOULS });
 };
-const [ranged, medic, melee] = [trooper('trooper_normal', 'Trooper'), trooper('trooper_medic', 'Medic Trooper'), trooper('trooper_melee', 'Melee Trooper')];
+const [ranged, medic, melee] = [trooper('trooper_normal', 'Ranged Trooper'), trooper('trooper_medic', 'Medic Trooper'), trooper('trooper_melee', 'Melee Trooper')];
 const WAVES = {
   cooldown: 24 * HOUR, early: 10, max: 60, secondsPerWave: 120,
   // wave 1, 2, 3 ... as stages for runStages
@@ -200,6 +200,16 @@ const PATRON_BEAM = { dps: 440, dpsMaxHealthPct: 0.05, damageType: 'spirit' }; /
 // The blast (the wiki's Shrine Defense and Pit Explosion: 300 + 20% of max health): true damage, and it curses.
 // The wiki gives no interval and no curse length: every 8 s and 1.5 s cursed are his call (Oct 3); HARDNESS.siege was retuned for them.
 const PATRON_BLAST = { every: 8, damage: 300, maxHealthPct: 0.2, curse: 1.5, tags: ['curse'] };
+// The Patron's troopers (his call, Oct 29: "Patrons summon enemies and can't be hurt until those are dead, in Descend and in /siege"; built Nov 6):
+// both forms call in a wave of 2 Troopers and a Medic Trooper `first` s in, then every `every` s, at most `cap` standing; while one stands the Patron
+// can't be hurt (engine.js summon / guarded). Each trooper is a share of the Patron's own health and damage, so the siege's hardness and clears and
+// /descend's depth, ascension and the Patron's Favor size them too. The Medic mends the other troopers, never the Patron.
+// Nov 6, measured with a strong level 35 kit (20 sieges each): 8% health a trooper every 20 s took Haze, Abrams and Seven from 20/20 wins to 0-1/20 (the
+// Patron was behind troopers most of the fight); 4% every 30 s gives Haze 20, Abrams 13, Seven 20. ponytail: every number here is a placeholder, his to tune.
+const MEND_TROOPERS = { name: 'Mend', chance: 0.3, use(fight, medic) { for (const u of medic.summoner?.summons ?? []) if (u.alive) u.health = Math.min(u.stats.maxHealth, u.health + u.stats.maxHealth * 0.06); } };
+const PATRON_TROOPER = { name: 'Ranged Trooper', health: 0.04, dps: 0.15, distance: 15 };
+const PATRON_SUMMON = { first: 15, every: 30, cap: 6, wave: [PATRON_TROOPER, PATRON_TROOPER, { name: 'Medic Trooper', health: 0.04, dps: 0.05, distance: 18, special: MEND_TROOPERS }] };
+const summoning = (make) => () => make().map((e) => { e.stats.summon = PATRON_SUMMON; return e; });
 const SIEGE = {
   cooldown: 24 * HOUR,
   stages: [
@@ -209,8 +219,8 @@ const SIEGE = {
       enemies: boss('destroyable_building', 'Shrine', { health: npcs.destroyable_building.MaxHealthGenerator, ...PATRON_BEAM, blast: { ...PATRON_BLAST, tags: ['silence'], what: 'silence', verb: 'silenced' }, extraResist: shrineResist() }) },
     { name: 'Second Shrine', icon: 'shrine', souls: objectives.ShrinesGoldKill,
       enemies: boss('destroyable_building', 'Second Shrine', { health: npcs.destroyable_building.MaxHealthGeneratorSecond, ...PATRON_BEAM, blast: { ...PATRON_BLAST, tags: ['silence'], what: 'silence', verb: 'silenced' }, extraResist: shrineResist() }) },
-    { name: 'Patron', icon: 'patron', souls: 0, enemies: boss('npc_boss_tier3', 'Patron', { ...PATRON_BEAM, damageType: 'mixed', regen: 0, controls: [{ id: 'sleep', every: 10, duration: 1, tags: ['sleep'], verb: 'slept' }] }) },
-    { name: 'Weakened Patron', icon: 'patron-weakened', souls: 0, enemies: boss('npc_boss_tier3', 'Weakened Patron', { health: npcs.npc_boss_tier3.Phase2Health, dps: 75, damageType: 'mixed', blast: PATRON_BLAST }) },
+    { name: 'Patron', icon: 'patron', souls: 0, enemies: summoning(boss('npc_boss_tier3', 'Patron', { ...PATRON_BEAM, damageType: 'mixed', regen: 0, controls: [{ id: 'curse', every: 10, duration: 1, tags: ['curse'], verb: 'cursed' }] })) }, // a curse, not a sleep (Nov 4, his ask)
+    { name: 'Weakened Patron', icon: 'patron-weakened', souls: 0, enemies: summoning(boss('npc_boss_tier3', 'Weakened Patron', { health: npcs.npc_boss_tier3.Phase2Health, dps: 75, damageType: 'mixed', blast: PATRON_BLAST })) },
   ],
 };
 
@@ -229,7 +239,10 @@ const payout = (souls) => Math.round(souls * PAYOUT_SCALE);
 // damage (the hero's, by source), taken (each enemy's, by move), healing (what healed the hero, and when), foes (the enemies of the last 5 stages fought as they started: the breakdown's Enemy Build) }.
 // A unit as it started the fight, for the breakdown's Enemy Build (enemyBuild.js unitLines reads only its name and stats).
 const snapUnit = (u) => ({ name: u.name, stats: { ...u.stats, blast: u.stats.blast && { ...u.stats.blast }, controls: (u.stats.controls ?? []).map((c) => ({ ...c })) } });
-function runStages(hero, stages, { rng, maxSecondsPerStage = 600, watch } = {}) {
+// `allies`: units fighting on the hero's side (/descend's recruited rival); the fight still ends when the hero falls.
+// `minions` fight on the hero's side (engine.js); `ffa`: the rivals fight each other too (the Rift); a hero with `fleeAt` (the Rift) can't die: it's out
+// once its health drops to that share of max (`fled`).
+function runStages(hero, stages, { rng, maxSecondsPerStage = 600, watch, allies = [], minions = [], ffa = false } = {}) {
   let time = 0;
   let fight;
   let bonusSouls = 0;
@@ -237,18 +250,20 @@ function runStages(hero, stages, { rng, maxSecondsPerStage = 600, watch } = {}) 
   const foes = [];
   const report = () => ({ damage: damageBreakdown(hero, fights), taken: enemyDamage(fights), healing: healBreakdown(hero, fights), foes: foes.slice(-5) });
   for (const [i, stage] of stages.entries()) {
-    fight = new Fight({ heroes: [hero], enemies: stage.enemies(), rng, time });
+    fight = new Fight({ heroes: [hero, ...allies.filter((a) => a.alive)], enemies: stage.enemies(), minions: minions.filter((m) => m.alive), ffa, rng, time });
     fights.push(fight);
     foes.push({ label: stages.length > 1 ? stage.name : null, units: fight.enemies.filter((e) => e.team === 'enemy').map(snapUnit) });
     watch?.(fight, i, 'start');
     const end = time + maxSecondsPerStage;
-    while (fight.time < end && hero.alive && fight.enemies.some((e) => e.alive)) {
+    const fled = () => hero.fleeAt && !(hero.rejuvs > 0) && hero.health <= hero.fleeAt * hero.stats.maxHealth; // with a Rejuv in hand it fights on (his call, Nov 6)
+    const standing = () => fight.enemies.some((e) => e.alive && !e.fled); // (a rival that fled the Rift is out of it)
+    while (fight.time < end && hero.alive && !fled() && standing()) {
       fight.step();
       watch?.(fight, i, 'step');
     }
     time = fight.time;
     bonusSouls += fight.bonusSouls;
-    if (fight.enemies.some((e) => e.alive)) return { won: false, stage: i, time, fight, timedOut: hero.alive, bonusSouls, ...report() };
+    if (standing()) return { won: false, stage: i, time, fight, timedOut: hero.alive && !fled(), fled: !!fled(), bonusSouls, ...report() };
   }
   return { won: true, stage: stages.length, time, fight, timedOut: false, bonusSouls, ...report() };
 }
@@ -272,4 +287,4 @@ function siege(hero, { maxSecondsPerStage = 900, rng, rejuvs = 0 } = {}) {
   return { won: out.won, stage: out.stage, stageName: out.won ? null : SIEGE.stages[out.stage].name, souls, rejuvsLeft: hero.rejuvs };
 }
 
-module.exports = { SIEGE_DRAIN, SIEGE_ANTIHEAL, WAVES, WAVE, wavePay, wavesPay, LANES, LANED, WALKER_STEP, CLEAR_CAP, GROWTH, clearsOf, clearPower, clearSouls, strengthen, TARGETS, SIEGE, HARDNESS, PAYOUT_SCALE, payout, runStages, attempt, siege };
+module.exports = { PATRON_SUMMON, SIEGE_DRAIN, SIEGE_ANTIHEAL, WAVES, WAVE, wavePay, wavesPay, LANES, LANED, WALKER_STEP, CLEAR_CAP, GROWTH, clearsOf, clearPower, clearSouls, strengthen, TARGETS, SIEGE, HARDNESS, PAYOUT_SCALE, payout, runStages, attempt, siege };

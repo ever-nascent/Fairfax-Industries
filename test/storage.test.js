@@ -3,7 +3,7 @@
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const fs = require('node:fs');
 const path = require('node:path');
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { getStore } = require('../src/storage');
 const { flushPending } = require('../src/storage/jsonAdapter');

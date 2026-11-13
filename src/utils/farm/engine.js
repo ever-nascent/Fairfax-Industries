@@ -44,6 +44,13 @@ const PELLETS = { full: 5, at: 15, far: 0.7 };
 const PRECISION = { base: 25, full: 55, parry: 0.01, range: 0.01, maxParry: 0.8 }; // maxParry: a duel's parry chance never above it (my pick)
 const overflow = (unit) => Math.max(0, unit.stat('precision') - PRECISION.full);
 const headshotChance = (unit) => (unit.stats?.noHeadshot ? 0 : clamp(unit.stat('headshot') / 100, 0, 1)); // Headshot Precision (his call, Oct 28: its own stat)
+// A headshot's bonus bullet damage (his ask, Nov 6: "what's the point of building headshot builds"): +65% (deadlock.wiki/Headshot), each hero's own
+// CritDamageBonusPercent added (Drifter -45 ... ; the stat sheet's headshotBonus). It lands on every target, like the headshot items always have here
+// (the game: only troopers, neutrals, Lane Guardians and heroes have a weak spot).
+const HEADSHOT_BONUS = 0.65;
+// Was this bullet hit a headshot? A gun shot rolls once (fireWeapon sets opts.headshot), so the bonus, the headshot items and abilities agree; any
+// other bullet (an ability's) rolls here. A ricochet can't headshot (the wiki).
+const isHeadshot = (fight, unit, p) => !p?.opts?.ricochet && (p?.opts?.headshot ?? fight.rng() < headshotChance(unit));
 // Misses (his ask, Oct 28: "Single bullet guns never missing is a big problem, same with Melees"; the numbers left to me: "a good mix of balance and
 // challenge"): a single bullet or a melee misses MISS.npc of the time against an NPC (big, slow targets) and MISS.hero against a hero (a duel),
 // at the base Precision; each point above it takes a percentage point off. A shotgun's pellets against an NPC have their own spread instead.
@@ -55,7 +62,9 @@ const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const CC_TAGS = ['sleep', 'curse', 'stun', 'disarm', 'silence', 'immobilize'];
 const STOPS = ['sleep', 'curse', 'stun']; // what interrupts a lasting ultimate
 const CANT_ACT = ['sleep', 'curse', 'stun', 'void', 'hold']; // sleep and curse are separate: both stop actions, but only sleep wakes on damage and curse cannot be cleansed; a stun also interrupts a cast or channel (Oct 28, his call)
-const OWN_EVENTS = new Set(['dash', 'slide', 'reloadStart', 'reloadEnd', 'cast', 'melee', 'unstealth', 'heal', 'cc', 'ccLanded', 'blast']); // heard only by the hero they are about
+const DEBUFF_CAP = 0.5; // an enemy debuffing attack can't take more than this much of the hero's fire rate or movement from all enemies together (his call)
+const ADAPT = { every: 3, step: 0.05, resist: 0.4, parry: 0.3, damage: 0.3 }; // /descend's Adaptive: every `every` s, if hurt, it picks one of three: `step` more resist against the damage type it took most, more parry chance, or more damage dealt (each up to its cap)
+const OWN_EVENTS =new Set(['dash', 'slide', 'reloadStart', 'reloadEnd', 'cast', 'melee', 'unstealth', 'heal', 'cc', 'ccLanded', 'blast']); // heard only by the hero they are about
 const HELPLESS =['stun', 'sleep', 'immobilize']; // an enemy that can't hit back: worth walking up to and meleeing
 // Ability Range (his call, Oct 3): the enemies of a group stand one behind the other, SPREAD metres apart on average (each gap is rolled, half to one and a
 // half times that), and an area ability or item only reaches the ones within its radius of the front one (Fight.near). Members never see the distances.
@@ -67,6 +76,9 @@ const SPREAD = 4;
 const DODGE = { from: 6, per: 0.1, max: 0.6 };
 // A slow on the hero itself (a Haunt's spores, a rival hero's slow; his call, Oct 10): that much less move speed here, and stamina comes back that much slower (move()).
 const slowed = (unit) => clamp(unit.mod('slow') * (1 - clamp(unit.stat('slowResist'), 0, 1)), 0, 0.9); // slow resist (Enduring Speed, Juggernaut, Fleetfoot) takes its share off
+// /descend's floor on what the hero can take off an enemy's damage (its `outputFloor`, set in descent.js; Nov 2): slows (fewer attacks), "deals less
+// damage" and spirit power taken together leave it at least that share, like DEBUFF_CAP the other way round. The farm's enemies have none.
+const attackRate = (unit) => Math.max(1 - slowed(unit), unit.stats.outputFloor ?? 0);
 const dodgeChance = (unit, foe) => clamp(clamp((unit.stat('moveSpeed') * (1 - slowed(unit)) - DODGE.from) * DODGE.per, 0, DODGE.max) + (foe ? foe.mod('slow') : 0), 0, 0.9);
 
 class Unit {
@@ -96,6 +108,19 @@ class Unit {
 
   get alive() { return this.health > 0; }
   mod(stat) { return this.statuses.reduce((sum, s) => sum + (s.mods?.[stat] || 0), 0); }
+  // A resist (bullet / spirit / melee) right now: temporary resists multiply with `base` like items do, and shreds (negative mods) multiply among
+  // themselves, then that total comes off the resist (the wiki: 50% resist under a 30% shred is 20%, below zero it is extra damage taken).
+  resistNow(key, base = this.stats[key] ?? 0) {
+    let resist = base;
+    let kept = 1;
+    for (const s of this.statuses) {
+      const v = s.mods?.[key] || 0;
+      if (v > 0) resist = stackResist(resist, v); else if (v < 0) kept *= 1 + v;
+    }
+    return resist - (1 - kept);
+  }
+  // Shots a second right now: the permanent fire rate bonuses (items, buffs) and the temporary ones add up (the wiki: fire rate increases are additive).
+  fireRateNow() { return this.stats.fireRate * (1 + this.mod('fireRate') / (1 + (this.stats.fireBonus ?? 0))); }
   stat(key) { return (this.stats[key] ?? 0) + this.mod(key); } // a sheet stat plus what statuses add right now
   has(tag) { return this.statuses.some((s) => s.tags?.includes(tag)); }
   get cantAct() { return CANT_ACT.some((t) => this.has(t)); }
@@ -109,10 +134,17 @@ class Unit {
   }
 }
 
+const PLOT_ARMOR = { safe: 2, health: 0.25 }; // seconds nothing hurts the hero after Paige's Plot Armor saves it (Nov 7, his ask: "keep you alive for a brief period"; my number)
+const ECHO = { name: 'Spectral Assistant' }; // what the Assistant's shots count under in the Damage Breakdown
+
 class Fight {
-  constructor({ heroes, enemies, rng = Math.random, time = 0 }) {
+  // `minions`: units that fight on the heroes' side (/descend: Rift Troopers, Graves' Ghouls, McGinnis' Mini Turret; his ask Nov 6). Each hits the
+  // front enemy once a second; enemies may pick one to attack instead of the hero. `ffa`: every rival hero among the enemies fights everyone (the Rift).
+  constructor({ heroes, enemies, minions = [], ffa = false, rng = Math.random, time = 0 }) {
     this.heroes = heroes;
     this.enemies = enemies;
+    this.minions = minions;
+    for (const m of minions) m.team = 'minion';
     this.rng = rng;
     this.time = time; // a siege's next stage carries on from the last one's clock
     this.queue = []; // [{ t, fn }] delayed effects
@@ -120,6 +152,7 @@ class Fight {
     this.dealt = new Map(); // unit -> damage it dealt
     this.breakdown = new Map(); // hero -> Map(what dealt it: 'Gun' | 'Heavy Melee' | an ability or item name -> damage) (the Damage Breakdown button)
     this.taken = new Map(); // NPC enemy -> Map(what it dealt the hero with: 'Attack' | its blast | its special -> damage) (the breakdown's Enemy Damage, his ask Oct 26)
+    this.self = new Map(); // hero -> Map(ability or item -> health it cost the hero) (Victor's Aura of Suffering on Enemy Damage, his ask Nov 4)
     this.enemyMove = null; // the special an NPC is using right now (what its damage is counted under)
     this.healed = new Map(); // hero -> Map(what healed it -> health) (the breakdown's Healing, his ask Oct 26)
     this.healedBy = new Map(); // hero -> Map(what -> Map(the item or ability behind a lifesteal heal -> health)): the lines under Bullet / Spirit Lifesteal
@@ -132,7 +165,15 @@ class Fight {
     // it is the hero and the member's heroes are its enemies, so its abilities and items work unchanged. Both share the clock, queue, log and dice.
     this.views = new Map(heroes.map((h) => [h, this]));
     const rivals = enemies.filter((e) => e.team === 'hero');
-    if (rivals.length) {
+    if (ffa) { // a free-for-all: each rival sees everyone else as its enemy, in its own order (who it goes for first)
+      for (const rival of rivals) {
+        const mirror = Object.create(this);
+        const others = [...heroes, ...rivals.filter((r) => r !== rival)];
+        for (let i = others.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [others[i], others[j]] = [others[j], others[i]]; }
+        Object.assign(mirror, { heroes: [rival], enemies: others, casting: null, by: null, bonusSouls: 0 });
+        this.views.set(rival, mirror);
+      }
+    } else if (rivals.length) {
       const mirror = Object.create(this);
       Object.assign(mirror, { heroes: rivals, enemies: heroes, casting: null, by: null, bonusSouls: 0 });
       for (const rival of rivals) this.views.set(rival, mirror);
@@ -150,7 +191,7 @@ class Fight {
     try { return fn(); } finally { this.by = before; }
   }
 
-  get foes() { return this.enemies.filter((e) => e.alive && e.targetable); } // enemies still standing (and in sight: a rival hero can hide)
+  get foes() { return this.enemies.filter((e) => e.alive && !e.fled && e.targetable && !guarded(e)); } // enemies still standing (and in sight: a rival hero can hide; a summoner behind its summons can't be reached)
   // The enemies an area of `radius` metres reaches: the front one (the hero is on it) and those standing close enough behind it.
   near(radius) { const foes = this.foes; return foes.filter((e) => (e.offset ?? 0) - (foes[0].offset ?? 0) <= radius); }
   // A dash-jump in the last MOVE.dodge seconds dodges this hit, and is used up by it (a hero that can't act isn't dodging anything).
@@ -162,6 +203,15 @@ class Fight {
 
   // How far the hero is from a target: right next to it for a moment after meleeing it, else where it stands.
   distance(hero, target) { return hero.close === target && hero.closeUntil > this.time ? MELEE.closeDistance : target.stats.distance ?? 15; }
+
+  // The source's damage multiplier: its own "deals more / less damage", and for an enemy's spirit damage the spirit power taken from it (1% less a point,
+  // his call Oct 3); never under the enemy's `outputFloor` together with its slowed attacks (attackRate).
+  output(source, type, opts = {}) {
+    let out = Math.max(0, 1 + (source.stats.damageDealt ?? 0) + source.mod('damageDealt'));
+    if (type === 'spirit' && source.team === 'enemy') out *= Math.max(0, 1 + source.mod('spirit') / 100);
+    const floor = source.stats.outputFloor;
+    return floor ? Math.max(out, opts.attack ? floor / attackRate(source) : floor) : out;
+  }
 
   addStatus(unit, status) {
     if (!status.ccApplied && unit.team === 'hero' && status.debuff && status.tags?.some((t) => CC_TAGS.includes(t)) && this.by?.unit && this.by.unit !== unit) return this.cc(unit, status);
@@ -207,6 +257,13 @@ class Fight {
     return true;
   }
 
+  // Health a hero's own ability or item cost it (pure, not through damage()): counted on the breakdown's Enemy Damage page.
+  selfDamage(unit, what, amount) {
+    if (!(amount > 0)) return;
+    const m = this.self.get(unit) ?? this.self.set(unit, new Map()).get(unit);
+    m.set(what, (m.get(what) || 0) + amount);
+  }
+
   // A debuff that isn't crowd control (a burn, a slow, a heal cut from a Haunt's special): debuff resist shortens it, a cleanse removes it.
   debuff(unit, status) {
     if (status.dot && this.enemyMove) status = { ...status, dot: { ...status.dot, move: this.enemyMove } };
@@ -223,7 +280,10 @@ class Fight {
         if (payload.opts.dodged) return;
       }
       for (const a of hero.abilities) view.as(a, () => a.on(event, view, payload));
-      for (const it of hero.items) if (event !== 'attacked' || !it.active) view.as(it, () => it.on(event, view, payload));
+      for (const it of hero.items) {
+        if ((event === 'shot' || event === 'bulletHit') && hero.heldProcs?.has(it.name)) continue; // procs saved for a bigger shot (Paradox's Kinetic Carbine)
+        if (event !== 'attacked' || !it.active) view.as(it, () => it.on(event, view, payload));
+      }
     }
   }
 
@@ -233,32 +293,34 @@ class Fight {
   // opts.attack / opts.blast mark an enemy's hit and blast (items may parry or soften them first: the 'attacked' hook), opts.ability is the ability
   // that dealt it (set by the engine while one is running).
   damage(source, target, amount, type = 'spirit', opts = {}) {
-    if (!target.alive || opts.dodged) return 0;
+    if (!target.alive || target.fled || opts.dodged || guarded(target) || target.safeUntil > this.time) return 0; // (a unit that fled the fight is out of it: the Rift; safeUntil: Plot Armor's moment)
+    if (target.stats.parry && source.team === 'hero' && (type === 'bullet' || type === 'melee') && this.rng() < target.stats.parry) return 0; // Adaptive's parry
     if (source.team === 'hero' && target.team === 'hero' && source !== target) amount *= DUEL.damage; // a duel
     if (source.team === 'hero' && this.casting) opts.ability ??= this.casting;
     // the wiki (Close Quarters' page, Oct 28): an ability that scales with melee damage gets 50% of the Weapon Damage bonus (Bebop's Uppercut, Yamato's Flying Slash ...)
     if (type === 'melee' && source.team === 'hero' && this.by?.meleeScaled) amount *= Math.max(0, 1 + 0.5 * this.weaponBonus(source, target));
-    if (opts.attack || opts.blast || opts.special || opts.melee) { // defensive items hear rival melee too; only an `attack` can be parried
-      const hit = { source, target, amount, type, opts };
-      this.emit('attacked', hit);
-      amount = hit.amount;
-      if (amount <= 0) return 0;
-    }
     // a dash-jump's dodge (MOVE.dodge) takes the next attack: both halves of a mixed one (they share opts), never a hit that can't miss
     // an enemy's `accuracy` (0-1, /descend's, his ask Oct 29: "hit harder and more accurately") is the share of its hits a dodge or evasion would have taken that land anyway
     const sure = !opts.unavoidable && source.team === 'enemy' && source.stats.accuracy > 0 && this.rng() < source.stats.accuracy;
     if ((opts.attack || opts.special) && !opts.unavoidable && !sure && this.dashDodge(target)) { opts.dodged = true; return 0; }
     if (type === 'bullet' && !opts.unavoidable && !sure && !opts.noEvade && this.rng() < target.mod('evasion')) return 0; // unavoidable (Armor Piercer), noEvade (Lucky Shot's bonus)
+    if (opts.attack || opts.blast || opts.special || opts.melee) { // defensive items hear rival melee too; only an `attack` can be parried; after the dodges (Nov 2: Shiv's Bloodletting deferred hits that were then dodged)
+      const hit = { source, target, amount, type, opts };
+      this.emit('attacked', hit);
+      amount = hit.amount;
+      if (amount <= 0) return 0;
+    }
     const npcOnly = source.team === 'hero' ? target.stats.npcBulletResist ?? 0 : 0; // Monster Rounds' "vs. NPCs" resist: taken back out of the stack against a rival hero
     const bulletResist = npcOnly ? 1 - (1 - target.stats.bulletResist) / (1 - npcOnly) : target.stats.bulletResist;
-    const resist = type === 'true' ? 0 : type === 'melee' ? stackResist(target.stats.meleeResist ?? 0, target.mod('meleeResist')) : type === 'bullet' ? (opts.ignoreBulletResist ? 0 : stackResist(bulletResist, target.mod('bulletResist')))
-      : opts.ignoreSpiritResist ? 0 : stackResist(target.stats.spiritResist, target.mod('spiritResist')); // temporary resists and shreds multiply with the unit's own too
-    let incoming = amount * Math.max(0, 1 + (source.stats.damageDealt ?? 0) + source.mod('damageDealt')) * (1 - clamp(resist, -1, 0.9)) * Math.max(0, 1 + target.mod('damageTaken'));
+    const resist = type === 'true' ? 0 : type === 'melee' ? target.resistNow('meleeResist') : type === 'bullet' ? (opts.ignoreBulletResist ? 0 : target.resistNow('bulletResist', bulletResist))
+      : opts.ignoreSpiritResist ? 0 : target.resistNow('spiritResist'); // temporary resists and shreds multiply with the unit's own too
+    let incoming = amount * this.output(source, type, opts) * (1 - clamp(resist, -1, 0.9)) * Math.max(0, 1 + target.mod('damageTaken'));
+    if (source.lesson?.kinds.includes(target.kind)) incoming *= 1 + source.lesson.deal; // Dynamo's Lesson (Descend): the kind the hero studied takes more from it and deals less to it
+    else if (target.lesson?.kinds.includes(source.kind)) incoming *= 1 - target.lesson.take;
     if (type === 'bullet') incoming *= Math.max(0, 1 + target.mod('bulletTaken')); // Metal Skin
     if (type === 'melee') incoming *= Math.max(0, 1 + target.mod('meleeTaken')); // melee resist taken off an enemy (Apollo's Riposte)
     if (type === 'spirit') {
       incoming *= (1 + target.mod('spiritAmp')) * Math.max(0, 1 + target.mod('spiritTaken')) * Math.max(0, 1 + source.mod('spiritDealt')); // e.g. Escalating Exposure; spiritDealt: the source's own spirit damage boost (Celeste's Radiant Daggers)
-      if (source.team === 'enemy') incoming *= Math.max(0, 1 + source.mod('spirit') / 100); // spirit power taken from an enemy: 1% less of its spirit damage a point (his call, Oct 3)
     }
     const eased = amount > 0 ? Math.min(1, incoming / amount) : 1; // what the target's resists left of the hit
     for (const s of target.statuses) { // barriers soak damage first
@@ -269,9 +331,16 @@ class Fight {
       incoming -= soaked;
     }
     let dealt = Math.min(target.health, incoming);
-    if (dealt >= target.health && (opts.nonLethal || target.abilities.some((a) => a.preventDeath?.(this)) || target.items.some((it) => it.preventDeath?.(this)))) dealt = Math.max(0, target.health - 1); // a hit that can't kill (Danny's own), Victor's Shocking Reanimation (the wiki), then Cheat Death
+    if (dealt >= target.health && (opts.nonLethal || (target.fleeAt && !(target.rejuvs > 0)) || target.abilities.some((a) => a.preventDeath?.(this)) || target.items.some((it) => it.preventDeath?.(this)))) dealt = Math.max(0, target.health - 1); // a hit that can't kill (Danny's own; the Rift, where the hero flees instead), Victor's Shocking Reanimation (the wiki), then Cheat Death
+    else if (dealt >= target.health && this.plotArmor(target)) { dealt = 0; target.health = Math.max(target.health, target.stats.maxHealth * PLOT_ARMOR.health); } // then Paige's Plot Armor: the hit is turned aside and the hero is back at a quarter of its health (his call, Nov 7; it was 1 health)
     target.health -= dealt;
     if (dealt > 0) target.lastHit = this.time;
+    if (dealt > 0 && target.stats.adaptive && source.team === 'hero') (target.adapted ??= {})[type] = (target.adapted[type] || 0) + dealt;
+    if (!target.alive && target.stats.undying && !target.undied) { // Undying (/descend): cheats death once, back at a share of its health
+      target.undied = true;
+      target.health = target.stats.maxHealth * target.stats.undying;
+      this.log.push({ t: +this.time.toFixed(1), who: target.name, what: 'Undying', enemy: true, special: true });
+    }
     if (!target.alive && target.rejuvs > 0) this.rejuvenate(target);
     this.dealt.set(source, (this.dealt.get(source) || 0) + dealt);
     if (dealt > 0 && this.views.has(source)) { // a hero's damage, by what dealt it
@@ -279,7 +348,7 @@ class Fight {
       if (!this.breakdown.has(source)) this.breakdown.set(source, new Map());
       const mine = this.breakdown.get(source);
       mine.set(what, (mine.get(what) || 0) + dealt);
-      const parts = this.madeOfParts(source, target, type, dealt);
+      const parts = this.madeOfParts(source, target, type, dealt, opts);
       if (parts) {
         if (!this.madeOf.has(source)) this.madeOf.set(source, new Map());
         const sums = this.madeOf.get(source).get(what) ?? this.madeOf.get(source).set(what, new Map()).get(what);
@@ -324,6 +393,17 @@ class Fight {
     return dealt;
   }
 
+  // Paige's Plot Armor (/descend, his approval Nov 6): the next hit that would kill the hero is turned aside and leaves it at PLOT_ARMOR.health of its health instead, once a run (`plotArmor` on the unit).
+  // Nov 7, his calls: it waits until the hero has no Rejuv left (a Rejuv takes the death first), then nothing hurts the hero for PLOT_ARMOR.safe s.
+  plotArmor(unit) {
+    if (!unit.plotArmor || unit.rejuvs > 0) return false;
+    unit.plotArmor = false;
+    unit.plotUsed = true;
+    unit.safeUntil = this.time + PLOT_ARMOR.safe;
+    this.log.push({ t: +this.time.toFixed(1), who: unit.name, what: 'Plot Armor' });
+    return true;
+  }
+
   // A Rejuv (the Mid-Boss's gift): a hero who dies comes back at full health after 3 s (can't act or be hurt meanwhile); Eternal Gift shortens it.
   rejuvenate(unit) {
     unit.rejuvs -= 1;
@@ -336,7 +416,7 @@ class Fight {
   // What one hit of a hero's was made of, for the Damage Breakdown: the Gun's bonus weapon damage by item (each adds its share of the bonus on top
   // of the base), and an ability's or item's spirit-scaled part by where the spirit power came from (items, levels, buffs, what a status gave). An
   // estimate: the spirit share is read off the last damage number the ability or item worked out (`sShare`). Returns Map(name -> damage) or null.
-  madeOfParts(hero, target, type, dealt) {
+  madeOfParts(hero, target, type, dealt, opts = {}) {
     const parts = new Map();
     const add = (name, v) => { if (v > 1e-9) parts.set(name, (parts.get(name) ?? 0) + v); };
     const s = hero.stats;
@@ -348,6 +428,7 @@ class Fight {
       for (const st of hero.statuses) add(statusName(st), st.mods?.weaponDamage);
       for (const it of hero.items) add(it.name, it.weaponBonus(this, target));
       parts.set('Base', 1);
+      if (opts.headshot) { let sum = 0; for (const v of parts.values()) sum += v; parts.set('Headshots', sum * s.headshotBonus); } // the bonus on top of everything else
     } else if (type === 'spirit' && this.by?.sShare > 0) {
       const by = this.by;
       const mult = s.spiritMult ?? 1;
@@ -429,12 +510,17 @@ class Fight {
   // Weapon damage of one shot at a target's distance (linear falloff between the wiki's start and end range, which items with attack range push out).
   shotDamage(hero, target) {
     const s = hero.stats;
+    return (s.bulletDamage + hero.mod('bulletDamage')) * s.pellets * (1 + this.weaponBonus(hero, target)) * this.falloffScale(hero, target);
+  }
+
+  // The share of a shot's damage that survives the distance to `target` (1 up close). Headshot Booster's bonus is scaled by it too (the wiki).
+  falloffScale(hero, target) {
+    const s = hero.stats;
     const f = s.falloff;
     const far = 1 + (s.attackRange ?? 0) + overflow(hero) * PRECISION.range; // + overflowing Precision
     const d = this.distance(hero, target);
-    const scale = d <= f.start * far ? f.startScale
+    return d <= f.start * far ? f.startScale
       : d >= f.end * far ? f.endScale : f.startScale + (f.endScale - f.startScale) * ((d - f.start * far) / ((f.end - f.start) * far));
-    return (s.bulletDamage + hero.mod('bulletDamage')) * s.pellets * (1 + this.weaponBonus(hero, target)) * scale;
   }
 
   // The hero's bonus Weapon Damage against `target` (0.2 = +20%): its stat, buffs, and items' distance, target health, build-up ... bonuses.
@@ -443,21 +529,27 @@ class Fight {
     return hero.stats.weaponDamageMult - 1 - npcOnly + hero.mod('weaponDamage') + hero.items.reduce((sum, it) => sum + it.weaponBonus(this, target), 0);
   }
 
-  fireWeapon(hero, target) {
+  // `front` is the enemy in front; while a status carries `spread` (Bullet Dance: its radius in metres) every shot goes to any enemy that close to the
+  // front one (the wiki: 1 target per shot), and `perfect` (the same status) means a shot at a hero can't miss.
+  fireWeapon(hero, front) {
     const w = hero.weapon;
+    const dance = hero.statuses.find((s) => s.spread);
     if (w.reloadLeft > 0) {
       w.reloadLeft -= DT * (1 + hero.mod('reloadSpeed'));
       if (w.reloadLeft <= 0) { w.clip = hero.stats.clip; this.emit('reloadEnd', { source: hero }); }
       return;
     }
     if (this.time < hero.busyUntil) return; // mid-swing
-    w.charge += hero.stats.fireRate * (1 + hero.mod('fireRate')) * (1 - slowed(hero)) * DT;
+    w.charge += hero.fireRateNow() * (1 - slowed(hero)) * DT;
     const infinite = hero.has('infiniteClip');
-    while (w.charge >= 1 && (w.clip > 0 || infinite) && target.alive) {
+    while (w.charge >= 1 && (w.clip > 0 || infinite) && front.alive) {
       w.charge -= 1;
       if (!infinite) w.clip -= 1;
+      const pool = dance ? this.near(dance.spread).filter((e) => e.alive) : [];
+      const target = pool.length ? pool[Math.floor(this.rng() * pool.length)] : front;
+      this.emit('shot', { source: hero, target }); // every bullet fired, hit or miss (Restorative Shot's cooldown starts here)
       const pellets = hero.stats.pellets;
-      if ((pellets === 1 || target.team === 'hero') && this.rng() < missChance(hero, target)) continue; // a missed shot (MISS)
+      if ((pellets === 1 || target.team === 'hero') && !hero.has('perfect') && this.rng() < missChance(hero, target)) continue; // a missed shot (MISS)
       const opts = target.team === 'hero' ? { attack: true } : {}; // a shot at a hero is an attack it may parry or soften (a duel)
       if (pellets > 1) { // a shotgun: how many of its pellets land
         const miss = 1 - pelletChance(this.distance(hero, target), hero.stat('precision'));
@@ -467,7 +559,11 @@ class Fight {
         opts.landed = landed / pellets; // build-up items scale with it (items.js)
       }
       for (const it of hero.items) for (const [k, v] of Object.entries(it.shotOpts(this, target))) opts[k] ||= v; // one item's "no" never undoes another's "yes"
-      this.damage(hero, target, this.shotDamage(hero, target) * (opts.landed ?? 1), 'bullet', opts);
+      opts.headshot = this.rng() < headshotChance(hero); // ponytail: one roll per shot, a shotgun's pellets share it (same average); per pellet if it matters
+      const shot = this.shotDamage(hero, target) * (opts.landed ?? 1) * (opts.headshot ? 1 + hero.stats.headshotBonus : 1);
+      const dealt = this.damage(hero, target, shot, 'bullet', opts);
+      // Sinclair's Spectral Assistant, lent in /descend (his pick, Nov 6): every shot that lands is followed by one at `echo` of its damage
+      if (dealt > 0 && hero.echo && target.alive) this.as(ECHO, () => this.damage(hero, target, shot * hero.echo, 'bullet', { events: false }));
     }
     if (w.clip <= 0 && !infinite) this.reload(hero);
   }
@@ -498,7 +594,7 @@ class Fight {
     // Rival heavy melees can be parried. This is intentionally only for duels:
     // NPCs have their own Rebuttal behaviour and never choose a parry.
     if (kind === 'heavy' && hero.team === 'hero' && target.team === 'hero' && this.time >= (target.parryAt ?? 0)
-      && !target.cantAct && !target.has('stun') && !target.has('blind')) {
+      && !target.cantAct && !target.has('stun') && !target.has('blind') && !target.stats.noParry) { // noParry: the Soul Urn's carrier can't parry (the wiki)
       const chance = Math.min(PRECISION.maxParry, (target.items.some((it) => it.name === 'Rebuttal') ? DUEL.parryWithRebuttal : DUEL.parryChance) + (target.stat('precision') - PRECISION.base) / 100 + overflow(target) * PRECISION.parry); // + Precision (his ask, Oct 28), more past full (Oct 29)
       if (this.rng() < chance) {
         opts.dodged = true;
@@ -561,11 +657,23 @@ class Fight {
     const due = this.queue.filter((q) => q.t <= this.time); // taken off the queue first: what a delayed effect schedules for "now" runs next step instead of being lost
     this.queue = this.queue.filter((q) => q.t > this.time);
     for (const q of due) q.fn();
-    const units = [...this.heroes, ...this.enemies];
+    const units = [...this.heroes, ...this.enemies, ...this.minions];
     for (const u of units) u.statuses = u.statuses.filter((s) => s.until > this.time);
     for (const u of units.filter((u) => u.alive)) {
+      u.shatter?.(); // a hero's Fragile Items break once it is nearly dead (hero.js)
       if (u.team === 'hero') u.healPool = Math.min(u.stats.maxHealth * HEAL_POOL, u.healPool + u.stats.maxHealth * HEAL_RATE * DT);
       this.heal(u, (u.stats.healthRegen || 0) * DT, 'constant');
+      if (u.stats.adaptive && this.time >= (u.adaptAt ??= this.time + ADAPT.every)) { // Adaptive: resist against what has been hurting it
+        u.adaptAt = this.time + ADAPT.every;
+        const [type] = Object.entries(u.adapted ?? {}).filter(([k]) => ['bullet', 'spirit', 'melee'].includes(k)).sort((a, b) => b[1] - a[1])[0] ?? [];
+        u.adapted = {};
+        if (type) {
+          const way = Math.floor(this.rng() * 3);
+          if (way === 0) { const key = `${type}Resist`; u.stats[key] = Math.min(ADAPT.resist, (u.stats[key] ?? 0) + ADAPT.step); }
+          else if (way === 1) u.stats.parry = Math.min(ADAPT.parry, (u.stats.parry ?? 0) + ADAPT.step);
+          else u.stats.damageDealt = Math.min(ADAPT.damage, (u.stats.damageDealt ?? 0) + ADAPT.step);
+        }
+      }
       if (u.stats.oocRegen && this.time - u.lastHit > OUT_OF_COMBAT) this.heal(u, u.stats.oocRegen * DT, 'constant', 'Out-of-Combat Regen');
       for (const st of u.statuses) if (st.regen) this.heal(u, st.regen * DT, 'regen', st.by ?? null); // heals over time (Healing Nova, Mystic Regeneration ...), counted under what started them
       for (const st of u.statuses) { // damage over time carried by a status (a Haunt's fire, spores or puddle on the hero): gone with the status
@@ -576,7 +684,7 @@ class Fight {
       }
     }
     for (const [hero, view] of this.views) {
-      if (!hero.alive) continue;
+      if (!hero.alive || hero.fled) continue;
       for (const a of hero.abilities) { a.tickCooldown(DT); view.running(a, () => a.tick(view, DT)); }
       for (const it of hero.items) {
         it.cdLeft = Math.max(0, it.cdLeft - DT);
@@ -594,34 +702,69 @@ class Fight {
       }
       if (!hero.has('immobilize')) view.move(hero);
       const target = view.foes[0];
-      if (target && view.wantMelee(hero, target)) view.melee(hero, target);
-      if (target && hero.alive && !hero.has('disarm')) view.fireWeapon(hero, target);
-      if (!hero.has('silence') && view.time >= hero.lockedUntil) for (const a of [...hero.abilities].reverse()) if (a.ready() && a.want(view)) view.cast(a);
+      const hiding = hero.statuses.some((s) => s.hold); // Smoke Bomb with nobody able to see her: no gun, no melee (daggers and items still go)
+      if (target && !hiding && view.wantMelee(hero, target)) view.melee(hero, target);
+      if (target && !hiding && hero.alive && (!hero.has('disarm') || hero.has('perfect'))) view.fireWeapon(hero, target); // Bullet Dance isn't affected by Disarm (the wiki)
+      if (!hero.has('silence')) for (const a of [...hero.abilities].reverse()) if (view.time >= hero.lockedUntil && a.ready() && a.want(view)) view.cast(a); // checked per cast: a lasting ultimate cast this step holds the rest too
       if (!hero.has('noItems')) for (const it of hero.items) if (it.active && it.ready() && it.want(view)) view.useItem(it); // noItems: Cursed Relic
     }
-    for (const enemy of this.enemies.filter((e) => e.team === 'enemy' && e.alive && !e.has('sleep') && !e.has('stun') && !e.has('blind'))) { // blind: it can't see anyone to attack (Drifter's Eternal Night; not a stun, so a boss doesn't shrug it off)
-      const target = this.heroes.find((h) => h.alive && h.targetable);
-      if (!target) continue;
+    for (const m of this.minions.filter((u) => u.alive && !u.has('sleep') && !u.has('stun'))) { // a minion hits the front enemy once a second
+      const target = this.foes[0];
+      if (!target) break;
+      m.swing = (m.swing ?? 0) + DT * attackRate(m);
+      if (m.swing < ATTACK_EVERY - 1e-9) continue;
+      m.swing -= ATTACK_EVERY;
+      this.damage(m, target, m.stats.dps * ATTACK_EVERY, m.stats.damageType ?? 'bullet');
+    }
+    // a rival with `flee` ({ at, chance }: the Rift's, his ask Nov 6) may run once it drops to `at` of its health: one roll, then it is out of the fight
+    for (const e of this.enemies) {
+      if (!e.flee || e.fled || e.fleeRolled || !e.alive || e.health > e.flee.at * e.stats.maxHealth) continue;
+      e.fleeRolled = true;
+      if (this.rng() >= e.flee.chance) continue;
+      e.fled = true;
+      e.statuses = [];
+      this.log.push({ t: +this.time.toFixed(1), who: e.name, what: 'fled', fled: true });
+    }
+    const minions = this.minions.filter((m) => m.alive);
+    for (const enemy of this.enemies.filter((e) => e.team === 'enemy' && e.alive && !e.has('sleep') && !e.has('stun') && !e.has('blind'))) {
+      // a summoner calls in a wave every so often (the Patron's troopers, his call Oct 29), up to `cap` standing; a silenced one waits
+      const summon = enemy.stats.summon;
+      if (summon && !enemy.has('silence') && this.time >= (enemy.summonAt ??= this.time + summon.first) - 1e-9) {
+        enemy.summonAt = this.time + summon.every;
+        const standing = (enemy.summons ?? []).filter((u) => u.alive).length;
+        const wave = summon.wave.slice(0, Math.max(0, summon.cap - standing));
+        if (wave.length) this.summon(enemy, wave);
+      } // blind: it can't see anyone to attack (Drifter's Eternal Night; not a stun, so a boss doesn't shrug it off)
+      const seen = (h) => h.targetable || (h.has('invisible') && !h.has('void') && !h.has('untargetable') && h.statuses.some((s) => s.spot >= (enemy.stats.distance ?? 15))); // Smoke Bomb: close enemies see through it
+      // With an ally on the hero's side (/descend's recruited rival, Nov 4) each enemy picks one of them and keeps on it; alone, the hero (no dice used,
+      // so a solo fight plays exactly as before).
+      const seenHeroes = this.heroes.filter((h) => h.alive && seen(h));
+      // its plain attacks may go to a minion too (they draw fire); its specials, blasts, controls and debuffs are for heroes
+      const pool = minions.length ? [...seenHeroes, ...minions.filter((m) => m.alive)] : seenHeroes;
+      const aimed = pool.length < 2 ? pool[0] : pool.includes(enemy.aim) ? enemy.aim : (enemy.aim = pool[Math.floor(this.rng() * pool.length)]);
+      const target = aimed?.team === 'minion' ? (seenHeroes.includes(enemy.heroAim) ? enemy.heroAim : (enemy.heroAim = seenHeroes[0])) : aimed;
+      if (!aimed) continue;
       if (!enemy.has('disarm')) {
-        enemy.swing = (enemy.swing ?? 0) + DT * (1 - slowed(enemy));
+        enemy.swing = (enemy.swing ?? 0) + DT * attackRate(enemy);
         if (enemy.swing >= ATTACK_EVERY - 1e-9) {
           enemy.swing -= ATTACK_EVERY;
-          const hit = (enemy.stats.dps + (enemy.stats.dpsMaxHealthPct || 0) * target.stats.maxHealth) * ATTACK_EVERY;
+          const hit = (enemy.stats.dps + (enemy.stats.dpsMaxHealthPct || 0) * aimed.stats.maxHealth) * ATTACK_EVERY;
           // inside its melee range (the game data's MeleeAttemptRange; the hero gets that close by meleeing it) it swings instead: the same hit, as melee
-          const type = this.distance(target, enemy) <= (enemy.stats.meleeRange ?? 0) ? 'melee' : enemy.stats.damageType;
+          const type = this.distance(aimed, enemy) <= (enemy.stats.meleeRange ?? 0) ? 'melee' : enemy.stats.damageType;
           if (type === 'mixed') { // half weapon damage, half spirit damage (the Patron): each half meets its own resist
             const opts = { attack: true }; // one attack: a warp dodges both halves
-            this.damage(enemy, target, hit / 2, 'bullet', opts);
-            this.damage(enemy, target, hit / 2, 'spirit', opts);
-          } else this.damage(enemy, target, hit, type, { attack: true });
+            this.damage(enemy, aimed, hit / 2, 'bullet', opts);
+            this.damage(enemy, aimed, hit / 2, 'spirit', opts);
+          } else this.damage(enemy, aimed, hit, type, { attack: true });
           // a Haunt's special attack (haunts.js): a chance each second, on top of the hit; a silenced one can't
           const special = enemy.stats.special;
-          if (special?.use && target.alive && !enemy.has('silence') && this.rng() < special.chance) {
+          if (special?.use && target?.alive && !enemy.has('silence') && this.rng() < special.chance) {
             this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: special.name, enemy: true, special: true });
             this.asMove(special.name, () => special.use(this, enemy, target));
           }
         }
       }
+      if (!target) continue; // only a minion in reach: nothing else of its goes off
       // a melee slam every so often on top of the hits (the Walker's); a disarm holds it. Sized against its damage per second, so hardness, growth and Descend follow it.
       const slam = enemy.stats.slam;
       if (slam && target.alive && !enemy.has('disarm') && this.time >= (enemy.slamAt ??= this.time + slam.first) - 1e-9) {
@@ -649,7 +792,7 @@ class Fight {
         control.nextAt ??= this.time + control.every;
         if (!target.alive || enemy.has('silence') || this.time < control.nextAt) continue;
         control.nextAt = this.time + control.every;
-        if (this.cc(target, { id: `enemy:${control.id}`, duration: control.duration, tags: control.tags })) {
+        if (this.cc(target, { id: `enemy:${control.id}`, duration: control.duration, tags: control.tags, wakeOnDamage: control.wake })) {
           this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: control.verb, enemy: true, cc: true });
         }
       }
@@ -663,12 +806,34 @@ class Fight {
         this.asMove(d.name, () => {
           if (d.hit) this.damage(enemy, target, enemy.stats.dps * d.hit, d.type ?? 'bullet', opts);
           if (!target.alive || opts.dodged) return;
-          this.debuff(target, { id: `${d.id}:${this.enemies.indexOf(enemy)}`, duration: d.duration, mods: d.mods ?? {},
-            ...(d.dot ? { dot: { source: enemy, perSecond: enemy.stats.dps * d.dot, type: 'spirit', every: 0.5, next: this.time + 0.5 } } : {}) });
+          const id = `${d.id}:${this.enemies.indexOf(enemy)}`;
+          const mods = { ...(d.mods ?? {}) };
+          for (const key of ['slow', 'fireRate']) { // a pile of enemies can't take more than DEBUFF_CAP of either
+            if (!mods[key]) continue;
+            const others = target.statuses.reduce((n, s) => n + (s.debuff && s.id !== id ? Math.abs(s.mods?.[key] || 0) : 0), 0);
+            mods[key] = Math.sign(mods[key]) * Math.min(Math.abs(mods[key]), Math.max(0, DEBUFF_CAP - others));
+          }
+          this.debuff(target, { id, duration: d.duration, mods,
+            ...(d.dot || d.dotMax ? { dot: { source: enemy, perSecond: d.dotMax ? target.stats.maxHealth * d.dotMax : enemy.stats.dps * d.dot, type: d.dotType ?? 'spirit', every: 0.5, next: this.time + 0.5 } } : {}) });
         });
         this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: d.name, enemy: true, special: !opts.dodged, dodged: !!opts.dodged, note: d.note });
       }
     }
+  }
+
+  // A summoner's wave joins the fight: each one a share of the summoner's own health and damage (`health` / `dps` in the wave), so whatever sized the
+  // summoner (hardness, clears, /descend's depth and ascension, the Patron's Favor) sizes them. They stand in front of it, numbered by the fight.
+  summon(by, wave) {
+    by.summons ??= [];
+    const standing = by.summons.filter((u) => u.alive).length;
+    wave.forEach((w, i) => {
+      const u = enemy(w.name, { maxHealth: by.stats.maxHealth * w.health, dps: by.stats.dps * w.dps, distance: w.distance ?? 15, damageType: w.damageType ?? 'bullet', bulletResist: w.resist ?? 0, spiritResist: w.resist ?? 0 });
+      Object.assign(u.stats, { accuracy: by.stats.accuracy, outputFloor: by.stats.outputFloor }, w.special ? { special: w.special } : {});
+      Object.assign(u, { summoner: by, offset: (by.offset ?? 0) + SPREAD * (standing + i), label: `${w.name} ${(this.summoned = (this.summoned ?? 0) + 1)}` });
+      by.summons.push(u);
+      this.enemies.push(u);
+    });
+    this.log.push({ t: +this.time.toFixed(1), who: by.name, what: wave.length === 1 ? wave[0].name : `${wave.length} Troopers`, summon: true, enemy: true });
   }
 
   // An active item fires (its cooldown starts, other items and abilities hear about it, then it does its thing).
@@ -695,6 +860,7 @@ class Fight {
 // blast = { every (s), damage, maxHealthPct, curse (s the hero can't act), type = 'true', what = 'curse' }: the Patron's cursing blast, the Walker's stomp,
 // souls = what it is worth on its own (Cultist Sacrifice). A Haunt's `special` (haunts.js) is put on its stats by play.js.
 // What put a status on: the item (ids are "<item>:<what>" or "item:<item>"), else the ability that cast it, else its id.
+const guarded = (e) => !!e.summons?.some((u) => u.alive); // a summoner can't be hurt while one of its summons stands
 const statusName = (st) => (st.id.startsWith('item:') ? st.id.slice(5) : st.id.includes(':') ? st.id.split(':')[0] : st.from?.name ?? st.id);
 const capital = (text) => text[0].toUpperCase() + text.slice(1);
 const enemy = (name, { maxHealth = 1000, dps = 20, bulletResist = 0, spiritResist = 0, distance = 15, healthRegen = 0, dpsMaxHealthPct = 0, damageType = 'bullet', meleeRange = 0, slam = null, blast = null, controls = [], debuffs = [], souls = 0 } = {}) =>
@@ -712,6 +878,10 @@ function enemyDamage(fights) {
       const by = [...moves].map(([name, dealt]) => ({ name, dealt: Math.round(dealt) })).filter((m) => m.dealt > 0).sort((a, b) => b.dealt - a.dealt);
       if (by.length) out.push({ name: twin ? `${e.name} ${i + 1}` : e.name, dealt: by.reduce((s, m) => s + m.dealt, 0), by });
     });
+    for (const h of f.heroes) { // what the hero's own abilities cost it (Victor's Aura of Suffering)
+      const by = [...f.self.get(h) ?? []].map(([name, dealt]) => ({ name, dealt: Math.round(dealt) })).filter((m) => m.dealt > 0).sort((a, b) => b.dealt - a.dealt);
+      if (by.length) out.push({ name: `${h.name} (Self)`, self: true, dealt: by.reduce((s, m) => s + m.dealt, 0), by });
+    }
   }
   return out.sort((a, b) => b.dealt - a.dealt);
 }
@@ -746,4 +916,4 @@ function damageBreakdown(hero, fights) {
     .filter((d) => d.dealt > 0).sort((a, b) => b.dealt - a.dealt);
 }
 
-module.exports = { damageBreakdown, enemyDamage, healBreakdown, PELLETS, PRECISION, overflow, MISS, missChance, headshotChance, pelletChance, DUEL, DT, Unit, Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC, BULLET_LIFESTEAL_VS_NPC, SPIRIT_LIFESTEAL_VS_NPC, SPREAD, DODGE, dodgeChance, MELEE, HELPLESS };
+module.exports = { PLOT_ARMOR, guarded,damageBreakdown, enemyDamage, healBreakdown, PELLETS, PRECISION, overflow, MISS, missChance, headshotChance, isHeadshot, HEADSHOT_BONUS, pelletChance, DUEL, DT, Unit, Fight, enemy, HEAL_RATE, HEAL_POOL, LIFESTEAL_VS_NPC, BULLET_LIFESTEAL_VS_NPC, SPIRIT_LIFESTEAL_VS_NPC, SPREAD, DODGE, dodgeChance, MELEE, HELPLESS };

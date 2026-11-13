@@ -21,12 +21,14 @@ const LABELS = {
   'soul-bag': 'Soul Bag',
   lockle: 'Lockle',
   quest: 'Quest',
+  jackpot: 'Weekly Jackpot', // Tickets bought (-) and the pot won (+), economy/jackpot.js
   farm: 'Hero Farming',
   'farm-shop': 'Hero Farming item shop',
   'farm-move': 'Moved to hero souls', // Oct 11, once: the server balance went into Haze's own souls (economy.js moveToHeroes)
   'shop:card': 'Hero card',
   'shop:boost': 'Soul Boost',
   'shop:rejuv': 'Rejuv',
+  'shop:color': 'Color Role',
   hideout: 'Hideout',
   staff: 'Staff edit',
   other: 'Other',

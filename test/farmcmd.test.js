@@ -1,7 +1,7 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 process.env.FARM_FRAME_MS = '0';
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { getUser } = require('../src/utils/economy/xp');
 const { getFarmUser, chooseHero, play, simulate, cooldownLeft, updateFarmUser: changeRecord } = require('../src/utils/farm/play');
@@ -315,7 +315,7 @@ test('more heroes: unlock once with a token, switch any time, and each hero keep
   // locked and no token: Unlock is greyed out, and pressing it anyway does nothing
   const locked = (await press('Hero select', `farm_hero:${id}`, ['Abrams'])).log.at(-1)[1];
   checkLimits(locked, 'unlock preview');
-  assert.deepStrictEqual(labels(locked), [['Unlock (1 Token)', true], ['Back', false]]);
+  assert.deepStrictEqual(labels(locked), [['Unlock Hero', true], ['Back', false]]);
   assert.strictEqual((await unlockHero(id, 'Abrams')).error, 'token');
   assert.strictEqual((await switchHero(id, 'Abrams')).error, 'locked');
   assert.strictEqual((await unlockHero(id, 'Nobody')).error, 'unknown', 'not on the roster');
@@ -392,12 +392,13 @@ test('a camp screen: the triangle is the author icon, a Haunt is in the corner, 
   assert.strictEqual(j.description, 'Three Small Haunts Guard This Camp.');
   assert.strictEqual(j.footer.text, 'If Haze Dies, Nothing Is Paid and the Cooldown Still Starts.');
   const value = (name) => j.fields.find((f) => f.name === name).value;
-  assert.deepStrictEqual([value('Enemies'), value('Health'), value('Cooldown'), value('Grown Stronger')], ['3 Small Haunts', '129 Each', 'Every Hour', '0%  (0 / 10 Clears)']);
+  assert.deepStrictEqual([value('Enemies'), value('Health'), value('Cooldown'), value('Grown Stronger')], ['3 Small Haunts', '142 Each', 'Every Hour', '0%  (0 / 10 Clears)']);
   const sendId = view.components.at(-2).toJSON().components[0].custom_id;
   assert.strictEqual(sendId, `farm_send:${id}:small-camp:gutter_ghoul`);
   const sent = fake(id, sendId);
   await route('Send button').execute(sent);
-  assert.match(sent.log.at(-1)[1].files.at(-1).source, /gutter_ghoul_small\.png$/, 'the fight is against the Haunt the screen showed');
+  const pictures = sent.log.flatMap(([, p]) => p?.files ?? []).map((f) => String(f.source ?? f.attachment ?? ''));
+  assert.ok(pictures.some((f) => /gutter_ghoul_small\.png$/.test(f)), 'the fight is against the Haunt the screen showed'); // not the last message: a rival may follow the win
   const waiting = await views.targetView(member(id), 'small-camp', await getFarmUser(id));
   assert.match(waiting.embeds[0].toJSON().footer.text, /^Not Ready Yet: (1h 0m|\d+m) Left\. If Haze Dies/);
   const walker = (await views.targetView(member(id), 'walker', await getFarmUser(id))).embeds[0].toJSON();
@@ -515,8 +516,8 @@ test('waves: an endless run down a lane, every wave cleared pays, once a day per
   assert.deepStrictEqual([wavePay(1), wavesPay(0), wavesPay(2), WAVES.cooldown / 3600], [100, 0, 100 + wavePay(2), 24]);
   assert.ok(wavePay(5) > wavePay(4), 'later waves pay more');
   const names = (n) => WAVES.stages[n - 1].enemies().map((e) => e.name);
-  assert.deepStrictEqual(names(1), ['Trooper', 'Trooper', 'Trooper', 'Medic Trooper']);
-  assert.deepStrictEqual(names(11), ['Trooper', 'Trooper', 'Melee Trooper', 'Medic Trooper'], 'a melee trooper joins after wave 10');
+  assert.deepStrictEqual(names(1), ['Ranged Trooper', 'Ranged Trooper', 'Ranged Trooper', 'Medic Trooper']);
+  assert.deepStrictEqual(names(11), ['Ranged Trooper', 'Ranged Trooper', 'Melee Trooper', 'Medic Trooper'], 'a melee trooper joins after wave 10');
   assert.ok(WAVES.stages[4].enemies()[0].stats.maxHealth > WAVES.stages[3].enemies()[0].stats.maxHealth, 'each wave is stronger');
 
   // a stronger hero gets further, and is paid for exactly the waves it cleared
@@ -757,6 +758,8 @@ test('voice lines: a hero with lines says one of them, a hero without says nothi
   for (let i = 0; i < 200; i++) assert.doesNotMatch(views.voiceLine('Wraith'), /Spanish Harlem/, 'a camp or boss: no kill line about a hero, named or not');
   assert.strictEqual(views.voiceLine('Haze', 'Wraith', () => 0), `\n\n**Haze:** *"${haze.kills.heroes.Wraith[0]}"*`, 'a duel: a kill line about that hero');
   assert.strictEqual(views.voiceLine('Haze', 'Nobody', () => 0), `\n\n**Haze:** *"${haze.kills.any[0]}"*`, 'no lines about them: a generic kill line');
+  for (let i = 0; i < 50; i++) { const said = views.voiceLine('Haze', null, undefined, true); assert.ok(haze.kills.win.some((l) => said.includes(l)), `a cleared run: a Post-Game / Win MVP line, got ${said}`); }
+  for (let i = 0; i < 50; i++) { const said = views.voiceLine('Haze'); assert.ok([...haze.kills.streak, ...haze.kills.any].some((l) => said.includes(l)), `a won fight: a Killstreak or kill line, got ${said}`); }
   assert.strictEqual(views.voiceLine('Nobody'), '');
 });
 
@@ -806,4 +809,13 @@ test('View Enemy Build: target screens, the siege, a camp and a waiting rival ea
     const late = await ask(`farm_enemy:${id}:rival:${rival}`);
     assert.strictEqual(late.log.find(([k]) => k === 'editReply')[1].content, 'That rival has already left.');
   } finally { setCooldowns(true); }
+});
+
+test('/hero unlock opens the Unlock Hero screen; /hero view the hero screen; no hero yet, the first pick', async () => {
+  const hero = require('../src/commands/farm/hero');
+  const run = async (id, name) => { const i = fake(id, '', sub(name)); await hero.execute(i); return i.log.at(-1)[1].embeds[0].toJSON().title; };
+  assert.strictEqual(await run('hero-unlock-new', 'unlock'), 'Pick Your Hero');
+  await chooseHero('hero-unlock-1', 'Haze');
+  assert.strictEqual(await run('hero-unlock-1', 'unlock'), 'Unlock Hero');
+  assert.match(await run('hero-unlock-1', 'view'), /Haze/);
 });

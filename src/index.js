@@ -71,6 +71,8 @@ async function main() {
     ),
   );
 
+  // The bot's own emojis (assets/emojis) before logging in, so every startup lookup finds them. Not fatal: the server's emojis stand in.
+  await require('./utils/appEmojis').syncAppEmojis().catch((e) => console.error('[emojis] App emoji sync failed:', e.message));
   await client.login(process.env.DISCORD_TOKEN);
 
   const shutdown = async (signal) => {

@@ -163,6 +163,7 @@ async function syncImages(files, stamp, defer) {
       if (f.icon && png.length > MAX_ICON_BYTES) throw new Error(`the icon came out at ${Math.round(png.length / 1024)} KB, over Discord's 256 KB`);
       fs.mkdirSync(path.dirname(abs), { recursive: true });
       fs.writeFileSync(abs, png);
+      if (f.icon) { fs.mkdirSync(path.join(ASSETS, 'emojis'), { recursive: true }); fs.writeFileSync(path.join(ASSETS, 'emojis', `${f.slug}.png`), png); } // the bot's own emoji follows the icon (src/utils/appEmojis.js)
       if (f.icon && defer) pending.set(f.slug, { rel: f.rel, title: f.title, sha1: info.sha1, replace: !!rec?.sha1 && rec.sha1 !== info.sha1 });
       else stamp.files[f.rel] = { title: f.title, sha1: info.sha1 };
       refreshed.push(f.name);

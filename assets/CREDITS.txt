@@ -93,3 +93,12 @@ and Special Elite (Astigmatic), from Google Fonts (https://github.com/google/fon
 
 Corrupted item labels (assets/farm/corrupted.json): stat names, units and base values of every corruptible item, from the deadlock-api.com
 items API (https://api.deadlock-api.com/v1/assets/items/by-type/upgrade, unofficial), downloaded by the bot at startup and refreshed weekly. Deadlock is Valve's.
+
+Map icons (Nov 4): assets/farm/icons/teleporter.png = "Teleporter.png" and vault-camp.png = "MapSacrificeMachineIcon.png" from the Cursed Apple page,
+https://deadlock.wiki, game art by Valve. They, the power-ups (assets/farm/bridge) and the minimap shop icon are also the bot's emojis (assets/emojis).
+The Patrons (Nov 4, Descend picks one each run): assets/farm/icons/archmother.png, archmother-weak.png, hidden-king.png, hidden-king-weak.png = deadlock.wiki
+"Archmother.png", "Archmother weak.png", "Hidden King.png", "Hidden King weak.png", game art by Valve.
+assets/farm/icons/soul-urn.png = deadlock.wiki "Soul Urn.png" (Nov 4, Descend's Soul Urn room), game art by Valve.
+assets/farm/icons/trooper-amber.png, trooper-amber-melee.png and trooper-amber-medic.png (the Hidden King's troopers, Descend runs that fight him): cut out
+of a picture supplied by Zechariah (Nov 4, 2026; Deadlock art by Valve); two hidden spots (the mace grip, a piece of the banner pole) painted in.
+Descend's Rift (assets/farm/icons/unstable-rift.png): the wiki's "Unstable Rift.png" icon from deadlock.wiki (https://deadlock.wiki), game art by Valve.

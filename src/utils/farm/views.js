@@ -22,12 +22,14 @@ const { progress, pointsSpent, campMultiplier, TIER_COSTS, MAX_TIER, SLOTS, MAX_
 const { homeCard } = require('./homeCard');
 const { siegeCard } = require('./siegeCard');
 const { BUFFS, BRIDGE, buffText, dailyBuffs } = require('./buffs');
+const { rankOf, rankText, BONUS } = require('./rebirth');
 const { MAX_REJUVS, cooldownSeconds, cooldownLeft, hauntFile, campFamilies, CAMP_SIZE, fightKit, hasHero, PER_LANE, slotOf, isDown, walkersDown, lockedBy, EGG, cooldownsActive: cooldownsOnNow } = require('./play');
 const { PAYOUT_SCALE } = require('./targets');
 const { SPECIALS } = require('./haunts');
 const { HEROES, heroEmoji, heroArt } = require('../heroes');
 const { fmt, soulsIcon, rejuvIcon, titleCase } = require('../format');
 const { pickRandom } = require('../random');
+const { powerupIcon, mapIcon, withIcon, loadoutFields, splitField, iconLine, abilityIcon, itemIcon, iconOf, abilityOutOfFight, itemOutOfFight, stacksOf, heldItems, timed, shown } = require('./icons');
 const { streakBar, heroes: triviaHeroes } = require('../games/trivia'); // the same bar as /trivia and /urn; the heroes' voice lines
 
 const DUEL_ID = 'farm_duel'; // button: farm_duel:<user id>:<rival> (fight the rival that showed up)
@@ -175,10 +177,14 @@ async function pickView(member, selected = null, record = null, mode = 'switch')
     const locked = pool.map((n) => `${heroText(guild, n)}**${n}**  -  Locked`).join('\n');
     const noToken = '**You do not have a Character Unlock Token.** Win the Base Siege with a hero to earn one.';
     e.setTitle(unlock ? 'Unlock Hero' : 'Switch Hero').setDescription(unlock
-      ? (pool.length ? `${tokens > 0 ? `You have ${plural(tokens, 'Character Unlock Token')}. Pick a hero to unlock with one.` : noToken}\n\n${locked}` : 'You have unlocked every hero.')
+      ? (pool.length ? `${tokens > 0 ? `You have **${tokens}** Character Unlock Token${tokens === 1 ? '' : 's'}.\nSelect a Hero to Unlock with one of your Character Tokens.` : noToken}\n\n${locked}` : 'You have unlocked every hero.')
       : `Each hero keeps its own souls, level, abilities and items,\nand its own buffs, cooldowns and ${rejuvIcon()}Rejuvs.\n\n` +
         pool.map((n) => `${heroText(guild, n)}**${n}**  -  Level ${levelOf(n)}${n === record.hero ? '  -  Current Hero' : ''}`).join('\n'),
     ).setFooter({ text: unlock ? tokenText(tokens) : 'You can switch any time.' });
+    if (unlock) { // the token in the corner, like its own screen (his ask Nov 5)
+      e.setThumbnail('attachment://token.png');
+      files.push(new AttachmentBuilder(path.join(ICONS, 'unlock-token.png'), { name: 'token.png' }));
+    }
     const unlockButton = new ButtonBuilder().setCustomId(`${SWITCH_ID}:${member.id}:unlock`).setLabel('Unlock Hero').setStyle(ButtonStyle.Success);
     components.push(row(...(unlock || pool.length === names.length ? [back] : [unlockButton, back]))); // Unlock Hero sits under the Switch Hero list, only while a hero is locked
   } else if (!selected) {
@@ -194,7 +200,7 @@ async function pickView(member, selected = null, record = null, mode = 'switch')
       .setDescription(current ? `__${selected} is your current Hero.__` : owned ? `__Switch to ${selected}?__` : switching ? `__Unlock ${selected} with a Character Unlock Token?__` : `__Select ${selected} as your Hero?__`)
       .addFields(
         ...statLines(selected).map(([name, value]) => ({ name, value, inline: true })),
-        { name: 'Abilities', value: info.map(([name, text], i) => `**${name}${i === 3 ? ' (Ultimate)' : ''}**\n${text}`).join('\n\n') },
+        { name: 'Abilities', value: info.map(([name, text], i) => `${[abilityIcon(name), `**${name}${i === 3 ? ' (Ultimate)' : ''}**`].filter(Boolean).join(' : ')}\n${text}`).join('\n\n').slice(0, 1024) },
       )
       .setThumbnail('attachment://thumb.png')
       .setFooter({ text: current ? 'Pick another hero to switch or unlock.'
@@ -206,17 +212,20 @@ async function pickView(member, selected = null, record = null, mode = 'switch')
     if (!switching) components.push(row(button(PICK_ID, 'Select')));
     else if (current) components.push(row(back));
     else if (owned) components.push(row(button(SWITCHTO_ID, 'Switch'), back));
-    else components.push(row(button(UNLOCK_ID, 'Unlock (1 Token)', tokens < 1), back));
+    else components.push(row(button(UNLOCK_ID, 'Unlock Hero', tokens < 1), back));
   }
   return { embeds: [e], components, files };
 }
 
 // ---- home ----
+// A map emoji (icons.js) for a dropdown option ({ emoji }) or a button; nothing when the bot has none.
+const emojiOf = (name) => { const e = mapIcon(name); return e ? { emoji: { id: e.id, name: e.name } } : {}; };
+const withEmoji = (b, name) => { const e = mapIcon(name); return e ? b.setEmoji({ id: e.id, name: e.name }) : b; };
 const targetMenu = (userId, record, now, current) =>
   new StringSelectMenuBuilder().setCustomId(`${TARGET_ID}:${userId}`).setPlaceholder(`Choose where to send ${record.hero}`).addOptions(
     [...places().map(([key, lane]) => ({
       label: nameOf(key, lane), value: slotOf(key, lane), description: `${status(record, key, now, lane)}  -  ${every(cooldownSeconds(key))}`.slice(0, 100), default: slotOf(key, lane) === current,
-    })), { label: 'Item Shop', value: 'shop', description: 'Buy, sell and corrupt items' }], // his call, Oct 3: the shop opens from this dropdown
+    })), { label: 'Item Shop', value: 'shop', description: 'Buy, sell and corrupt items', ...emojiOf('curiosity_shop') }], // his call, Oct 3: the shop opens from this dropdown
   );
 
 // What a trip pays this member: camps pay more as their hero levels, every target as it has grown with their clears.
@@ -334,17 +343,24 @@ async function heroView(member, record, mode = 'main') {
     slot: Number(slot), name: ABILITIES[Key].Name, tier: record.tiers?.[slot] ?? 0, locked: Number(slot) > p.unlocks,
   }));
   const stats = statsFor(currentStats(record));
-  const card = await heroCard({ hero, progress: p, pointsLeft: Math.max(0, left), abilities: slots, stats, items: owned, souls: record.souls ?? 0, corrupted: record.corrupted?.name, legendary: record.legendary ?? undefined });
+  const card = await heroCard({ hero, progress: p, pointsLeft: Math.max(0, left), abilities: slots, stats, items: owned, souls: record.souls ?? 0, corrupted: record.corrupted?.name, legendary: record.legendary ?? undefined, rebirth: rankOf(record.rebirth) });
   const e = embed().setTitle(`${hero}  -  Level ${p.level}`).setImage('attachment://hero.jpg').setThumbnail('attachment://thumb.png');
   const held = [...SLOTS.flatMap((slot) => owned[slot]), ...(record.legendary ? [record.legendary] : [])]; // the 12 and the legendary slot
-  const notes = [];
+  const reborn = rankOf(record.rebirth);
+  const notes = reborn ? [`**Rebirth: ${rankText(member.guild, reborn)}**  -  +${Math.round(BONUS * reborn * 100)}% Health, Weapon Damage and Spirit Power`] : [];
   const itemFields = []; // what the hero's items are doing, one field each (his call, Oct 3)
   const imbued = held.filter((n) => IMBUES.includes(n));
   const abilityName = (slot) => slots.find((a) => a.slot === slot)?.name ?? `Ability ${slot}`;
   if (imbued.length) itemFields.push({ name: 'Imbued', value: imbued.map((n) => `> ${n}\nInto ${abilityName(record.imbues?.[n] ?? 1)}`).join('\n') });
   if (held.includes(EGG.Name)) { const w = eggWorth(record); itemFields.push({ name: 'Golden Goose Egg', value: `Hatches for ${fmt(w.souls)} souls\nand ${plural(w.buffs, 'permanent buff')}` }); }
-  const stacks = stackLines(buildHero(hero, fightKit({ ...record, items: owned })));
+  const built = buildHero(hero, fightKit({ ...record, items: owned }));
+  const stacks = stackLines(built);
   if (stacks.length) itemFields.push({ name: 'Stacks', value: stacks.join('\n').slice(0, 1024) });
+  // Each ability and item with its icon (his ask, Nov 4): "Icon : Name : Stack N : Cooldown / Active"
+  const kitFields = [
+    ...splitField('Abilities', built.abilities.filter((a) => !a.hidden).map((a) => iconLine(abilityIcon(a.name), a.name, stacksOf(a), abilityOutOfFight(a, slots.find((s) => s.slot === a.slot)?.locked)))),
+    ...((list) => (list.length ? splitField('Items', list) : []))(heldItems(built).filter(([, it]) => shown(it)).map(([name, it]) => iconLine(itemIcon(name), name, stacksOf(it), timed(it) ? itemOutOfFight(it) : ''))), // a plain passive is left out (his ask, Nov 4)
+  ];
   const components = [];
   const button = (id, label) => new ButtonBuilder().setCustomId(id).setLabel(label).setStyle(ButtonStyle.Secondary);
   const [where, kind] = mode.split(':');
@@ -357,7 +373,7 @@ async function heroView(member, record, mode = 'main') {
     const upgradable = slots.filter((a) => !a.locked && a.tier < MAX_TIER);
     if (upgradable.length) {
       components.push(row(new StringSelectMenuBuilder().setCustomId(`${UPGRADE_ID}:${member.id}`).setPlaceholder(`Spend an ability point (${Math.max(0, left)} left)`)
-        .addOptions(upgradable.map((a) => ({ label: `${a.name}  -  Tier ${a.tier + 1}`, value: String(a.slot), description: `Costs ${plural(TIER_COSTS[a.tier], 'ability point')}` })))));
+        .addOptions(upgradable.map((a) => ({ label: `${a.name}  -  Tier ${a.tier + 1}`, value: String(a.slot), description: `Costs ${plural(TIER_COSTS[a.tier], 'Ability Point')}` })))));
     }
     const legends = record.legendaries ?? [];
     if (legends.length > 1) { // which of its legendaries is in the legendary slot (his call, Oct 22: change it at will)
@@ -368,11 +384,12 @@ async function heroView(member, record, mode = 'main') {
       components.push(row(new StringSelectMenuBuilder().setCustomId(`${IMBUE_ID}:${member.id}`).setPlaceholder('Change what an item is imbued into')
         .addOptions(imbued.map((n) => ({ label: n, value: n, description: titleCase(`Imbued into ${abilityName(record.imbues?.[n] ?? 1)}`) })))));
     }
-    const buttons = [button(`${BACK_ID}:${member.id}`, 'Back'), button(`${SHOPMODE_ID}:${member.id}:on`, 'Item Shop')];
+    const buttons = [button(`${BACK_ID}:${member.id}`, 'Back'), withEmoji(button(`${SHOPMODE_ID}:${member.id}:on`, 'Item Shop'), 'curiosity_shop')];
     if (held.includes(EGG.Name)) buttons.push(button(`${HATCH_ID}:${member.id}`, 'Hatch Egg'));
     components.push(row(...buttons));
   }
   if (notes.length) e.setDescription(notes.join('\n'));
+  e.addFields(kitFields);
   if (itemFields.length) e.addFields(itemFields.map((f) => ({ ...f, inline: true })));
   // the corrupted item on its own full-width field: its bonuses (before -> after), then its drawback (his ask, Oct 22)
   if (record.corrupted) e.addFields({ name: `Corrupted: ${record.corrupted.name}`, value: corruptionBlock(record.corrupted) });
@@ -395,7 +412,7 @@ const buyText = (name, owned) => {
 const itemText = (raw = '') => {
   const text = String(raw)
     .replace(/\{g:citadel_binding:'(\w+)'\}/g, '$1')
-    .replace(/\{g:citadel_inline_attribute:'(\w+)'\}/g, (_, k) => (k === 'SpiritIcon' ? 'Spirit ' : k === 'SpiritDPS' ? 'Spirit Damage Per Second' : k.replace(/^Bonus/, '').replace(/([a-z])([A-Z])/g, '$1 $2')))
+    .replace(/\{g:citadel_inline_attribute:'(\w+)'\}/g, (_, k) => (k === 'SpiritIcon' ? 'Spirit ' : k === 'SpiritDPS' ? 'Spirit Damage Per Second' : k.replace(/^Bonus/, '').replace(/Tech/g, 'Spirit').replace(/([a-z])([A-Z])/g, '$1 $2')))
     .replace(/<span class="diminish">([\s\S]*?)<\/span>(?=\s*$|<)/g, (_, t) => `\n\n${t.replace(/<br\s*\/?>/g, '\n').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => `*${l.replace(/<[^>]+>/g, '')}*`).join('\n')}`)
     .replace(/<span class="highlight">([\s\S]*?)<\/span>/g, (_, t) => { t = t.replace(/<[^>]+>/g, '').trim(); return t ? `**${t}**` : ''; }) // an icon inside left "** move speed**"
     .replace(/(\d)mm\b/g, '$1m') // the game's "32mm range" (a number with its unit, then "m" again)
@@ -651,7 +668,7 @@ async function targetView(member, key, record, now = Date.now(), variant = null)
 
 // ---- a fight, live and finished ----
 // The troopers of a wave run (his renders, Oct 3): the picture is the trooper the hero is shooting at, the first one still standing.
-const TROOPER_PIC = { Trooper: 'trooper', 'Medic Trooper': 'trooper-medic', 'Melee Trooper': 'trooper-melee' };
+const TROOPER_PIC = { 'Ranged Trooper': 'trooper', 'Medic Trooper': 'trooper-medic', 'Melee Trooper': 'trooper-melee' };
 const trooperPicture = (frame) => {
   const foe = frame?.enemies.find((e) => e.hp > 0) ?? frame?.enemies[0];
   return path.join(ICONS, `${TROOPER_PIC[foe?.name.replace(/ \d+$/, '')] ?? 'trooper'}.png`);
@@ -664,7 +681,7 @@ const enemyPicture = (run, frame) => (run.waves ? trooperPicture(frame) : run.fa
 const DOWN = '```ansi\n\u001b[31mDown\u001b[0m\n```';
 
 // One field per enemy: a bar made of the server's emojis is about 380 characters, and a field holds at most 1,024.
-const enemyFields = (frame) => frame.enemies.map((f) => ({ name: f.hp > 0 ? `${f.name}${f.asleep ? ' 💤' : ''}${f.stunned ? ' 💫' : ''}` : f.name, value: f.hp > 0 ? barLine(f.hp, f.max) : DOWN }));
+const enemyFields = (frame) => frame.enemies.map((f) => (f.fled ? { name: f.name, value: 'Fled' } : { name: f.hp > 0 ? `${f.name}${f.asleep ? ' 💤' : ''}${f.stunned ? ' 💫' : ''}${f.guarded ? ' 🛡️' : ''}` : f.name, value: f.hp > 0 ? barLine(f.hp, f.max) : DOWN }));
 
 // One snapshot of the fight (frames come from play.simulate).
 function fightView(run, frame) {
@@ -680,12 +697,12 @@ function fightView(run, frame) {
   }
   fields.push({
     name: hero,
-    value: `${barLine(frame.hero.hp, frame.hero.max)}${frame.hero.respawning ? '  -  Respawning' : ''}${run.siege ? `\nRejuvs Left: ${rejuvIcon()}${frame.rejuvs}` : ''}`,
+    value: `${barLine(frame.hero.hp, frame.hero.max)}${frame.hero.respawning ? '  -  Respawning' : ''}${run.siege ? `\nRejuvs Remaining: ${rejuvIcon()}${frame.rejuvs}` : ''}`,
   });
   fields.push(...enemyFields(frame));
-  fields.push({ name: 'Abilities', value: frame.abilities.map((a) => `${a.name}  -  ${a.status}`).join('\n') });
-  fields.push({ name: 'Battle Log', value: frame.log.length ? frame.log.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing yet' });
-  e.addFields(fields).setFooter({ text: `Fight time ${clock(frame.t)}${run.siege ? '  -  one death and the whole siege restarts' : ''}` });
+  fields.push(...loadoutFields(frame));
+  fields.push({ name: 'Battle Log', value: frame.log.length ? frame.log.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Empty' });
+  e.addFields(fields).setFooter({ text: `Total Time Elapsed: ${clock(frame.t)}${run.siege ? '  -  one death and the whole siege restarts' : ''}` });
   return { embeds: [e], components: [], files: [soulsFile(), picture(enemyPicture(run, frame))], attachments: [] };
 }
 
@@ -694,7 +711,9 @@ function fightView(run, frame) {
 // (`beat`) uses the winner's kill lines about that hero, else its generic kill lines; a camp or a boss, lines that name no hero and
 // aren't a kill line about one (Oct 20: Wraith's 'Tch. "Savior of Spanish Harlem."' is about Ivy without naming her).
 // Nothing when the hero has no such lines yet.
-function voiceLine(hero, beat, rng) {
+// Nov 5 (his ask: the right lines for the moment): a won fight or room uses the hero's Killstreak and generic kill lines, a cleared run or siege
+// (`win`) its Post-Game and Win MVP lines (else the fight ones). Never the page's other lines (picking the hero, item reminders, pain, dying ...).
+function voiceLine(hero, beat, rng, win = false) {
   const all = triviaHeroes();
   const me = all.find((h) => h.name === hero);
   let lines;
@@ -702,7 +721,9 @@ function voiceLine(hero, beat, rng) {
   else {
     const names = new RegExp(`\\b(${all.flatMap((h) => h.name.split(/[\s&]+/)).filter((w) => w && w !== 'The').join('|')}|Doorman)\\b`);
     const aboutHero = new Set(Object.values(me?.kills?.heroes ?? {}).flat());
-    lines = me?.lines.filter((l) => !names.test(l) && !aboutHero.has(l) && !/rejuv/i.test(l)); // Oct 23 (his call): Rejuv lines left out, Rejuvs are barely used
+    const fit = (list) => (list ?? []).filter((l) => !names.test(l) && !aboutHero.has(l) && !/rejuv/i.test(l)); // Oct 23 (his call): Rejuv lines left out, Rejuvs are barely used
+    const fight = fit([...(me?.kills?.streak ?? []), ...(me?.kills?.any ?? [])]);
+    lines = win && fit(me?.kills?.win).length ? fit(me.kills.win) : fight;
   }
   return lines?.length ? `\n\n**${hero}:** *"${pickRandom(lines, rng)}"*` : '';
 }
@@ -724,7 +745,7 @@ function resultView(run) {
   } else {
     e.setTitle(`${hero} Was Defeated`).setDescription(run.timedOut ? `${hero} ran out of time and the ${group} is back to full health.` : `The ${group} won and ${run.family ? 'the camp' : 'the target'} is back to full health.`);
   }
-  if (run.won) e.setDescription(((e.data.description ?? '') + voiceLine(hero)).trim() || null); // a camp or a boss has no lines: a lost fight has none. The Mid-Boss has no line of its own, so trim the gap (none at all if no voice line)
+  if (run.won) e.setDescription(((e.data.description ?? '') + voiceLine(hero, null, undefined, run.siege)).trim() || null); // a camp or a boss has no lines: a lost fight has none. The Mid-Boss has no line of its own, so trim the gap (none at all if no voice line)
   e.addFields(
     { name: 'Souls Earned', value: run.won ? `+${souls(run.souls)}` : souls(0), inline: true },
     { name: 'Fight Time', value: clock(run.seconds), inline: true },
@@ -788,11 +809,11 @@ async function duelView(run, frame) {
   const e = embed().setTitle(`${run.hero} vs ${run.rival}`).setThumbnail('attachment://thumb.png').setDescription(`${run.hero} is duelling ${run.rival}.`)
     .addFields(
       { name: run.hero, value: `${barLine(frame.hero.hp, frame.hero.max)}${frame.hero.respawning ? '  -  Respawning' : ''}
-Rejuvs Left: ${rejuvIcon()}${frame.rejuvs}` },
+Rejuvs Remaining: ${rejuvIcon()}${frame.rejuvs}` },
       ...enemyFields(frame),
-      { name: 'Abilities', value: frame.abilities.map((a) => `${a.name}  -  ${a.status}`).join('\n') },
-      { name: 'Battle Log', value: frame.log.length ? frame.log.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing yet' },
-    ).setFooter({ text: `Fight time ${clock(frame.t)}  -  win and ${run.rival} is unlocked` });
+      ...loadoutFields(frame),
+      { name: 'Battle Log', value: frame.log.length ? frame.log.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Empty' },
+    ).setFooter({ text: `Total Time Elapsed: ${clock(frame.t)}  -  win and ${run.rival} is unlocked` });
   return { embeds: [e], components: [], files: [soulsFile(), await rivalFace(run.rival, rivalMood(frame), frame.enemies[0].wolf)], attachments: [] };
 }
 
@@ -833,10 +854,12 @@ const shareOf = (total) => (n) => { const pct = (n / total) * 100; return pct < 
 function enemyDamageView(run) {
   const taken = run.taken ?? [];
   const total = taken.reduce((s, x) => s + x.dealt, 0);
+  const theirs = taken.reduce((s, x) => s + (x.self ? 0 : x.dealt), 0);
+  const own = total - theirs; // what the hero's own abilities cost it (Victor)
   const share = shareOf(total);
   const e = embed().setTitle(`Enemy Damage  -  vs ${run.hero}`)
-    .setDescription(total ? `${run.rival ?? 'The enemies'} dealt **${fmt(total)}** damage to ${run.hero} in ${clock(run.seconds)}.` : `Nothing dealt ${run.hero} any damage.`);
-  if (taken.length) e.addFields(taken.slice(0, 25).map((x) => ({ name: `${x.name}  -  ${fmt(x.dealt)}  (${share(x.dealt)})`.slice(0, 256), value: x.by.map((m) => `${m.name}  -  ${fmt(m.dealt)}`).join('\n').slice(0, 1024) })));
+    .setDescription(total ? `${theirs ? `${run.rival ?? 'The enemies'} dealt **${fmt(theirs)}** damage to ${run.hero}` : `Nothing else dealt ${run.hero} any damage`}${own ? `, and ${run.hero}'s own abilities cost **${fmt(own)}**` : ''} in ${clock(run.seconds)}.` : `Nothing dealt ${run.hero} any damage.`);
+  if (taken.length) e.addFields(taken.slice(0, 25).map((x) => ({ name: `${x.name}  -  ${fmt(x.dealt)}  (${share(x.dealt)})`.slice(0, 256), value: splitField('', x.by.map((m) => `${named(m.name)}  -  ${fmt(m.dealt)}`))[0]?.value ?? '' })));
   return { embeds: [e], files: [soulsFile()] };
 }
 // What healed the hero, how much and when (his ask, Oct 26; `run.healing`: engine.js healBreakdown). Heals in back-to-back seconds read as one span.
@@ -855,13 +878,14 @@ function healingView(run) {
   const share = shareOf(h.total);
   const e = embed().setTitle(`${run.hero}'s Healing`)
     .setDescription(h.total ? `${run.hero} healed **${fmt(h.total)}** health in ${clock(run.seconds)}.` : `Nothing healed ${run.hero} in this fight.`);
-  if (h.by.length) e.addFields(h.by.slice(0, 25).map((x) => ({ name: `${x.name}  -  ${fmt(x.healed)}  (${share(x.healed)})`.slice(0, 256), value: [x.parts?.length ? x.parts.map((p) => `${p.name}  -  ${fmt(p.healed)}  (${share(p.healed)})`).join('\n') : '', whenText(x.times) || (x.parts?.length ? '' : 'A little every second (regen).')].filter(Boolean).join('\n\n').slice(0, 1024) })));
+  if (h.by.length) e.addFields(h.by.slice(0, 25).map((x) => ({ name: `${x.name}  -  ${fmt(x.healed)}  (${share(x.healed)})`.slice(0, 256), value: [x.parts?.length ? splitField('', x.parts.map((p) => `${named(p.name)}  -  ${fmt(p.healed)}  (${share(p.healed)})`))[0]?.value ?? '' : '', whenText(x.times) || (x.parts?.length ? '' : 'A little every second (regen).')].filter(Boolean).join('\n\n').slice(0, 1024) })));
   return { embeds: [e], files: [soulsFile()] };
 }
 // The lines under a damage entry (Gun, a spirit-scaled ability or item): what its damage was made of, by item (engine.js madeOfParts). Quoted, top 8.
+const named = (name) => [iconOf(name), name].filter(Boolean).join(' : '); // "<icon> : Name" for an ability or item, else just the name
 function madeOfLines(d) {
   if (!d.parts?.some((p) => p.name !== 'Base')) return '';
-  return [...d.parts.filter((p) => p.name !== 'Base').slice(0, 7), ...d.parts.filter((p) => p.name === 'Base')].map((p) => `\n> ${p.name}  -  ${fmt(p.dealt)}`).join('');
+  return [...d.parts.filter((p) => p.name !== 'Base').slice(0, 7), ...d.parts.filter((p) => p.name === 'Base')].map((p) => `\n> ${named(p.name)}  -  ${fmt(p.dealt)}`).join('');
 }
 function damageView(run) {
   const total = run.damage.reduce((s, d) => s + d.dealt, 0);
@@ -870,7 +894,7 @@ function damageView(run) {
     .setDescription(total ? `${run.hero} dealt **${fmt(total)}** damage${run.rival ? ` to ${run.rival}` : ''} in ${clock(run.seconds)}.` : `${run.hero} dealt no damage.`);
   for (const [kind, name] of Object.entries(DAMAGE_GROUPS)) {
     const mine = run.damage.filter((d) => d.kind === kind);
-    if (mine.length) e.addFields({ name: `${name}  -  ${share(mine.reduce((s, d) => s + d.dealt, 0))}`, value: mine.map((d) => `${d.name}  -  ${fmt(d.dealt)}  (${share(d.dealt)})${madeOfLines(d)}`).join('\n').slice(0, 1024) });
+    if (mine.length) e.addFields(splitField(`${name}  -  ${share(mine.reduce((s, d) => s + d.dealt, 0))}`, mine.map((d) => `${named(d.name)}  -  ${fmt(d.dealt)}  (${share(d.dealt)})${madeOfLines(d)}`)));
   }
   return { embeds: [e], files: [soulsFile()] };
 }
@@ -894,7 +918,7 @@ Use it on the Switch Hero screen to unlock any hero.`)
 function legendaryView(name, equipped = true) {
   const card = itemByName(name);
   const lines = [...new Map(Object.entries(card).filter(([k]) => k.startsWith('Info')).flatMap(([, info]) => info.Main).map((l) => [l.Key, l])).values()]
-    .map((l) => `${l.Prefix === '{s:sign}' ? (l.Value > 0 ? '+' : '') : l.Prefix}${(+l.Value.toFixed(2)).toLocaleString('en-US')}${l.Postfix.trim()} ${l.Label.replace(/([a-z])([A-Z])/g, '$1 $2')}`); // a missing label is the key, split into words
+    .map((l) => `${l.Prefix === '{s:sign}' ? (l.Value > 0 ? '+' : '') : l.Prefix}${(+l.Value.toFixed(2)).toLocaleString('en-US')}${l.Postfix.trim()} ${l.Label.replace(/Tech/g, 'Spirit').replace(/([a-z])([A-Z])/g, '$1 $2')}`); // a missing label is the key, split into words
   const e = embed(parseInt(GOLD.slice(1), 16)).setTitle('Legendary Drop')
     .setDescription([`**${name}**`, ...lines, '', equipped ? titleCase("It's in your hero's legendary slot.") : titleCase('Kept with your legendaries: change which one is in the slot on the Hero screen.')].join('\n')).setImage('attachment://legendary.png');
   return { embeds: [e], files: [soulsFile(), new AttachmentBuilder(itemFile(name), { name: 'legendary.png' })] };
@@ -910,11 +934,12 @@ async function roamView(haul) {
   for (const b of haul.buffs) gained[b] = (gained[b] ?? 0) + 1;
   const hex = (c) => parseInt(c.slice(1), 16);
   const color = haul.bridge ? hex(BRIDGE_COLOR[haul.bridge]) : haul.buffs.length || haul.finds.sinner ? hex(GOLD) : WIN;
-  const e = embed(color).setTitle('Roam').setDescription(`${hero} roamed the map and picked up ${plural(total, 'thing')}.`)
+  const vault = haul.finds.sinner ? `\n${withIcon(mapIcon('vault_camp'), `Cleared a Vault Camp: ${plural(haul.finds.sinner, "Sinner's Sacrifice")}.`)}` : ''; // the wiki's Vault Camp icon (Nov 4)
+  const e = embed(color).setTitle('Roam').setDescription(`${hero} roamed the map and picked up ${plural(total, 'thing')}.${vault}`)
     .setImage('attachment://roam.jpg')
     .setFooter({ text: `Next roam in ${span(ROAM_COOLDOWN)}  -  ${haul.bridge ? 'Bridge buff found' : `This hour's bridge buff: ${BRIDGE[haul.bridgeNow].name}`}` });
   if (haul.buffs.length) e.addFields({ name: `Buffs Gained  -  they stay with ${hero} for good`, value: Object.entries(gained).map(([k, n]) => buffText(k, n)).join('\n') });
-  if (haul.bridge) e.addFields({ name: `${BRIDGE[haul.bridge].name} Bridge Buff  -  used on ${hero}'s next fight`, value: BRIDGE[haul.bridge].text });
+  if (haul.bridge) e.addFields({ name: `${BRIDGE[haul.bridge].name} Bridge Buff  -  used on ${hero}'s next fight`, value: withIcon(powerupIcon(haul.bridge), BRIDGE[haul.bridge].text) });
   return { embeds: [e], components: [], files: [soulsFile(), new AttachmentBuilder(await roamCard(haul, gained), { name: 'roam.jpg' })], attachments: [] };
 }
 

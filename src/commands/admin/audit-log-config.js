@@ -56,11 +56,11 @@ module.exports = {
         .setDescription("A member's names, nicknames, joins/leaves and mod actions")
         .addUserOption((o) => o.setName('member').setDescription('Member (can be someone who left)').setRequired(true)),
     )
-    .addSubcommand((s) => s.setName('show').setDescription('Show the current audit log settings')),
+    .addSubcommand((s) => s.setName('overview').setDescription('Show the current audit log settings')),
 
   async autocomplete(interaction) {
     const typed = interaction.options.getFocused().toLowerCase();
-    const choices = [[ALL, 'All events'], ...Object.entries(EVENTS)]
+    const choices = [[ALL, 'All Events'], ...Object.entries(EVENTS)]
       .filter(([key, name]) => key.includes(typed) || name.toLowerCase().includes(typed))
       .slice(0, 25)
       .map(([value, name]) => ({ name: name.slice(0, 100), value }));
@@ -80,7 +80,7 @@ module.exports = {
         const keys = event === ALL ? Object.keys(EVENTS) : [event];
         s.off = on ? s.off.filter((k) => !keys.includes(k)) : [...new Set([...s.off, ...keys])];
       });
-      return reply(`${event === ALL ? 'All events' : `**${EVENTS[event]}**`}: now **${on ? 'on' : 'off'}**.`);
+      return reply(`${event === ALL ? 'All Events' : `**${EVENTS[event]}**`}: now **${on ? 'on' : 'off'}**.`);
     }
 
     if (sub === 'ignore-channel') {
@@ -133,18 +133,18 @@ module.exports = {
       return interaction.reply({ embeds: [embed], files, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
     }
 
-    // show
+    // overview
     const s = await getSettings();
     const off = Object.keys(EVENTS).filter((k) => s.off.includes(k));
     const embed = new EmbedBuilder()
       .setColor(REPLY_COLOR)
-      .setTitle('Audit log settings')
+      .setTitle('Audit Log Overview')
       .addFields(
-        { name: 'Log channel', value: `<#${s.channelId}>`, inline: true },
-        { name: 'New account under', value: `${s.newAccountDays} days`, inline: true },
-        { name: `Events off (${off.length}/${Object.keys(EVENTS).length})`, value: clip(off.map((k) => EVENTS[k]).join('\n'), 1024) || 'None: everything is logged' },
-        { name: 'Ignored channels', value: clip(s.ignoredChannels.map((id) => `<#${id}>`).join(' '), 1024) || 'None' },
-        { name: 'Ignored members', value: clip(s.ignoredMembers.map((id) => `<@${id}>`).join(' '), 1024) || 'None' },
+        { name: 'Log Channel', value: `<#${s.channelId}>`, inline: true },
+        { name: 'New Account Under', value: `${s.newAccountDays} days`, inline: true },
+        { name: `Events Off (${off.length}/${Object.keys(EVENTS).length})`, value: clip(off.map((k) => EVENTS[k]).join('\n'), 1024) || 'All Events Are Enabled' },
+        { name: 'Ignored Channels', value: clip(s.ignoredChannels.map((id) => `<#${id}>`).join(' '), 1024) || 'None' },
+        { name: 'Ignored Members', value: clip(s.ignoredMembers.map((id) => `<@${id}>`).join(' '), 1024) || 'None' },
       );
     return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   },

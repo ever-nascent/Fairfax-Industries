@@ -17,13 +17,15 @@
 // Allies' items work on the hero only (it fights alone).
 // ponytail: headshots (the hero's Precision) and the active-reload timing are chances, the engine has no aiming.
 const { MIN_COOLDOWN } = require('./ability');
-const { SPIRIT_LIFESTEAL_VS_NPC, headshotChance } = require('./engine');
+const { SPIRIT_LIFESTEAL_VS_NPC, isHeadshot, missChance, headshotChance } = require('./engine');
 
 // Effects that take a share of an enemy's max health are weaker against NPCs: half against camp creeps (the wiki's own DotMultiplerTroopers 0.5 for Toxic
 // Bullets), and far less against bosses. ponytail: the boss share is a guess, so a 13,000 health Mid-Boss doesn't lose a quarter of it to one item.
 const BOSS_HEALTH = 3000;
 const isBoss = (unit) => unit.stats.maxHealth > BOSS_HEALTH;
 const npcShare = (target) => (isBoss(target) ? 0.15 : 0.5);
+// Monster Rounds' "+X% weapon damage vs. NPCs" also reaches the hero's summons (the wiki's list: Graves' Deadheads and Ghouls, McGinnis' turrets); a rival hero takes none of it.
+const summonScale = (unit, target) => (target.team === 'hero' ? 1 : 1 + (unit.stats.npcWeapon ?? 0));
 const ACTIVE_RELOAD_CHANCE = 0.7;
 // ponytail: placeholders for what the cards don't say: how long Shadow Weave lies low before striking,
 // Shrink Ray's evasion (his call, Oct 3). Not in our copy of the legendaries' cards (deadlock-api.com has them, Oct 22): Mystical Piano's 2 s stun,
@@ -31,8 +33,9 @@ const ACTIVE_RELOAD_CHANCE = 0.7;
 const PARRY_COOLDOWN = 4.5; // the wiki's Parry page: a missed parry waits 4.5 s (Rebuttal's -1.75 makes it 2.75)
 const LIE_LOW = 4;
 const SHRINK_EVASION = 0.2;
-const PIANO_STUN = 2;
+const PIANO_STUN = 6; // 2 s -> 6 s (Nov 4, his ask: three times as long, to make it viable)
 const PRISM_REACH = 30;
+const CONCOCTION_LEFT = 0.5; // Unstable Concoction leaves the hero at this share of max health (Nov 4, his pick: it left 1 health and was useless)
 // durations the hero's duration bonus doesn't stretch (timers, not effects)
 const KEEP = new Set(['ImmunityDuration', 'BuildUpDuration', 'DamageThresholdDuration', 'InvisFadeToDuration', 'SummonDuration', 'DelayDuration', 'ShrinkDuration']);
 const num = (v) => (typeof v === 'number' ? v : parseFloat(v) || 0);
@@ -78,7 +81,7 @@ class Item {
   cd(kind) {
     const info = kind === 'active' ? this.infos.find((i) => i.Type === 'Active' && i.Cooldown) : this.infos.find((i) => i.Type !== 'Active' && i.Cooldown);
     const base = info?.Cooldown ?? this.infos.find((i) => i.Cooldown)?.Cooldown ?? this.infos.find((i) => i.ChargeUp)?.ChargeUp ?? this.value('AbilityCooldown'); // a charge-up item's timer is its charge-up (Mercurial Magnum 14 s; its data's AbilityCooldown says 15)
-    return this.infos.some((i) => i.ChargeUp) ? base : base * Math.max(MIN_COOLDOWN, 1 - this.unit.stat('itemCdr')); // not a charge-up item (the wiki)
+    return (this.cdScale ?? 1) * (this.infos.some((i) => i.ChargeUp) ? base : base * Math.max(MIN_COOLDOWN, 1 - this.unit.stat('itemCdr'))); // not a charge-up item (the wiki); cdScale: Paradox's Time Capsule
   }
   get cooldown() { return this.cd(this.active ? 'active' : 'proc'); }
   get active() { return false; }
@@ -108,7 +111,7 @@ class Item {
   slow(fight, target, share, duration) { this.debuff(fight, target, 'slow', duration, { slow: share }); }
   barrier(fight, amount, duration, mods = {}) { fight.addStatus(this.unit, { id: `${this.name}:barrier`, duration, barrier: amount, mods }); }
   regen(fight, perSecond, duration) { fight.regen(this.unit, `${this.name}:regen`, perSecond, duration); }
-  headshot(fight, p) { return !p?.opts?.ricochet && fight.rng() < headshotChance(this.unit); } // a ricochet can't headshot (the wiki)
+  headshot(fight, p) { return isHeadshot(fight, this.unit, p); } // the shot's own roll (engine.js)
   mine(source) { return source === this.unit; }
   // True while `unit` carries this item's status `id` (unit.has() checks tags, not ids).
   marked(unit, id) { return unit.statuses.some((st) => st.id === `${this.name}:${id}`); }
@@ -254,7 +257,7 @@ define('Express Shot', {
     this.unit.weapon.clip = Math.max(0, this.unit.weapon.clip - (this.value('ProcAmmoConsumed') - 1)); // it eats extra ammo
   },
 });
-define('Headshot Booster', { on(event, fight, p) { if (bulletHit(this, event, p) && this.cdLeft <= 0 && this.headshot(fight, p)) { this.fire(); fight.damage(this.unit, p.target, this.value('HeadShotBonusDamage'), 'bullet', { events: false }); } } });
+define('Headshot Booster', { on(event, fight, p) { if (bulletHit(this, event, p) && this.cdLeft <= 0 && this.headshot(fight, p)) { this.fire(); fight.damage(this.unit, p.target, this.value('HeadShotBonusDamage') * fight.falloffScale(this.unit, p.target), 'bullet', { events: false }); } } }); // the wiki: the bonus follows the hero's falloff
 define('Headhunter', {
   on(event, fight, p) {
     if (!bulletHit(this, event, p) || this.cdLeft > 0 || !this.headshot(fight, p)) return;
@@ -274,10 +277,10 @@ define('Crippling Headshot', {
 });
 define('Lucky Shot', { on(event, fight, p) { if (bulletHit(this, event, p) && fight.rng() < this.pct('ProcChance')) fight.damage(this.unit, p.target, p.amount * this.pct('CritDamagePercent'), 'bullet', { events: false, noEvade: true }); } }); // the bonus can't be evaded (the wiki)
 // Ricochet: the bounce is a bullet too, so other bullet items proc on it (but it doesn't bounce again, can't headshot, and Tesla Bullets, Capacitor and
-// Siphon Bullets skip it: the wiki). Bullets don't bounce off objectives (a boss here).
+// Siphon Bullets skip it: the wiki). Bullets bounce off bosses, Walkers and Shrines too: the wiki's "no bounce off objectives" doesn't apply, they aren't objectives (his calls Oct 30 and 31).
 define('Ricochet', {
   on(event, fight, p) {
-    if (!bulletHit(this, event, p) || p.opts.ricochet || isBoss(p.target)) return;
+    if (!bulletHit(this, event, p) || p.opts.ricochet || p.opts.pierced) return; // a bullet that pierces bounces off the first target only (the wiki)
     const others = fight.foes.filter((e) => e !== p.target && Math.abs((e.offset ?? 0) - (p.target.offset ?? 0)) <= this.value('RicochetRadius'));
     for (const other of others.slice(0, this.value('RicochetTargets'))) fight.damage(this.unit, other, p.amount * this.pct('RicochetDamagePercent'), 'bullet', { ricochet: true });
   },
@@ -312,7 +315,17 @@ define('Armor Piercer', piercing);
 define('Infinite Rounds', piercing, {
   tick(fight) { if (!this.unit.statuses.some((st) => st.id === `${this.name}:ammo`)) this.buff(fight, 'ammo', Infinity, {}, ['infiniteClip']); },
 });
-define('Restorative Shot', { on(event, fight, p) { if (bulletHit(this, event, p) && this.fire()) fight.heal(this.unit, this.value(p.target.team === 'hero' ? 'HealFromHero' : 'HealFromNPC')); } }); // a rival hero heals more
+// The wiki: the cooldown starts on the next bullet fired, hit or not (Graves and a transformed Silver start it only on a hit). A rival hero heals more.
+define('Restorative Shot', {
+  on(event, fight, p) {
+    const onHit = this.unit.name === 'Graves' || this.unit.abilities.some((a) => a.wolf);
+    if (event === 'shot' && this.mine(p.source) && !onHit && this.fire()) this.primedAt = fight.time;
+    if (!bulletHit(this, event, p)) return;
+    if (onHit ? !this.fire() : this.primedAt !== fight.time) return;
+    this.primedAt = -1;
+    fight.heal(this.unit, this.value(p.target.team === 'hero' ? 'HealFromHero' : 'HealFromNPC'));
+  },
+});
 define('Burst Fire', { on(event, fight, p) { if (bulletHit(this, event, p) && this.fire()) this.buff(fight, 'burst', this.value('AbilityDuration'), { fireRate: this.pct('ActivatedFireRate'), moveSpeed: this.value('BonusMoveSpeed') }); } });
 define('Suppressor', { on(event, fight, p) { if (spiritHit(this, event, p)) this.debuff(fight, p.target, 'suppress', this.value('AbilityDuration'), fireSlow(p.target, this.pct('FireRateSlow'))); } });
 define('Bullet Resist Shredder', { on(event, fight, p) { if (spiritHit(this, event, p)) this.debuff(fight, p.target, 'shred', this.value('AbilityDuration'), { bulletResist: this.pct('BulletArmorReduction') }); } });
@@ -633,7 +646,7 @@ define('Shadow Strike', {
 // ===== PARRIES AND HITS: CHANGE AN ENEMY'S HIT OR BLAST BEFORE IT LANDS =====
 // Rebuttal (his call, Oct 3): parries the front enemy's next hit on its cooldown: heals it, sends it back, then more damage for a while. The parry itself
 // (his call, Oct 22; the wiki's Parry page) stuns the attacker 2.75 s and it takes 25% more damage meanwhile (the page gives no length for that; taken
-// as the stun's). Walkers, the Mid-Boss, the Shrines and the Patron can't be parried (his call, Oct 22).
+// as the stun's). Melee swings only, never a bullet or spirit hit (his call, Oct 31; a rival's gun shots used to be parried and the stun lasted as long as the cooldown, so it locked the hero out for good). A duel's heavy melee has its own parry (engine.js melee). Walkers, the Mid-Boss, the Shrines and the Patron can't be parried (his call, Oct 22).
 const CURSE_STUN = 0.3; // Cursed Relic's short stun (the wiki)
 const REVERB_SLOW = 2; // Mystic Reverb's slow: the wiki gives no duration
 const PARRY_STUN = 2.75;
@@ -642,7 +655,7 @@ const PARRY_VULNERABLE = 0.25;
 define('Rebuttal', {
   get cooldown() { return Math.max(1, PARRY_COOLDOWN - this.innate('ParryCooldownReduction')); },
   on(event, fight, hit) {
-    if (!hitOnMe(this, event, hit) || hit.amount <= 0 || !hit.opts.attack || hit.source !== fight.foes[0] || UNPARRYABLE.has(hit.source.name) || !this.fire()) return;
+    if (!hitOnMe(this, event, hit) || hit.amount <= 0 || !hit.opts.attack || hit.type !== 'melee' || hit.source !== fight.foes[0] || UNPARRYABLE.has(hit.source.name) || !this.fire()) return;
     const amount = hit.amount;
     hit.amount = 0;
     fight.heal(this.unit, amount * this.pct('ParrySuccessHealPercentage'));
@@ -680,7 +693,7 @@ define('Witchmail', {
 // even through Metal Skin), and the holder has more bullet resist.
 define('Return Fire', ACTIVE, {
   want(fight) { return fight.foes.length > 0 && this.hurt < 0.85; },
-  cast(fight) { this.buff(fight, 'reflect', this.value('AbilityDuration'), { bulletResist: this.pct('BulletResist') }, ['reflect']); },
+  cast(fight) { this.buff(fight, 'reflect', this.value('AbilityDuration'), {}, ['reflect']); }, // its bullet resist is innate since the Nov 2026 patch (the stat sheet)
   on(event, fight, { source, target, amount, type }) {
     if (event !== 'damage' || target !== this.unit || source === this.unit || !this.unit.has('reflect') || !(type === 'bullet' || type === 'spirit')) return;
     fight.damage(this.unit, source, amount * this.pct(type === 'bullet' ? 'BulletDamageReflectedPct' : 'SpiritDamageReflectedPct'), type, { events: false });
@@ -806,9 +819,9 @@ define('Metal Skin', ACTIVE, {
   want(fight) { return this.hurt < 0.8 && fight.foes.some((e) => e.stats.damageType === 'bullet' || e.stats.damageType === 'mixed'); },
   cast(fight) { this.buff(fight, 'metal', this.value('AbilityDuration'), { bulletTaken: -1, moveSpeed: this.value('ActiveMoveSpeedPenalty') }); }, // slower meanwhile (the wiki: -1.5 m/s)
 });
-// Healing Rite: a long heal over time; damage from a boss or a rival hero (the game's "enemy players or objectives") ends it.
+// Healing Rite: a long heal over time; damage from a rival hero ends it (the game's "enemy players or objectives": bosses aren't objectives here, his call Oct 31).
 define('Healing Rite', ACTIVE, healActive(function (fight) { this.regen(fight, this.value('TotalHealthRegen') / this.value('RegenDuration'), this.value('RegenDuration')); this.buff(fight, 'speed', this.value('RegenDuration'), { moveSpeed: this.value('BonusSprintSpeed') }); }), {
-  on(event, fight, p) { if (event === 'damage' && p.target === this.unit && ((p.source.team === 'enemy' && isBoss(p.source)) || (p.source.team === 'hero' && p.source !== this.unit))) { fight.removeStatus(this.unit, `${this.name}:regen`); fight.removeStatus(this.unit, `${this.name}:speed`); } },
+  on(event, fight, p) { if (event === 'damage' && p.target === this.unit && p.source.team === 'hero' && p.source !== this.unit) { fight.removeStatus(this.unit, `${this.name}:regen`); fight.removeStatus(this.unit, `${this.name}:speed`); } },
 });
 // Restorative Locket (his call, Oct 3): a stack per enemy blast and per enemy spirit hit (max 25); the active heals per stack and gives back stamina.
 define('Restorative Locket', ACTIVE, {
@@ -885,16 +898,27 @@ define('Cultist Sacrifice', ACTIVE, {
     this.unit.addMaxHealth(this.value('BonusHealth'));
   },
 });
-// Split Shot: for a few seconds every shot also hits up to four other enemies; hitting more than one stacks weapon damage.
+// Split Shot (his call, Nov 8: it was a full-damage copy that never missed): for a few seconds every shot fires up to four more bullets in a 45 degree
+// cone (the wiki's SpreadAngleDegrees). Each reaches only an enemy inside the cone, rolls its own miss and headshot, and does the gun's damage at that
+// range. Hitting more than one enemy stacks weapon damage (any enemy, not only heroes: his call).
+// ponytail: enemies only have a depth (`offset`, 4 m apart), so the cone's width at the target's distance (2 x d x tan 22.5 degrees) is compared with it.
+const SPLIT_CONE = 2 * Math.tan(Math.PI / 8);
 define('Split Shot', ACTIVE, {
   init() { this.until = 0; this.stacks = 0; },
   want(fight) { return fight.foes.length > 1; },
   cast(fight) { this.until = fight.time + this.value('BonusShotsDuration'); },
   on(event, fight, p) {
     if (!bulletHit(this, event, p) || fight.time > this.until || p.opts.split) return;
-    const others = fight.foes.filter((e) => e !== p.target).slice(0, this.value('BulletSplitShot') - 1);
-    for (const e of others) fight.damage(this.unit, e, p.amount, 'bullet', { split: true, events: false });
-    if (others.length) { this.stacks = Math.min(this.value('MaxStacks'), this.stacks + 1); this.buff(fight, 'split', this.value('WeaponDamageBonusDuration'), { weaponDamage: this.stacks * this.pct('WeaponDamagePerStack') }); }
+    const hero = this.unit, width = SPLIT_CONE * fight.distance(hero, p.target);
+    const others = fight.foes.filter((e) => e !== p.target && Math.abs((e.offset ?? 0) - (p.target.offset ?? 0)) <= width).slice(0, this.value('BulletSplitShot') - 1);
+    let hits = 0;
+    for (const e of others) {
+      if (fight.rng() < missChance(hero, e)) continue;
+      const headshot = fight.rng() < headshotChance(hero);
+      fight.damage(hero, e, fight.shotDamage(hero, e) * (p.opts.landed ?? 1) * (headshot ? 1 + hero.stats.headshotBonus : 1), 'bullet', { split: true, events: false, headshot });
+      hits++;
+    }
+    if (hits) { this.stacks = Math.min(this.value('MaxStacks'), this.stacks + 1); this.buff(fight, 'split', this.value('WeaponDamageBonusDuration'), { weaponDamage: this.stacks * this.pct('WeaponDamagePerStack') }); }
   },
 });
 
@@ -1020,22 +1044,24 @@ define('Prism Blast', ACTIVE, {
 define('Magic Carpet', ACTIVE, hurtActive(0.3, function (fight) {
   fight.at(this.value('SummonDuration'), () => { if (this.unit.alive) this.buff(fight, 'carpet', this.value('AbilityDuration'), {}, ['untargetable', 'hold', 'airborne']); });
 }), { tick(fight) { if (this.hurt >= 0.7) fight.removeStatus(this.unit, `${this.name}:carpet`); } });
-// Shadow Weave: when low, the hero goes invisible and lies low for a moment, then strikes out of stealth with an Ambush buff.
+// Shadow Weave: when low, the hero goes invisible and lies low for a moment, then strikes out of stealth with an Ambush buff: weapon damage and
+// spirit power, full after AmbushBuildUpDuration in stealth and that share of it before (the Nov 2026 patch: it was fire rate, spirit and melee).
 define('Shadow Weave', ACTIVE, hurtActive(0.4, function (fight) {
+  this.stealthAt = fight.time;
   this.buff(fight, 'stealth', this.value('AbilityDuration'), {}, ['invisible'], { breakOnAttack: true });
   this.buff(fight, 'lowl', Math.min(LIE_LOW, this.value('AbilityDuration')), {}, ['hold']);
 }), {
   on(event, fight, p) {
     if (event === 'unstealth' && this.mine(p.source) && p.ended.includes(`${this.name}:stealth`)) {
-      this.buff(fight, 'ambush', this.value('AmbushDuration'), { fireRate: this.pct('AmbushBonusFireRate'), spirit: this.value('AmbushBonusTechPower'), meleeDamage: this.pct('AmbushBonusMeleeDamage') });
+      const share = Math.min(1, (fight.time - (this.stealthAt ?? fight.time)) / (this.value('AmbushBuildUpDuration') || 1e-9));
+      this.buff(fight, 'ambush', this.value('AmbushDuration'), { weaponDamage: share * this.pct('AmbushBonusWeaponDamage'), spirit: share * this.value('AmbushBonusTechPower') });
     }
   },
 });
-// Unstable Concoction (a legendary; his call, Oct 3): a huge buff, then the hero explodes (damage from its max health, a stun) and is left at 1 health
-// instead of dying. Used when the explosion would finish every enemy left, or when the hero is nearly dead anyway.
+// Unstable Concoction (a legendary; his call, Oct 3): a huge buff, then the hero explodes (damage from its max health, a stun) and is left at
+// CONCOCTION_LEFT of its max health instead of dying (Nov 4, his pick; it was 1 health). Used whenever enemies are in range.
 define('Unstable Concoction', ACTIVE, {
-  boom() { return this.pct('MaxHPDamage') * (this.maxHealth + this.value('BonusHealth')); },
-  want(fight) { const near = this.near(fight, 'Radius'); return near.length > 0 && (this.hurt < 0.15 || (near.length === fight.foes.length && near.every((e) => e.health <= this.boom() * (1 - e.stats.spiritResist)))); },
+  want(fight) { return this.near(fight, 'Radius').length > 0; },
   cast(fight) {
     const bonus = this.value('BonusHealth');
     const d = this.value('AbilityDuration');
@@ -1046,7 +1072,7 @@ define('Unstable Concoction', ACTIVE, {
       const damage = this.pct('MaxHPDamage') * this.maxHealth;
       for (const e of fight.foes.length ? this.near(fight, 'Radius') : []) { fight.damage(this.unit, e, damage, 'spirit'); this.debuff(fight, e, 'stun', this.value('StunDuration'), {}, ['stun']); }
       this.unit.addMaxHealth(-bonus);
-      this.unit.health = 1;
+      this.unit.health = this.unit.stats.maxHealth * CONCOCTION_LEFT;
     });
   },
 });
@@ -1166,4 +1192,4 @@ const makeItems = (cards, unit, imbues = {}) => cards.filter((c) => FX[c.Name]).
 // Imbues that can't go into an ultimate (the wiki: "non-ultimate").
 const NO_ULT_IMBUE = new Set(['Echo Shard', 'Omnicharge Signet']);
 
-module.exports = { Item, FX, IMBUES, NO_ULT_IMBUE, makeItems, isBoss, npcShare, KEPT, keptAfter };
+module.exports = { Item, FX, IMBUES, NO_ULT_IMBUE, makeItems, isBoss, npcShare, summonScale, KEPT, keptAfter };

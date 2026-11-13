@@ -1,6 +1,6 @@
 // Run: node --test
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
-const test = require('node:test');
+const test = require('./group')(__filename);
 const assert = require('node:assert');
 const [route] = require('../src/components/lfgPings');
 const { pingMenuMessage } = require('../src/components/lfgPings');

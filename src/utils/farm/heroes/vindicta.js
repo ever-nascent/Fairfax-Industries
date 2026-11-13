@@ -5,7 +5,6 @@ const { Ability } = require('./../ability');
 const { DT, headshotChance } = require('./../engine');
 const { HEROES } = require('./../stats');
 const { npcShare } = require('./../items');
-const { stackResist } = require('./../buffs');
 
 // 1. Stake: a stake among the enemies: spirit damage and a slow on those around the front one, tethered for a moment (nobody walks away here,
 // so the tether itself changes nothing). T1: more damage. T2: far shorter cooldown. T3: longer, wider.
@@ -123,7 +122,7 @@ class Assassinate extends Ability {
     const low = this.data.LowHealthEnemyThresholdPct / 100;
     const shots = Math.max(1, this.charges);
     const seconds = KILL_WINDOW + (shots - 1) * (this.chargeGap + this.castDelay);
-    const landed = (e) => this.shot(e) * (1 - Math.min(0.9, stackResist(e.stats.spiritResist, e.mod('spiritResist')))); // after its spirit resist (a boss's)
+    const landed = (e) => this.shot(e) * (1 - Math.min(0.9, e.resistNow('spiritResist'))); // after its spirit resist (a boss's)
     return fight.foes.filter((e) => e.health < e.stats.maxHealth * low && this.diesWithin(fight, e, landed(e) * shots, seconds))
       .sort((a, b) => a.health / a.stats.maxHealth - b.health / b.stats.maxHealth)[0];
   }
