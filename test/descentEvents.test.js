@@ -1,4 +1,5 @@
 // Descend event rooms (Nov 4): the rest stop and the quiet corner, where they go, and what they do.
+process.env.DESCEND_V = '7'; // these checks are about the fixed rooms from before Two Doors (test/doors.test.js has the doors)
 const test = require('./group')(__filename);
 const assert = require('node:assert');
 const D = require('../src/utils/farm/descent');
@@ -188,6 +189,7 @@ test('/descend stats: records and counters, within Discord limits', async () => 
 test('Ascension 8+: the locked item slots and the rooms they open after (the build card draws them with a lock)', () => {
   const at = (room) => { const d = D.newRun('Haze', 1, 8); d.room = room; return D.rules(d); };
   assert.deepStrictEqual([at(5).maxItems, at(5).lockedSlots], [10, [20, 30]]);
+  assert.deepStrictEqual([at(11).maxItems, at(11).lockedSlots], [10, [20, 30]]);
   assert.deepStrictEqual([at(21).maxItems, at(21).lockedSlots], [11, [30]]);
   assert.deepStrictEqual([at(31).maxItems, at(31).lockedSlots], [12, []]);
   assert.deepStrictEqual(D.rules(D.newRun('Haze', 1, 7)).lockedSlots, []);

@@ -27,7 +27,7 @@ test('only the owner and their members get in, and nobody while the owner is gon
 // A server that records the channels the bot makes and deletes.
 function fakeServer() {
   let next = 100;
-  const cache = new Map();
+  const cache = new (require('discord.js').Collection)([['cat0', { id: 'cat0', name: 'Hideouts', type: ChannelType.GuildCategory }]]); // the category a first Hideout finds (or makes)
   const made = [];
   const access = {}; // channel name -> ids let in by the last permission change
   const g = {
@@ -36,6 +36,7 @@ function fakeServer() {
     members: { me: { id: 'bot' }, cache: new Map(), fetch: async (id) => (id === 'gone' ? Promise.reject(new Error('left')) : { id }) },
     channels: {
       cache,
+      fetch: async () => cache,
       create: async (opts) => {
         const id = String(next++);
         const channel = {
@@ -70,9 +71,9 @@ test('a Hideout channel deleted by hand is made again (same name, members, a new
 
   assert.ok(await hideout.removeHideout(g, 'owner'));
   assert.strictEqual(await store.get('owner'), null);
-  assert.strictEqual(g.channels.cache.size, 0);
+  assert.strictEqual(g.channels.cache.size, 1); // only the Hideouts category is left
   await hideout.channelDeleted(g, after.voiceId); // the delete events that follow don't remake anything
-  assert.strictEqual(g.channels.cache.size, 0);
+  assert.strictEqual(g.channels.cache.size, 1);
   assert.strictEqual(await hideout.removeHideout(g, 'owner'), false);
 });
 

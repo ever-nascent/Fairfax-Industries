@@ -124,11 +124,14 @@ function innateStats(card) {
 // ---- corruption (his calls, Oct 3; levels.js has the Broker) ----
 // A corrupted item's card: the game's CorruptedUpgrades are added to the item's own numbers wherever the card has them (a cooldown change goes to the
 // cooldown of its active, or of its proc for ProcCooldown); a key the card doesn't have becomes a new stat line. Kept per item name.
-const upgradedCards = new Map();
+// Cached per card OBJECT, never per name (Nov 13, his report: "corrupting an Item should not remove its enhanced power"): a corrupted card is made from
+// the enhanced one (and a fragile one from either), and a name-only key handed every later copy whichever version was built first.
+const upgradedCards = new WeakMap(); // card object -> Map(field or 'fragile' -> the card made from it)
+const madeFrom = (card, key) => upgradedCards.get(card)?.get(key);
+const remember = (card, key, out) => { if (!upgradedCards.has(card)) upgradedCards.set(card, new Map()); upgradedCards.get(card).set(key, out); return out; };
 function upgradedCard(card, field) {
   if (!card?.[field]) return card;
-  const cacheKey = `${field}:${card.Name}`;
-  if (upgradedCards.has(cacheKey)) return upgradedCards.get(cacheKey);
+  if (madeFrom(card, field)) return madeFrom(card, field);
   const out = structuredClone(card);
   const infos = Object.keys(out).filter((k) => k.startsWith('Info')).map((k) => out[k]);
   for (const [key, delta] of Object.entries(card[field])) {
@@ -150,8 +153,7 @@ function upgradedCard(card, field) {
     innate.Alt.push({ Key: key, Value: d });
   }
   setPrecision(out);
-  upgradedCards.set(cacheKey, out);
-  return out;
+  return remember(card, field, out);
 }
 const corruptCard = (card) => upgradedCard(card, 'CorruptedUpgrades');
 const enhancedCard = (card) => upgradedCard(card, 'PropertyUpgrades');
@@ -182,8 +184,7 @@ const FRAGILE = 0.7;
 const FRAGILE_BREAK = 0.10; // a hero under this share of its health shatters its Fragile Items, mid-fight (hero.js; his call, Oct 30)
 function fragileCard(card) {
   if (!card) return card;
-  const cacheKey = `fragile:${card.Name}`;
-  if (upgradedCards.has(cacheKey)) return upgradedCards.get(cacheKey);
+  if (madeFrom(card, 'fragile')) return madeFrom(card, 'fragile');
   const out = structuredClone(card);
   for (const info of Object.keys(out).filter((k) => k.startsWith('Info')).map((k) => out[k]).filter((i) => i.Type === 'Innate')) {
     for (const e of [...info.Main, ...info.Alt]) {
@@ -191,14 +192,33 @@ function fragileCard(card) {
       else if (/^-?[\d.]+m$/.test(e.Value)) e.Value = `${parseFloat(e.Value) * FRAGILE}m`;
     }
   }
-  upgradedCards.set(cacheKey, out);
+  return remember(card, 'fragile', out);
+}
+// A Tempered Item (Nov 13; descent.js, Infernus' Stoke the Fire): the opposite of a Fragile one. Each Stoke it survived adds TEMPERED to its innate
+// stat lines (only the ones that help: a number above 0); its passive and active effects are left alone. `tempered`: { item name: Stokes }.
+const TEMPERED = 0.15;
+const temperedCards = new WeakMap();
+function temperedCard(card, stokes) {
+  if (!card || !stokes) return card;
+  if (!temperedCards.has(card)) temperedCards.set(card, new Map());
+  const made = temperedCards.get(card);
+  if (made.has(stokes)) return made.get(stokes);
+  const out = structuredClone(card);
+  const k = 1 + TEMPERED * stokes;
+  for (const info of Object.keys(out).filter((key) => key.startsWith('Info')).map((key) => out[key]).filter((i) => i.Type === 'Innate')) {
+    for (const e of [...info.Main, ...info.Alt]) {
+      if (typeof e.Value === 'number') { if (e.Value > 0) e.Value *= k; }
+      else if (/^[\d.]+m$/.test(e.Value)) e.Value = `${parseFloat(e.Value) * k}m`;
+    }
+  }
+  made.set(stokes, out);
   return out;
 }
-const cardFor = (name, corrupted, enhanced = [], fragile = []) => {
+const cardFor = (name, corrupted, enhanced = [], fragile = [], tempered = {}) => {
   let card = itemByName(name);
   if (enhanced.includes(name)) card = enhancedCard(card);
   if (fragile.includes(name)) card = fragileCard(card);
-  return corruptedList(corrupted).some((c) => c.name === name) ? corruptCard(card) : card;
+  return temperedCard(corruptedList(corrupted).some((c) => c.name === name) ? corruptCard(card) : card, tempered?.[name]);
 };
 
 // Guns that deal full damage at any distance: Graves' beam (the wiki: no falloff; his call, Oct 5: its 17 m limit isn't simulated). The game data's
@@ -209,7 +229,7 @@ const SURE_PELLETS = { 'Rat King': 1 };
 
 // Stat sheet for a wiki hero (an entry of heroes.json) with `boons` level-ups, a list of item names, the member's permanent
 // buffs ({ key: count }, buffs.js) and its corrupted item ({ name, drawback, amount } | null).
-function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corrupted = null, enhanced = [], fragile = [], rebirth = 0 } = {}) {
+function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corrupted = null, enhanced = [], fragile = [], tempered = {}, rebirth = 0 } = {}) {
   const w = hero.Weapon;
   const ls = hero.LevelScaling || {};
   const s = {
@@ -272,7 +292,7 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
   const baseHealth = s.maxHealth;
   const levels = s.spirit; // the spirit power the hero's own levels give
   for (const name of items) {
-    const card = cardFor(name, corrupted, enhanced, fragile);
+    const card = cardFor(name, corrupted, enhanced, fragile, tempered);
     if (!card) throw new Error(`Unknown item: ${name}`);
     const [bullet, spirit, weapon, power] = [s.lifesteal, s.spiritLifesteal, s.weaponDamageMult, s.spirit];
     for (const [key, value] of innateStats(card)) ITEM_STATS[key]?.(s, value);
@@ -304,4 +324,4 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
   return s;
 }
 
-module.exports = { HEROES, ABILITIES, ITEMS, LEGENDARIES, itemByName, innateStats, heroStats, ITEM_STATS, effectValue, corruptCard, enhancedCard, fragileCard, FRAGILE, FRAGILE_BREAK, cardFor, DRAWBACKS, drawbackText };
+module.exports = { HEROES, ABILITIES, ITEMS, LEGENDARIES, itemByName, innateStats, heroStats, ITEM_STATS, effectValue, corruptCard, enhancedCard, fragileCard, FRAGILE, FRAGILE_BREAK, TEMPERED, temperedCard, cardFor, DRAWBACKS, drawbackText };

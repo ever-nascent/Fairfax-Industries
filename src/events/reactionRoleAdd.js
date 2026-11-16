@@ -19,5 +19,9 @@ module.exports = {
     }
 
     await member.roles.add(roleId, SELF_PICKED).catch((error) => console.error('[reactionRoles] Failed to add role:', error.message));
+    // A menu staff made as a gate also gives the role that opens the server. Picking again or un-picking never takes it back.
+    if (menu.unlockRoleId && !member.roles.cache.has(menu.unlockRoleId)) {
+      await member.roles.add(menu.unlockRoleId, SELF_PICKED).catch((error) => console.error('[reactionRoles] Failed to add the unlock role:', error.message));
+    }
   },
 };

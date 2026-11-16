@@ -5,7 +5,6 @@ const { privateReply } = require('../../utils/embeds');
 const { setCooldowns } = require('../../utils/farm/play');
 
 module.exports = {
-  homeOnly: true, // registered in the Fairfax server only (deploy-commands.js)
   data: new SlashCommandBuilder()
     .setName('farm-config')
     .setDescription('Bot owner: testing switches for Hero Farming')

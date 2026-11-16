@@ -1745,8 +1745,11 @@
    "ChargeUp": null,
    "Main": [
     {
-     "Key": "StatusEffectEMP",
-     "Value": null
+     "Key": "AbilityDuration",
+     "Value": 3,
+     "Type": "duration",
+     "LocTokenOverride": "#SilenceDuration",
+     "StatusEffect": "EMP"
     },
     {
      "Key": "Damage",
@@ -1780,12 +1783,6 @@
    "BonusHealth": 225
   },
   "Other": {
-   "AbilityDuration": {
-    "Key": "AbilityDuration",
-    "Value": 3,
-    "Type": "duration",
-    "LocTokenOverride": "#SilenceDuration"
-   },
    "AbilityUnitTargetLimit": {
     "Key": "AbilityUnitTargetLimit",
     "Value": 1
@@ -1886,8 +1883,10 @@
    "ChargeUp": null,
    "Main": [
     {
-     "Key": "StatusEffectEMP",
-     "Value": null
+     "Key": "SilenceDuration",
+     "Value": 2.5,
+     "StatusEffect": "EMP",
+     "Type": "duration"
     }
    ],
    "Alt": [
@@ -1925,10 +1924,6 @@
     "Key": "ChannelMoveSpeed",
     "Value": -1,
     "Type": "move_speed"
-   },
-   "SilenceDuration": {
-    "Key": "SilenceDuration",
-    "Value": 2.5
    },
    "BuildUpDuration": {
     "Key": "BuildUpDuration",
@@ -7025,8 +7020,10 @@
    "ChargeUp": null,
    "Main": [
     {
-     "Key": "StatusEffectEMP",
-     "Value": null
+     "Key": "AbilityDuration",
+     "Value": 4.5,
+     "Type": "duration",
+     "StatusEffect": "EMP"
     },
     {
      "Key": "PercentDamage",
@@ -7074,11 +7071,6 @@
    "TechPowerReduction": -20
   },
   "Other": {
-   "AbilityDuration": {
-    "Key": "AbilityDuration",
-    "Value": 4.5,
-    "Type": "duration"
-   },
    "AbilityUnitTargetLimit": {
     "Key": "AbilityUnitTargetLimit",
     "Value": 1
@@ -7254,8 +7246,10 @@
    "ChargeUp": null,
    "Main": [
     {
-     "Key": "StatusEffectDisarmed",
-     "Value": null
+     "Key": "AbilityDuration",
+     "Value": 4.25,
+     "Type": "duration",
+     "StatusEffect": "Disarmed"
     },
     {
      "Key": "BulletArmorReduction",
@@ -7737,8 +7731,10 @@
    "ChargeUp": null,
    "Main": [
     {
-     "Key": "StatusEffectStun",
-     "Value": null
+     "Key": "StunDuration",
+     "Value": 0.5,
+     "Type": "duration",
+     "StatusEffect": "Stun"
     }
    ],
    "Alt": [
@@ -7785,11 +7781,6 @@
    "StunDelay": {
     "Key": "StunDelay",
     "Value": 2,
-    "Type": "duration"
-   },
-   "StunDuration": {
-    "Key": "StunDuration",
-    "Value": 0.5,
     "Type": "duration"
    },
    "VisualContractRadius": {
@@ -8052,8 +8043,10 @@
    "ChargeUp": null,
    "Main": [
     {
-     "Key": "StatusEffectImmobilize",
-     "Value": null
+     "Key": "TetherDuration",
+     "Value": 0.5,
+     "Type": "duration",
+     "StatusEffect": "Immobilize"
     },
     {
      "Key": "CaptureRadius",
@@ -13711,8 +13704,10 @@
    "ChargeUp": null,
    "Main": [
     {
-     "Key": "StatusEffectStun",
-     "Value": null
+     "Key": "StunDuration",
+     "Value": 0.75,
+     "Type": "duration",
+     "StatusEffect": "Stun"
     },
     {
      "Key": "Damage",
@@ -13787,11 +13782,6 @@
     "Key": "SlowPercent",
     "Value": 64,
     "Type": "slow"
-   },
-   "StunDuration": {
-    "Key": "StunDuration",
-    "Value": 0.75,
-    "Type": "duration"
    },
    "GroundDashReductionPercent": {
     "Key": "GroundDashReductionPercent",

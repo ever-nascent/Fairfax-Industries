@@ -1,0 +1,341 @@
+{
+ "Billy": [
+  {
+   "ascension": 6,
+   "items": [
+    "Split Shot",
+    "Swift Striker",
+    "Point Blank",
+    "Spiritual Overflow",
+    "Lifestrike",
+    "Siphon Bullets",
+    "Inhibitor",
+    "Juggernaut",
+    "Colossus",
+    "Bullet Resist Shredder",
+    "Rapid Recharge",
+    "Mercurial Magnum"
+   ],
+   "legendary": "Seraphim Wings",
+   "enhanced": [
+    "Bullet Resist Shredder",
+    "Swift Striker",
+    "Colossus",
+    "Seraphim Wings"
+   ],
+   "tiers": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+   }
+  }
+ ],
+ "Vyper": [
+  {
+   "ascension": 7,
+   "items": [
+    "Intensifying Magazine",
+    "Opening Rounds",
+    "Burst Fire",
+    "Armor Piercer",
+    "Capacitor",
+    "Frenzy",
+    "Spellslinger",
+    "Spiritual Overflow",
+    "Ricochet",
+    "Battle Vest",
+    "Leech",
+    "Siphon Bullets"
+   ],
+   "legendary": "Infinite Rounds",
+   "enhanced": [
+    "Battle Vest",
+    "Intensifying Magazine",
+    "Leech",
+    "Opening Rounds",
+    "Burst Fire",
+    "Capacitor",
+    "Frenzy",
+    "Infinite Rounds",
+    "Ricochet"
+   ],
+   "tiers": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+   }
+  }
+ ],
+ "Victor": [
+  {
+   "ascension": 8,
+   "items": [
+    "Infuser",
+    "Witchmail",
+    "Spirit Resilience",
+    "Siphon Bullets",
+    "Juggernaut",
+    "Boundless Spirit",
+    "Torment Pulse",
+    "Scourge",
+    "Mercurial Magnum",
+    "Escalating Exposure",
+    "Radiant Regeneration",
+    "Transcendent Cooldown"
+   ],
+   "legendary": "Mystic Conduit",
+   "enhanced": [
+    "Boundless Spirit",
+    "Mercurial Magnum",
+    "Radiant Regeneration",
+    "Mystic Conduit",
+    "Juggernaut"
+   ],
+   "tiers": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+   }
+  }
+ ],
+ "Wraith": [
+  {
+   "ascension": 9,
+   "items": [
+    "Split Shot",
+    "Spiritual Overflow",
+    "Spellslinger",
+    "Ricochet",
+    "Armor Piercer",
+    "Lucky Shot",
+    "Inhibitor",
+    "Siphon Bullets",
+    "Leech",
+    "Mercurial Magnum",
+    "Rapid Recharge",
+    "Boundless Spirit"
+   ],
+   "legendary": "Haunting Shot",
+   "enhanced": [
+    "Inhibitor",
+    "Ricochet",
+    "Siphon Bullets",
+    "Spiritual Overflow",
+    "Armor Piercer",
+    "Lucky Shot"
+   ],
+   "tiers": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+   }
+  }
+ ],
+ "Seven": [
+  {
+   "ascension": 10,
+   "items": [
+    "Crippling Headshot",
+    "Spiritual Overflow",
+    "Witchmail",
+    "Spirit Resilience",
+    "Vampiric Burst",
+    "Leech",
+    "Rapid Recharge",
+    "Superior Duration",
+    "Escalating Exposure",
+    "Transcendent Cooldown",
+    "Spirit Burn",
+    "Boundless Spirit"
+   ],
+   "legendary": "Omnicharge Signet",
+   "enhanced": [
+    "Rapid Recharge",
+    "Superior Duration",
+    "Crippling Headshot",
+    "Leech",
+    "Spiritual Overflow",
+    "Transcendent Cooldown",
+    "Boundless Spirit",
+    "Witchmail"
+   ],
+   "tiers": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+   }
+  }
+ ],
+ "Holliday": [
+  {
+   "ascension": 11,
+   "items": [
+    "Spiritual Overflow",
+    "Express Shot",
+    "Glass Cannon",
+    "Frenzy",
+    "Lucky Shot",
+    "Crippling Headshot",
+    "Armor Piercer",
+    "Leech",
+    "Witchmail",
+    "Mercurial Magnum",
+    "Transcendent Cooldown",
+    "Boundless Spirit"
+   ],
+   "legendary": "Infinite Rounds",
+   "enhanced": [
+    "Leech",
+    "Mercurial Magnum",
+    "Boundless Spirit"
+   ],
+   "tiers": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+   }
+  },
+  {
+   "ascension": 13,
+   "items": [
+    "Split Shot",
+    "Intensifying Magazine",
+    "Intensifying Magazine",
+    "Spellslinger",
+    "Crippling Headshot",
+    "Frenzy",
+    "Spirit Rend",
+    "Glass Cannon",
+    "Vampiric Burst",
+    "Inhibitor",
+    "Rapid Recharge",
+    "Spirit Burn"
+   ],
+   "legendary": "Omnicharge Signet",
+   "enhanced": [
+    "Split Shot",
+    "Intensifying Magazine",
+    "Rapid Recharge",
+    "Vampiric Burst",
+    "Frenzy",
+    "Omnicharge Signet",
+    "Spirit Rend",
+    "Glass Cannon"
+   ],
+   "tiers": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+   }
+  },
+  {
+   "ascension": 14,
+   "items": [
+    "Recharging Rush",
+    "Spiritual Overflow",
+    "Split Shot",
+    "Ricochet",
+    "Frenzy",
+    "Crippling Headshot",
+    "Spellslinger",
+    "Extra Charge",
+    "Rapid Recharge",
+    "Boundless Spirit",
+    "Superior Duration",
+    "Escalating Exposure"
+   ],
+   "legendary": "Infinite Rounds",
+   "enhanced": [
+    "Recharging Rush",
+    "Split Shot",
+    "Ricochet",
+    "Frenzy",
+    "Rapid Recharge",
+    "Boundless Spirit"
+   ],
+   "tiers": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+   }
+  }
+ ],
+ "Haze": [
+  {
+   "ascension": 1,
+   "items": [
+    "Burst Fire",
+    "Ricochet",
+    "Lucky Shot",
+    "Armor Piercer",
+    "Spiritual Overflow",
+    "Crippling Headshot",
+    "Frenzy",
+    "Vampiric Burst",
+    "Divine Barrier",
+    "Inhibitor",
+    "Leech",
+    "Siphon Bullets"
+   ],
+   "legendary": "Infinite Rounds",
+   "enhanced": [
+    "Burst Fire",
+    "Divine Barrier",
+    "Ricochet",
+    "Inhibitor",
+    "Leech",
+    "Lucky Shot"
+   ],
+   "tiers": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+   }
+  }
+ ],
+ "Grey Talon": [
+  {
+   "ascension": 12,
+   "items": [
+    "Ricochet",
+    "Spiritual Overflow",
+    "Burst Fire",
+    "Glass Cannon",
+    "Leech",
+    "Siphon Bullets",
+    "Vampiric Burst",
+    "Plated Armor",
+    "Surge of Power",
+    "Bullet Resist Shredder",
+    "Mystic Reverb",
+    "Rapid Recharge"
+   ],
+   "legendary": "Frostbite Charm",
+   "enhanced": [
+    "Leech",
+    "Siphon Bullets",
+    "Bullet Resist Shredder",
+    "Ricochet",
+    "Spiritual Overflow",
+    "Vampiric Burst",
+    "Burst Fire",
+    "Rapid Recharge"
+   ],
+   "tiers": {
+    "1": 3,
+    "2": 3,
+    "3": 3,
+    "4": 3
+   }
+  }
+ ]
+}

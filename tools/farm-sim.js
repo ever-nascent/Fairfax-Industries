@@ -372,10 +372,18 @@ function descend() {
   // dummy and a 1e7-health Brute, so share-of-health items (Siphon Bullets, Toxic Bullets, Decay) came out on top for every hero.
   let TABLE = {};
   try { TABLE = require(path.join(__dirname, '..', 'assets', 'farm', 'descendValues.json')); } catch {}
+  // Nov 14 (his ask: "use the finished builds as examples"): the builds of real cleared runs (assets/farm/descendBuilds.json, from the run log). The good bot
+  // leans towards its hero's own finished builds' Items and takes their legendary when offered.
+  let BUILDS = {};
+  try { BUILDS = require(path.join(__dirname, '..', 'assets', 'farm', 'descendBuilds.json')); } catch {}
+  const proven = (hero, name) => (BUILDS[hero] ?? []).some((x) => x.items.includes(name) || x.legendary === name);
+  const PROVEN_WORTH = 0.1;
+  // --decline=ghouls,rest,wounded: the bots turn these deals / events down and never take their door (to measure what one is worth)
+  const DECLINE = String(opt('decline', '')).split(',').filter(Boolean);
   const ENHANCED_WORTH = 1.25; // ponytail: an enhanced copy counted a quarter better; measure enhanced items in descend-values.js if picks hinge on it
   const worth = (hero, name, enhanced = false) => {
     const measured = TABLE[hero]?.[name];
-    if (measured !== undefined) return measured * (enhanced ? ENHANCED_WORTH : 1);
+    if (measured !== undefined) return measured * (enhanced ? ENHANCED_WORTH : 1) + (proven(hero, name) ? PROVEN_WORTH : 0);
     return guess(hero, name, enhanced);
   };
   const guess = (hero, name, enhanced = false) => { // `enhanced`: the offered copy is the enhanced one (Oct 29: the good bot takes those into account)
@@ -420,15 +428,71 @@ function descend() {
       if (!D.setImbue(d, slot).ok) break;
     }
   }
-  function one(hero, seed, good, ascension = ASCENSION) {
-    const d = D.newRun(hero, seed, ascension);
-    const rng = seeded(seed * 7919 + (good ? 1 : 0));
+  // The good bot's answer to a hero's deal (Nov 14: it turned down every deal that takes an Item, so those could not be measured). True when it took one.
+  // It plays each like a member who knows the odds: copies or tempers its best Item, feeds its weakest, heals when hurt. Castling and the Time Capsule it turns down.
+  function deal(d, spec) {
+    const act = (a, n) => D.eventAct(d, a, n);
+    const byWorth = (list) => [...list].sort((a, b) => worth(d.hero, b) - worth(d.hero, a)); // best first
+    const full = countItems(d.items) >= D.rules(d).maxItems;
+    switch (spec.deal) {
+      case 'ghouls': case 'assistant': case 'plot': case 'rescue': case 'venom': case 'rats': case 'doorway': case 'smash': return !!act('accept').ok;
+      case 'burrow': return d.health < 0.4 && !!act('accept').ok; // it digs past rooms and their picks: only to save a hurt hero
+      case 'harrow': { let n = 0; while (d.health < 0.55 && act('heal').ok) n++; return n > 0 && !!act('done').ok; }
+      case 'replica': { // the copy worth the most against the risk of losing the original
+        const odds = (n) => D.REPLICA_CHANCE[Math.min(4, itemByName(n).Tier) - 1];
+        const [best] = D.replicables(d).filter((n) => odds(n) > 0.5).sort((a, b) => worth(d.hero, b) * (2 * odds(b) - 1) - worth(d.hero, a) * (2 * odds(a) - 1));
+        if (!best || worth(d.hero, best) <= 0) return false;
+        const r = act('replica', best);
+        return !!(r.pick ? act('replace', held(d).filter((n) => n !== best).sort((a, b) => worth(d.hero, a) - worth(d.hero, b))[0]).ok : r.ok);
+      }
+      case 'upgrade': { const [best] = byWorth(D.tinkerables(d)); return d.health > 0.5 && !!best && !!act('item', best).ok && !!act('enhance').ok; }
+      case 'turret': { const part = byWorth(D.parts(d)).at(-1); return countItems(d.items) >= 6 && !!part && !!act('turret', part).ok; }
+      case 'helper': return countItems(d.items) >= 6 && !!act('helper', weakest(d)).ok;
+      case 'lesson': { const [kind] = D.lessonKinds(spec.room); return !!kind && !!act('lesson', kind).ok; }
+      case 'stoke': { const [best] = byWorth(D.stokeables(d)); return !!best && !!act('item', best).ok && !!act('stoke').ok && !!act('done').ok; } // the first Stoke is safe
+      case 'travel': { const kinds = D.travelKinds(d, spec.room); const want = (d.health < 0.6 ? ['rest', 'breather', 'urn'] : ['breather', 'urn', 'rest']).find((k) => kinds.includes(k)); return !!want && !!act('travel', want).ok; }
+      case 'fuse': { if (!full) return false; const two = byWorth(D.fuseables(d)).slice(-2); return two.length === 2 && !!act('fuseA', two[0]).ok && !!act('fuseB', two[1]).ok && !!act('fuse').ok; } // a full build's two weakest: a slot back
+      default: return false;
+    }
+  }
+  // --events=1: what each event and deal is worth. At every such choice of a good-pick run the run is played on to its end both ways (the door taken or the
+  // other one; the deal taken or turned down) on the same dice, --reps=2 times: cleared and rooms reached, each way.
+  const EVENTS = !!opt('events');
+  const EVENT_REPS = arg('reps', 2);
+  const tally = {};
+  function probe(d, label, a, b) {
+    const t = (tally[label] ??= { n: 0, a: 0, b: 0, ra: 0, rb: 0 });
+    for (let k = 1; k <= EVENT_REPS; k++) {
+      const s = (Number(d.seed) || 1) * 31 + d.room * 977 + k;
+      const [x, y] = [play(structuredClone(d), seeded(s), true, a && { ...a }), play(structuredClone(d), seeded(s), true, { ...b })];
+      t.n += 1; t.a += x.end === 'cleared' ? 1 : 0; t.b += y.end === 'cleared' ? 1 : 0; t.ra += x.rooms; t.rb += y.rooms;
+    }
+  }
+  const REBIRTH = arg('rebirth', 0); // --rebirth=10: every run's hero has that Rebirth rank
+  const one = (hero, seed, good, ascension = ASCENSION) => play(Object.assign(D.newRun(hero, seed, ascension), REBIRTH ? { rebirth: REBIRTH } : {}), seeded(seed * 7919 + (good ? 1 : 0)), good, null, EVENTS && good);
+  // Plays run `d` on to its end. `force`: { room, door } takes that door of that room's choice, { room, decline } turns down what that room holds. `probing`: measure each choice (probe).
+  function play(d, rng, good, force = null, probing = false) {
     for (;;) {
       const spec = D.specOf(d);
-      if (spec.kind === 'broker') { const [name] = D.corruptibles(d); if (!(good && name && D.corrupt(d, name)?.ok)) d.room += 1; continue; } // a good bot corrupts its first tier 3-4 item, as a player would
+      const forced = force && !force.used && force.room === d.room ? force : null;
+      if (spec.kind === 'doors') { // Two Doors (Nov 13): a random bot takes any door; a good one a named no-fight door when hurt, else a room with a pick
+        const hurt = d.health < 0.45;
+        const want = (x) => (!good ? rng() : x.kind === 'rest' ? (hurt ? 5 : 0.5) : x.noPick && x.kind !== 'rift' ? (hurt ? 4 : 1) : x.mystery ? 3 : x.kind === 'fight' ? 2 : 1.5);
+        const scores = spec.doors.map((x) => (DECLINE.includes(x.kind) ? -1 : want(x)));
+        if (probing && opt('events') !== 'deals') spec.doors.forEach((x, i) => { if (x.noPick || x.mystery) probe(d, `door: ${x.mystery ? 'mystery' : x.kind}`, { room: d.room, door: i }, { room: d.room, door: i ? 0 : 1 }); });
+        if (forced?.door != null) forced.used = true;
+        D.chooseDoor(d, forced?.door ?? scores.indexOf(Math.max(...scores)));
+        continue;
+      }
+      const inside = spec.kind === 'visit' ? `deal: ${spec.deal}` : spec.mystery || spec.kind === 'rival' ? `inside: ${spec.kind}` : null; // a choice made in the room itself
+      if (probing && inside && (opt('events') !== 'deals' || spec.kind === 'visit')) probe(d, inside, null, { room: d.room, decline: true });
+      const declined = !!forced?.decline || DECLINE.includes(spec.kind) || DECLINE.includes(spec.deal);
+      if (forced?.decline) forced.used = true;
+      if (spec.kind === 'broker') { const [name] = D.corruptibles(d); if (!(good && !declined && name && D.corrupt(d, name)?.ok)) d.room += 1; continue; } // a good bot corrupts its first tier 3-4 item, as a player would
       if (D.EVENT_KINDS.includes(spec.kind) || spec.kind === 'visit') { // an event room or a hero room; then its pick, like a won room's (EVENT_PICK)
-        if (spec.kind === 'visit') { // a hero room (Nov 6): the bots take what needs no item (Ghouls, the Assistant, Plot Armor) and turn the rest down
-          if (!D.eventAct(d, 'accept').ok) D.eventAct(d, 'leave');
+        if (declined) D.eventAct(d, 'leave');
+        else if (spec.kind === 'visit') { // a hero room (Nov 6): a random bot takes what needs no Item, a good one plays the deal (deal)
+          if (!(good ? deal(d, spec) : D.eventAct(d, 'accept').ok)) D.eventAct(d, 'leave');
         } else if (spec.kind === 'breather') D.breakCrates(d);
         else if (spec.kind === 'rest') { // a good bot tinkers its dearest item while it has health to spare, else rests; a random one flips a coin
           const can = D.tinkerables(d).sort((a, b) => itemByName(b).Cost - itemByName(a).Cost);
@@ -436,24 +500,27 @@ function descend() {
           D.restStop(d, tinker ? 'tinker' : 'rest', can[0]);
         } else { // the rest take what's offered (sell the cheapest item at the Dealer when hurt), else leave
           const cheapest = D.dealerItems(d).sort((a, b) => itemByName(a).Cost - itemByName(b).Cost)[0];
-          const want = { urn: 'urn', wounded: 'recruit', patron: 'bless', teleporter: 'step', dealer: cheapest && d.health < 0.35 ? 'sell' : 'leave' }[spec.kind];
-          if (!D.eventAct(d, want, cheapest).ok) D.eventAct(d, 'leave');
+          const swap = good && spec.kind === 'dealer' && d.health >= 0.35 && countItems(d.items) >= 4 ? held(d).filter((n) => D.dealerItems(d).includes(n) && D.swapChoices(d, n).length).sort((x, y) => worth(d.hero, x) - worth(d.hero, y))[0] : null; // a good bot trades its weakest Item for 3 a tier up
+          const want = { urn: 'urn', wounded: 'recruit', patron: 'bless', teleporter: 'step', dealer: swap ? 'swap' : cheapest && d.health < 0.35 ? 'sell' : 'leave' }[spec.kind];
+          if (!D.eventAct(d, want, swap ?? cheapest).ok) D.eventAct(d, 'leave');
         }
         if (d.phase !== 'offer') continue;
       } else {
-        if (good && spec.kind === 'rival' && [0, 1, 2].filter(() => D.fightRoom(structuredClone(d), spec, rng).won).length < 2) { D.walkAway(d); continue; } // Flee a duel it would usually lose, as a player can (from Ascension 3 it costs health)
+        if (spec.kind === 'rival' && (declined || (good && [0, 1, 2].filter(() => D.fightRoom(structuredClone(d), spec, rng).won).length < 2))) { D.walkAway(d); continue; } // Flee a duel it would usually lose, as a player can (from Ascension 3 it costs health)
         const run = D.fightRoom(d, spec, rng);
         if (!run.won && spec.kind === 'rift') { D.fleeRift(d, run); continue; } // the Rift lost: the hero flees, the run goes on (Nov 6)
+        if (!run.won && D.canRescue(d, spec)) { D.rescue(d, run); continue; } // Ivy's Rescue (the bots never used it before Nov 14)
         if (!run.won) return { rooms: d.room - 1, end: spec.kind, level: d.level };
         D.afterWin(d, run);
         if (LEGENDARY && opt('always') && d.offer?.kind === 'legendaries' && !d.offer.choices.includes(LEGENDARY)) d.offer.choices[0] = LEGENDARY; // --always=1: the legendary is in every legendary offer
         if (ALL_ENHANCED && d.offer?.choices && d.offer.kind !== 'buffs') d.offer.enhanced = [...d.offer.choices];
         if (spec.final) return { rooms: D.LAST_ROOM, end: 'cleared', level: d.level };
+        if (d.phase !== 'offer') continue; // a room fought again after Ivy's Rescue: no pick
       }
       spendAll(d);
       let choice = Math.floor(rng() * d.offer.choices.length);
       if (good && d.offer.kind === 'items') choice = itemPick(d);
-      else if (good) { let best = -1; choice = -1; for (let i = -1; i < d.offer.choices.length; i++) { const sc = score(d, i, rng); if (sc > best) { best = sc; choice = i; } } if (LEGENDARY && d.offer.kind === 'legendaries' && d.offer.choices.includes(LEGENDARY)) choice = d.offer.choices.indexOf(LEGENDARY); }
+      else if (good) { let best = -1; choice = -1; for (let i = -1; i < d.offer.choices.length; i++) { const sc = score(d, i, rng); if (sc > best) { best = sc; choice = i; } } if (LEGENDARY && d.offer.kind === 'legendaries' && d.offer.choices.includes(LEGENDARY)) choice = d.offer.choices.indexOf(LEGENDARY); else if (d.offer.kind === 'legendaries' && d.offer.choices.some((n) => proven(d.hero, n))) choice = d.offer.choices.findIndex((n) => proven(d.hero, n)); }
       if (good && choice >= 0 && d.offer.kind === 'items' && countItems(d.items) >= D.rules(d).maxItems && !priceFor(itemByName(d.offer.choices[choice]), d.items).used.length) {
         D.takeChoice(d, choice, weakest(d)); // a full build gives up its least useful item, not its cheapest
       } else apply(d, choice);
@@ -490,6 +557,7 @@ function descend() {
     for (const x of list) ends[x.end] = (ends[x.end] ?? 0) + 1;
     console.log(`${good ? 'Good picks  ' : 'Random picks'}  median ${floor(s2.med)}, quarters ${s2.lo}-${s2.hi}, best ${s2.max}   ended by: ${Object.entries(ends).map(([k, n]) => `${k} ${n}`).join(', ')}`);
   }
+  if (EVENTS) console.log(`EVENTS ${JSON.stringify(tally)}`); // summed over heroes by tools/descend-events.js
 }
 
 const COMMANDS = { descend, ladder, tune, siege: siegeNeeds, growth, rank, lanes, waves, check, legendary, race, retune, roster: rosterTable, carry, best };

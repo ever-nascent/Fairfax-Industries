@@ -134,6 +134,8 @@ class Unit {
   }
 }
 
+const VENOM = { seconds: 4, share: 0.004 }; // Vyper's poisoned weapon (Nov 14; my numbers, his to set): each bullet poisons for 4 s, 0.4% of the enemy's max Health a second (half on a boss)
+const GNAW = { shred: 0.04, seconds: 5 }; // a Rat's bite (the Rat King, /descend): that much Bullet Resist off the enemy for that long (each Rat's own, so several add up)
 const PLOT_ARMOR = { safe: 2, health: 0.25 }; // seconds nothing hurts the hero after Paige's Plot Armor saves it (Nov 7, his ask: "keep you alive for a brief period"; my number)
 const ECHO = { name: 'Spectral Assistant' }; // what the Assistant's shots count under in the Damage Breakdown
 
@@ -382,6 +384,9 @@ class Fight {
       const payload = { source, target, amount, dealt, type, opts }; // amount = before resist, dealt = after
       this.emit('damage', payload);
       if (type === 'bullet') this.emit('bulletHit', payload);
+      if (type === 'bullet' && source.venom && target.team !== 'hero' && target.alive) { // Vyper's poisoned weapon (/descend): each hit leaves a poison on the enemy
+        this.addStatus(target, { id: 'venom', duration: VENOM.seconds, debuff: true, dot: { source, perSecond: target.stats.maxHealth * VENOM.share * (target.stats.ccResist ? 0.5 : 1), type: 'spirit', every: 0.5, next: target.statuses.find((x) => x.id === 'venom')?.dot.next ?? this.time + 0.5 } }); // (a refresh keeps its tick, or fast bullets would never let it fire)
+      }
       if (!target.alive) this.emit('kill', payload);
     }
     if (!target.alive && target.stats.special?.onDeath && !target.burst) { // a Haunt that goes off as it dies (the Specimen)
@@ -715,6 +720,11 @@ class Fight {
       if (m.swing < ATTACK_EVERY - 1e-9) continue;
       m.swing -= ATTACK_EVERY;
       this.damage(m, target, m.stats.dps * ATTACK_EVERY, m.stats.damageType ?? 'bullet');
+      if (m.rat && target.alive) {
+        this.addStatus(target, { id: `gnaw:${m.name}`, duration: GNAW.seconds, debuff: true, mods: { bulletResist: -GNAW.shred } });
+        // Rabies Ronnie: a bite may give a room enemy rabies for good (never a boss, a hero or a rival hero)
+        if (m.ronnie && !target.rabid && !target.stats.ccResist && !target.abilities?.length && this.rng() < m.ronnie) { target.rabid = true; this.log.push({ t: +this.time.toFixed(1), who: target.name, what: 'Rabies', special: true }); }
+      }
     }
     // a rival with `flee` ({ at, chance }: the Rift's, his ask Nov 6) may run once it drops to `at` of its health: one roll, then it is out of the fight
     for (const e of this.enemies) {
@@ -744,6 +754,18 @@ class Fight {
       const aimed = pool.length < 2 ? pool[0] : pool.includes(enemy.aim) ? enemy.aim : (enemy.aim = pool[Math.floor(this.rng() * pool.length)]);
       const target = aimed?.team === 'minion' ? (seenHeroes.includes(enemy.heroAim) ? enemy.heroAim : (enemy.heroAim = seenHeroes[0])) : aimed;
       if (!aimed) continue;
+      if (enemy.rabid) { // rabies: it turns on the other enemies, and goes back to the hero's side when none are left (his rules, Nov 14)
+        const prey = this.enemies.filter((o) => o !== enemy && o.alive && !o.fled && o.team === 'enemy' && !guarded(o));
+        if (prey.length && !enemy.has('disarm')) {
+          enemy.swing = (enemy.swing ?? 0) + DT * attackRate(enemy);
+          if (enemy.swing >= ATTACK_EVERY - 1e-9) {
+            enemy.swing -= ATTACK_EVERY;
+            const victim = prey.includes(enemy.prey) ? enemy.prey : (enemy.prey = prey[Math.floor(this.rng() * prey.length)]);
+            this.damage(enemy, victim, enemy.stats.dps * ATTACK_EVERY, enemy.stats.damageType === 'mixed' ? 'bullet' : enemy.stats.damageType ?? 'bullet');
+          }
+          continue;
+        }
+      }
       if (!enemy.has('disarm')) {
         enemy.swing = (enemy.swing ?? 0) + DT * attackRate(enemy);
         if (enemy.swing >= ATTACK_EVERY - 1e-9) {

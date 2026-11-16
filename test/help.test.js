@@ -39,11 +39,11 @@ test("every page fits Discord's limits, for staff and members", () => {
   }
 });
 
-test("members don't see staff or Fairfax-only commands", () => {
+test("members don't see staff commands", () => {
   const named = book(member).flatMap((c) => c.pages).map((p) => p.command).filter(Boolean);
   for (const name of ['xp', 'xp-config', 'lfg-config', 'audit-log-config', 'farm-config', 'reaction-roles']) assert.ok(!named.includes(name), name);
   assert.ok(!book(member).some((c) => c.key === 'staff'));
-  assert.ok(!book(member).flatMap((c) => c.pages).some((p) => p.title.includes('Hideout')), 'Hideouts are Fairfax only');
+  assert.ok(book(member).flatMap((c) => c.pages).some((p) => p.title.includes('Hideout')), 'Hideouts are in every server');
   const index = book(member).find((c) => c.key === 'xp').pages.findIndex((p) => p.command === 'souls');
   const fields = helpView(member, '1', 'xp', index).embeds[0].toJSON().fields;
   assert.ok(fields.some((f) => f.value.includes('/souls balance')));

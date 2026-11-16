@@ -6,13 +6,14 @@ const { AuditLogEvent: A, EmbedBuilder, Collection } = require('discord.js');
 const audit = require('../src/utils/audit/auditLog');
 const { handleEntry, permDiff } = require('../src/utils/audit/auditEntries');
 const memory = require('../src/utils/audit/auditMessages');
+const { GUILD_ID } = require('../src/config');
 
 // A server with the log channel, #general inside a category, and a fake Discord audit log.
 const sent = [];
 let auditEntries = [];
 const LOG = '1554246639760318524';
 const guild = {
-  id: 'g',
+  id: GUILD_ID, // Fairfax, whose log channel is already set
   name: 'Fairfax',
   channels: { cache: new Collection([[LOG, { id: LOG, send: async (m) => sent.push(m) }], ['general', { id: 'general', parentId: 'cat' }]]) },
   roles: { cache: new Collection() },
@@ -28,17 +29,17 @@ test('log posts, and skips events that are off, ignored members/channels (and th
   await post('message-edit', { channelId: 'general', userIds: ['u1'] });
   assert.strictEqual(sent.length, 1);
 
-  await audit.updateSettings((s) => s.off.push('message-edit'));
+  await audit.updateSettings(GUILD_ID, (s) => s.off.push('message-edit'));
   await post('message-edit', { channelId: 'general' });
-  await audit.updateSettings((s) => (s.off = []));
+  await audit.updateSettings(GUILD_ID, (s) => (s.off = []));
 
-  await audit.updateSettings((s) => s.ignoredMembers.push('u1'));
+  await audit.updateSettings(GUILD_ID, (s) => s.ignoredMembers.push('u1'));
   await post('message-delete', { userIds: [null, 'u1'] });
-  await audit.updateSettings((s) => (s.ignoredMembers = []));
+  await audit.updateSettings(GUILD_ID, (s) => (s.ignoredMembers = []));
 
-  await audit.updateSettings((s) => s.ignoredChannels.push('cat'));
+  await audit.updateSettings(GUILD_ID, (s) => s.ignoredChannels.push('cat'));
   await post('message-delete', { channelId: 'general' });
-  await audit.updateSettings((s) => (s.ignoredChannels = []));
+  await audit.updateSettings(GUILD_ID, (s) => (s.ignoredChannels = []));
 
   await post('reaction-add', { channelId: LOG });
   assert.strictEqual(sent.length, 1);
@@ -79,7 +80,7 @@ test('a kick with no reason shows it in red and goes into the member history', a
   await handleEntry(entry({ action: A.MemberKick, executorId: 'mod', targetId: 'u3' }), guild);
   assert.match(lastText(), /Member Kicked/);
   assert.match(lastText(), /No reason given/);
-  const [record] = await audit.getHistory('u3');
+  const [record] = await audit.getHistory(GUILD_ID, 'u3');
   assert.strictEqual(record.text, 'Kicked by <@mod> `usermod` (`mod`) (no reason given)');
 });
 
@@ -94,7 +95,7 @@ test('a timeout logs its length and a nickname change logs before and after', as
   assert.strictEqual(fieldsOf(0).Reason, 'spam');
   assert.strictEqual(sent[1].embeds[0].data.title, 'Nickname Changed');
   assert.deepStrictEqual([fieldsOf(1).Before, fieldsOf(1).After, fieldsOf(1).By], ['a', 'b', '<@mod> `usermod` (`mod`)']);
-  assert.strictEqual((await audit.getHistory('u4')).length, 2);
+  assert.strictEqual((await audit.getHistory(GUILD_ID, 'u4')).length, 2);
 });
 
 test('the deleter is only blamed for a new or grown Discord delete entry', async () => {
@@ -128,4 +129,19 @@ test('message memory keeps text and mentions, and forgets messages older than 7 
   assert.strictEqual(memory.get('old'), null);
   assert.strictEqual(memory.take('new').content, 'hi new');
   assert.strictEqual(memory.get('new'), null);
+});
+
+test('another server logs nothing until its log channel is set, and its history is its own', async () => {
+  const other = { ...guild, id: 'other-server', channels: { cache: new Collection([['mine', { id: 'mine', send: async (m) => sent.push(m) }]]) } };
+  sent.length = 0;
+  assert.strictEqual((await audit.getSettings('other-server')).channelId, null);
+  await audit.log(other, 'member-join', new EmbedBuilder().setTitle('x'));
+  assert.strictEqual(sent.length, 0);
+  await audit.updateSettings('other-server', (s) => { s.channelId = 'mine'; });
+  await audit.log(other, 'member-join', new EmbedBuilder().setTitle('x'));
+  assert.strictEqual(sent.length, 1);
+  assert.strictEqual((await audit.getSettings(GUILD_ID)).channelId, LOG); // Fairfax is untouched
+  await audit.addHistory('other-server', 'u9', 'join', 'Joined');
+  assert.strictEqual((await audit.getHistory('other-server', 'u9')).length, 1);
+  assert.strictEqual((await audit.getHistory(GUILD_ID, 'u9')).length, 0);
 });

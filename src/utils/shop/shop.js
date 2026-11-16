@@ -9,7 +9,6 @@ const { getHideout } = require('./hideout');
 const { shopConfig } = require('./shopSettings');
 const { getColorRole } = require('./colorRole');
 const { DEAL_OFF, dealOf } = require('./dailyDeal');
-const { isHomeGuild } = require('../guild');
 const { renderRankCard, CARD_COLOR, cardColor } = require('../economy/rankCard');
 const { renderShopBanner, renderItemPage } = require('./shopBanner');
 const { HEROES, getHero, heroArt, heroEmoji } = require('../heroes');
@@ -60,7 +59,7 @@ const SECTIONS = [
 
 // The sections on sale in `guildId`'s Shop: the ones staff left on (/shop-config); Hideouts only in Fairfax
 // (they are built for its channels and category); the Daily Deal only while there is one (dailyDeal.js).
-const onSale = (cfg, guildId) => SECTIONS.filter((s) => cfg.on(s.value) && (s.value !== 'hideout' || isHomeGuild(guildId)) && (s.value !== 'daily-deal' || dealOf(cfg, guildId)));
+const onSale = (cfg, guildId) => SECTIONS.filter((s) => cfg.on(s.value) && (s.value !== 'daily-deal' || dealOf(cfg, guildId)));
 
 // The section dropdown, on top of every Shop page. `current` = the section on screen (null on the first screen).
 function sectionRow(member, current, heroSlug, cfg) {

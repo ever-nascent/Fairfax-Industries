@@ -52,3 +52,13 @@ test('a menu whose emoji was replaced: stale keys found, ids swapped in the role
   assert.deepStrictEqual(Object.entries(fixed.roles), [[A, 'r1'], [NEW, 'r2'], ['🔥', 'r3'], [C, 'r4']]);
   assert.strictEqual(fixed.text, `> <:haze:${A}> \`-\` <@&r1>\n> <:abrams:${NEW}> \`-\` <@&r2>`);
 });
+
+test('a menu made as a gate also gives its unlock role, and only that menu does', async () => {
+  const { saveMenu, getMenu, saveMenuUnlock } = require('../src/utils/server/reactionRoles');
+  await saveMenu('gate1', 'srv', 'chan', { mode: 'multi', unlockRoleId: 'member-role', pairs: [{ key: 'a', roleId: 'r1' }] });
+  assert.strictEqual((await getMenu('gate1')).unlockRoleId, 'member-role');
+  await saveMenu('plain1', 'srv', 'chan', { mode: 'multi', pairs: [{ key: 'a', roleId: 'r1' }] });
+  assert.strictEqual((await getMenu('plain1')).unlockRoleId, undefined);
+  await saveMenuUnlock('gate1', await getMenu('gate1'), null);
+  assert.strictEqual((await getMenu('gate1')).unlockRoleId, undefined);
+});

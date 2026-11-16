@@ -8,7 +8,7 @@ const {
 } = require('discord.js');
 const { getStore } = require('../../storage');
 const { getUser, changeSouls } = require('../economy/xp');
-const { findOrCreateChannel, isHomeGuild } = require('../guild');
+const { findOrCreateChannel } = require('../guild');
 const { withLock } = require('../../storage/mutex');
 const { findPhrase, getPhrases } = require('../server/censor');
 
@@ -71,12 +71,13 @@ async function parentWithRoom(guild, categoryId, needed) {
   }
 }
 
-// On startup: the Hideouts category (made if missing, unless staff picked another).
+// The Hideouts category: the saved one, else one called Hideouts (made if missing). Made when a server's first Hideout is bought.
 async function ensureCategory(guild) {
   const saved = (await settings().get(guild.id)) ?? {};
   await guild.channels.fetch();
   const category = await findOrCreateChannel(guild, { name: CATEGORY, type: ChannelType.GuildCategory }, saved.categoryId);
   await settings().set(guild.id, { ...saved, categoryId: category.id });
+  return category.id;
 }
 
 // /hideout-config category: new Hideouts go there, and the existing ones move there too.
@@ -90,7 +91,6 @@ async function setCategory(guild, category) {
 // Buys a Hideout: checks level, souls and that they don't own one, takes the souls, makes both channels and
 // pins the control panel. Returns null, or why not: 'level' | 'owned' | 'souls'.
 async function buyHideout(member, price = HIDEOUT_PRICE, minLevel = HIDEOUT_LEVEL) {
-  if (!isHomeGuild(member.guild.id)) return 'away'; // Hideouts are a Fairfax feature
   if ((await getUser(member.id)).level < minLevel) return 'level';
   let fresh = false;
   await hideouts().update(member.id, (current) => {
@@ -118,7 +118,8 @@ async function buyHideout(member, price = HIDEOUT_PRICE, minLevel = HIDEOUT_LEVE
 // Makes whichever of the two channels doesn't exist (both when buying; one if staff deleted it by hand), with the
 // saved name, members and access, and a freshly pinned panel in a new text channel. Returns the updated hideout.
 async function makeChannels(guild, ownerId, hideout, present = true) {
-  const { categoryId } = (await settings().get(guild.id)) ?? {};
+  let { categoryId } = (await settings().get(guild.id)) ?? {};
+  if (!guild.channels.cache.has(categoryId)) categoryId = await ensureCategory(guild); // a new server's first Hideout, or staff deleted the category
   const next = { ...hideout };
   const missing = [next.voiceId, next.textId].filter((id) => !guild.channels.cache.has(id)).length;
   const parent = await parentWithRoom(guild, categoryId, missing);

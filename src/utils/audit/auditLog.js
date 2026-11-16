@@ -4,7 +4,9 @@ const { AuditLogEvent, EmbedBuilder } = require('discord.js');
 const { setTimeout: sleep } = require('node:timers/promises');
 const { getStore } = require('../../storage');
 
-const DEFAULT_CHANNEL_ID = '1554246639760318524';
+const { isHomeGuild } = require('../guild');
+
+const DEFAULT_CHANNEL_ID = '1554246639760318524'; // Fairfax's own #audit-log; every other server starts with none (/audit-log-config channel)
 // green = added/joined, red = deleted/removed/left, yellow = edited, blue = other.
 const COLOR = { add: 0x6aa98a, remove: 0xe2574c, edit: 0xe8b640, info: 0x5865f2 };
 
@@ -56,35 +58,38 @@ const EVENTS = {
   'automod-rule': 'AutoMod Rule Created / Edited / Deleted',
 };
 
-const DEFAULTS = { channelId: DEFAULT_CHANNEL_ID, off: [], ignoredChannels: [], ignoredMembers: [], newAccountDays: 7 };
+// One set of settings per server. Fairfax's were saved under the plain key 'settings' before the bot went public, so it still reads that one.
+const defaults = (guildId) => ({ channelId: isHomeGuild(guildId) ? DEFAULT_CHANNEL_ID : null, off: [], ignoredChannels: [], ignoredMembers: [], newAccountDays: 7 });
 const store = () => getStore('auditLog');
-let settings = null; // read once, then kept in step by updateSettings
+const keyOf = (guildId) => (isHomeGuild(guildId) ? 'settings' : `settings:${guildId}`);
+const settingsCache = new Map(); // guild id -> settings, read once, then kept in step by updateSettings
 
-async function getSettings() {
-  settings ??= { ...structuredClone(DEFAULTS), ...(await store().get('settings')) };
-  return settings;
+async function getSettings(guildId) {
+  if (!settingsCache.has(guildId)) settingsCache.set(guildId, { ...defaults(guildId), ...(await store().get(keyOf(guildId))) });
+  return settingsCache.get(guildId);
 }
 
-async function updateSettings(mutate) {
-  settings = await store().update('settings', (saved) => {
-    const next = { ...structuredClone(DEFAULTS), ...saved };
-    mutate(next);
-    return next;
+async function updateSettings(guildId, mutate) {
+  const next = await store().update(keyOf(guildId), (saved) => {
+    const merged = { ...defaults(guildId), ...saved };
+    mutate(merged);
+    return merged;
   });
-  return settings;
+  settingsCache.set(guildId, next);
+  return next;
 }
 
 // Posts `embed` in the log channel, unless the event is off, it happened in the log channel or an ignored channel
 // (or that channel's category, or a thread's parent), or one of `userIds` is an ignored member.
 async function log(guild, event, embed, { channel = null, channelId = null, userIds = [], files = [] } = {}) {
-  const s = await getSettings();
+  const s = await getSettings(guild.id);
   if (s.off.includes(event)) return;
   if (userIds.some((id) => id && s.ignoredMembers.includes(id))) return;
   const ch = channel ?? guild.channels.cache.get(channelId) ?? null;
   const chain = [channelId, ch?.id, ch?.parentId, ch?.parent?.parentId].filter(Boolean);
   if (chain.some((id) => id === s.channelId || s.ignoredChannels.includes(id))) return;
-  const logChannel = guild.channels.cache.get(s.channelId);
-  if (!logChannel) return;
+  const logChannel = s.channelId && guild.channels.cache.get(s.channelId);
+  if (!logChannel) return; // a server that hasn't set a log channel logs nothing
   embed.setTimestamp();
   await logChannel
     .send({ embeds: [embed], files, allowedMentions: { parse: [] } })
@@ -144,32 +149,36 @@ const reasonText = (reason, required = false) => reason || (required ? NO_REASON
 // ---- Member history (kept forever; /audit-log-config history) ----
 
 const historyStore = () => getStore('auditHistory');
-async function addHistory(userId, type, text, extra = {}) {
+// Fairfax's records are keyed by the plain user id (from before the bot went public); every other server's by "<server id>:<user id>".
+const historyKey = (guildId, userId) => (isHomeGuild(guildId) ? userId : `${guildId}:${userId}`);
+async function addHistory(guildId, userId, type, text, extra = {}) {
   await historyStore()
-    .update(userId, (list) => [...(list ?? []), { at: Date.now(), type, text, ...extra }])
+    .update(historyKey(guildId, userId), (list) => [...(list ?? []), { at: Date.now(), type, text, ...extra }])
     .catch((e) => console.error('[auditLog] History save failed:', e.message));
 }
-const getHistory = async (userId) => (await historyStore().get(userId)) ?? [];
+const getHistory = async (guildId, userId) => (await historyStore().get(historyKey(guildId, userId))) ?? [];
 
 // ---- Invite tracking: which invite a new member used ----
 
-const inviteUses = new Map(); // code → uses
-let vanityUses = null;
+const inviteUses = new Map(); // guild id → (code → uses)
+const vanityUses = new Map(); // guild id → uses
+const usesIn = (guildId) => inviteUses.get(guildId) ?? inviteUses.set(guildId, new Map()).get(guildId);
 
 async function snapshotInvites(guild) {
   const invites = await guild.invites.fetch().catch(() => null);
   if (!invites) return null;
-  inviteUses.clear();
-  for (const invite of invites.values()) inviteUses.set(invite.code, invite.uses ?? 0);
+  const uses = usesIn(guild.id);
+  uses.clear();
+  for (const invite of invites.values()) uses.set(invite.code, invite.uses ?? 0);
   return invites;
 }
 
-const rememberInvite = (invite) => inviteUses.set(invite.code, invite.uses ?? 0);
-const forgetInvite = (invite) => inviteUses.delete(invite.code);
+const rememberInvite = (invite) => invite.guild && usesIn(invite.guild.id).set(invite.code, invite.uses ?? 0);
+const forgetInvite = (invite) => invite.guild && usesIn(invite.guild.id).delete(invite.code);
 
 // A line saying which invite a member just joined with.
 async function usedInvite(guild) {
-  const before = new Map(inviteUses);
+  const before = new Map(usesIn(guild.id));
   const invites = await snapshotInvites(guild);
   if (!invites) return 'Unknown (the bot needs Manage Server to see invites)';
   const used = invites.find((i) => i.uses > (before.get(i.code) ?? 0));
@@ -179,8 +188,8 @@ async function usedInvite(guild) {
   }
   if (guild.vanityURLCode) {
     const vanity = await guild.fetchVanityData().catch(() => null);
-    const grew = vanity && vanityUses !== null && vanity.uses > vanityUses;
-    if (vanity) vanityUses = vanity.uses;
+    const grew = vanity && vanityUses.has(guild.id) && vanity.uses > vanityUses.get(guild.id);
+    if (vanity) vanityUses.set(guild.id, vanity.uses);
     if (grew) return `Vanity URL discord.gg/${vanity.code}`;
   }
   const gone = [...before.keys()].filter((code) => !invites.has(code));
@@ -191,19 +200,19 @@ async function usedInvite(guild) {
 // ---- Who deleted a message (Discord only records deletes of someone else's message) ----
 
 const seenDeletes = new Map(); // audit entry id → its count, so an old entry isn't blamed for a new delete
-let deletesPrimed = false;
+const deletesPrimed = new Set(); // guild ids whose existing delete entries have been remembered
 
 async function findDeleter(guild, authorId, channelId) {
-  if (deletesPrimed) await sleep(1500); // the audit entry lands just after the delete
+  if (deletesPrimed.has(guild.id)) await sleep(1500); // the audit entry lands just after the delete
   const logs = await guild.fetchAuditLogs({ type: AuditLogEvent.MessageDelete, limit: 10 }).catch(() => null);
   let found = null;
   for (const entry of logs?.entries.values() ?? []) {
     const before = seenDeletes.get(entry.id);
     seenDeletes.set(entry.id, entry.extra.count);
-    const isNew = before === undefined ? deletesPrimed : entry.extra.count > before;
+    const isNew = before === undefined ? deletesPrimed.has(guild.id) : entry.extra.count > before;
     if (!found && isNew && entry.targetId === authorId && entry.extra.channel.id === channelId) found = entry.executorId;
   }
-  deletesPrimed = true;
+  deletesPrimed.add(guild.id);
   return found;
 }
 

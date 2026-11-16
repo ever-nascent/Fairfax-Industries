@@ -1,4 +1,5 @@
 // Descend's hero rooms and the Rift (his asks, Nov 6; server-plan.md "Hero Encounters"): who shows up, each approved deal, minions and the free-for-all.
+process.env.DESCEND_V = '7'; // these checks are about the fixed rooms from before Two Doors (test/doors.test.js has the doors)
 const test = require('./group')(__filename);
 const assert = require('node:assert');
 const D = require('../src/utils/farm/descent');
@@ -6,8 +7,8 @@ const { Fight, enemy } = require('../src/utils/farm/engine');
 const { buildHero } = require('../src/utils/farm/hero');
 
 const KIT = { weapon: ['Headshot Booster', 'Rapid Rounds'], vitality: ['Extra Health'], spirit: ['Extra Spirit', 'Mystic Burst'] };
-const at = (pred) => { for (let seed = 1; seed < 2000; seed++) for (let room = 3; room < D.LAST_ROOM; room++) { const s = D.roomSpec(seed, room, 'Haze', 0, D.VERSION); if (pred(s)) return { seed, room }; } return null; };
-const every = (pred, n) => { const out = []; for (let seed = 1; out.length < n && seed < 20000; seed++) for (let room = 3; room < D.LAST_ROOM; room++) if (pred(D.roomSpec(seed, room, 'Haze', 0, D.VERSION))) out.push({ seed, room }); return out; };
+const at = (pred) => { for (let seed = 1; seed < 2000; seed++) for (let room = 3; room < D.LAST_ROOM; room++) { const s = D.roomSpec(seed, room, 'Haze', 0, 7); if (pred(s)) return { seed, room }; } return null; };
+const every = (pred, n) => { const out = []; for (let seed = 1; out.length < n && seed < 20000; seed++) for (let room = 3; room < D.LAST_ROOM; room++) if (pred(D.roomSpec(seed, room, 'Haze', 0, 7))) out.push({ seed, room }); return out; };
 const run = (where, items = KIT) => Object.assign(D.newRun('Haze', where.seed), { room: where.room, level: 10, items: structuredClone(items) });
 const visit = (deal) => run(at((s) => s.kind === 'visit' && s.deal === deal));
 

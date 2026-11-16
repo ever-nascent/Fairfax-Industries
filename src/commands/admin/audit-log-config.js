@@ -4,15 +4,14 @@ const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags, Emb
 const { requirePermission } = require('../../utils/permissions');
 const { REPLY_COLOR } = require('../../config');
 const { privateReply } = require('../../utils/embeds');
-const { EVENTS, getSettings, updateSettings, getHistory, ts, clip } = require('../../utils/audit/auditLog');
+const { EVENTS, getSettings, updateSettings, getHistory, snapshotInvites, findDeleter, ts, clip } = require('../../utils/audit/auditLog');
 
 const ALL = 'all';
 
 // Adds or removes `id` in the settings list `key`.
-const setIn = (key, id, on) => updateSettings((s) => (s[key] = on ? [...new Set([...s[key], id])] : s[key].filter((x) => x !== id)));
+const setIn = (guildId, key, id, on) => updateSettings(guildId, (s) => (s[key] = on ? [...new Set([...s[key], id])] : s[key].filter((x) => x !== id)));
 
 module.exports = {
-  homeOnly: true, // registered in the Fairfax server only (deploy-commands.js)
   data: new SlashCommandBuilder()
     .setName('audit-log-config')
     .setDescription('Admins: choose what the audit log records')
@@ -76,7 +75,7 @@ module.exports = {
       const event = interaction.options.getString('event');
       const on = interaction.options.getBoolean('on');
       if (event !== ALL && !EVENTS[event]) return reply('Pick an event from the list.');
-      await updateSettings((s) => {
+      await updateSettings(interaction.guildId, (s) => {
         const keys = event === ALL ? Object.keys(EVENTS) : [event];
         s.off = on ? s.off.filter((k) => !keys.includes(k)) : [...new Set([...s.off, ...keys])];
       });
@@ -86,7 +85,7 @@ module.exports = {
     if (sub === 'ignore-channel') {
       const channel = interaction.options.getChannel('channel');
       const ignore = interaction.options.getBoolean('ignore');
-      await setIn('ignoredChannels', channel.id, ignore);
+      await setIn(interaction.guildId, 'ignoredChannels', channel.id, ignore);
       const inside = channel.type === ChannelType.GuildCategory ? ' and every channel in it' : '';
       return reply(ignore ? `Nothing in ${channel}${inside} is logged now.` : `${channel}${inside} is logged again.`);
     }
@@ -94,25 +93,27 @@ module.exports = {
     if (sub === 'ignore-member') {
       const user = interaction.options.getUser('member');
       const ignore = interaction.options.getBoolean('ignore');
-      await setIn('ignoredMembers', user.id, ignore);
+      await setIn(interaction.guildId, 'ignoredMembers', user.id, ignore);
       return reply(ignore ? `Nothing ${user} does is logged now.` : `${user} is logged again.`);
     }
 
     if (sub === 'channel') {
       const channel = interaction.options.getChannel('channel');
-      await updateSettings((s) => (s.channelId = channel.id));
-      return reply(`The audit log now posts in ${channel}. Its permissions weren't changed: check who can see it.`);
+      await updateSettings(interaction.guildId, (s) => (s.channelId = channel.id));
+      await snapshotInvites(interaction.guild); // so the first joins can name their invite
+      await findDeleter(interaction.guild); // and old deletes aren't blamed for new ones
+      return reply(`The audit log now posts in ${channel} and starts recording from now. Its permissions weren't changed: check who can see it.`);
     }
 
     if (sub === 'account-age') {
       const days = interaction.options.getInteger('days');
-      await updateSettings((s) => (s.newAccountDays = days));
+      await updateSettings(interaction.guildId, (s) => (s.newAccountDays = days));
       return reply(`Joins from accounts younger than **${days} day${days === 1 ? '' : 's'}** are flagged as new accounts.`);
     }
 
     if (sub === 'history') {
       const user = interaction.options.getUser('member');
-      const history = await getHistory(user.id);
+      const history = await getHistory(interaction.guildId, user.id);
       if (!history.length) return reply(`Nothing recorded for ${user} yet. (History started when the audit log was turned on.)`);
       const lines = history.map((h) => `${ts(h.at)} ${h.text}`).reverse(); // newest first
       let text = '';
@@ -134,13 +135,13 @@ module.exports = {
     }
 
     // overview
-    const s = await getSettings();
+    const s = await getSettings(interaction.guildId);
     const off = Object.keys(EVENTS).filter((k) => s.off.includes(k));
     const embed = new EmbedBuilder()
       .setColor(REPLY_COLOR)
       .setTitle('Audit Log Overview')
       .addFields(
-        { name: 'Log Channel', value: `<#${s.channelId}>`, inline: true },
+        { name: 'Log Channel', value: s.channelId ? `<#${s.channelId}>` : 'Not set: nothing is logged. Use /audit-log-config channel.', inline: true },
         { name: 'New Account Under', value: `${s.newAccountDays} days`, inline: true },
         { name: `Events Off (${off.length}/${Object.keys(EVENTS).length})`, value: clip(off.map((k) => EVENTS[k]).join('\n'), 1024) || 'All Events Are Enabled' },
         { name: 'Ignored Channels', value: clip(s.ignoredChannels.map((id) => `<#${id}>`).join(' '), 1024) || 'None' },

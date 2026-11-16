@@ -1,5 +1,5 @@
 // Run: node --test (npm test). The bot works in any server: commands everywhere (Fairfax-only ones stay in Fairfax), the home
-// server's emojis show in other servers, LFG is set up on request, and Hideouts stay a Fairfax feature.
+// server's emojis show in other servers, LFG is set up on request, and Hideouts work everywhere.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('./group')(__filename);
 const assert = require('node:assert');
@@ -24,7 +24,8 @@ const guildWith = (id, emojiNames = [], client = {}) => ({
 test('commands go to every server, as server-only commands; the Fairfax-only ones go to Fairfax alone', () => {
   const { everywhere, home } = commandBodies(loadCommands());
   const names = (list) => list.map((c) => c.name);
-  assert.deepStrictEqual(names(home).sort(), ['audit-log-config', 'farm-config', 'hideout-config', 'stream-config']);
+  assert.deepStrictEqual(names(home), []); // nothing is Fairfax-only any more (Oct 30 mechanism kept for later)
+  for (const name of ['audit-log-config', 'hideout-config', 'stream-config', 'farm-config', 'welcome-config', 'setup']) assert.ok(names(everywhere).includes(name), name);
   for (const name of ['rank', 'shop', 'lfg', 'lfg-config', 'mini-game', 'descend', 'souls', 'xp-config']) assert.ok(names(everywhere).includes(name), name);
   assert.ok(!names(everywhere).some((n) => names(home).includes(n)), 'nothing is registered twice');
   for (const c of [...everywhere, ...home]) {
@@ -77,7 +78,7 @@ test('LFG setup in a new server makes the roles, the LFG category and one region
   assert.strictEqual(created.channels.length, 2);
 });
 
-test('Hideouts are a Fairfax feature: buying one in another server is refused', async () => {
+test('Hideouts work in any server: buying one in another server gets as far as the level check', async () => {
   const result = await runInGuild('other', () => buyHideout({ id: 'someone', guild: { id: 'other' } }));
-  assert.strictEqual(result, 'away');
+  assert.strictEqual(result, 'level');
 });

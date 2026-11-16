@@ -62,3 +62,23 @@ test('startup: a failed download never throws', async () => {
   const out = await corruption.loadCorruptionLabels({ fetchImpl: async () => ({ ok: false, status: 503 }), now: Date.now() + 365 * 864e5 });
   assert.strictEqual(typeof out, 'object');
 });
+
+// Nov 13, his report: "Corrupting an Item should not remove its enhanced power or any other attributes".
+test('a corrupted Item keeps its Enhanced bonuses whichever copy was built first, and Fragile and Tempered stay on top', () => {
+  const { cardFor, itemByName, enhancedCard, corruptCard, fragileCard, temperedCard, ITEMS } = require('../src/utils/farm/stats');
+  const stat = (card) => JSON.stringify(Object.keys(card).filter((k) => k.startsWith('Info')).map((k) => card[k]));
+  const names = Object.values(ITEMS).filter((c) => c.Tier >= 3 && c.PropertyUpgrades && c.CorruptedUpgrades).map((c) => c.Name).slice(0, 12);
+  assert.ok(names.length >= 4, 'items with both kinds of bonus exist');
+  for (const n of names) {
+    const c = [{ name: n, drawback: 'spirit', amount: 1 }];
+    const base = itemByName(n);
+    const plain = cardFor(n, c, [], []); // built first, plain: a name-keyed cache then handed this card to the Enhanced copy too
+    const both = cardFor(n, c, [n], []);
+    assert.strictEqual(stat(both), stat(corruptCard(enhancedCard(base))), `${n}: corrupted and Enhanced`);
+    assert.notStrictEqual(stat(both), stat(plain), `${n}: the Enhanced copy is not the plain corrupted one`);
+    assert.strictEqual(stat(cardFor(n, c, [], [])), stat(corruptCard(base)), `${n}: a plain corrupted copy is not touched by the Enhanced one`);
+    assert.strictEqual(stat(cardFor(n, null, [n], [])), stat(enhancedCard(base)), `${n}: Enhanced alone`);
+    assert.strictEqual(stat(cardFor(n, c, [n], [n])), stat(corruptCard(fragileCard(enhancedCard(base)))), `${n}: Fragile, Enhanced and corrupted together`);
+    assert.strictEqual(stat(cardFor(n, c, [n], [], { [n]: 2 })), stat(temperedCard(corruptCard(enhancedCard(base)), 2)), `${n}: Tempered on top`);
+  }
+});

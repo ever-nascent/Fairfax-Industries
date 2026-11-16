@@ -182,14 +182,14 @@ const hauntFile = (family, size) => path.join(ASSETS, 'farm', 'haunts', `${famil
 //   { key, siege, hero, won, timedOut, cleared (stages beaten), stageNames, seconds, souls, rejuvsUsed, rejuvsEarned,
 //     family: { key, name, size } | null (camps), frames (snapshots to replay), log: [[seconds, text]] }
 const DESCEND_NPC = 0.5; // Monster Rounds' "vs. NPCs" bonuses in /descend, where every enemy is an NPC (his call Nov 2: halved; hero.js scaleNpc)
-function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, kept = {}, clears = 0, family: wanted, walkersDown: fallen = 0, stages: rooms = null, health = null, healthScale = 1, enhanced = [], fragile = [], rebirth = 0, tuning = 0, itemCd = {}, aura = 0, lesson = null, allies = [], minions = [], ffa = false, flee = 0, maxSeconds = null, echo = 0, plotArmor = false } = {}) {
+function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, kept = {}, clears = 0, family: wanted, walkersDown: fallen = 0, stages: rooms = null, health = null, healthScale = 1, enhanced = [], fragile = [], tempered = {}, rebirth = 0, tuning = 0, itemCd = {}, aura = 0, lesson = null, allies = [], minions = [], ffa = false, flee = 0, maxSeconds = null, echo = 0, plotArmor = false, venom = false } = {}) {
   const rnd = (n) => Math.floor(rng() * n);
   const isSiege = requested === 'siege';
   const isWaves = requested === 'waves';
   const isDescend = requested === 'descend'; // a /descend room (descent.js): its own `stages`, the run's health carried in (`health`, a share of max)
   const key = requested;
   const target = isSiege || isWaves || isDescend ? null : TARGETS[key];
-  const kit = { buffs, bridge, boons, items, tiers, unlocked, corrupted, imbues, copies, kept, healthScale, enhanced, fragile, rebirth, tuning, itemCd, aura, lesson, npcScale: isDescend ? DESCEND_NPC : 1 };
+  const kit = { buffs, bridge, boons, items, tiers, unlocked, corrupted, imbues, copies, kept, healthScale, enhanced, fragile, tempered, rebirth, tuning, itemCd, aura, lesson, npcScale: isDescend ? DESCEND_NPC : 1 };
   const startKit = { ...kit, items: [...items], tiers: { ...tiers }, kept: { ...kept } }; // the build as the fight started (the breakdown's Your Build): kill stacks change during it
   const hero = buildHero(heroName, kit);
   hero.rejuvs = isSiege || isDescend ? rejuvs : 0; // Rejuvs are for the siege (his design) and a descent; the Mid-Boss gives them, never takes them
@@ -198,6 +198,7 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
   if (flee) hero.fleeAt = flee;
   if (echo) hero.echo = echo;
   if (plotArmor) hero.plotArmor = true;
+  if (venom) hero.venom = true; // Vyper's poisoned weapon (/descend)
   const size = CAMP_SIZE[key];
   // a camp's family: the one its details screen showed (`wanted`), else a random one of its size
   const family = !size ? null : campFamilies(key).includes(wanted) ? wanted : pickRandom(campFamilies(key), rnd);

@@ -57,6 +57,17 @@ function limits(payload, what) {
         for (;;) {
           const spec = D.specOf(d);
           problems.push(...limits(await V.roomView(member, d), `${hero} room ${d.room}`));
+          if (D.doorwayOpen(d).length && rng() < 0.7) { // the Doorman's Doorway (Nov 13): step back and play the door left behind
+            const back = d.room - 1;
+            if (!D.stepBack(d, 0).ok || d.room !== back || !D.specOf(d).doorway || d.doorway) fail('the Doorway refused');
+            continue;
+          }
+          if (spec.kind === 'doors') { // Two Doors (Nov 13): a random door
+            d.phase = 'ready';
+            if (new Set(spec.doors.map((x) => (x.mystery ? 'mystery' : x.kind === 'fight' ? D.roomLine(x) : x.kind))).size !== spec.doors.length) fail('two doors alike');
+            if (!D.chooseDoor(d, Math.floor(rng() * spec.doors.length)).ok || D.specOf(d).kind === 'doors') fail('a door refused');
+            continue;
+          }
           if (spec.kind === 'rival' && rng() < 0.3) { d.room += 1; continue; } // Walk Away
           if (D.EVENT_KINDS.includes(spec.kind) || spec.kind === 'visit' || (spec.kind === 'rift' && rng() < 0.3)) { // an event room or a hero room: a random choice, or leave (a Rift: walked past now and then)
             d.phase = 'ready';
@@ -74,6 +85,20 @@ function limits(payload, what) {
               } else if (spec.deal === 'travel') { // Mirage (Nov 7): a room type for the next room, or Turn Down
                 const kinds = D.travelKinds(d, spec.room);
                 r = rng() < 0.2 || !kinds.length ? D.eventAct(d, 'leave') : D.eventAct(d, 'travel', any(kinds));
+              } else if (spec.deal === 'stoke') { // Infernus (Nov 13): an Item, 1 to 4 Stokes, then Take It Back (or it burns, or Turn Down)
+                const can = D.stokeables(d);
+                r = rng() < 0.2 || !can.length ? D.eventAct(d, 'leave') : D.eventAct(d, 'item', any(can));
+                const name = d.stoke?.name;
+                const before = SLOTS.flatMap((x) => d.items[x]).filter((n) => n === name).length;
+                for (let n = 1 + Math.floor(rng() * 4); r.pick; n--) {
+                  problems.push(...limits(await V.roomView(member, d), `${hero} stoke ${d.room}`));
+                  r = n > 0 ? D.eventAct(d, 'stoke') : D.eventAct(d, rng() < 0.5 ? 'done' : 'leave'); // (leaving with an Item in the fire takes it back)
+                }
+                if (r.ok && name) {
+                  const after = SLOTS.flatMap((x) => d.items[x]).filter((n) => n === name).length;
+                  if (r.burned ? after !== before - 1 : after !== before || d.tempered?.[name] !== r.stokes) fail(`a Stoke left ${name} wrong (${JSON.stringify(r)})`);
+                  if (d.stoke) fail('an Item was left in the fire');
+                }
               } else if (spec.deal === 'fuse') { // Victor (Nov 7): two Items, then Stitch (or Turn Down)
                 const two = D.fuseables(d);
                 r = rng() < 0.2 || two.length < 2 ? D.eventAct(d, 'leave') : D.eventAct(d, 'fuseA', any(two));
@@ -83,9 +108,17 @@ function limits(payload, what) {
                   problems.push(...limits(await V.roomView(member, d), `${hero} fuse stitch ${d.room}`));
                   r = D.eventAct(d, 'fuse');
                 }
+              } else if (spec.deal === 'harrow') { // Nurse Harrow (Nov 14): heal while there are Perma-Buffs to pay with, then Done (or Turn Down before the first)
+                let n = 0;
+                while (rng() < 0.7 && D.eventAct(d, 'heal').ok) { n += 1; problems.push(...limits(await V.roomView(member, d), `${hero} harrow ${d.room}`)); }
+                r = D.eventAct(d, n ? 'done' : 'leave');
+              } else if (spec.deal === 'burrow') { // Mo & Krill (Nov 14): refused with the Urn or too close to the boss, then Turn Down
+                r = rng() < 0.8 ? D.eventAct(d, 'accept') : { error: 'none' };
+                if (!r.ok) r = D.eventAct(d, 'leave');
               } else
               r = rng() < 0.2 ? D.eventAct(d, 'leave') : items ? (items.length ? D.eventAct(d, spec.deal, any(items)) : D.eventAct(d, 'leave')) : D.eventAct(d, 'accept');
-              if (r.pick) { problems.push(...limits(await V.roomView(member, d), `${hero} replica pick ${d.room}`)); r = D.eventAct(d, 'replace', any([...new Set(SLOTS.flatMap((x) => d.items[x]))].filter((n) => n !== d.replicaPick))); }
+              if (r.pick && spec.deal === 'upgrade') { problems.push(...limits(await V.roomView(member, d), `${hero} upgrade into ${d.room}`)); r = D.eventAct(d, 'into', any(D.upgradesOf(d, d.upgradePick))); } // McGinnis asks which Item to try for when there are several
+              else if (r.pick) { problems.push(...limits(await V.roomView(member, d), `${hero} replica pick ${d.room}`)); r = D.eventAct(d, 'replace', any([...new Set(SLOTS.flatMap((x) => d.items[x]))].filter((n) => n !== d.replicaPick))); }
               while (d.phase === 'imbue') if (!D.setImbue(d, 1).ok) { fail('a hero room imbue was refused'); break; }
             }
             else {
@@ -95,7 +128,7 @@ function limits(payload, what) {
               if (!r.ok && ['carrying', 'ally', 'item', 'none-higher'].includes(r.error)) r = D.eventAct(d, 'leave');
               if (r.ok && action === 'step') { problems.push(...limits(await V.roomView(member, d), `${hero} teleported ${d.room}`)); continue; } // landed: the next loop plays the room it landed in
             }
-            if (!r.ok) fail(`the ${spec.kind} room refused: ${r.error}`);
+            if (!r.ok) fail(`the ${spec.kind}${spec.deal ? ` (${spec.deal})` : ''} room refused: ${r.error}`);
             if (!(d.health >= 0 && d.health <= 1)) fail(`health after the ${spec.kind} room is ${d.health}`);
             if (d.phase === 'offer') { // its pick, like a won room's: the screen, then a random choice or a skip
               problems.push(...limits(await V.offerView(member, d), `${hero} ${spec.kind} offer ${d.room - 1}`));

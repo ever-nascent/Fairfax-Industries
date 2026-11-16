@@ -141,7 +141,7 @@ function book(ctx) {
             '- Winning bets in `/mini-game`.',
             '',
             '**Spend them**',
-            '- `/shop`: hero cards for your `/rank` card, Soul Boosts, Rejuvs' + (ctx.home ? ' and Hideouts.' : '.'),
+            '- `/shop`: hero cards for your `/rank` card, Soul Boosts, Rejuvs and Hideouts.',
             '- Bets in `/mini-game`.',
             '',
             "**Hero Farming is apart:** each farm hero earns and spends its **own** souls. They never touch your balance, and your balance never buys farm items.",
@@ -241,7 +241,7 @@ function book(ctx) {
             '`/shop` opens **The Curiosity Shop**: the first screen shows your level, your souls and the shelf.',
             '',
             `- **Daily Deal** is the first section: one thing a day at **${Math.round(DEAL_OFF * 100)}%** off (a Hero Card, a Soul Boost or a Rejuv). One per member. It changes at midnight UTC.`,
-            '- The **section dropdown** sits on top of every Shop page: Daily Deal, Hero Cards, Soul Boost, Rejuv' + (ctx.home ? ', Hideout and Color Role.' : ' and Color Role.'),
+            '- The **section dropdown** sits on top of every Shop page: Daily Deal, Hero Cards, Soul Boost, Rejuv, Hideout and Color Role.',
             "- Staff can turn sections off or change prices with `/shop-config`, so what you see may differ from these pages.",
             '- The Shop message is public, but only you can press its buttons.',
             "- Every buy answers you **privately**: a receipt, or why not (not enough souls, you already own it, you carry the most you can).",
@@ -284,7 +284,7 @@ function book(ctx) {
           ].join('\n'),
         },
         {
-          title: 'Shop Tutorial 5: Hideout', home: true,
+          title: 'Shop Tutorial 5: Hideout',
           text: [
             `${ic('hideout')}**Hideout**: ${soulsText(HIDEOUT_PRICE)}, needs level ${HIDEOUT_LEVEL}, one per member.`,
             '',
@@ -313,7 +313,7 @@ function book(ctx) {
       ],
     },
     {
-      key: 'games', label: 'Mini-Games', about: 'Bet souls on 12 games, each hosted by a hero', emoji: 'sticky_bomb',
+      key: 'games', label: 'Mini-Games', about: 'Bet souls on 12 games, each hosted by a hero', emoji: 'the_doorman',
       pages: [
         {
           title: 'How Betting Works',
@@ -569,6 +569,11 @@ function book(ctx) {
             '**The Floors:**',
             ...descent.FLOOR_NAMES.map((n, i) => `${i + 1}. ${n}`),
             '',
+            `**Doors:** after a room you pick the next one from **${descent.DOORS}** doors. A boss is the only way forward.`,
+            '- **Fight Room:** the door shows its enemies. A Level and a pick for winning.',
+            '- **Mystery Room:** a Rival, a hero with a deal, a Wounded Rival or the Broker. What is inside is not shown.',
+            '- **Rest Stop, A Quiet Corner, The Rift, The Soul Urn, The Curiosity Dealer, A Teleporter:** a Level and what is inside. No pick, unless you win the Rift.',
+            '',
             "- The room screen tells you what's in the room before you fight.",
             '- Deeper in, enemies can carry **affixes**, shown like **[Plated]** on their name (tougher, cursing, stunning, healing...).',
             '- Enemies get stronger room by room.',
@@ -608,11 +613,24 @@ function book(ctx) {
         {
           title: 'Descend Tutorial 6: Rivals, Heroes and the Rift',
           text: [
-            'Now and then a **hero** blocks the way (never in a boss room). Sometimes a **rival** to fight, sometimes a **wounded hero** to assist, sometimes a hero with an **offer**.',
+            'Behind a **Mystery Room** door a **hero** can be waiting. Sometimes a **rival** to fight, sometimes a **wounded hero** to assist, sometimes a hero with an **offer**.',
             '',
             `- **A rival:** a full hero duel. Its build is rolled around yours, ${descent.RIVAL.levels} levels lower, at ${pct(descent.RIVAL.health)} health. **Fight** or **Walk Away** (pass with nothing). **Win** and you get +1 level, the usual buff chance and your pick of **any one item from its build**, or **Recruit** it as a temporary ally for a few fights.`,
             "- **A wounded hero:** **Recruit** them and they fight beside you for a few fights, then leave you any one Item from their build; or leave them.",
-            "- **An offer:** **Accept** (or pick the Item their deal takes) or **Turn Down**. Either way you gain a level and a pick. Violet copies an Item, McGinnis upgrades one (or trades one for her Mini Turret), Graves lends Ghouls, Solomon castles an Item, Sinclair lends his Assistant, Paige writes you Plot Armor, Victor stitches two of your Items into one (they take one slot; if he fails both turn Fragile), Paradox seals an Item with a cooldown in a Time Capsule (back before the Floor ends, its cooldown shorter for every room it was away), Mirage's Traveler takes you to a room type you pick for the next room, Rem tucks in a Lil Helper you feed Items (it fights, and its resist helps you), Dynamo grades your hero and coaches you on one enemy of the next Floor, and Ivy promises to pluck you out of the next fight that would kill you and set you down at a Rest Stop **3** rooms back (the rooms from there are fought again for no Level and no pick).",
+            "- **An offer:** **Accept** (or pick the Item their deal takes) or **Turn Down**. Either way you gain a level and a pick.",
+            "  - Violet copies an Item.",
+            "  - McGinnis upgrades one (or trades one for her Mini Turret).",
+            "  - Graves lends Ghouls.",
+            "  - Solomon castles an Item.",
+            "  - Sinclair lends his Assistant.",
+            "  - Paige writes you Plot Armor.",
+            "  - Victor stitches two of your Items into one (they take one slot; if he fails both turn Fragile).",
+            "  - Paradox seals an Item with a cooldown in a Time Capsule (back before the Floor ends, its cooldown shorter for every room it was away).",
+            "  - Mirage's Traveler takes you to a room type you pick for the next room.",
+            "  - Rem tucks in a Lil Helper you feed Items (it fights, and its resist helps you).",
+            "  - Dynamo grades your hero and coaches you on one enemy of the next Floor.",
+            "  - Infernus tempers an Item in his fire (each Stoke adds to its stats, and each one after the first can burn it to ash), the Doorman places a Doorway (at your next choice of doors, the door you did not pick stays open and you can play both rooms).",
+            "  - Ivy promises to pluck you out of the next fight that would kill you and set you down at a Rest Stop **3** rooms back (the rooms from there are fought again for no Level and no pick).",
             `- **The Rift:** an event room where 1 to ${descent.RIFT.heroes[1]} heroes fight over an Unstable Rift, everyone against everyone. Win it and **${descent.MINIONS.rift.count} Rift Troopers** fight beside you for the rest of the Floor. Lose it and you flee with what health you have left, at least ${pct(descent.RIFT.flee)}: it can't end your run.`,
           ].join('\n'),
         },
@@ -629,7 +647,7 @@ function book(ctx) {
         {
           title: "Descend Tutorial 8: The Broker's Stall",
           text: [
-            `From room ${descent.BROKER_FROM} a fight room is sometimes **the Broker's stall** instead (at most ${descent.BROKER_MAX} a run). No fight, no level, no pick.`,
+            `From room ${descent.BROKER_FROM} a **Mystery Room** is sometimes **the Broker's stall** (at most ${descent.BROKER_MAX} a run). No fight, no level, no pick.`,
             '',
             `- **Corrupt** a tier 3 or 4 item you hold: it gets the corrupted bonuses and your hero a drawback. The price is ${pct(descent.BROKER_COST)} of your max health.`,
             "- **View Item** shows what an item turns into first. **Leave** is free.",
@@ -670,7 +688,7 @@ function book(ctx) {
       ],
     },
     {
-      key: 'lfg', label: 'LFG', about: 'Find people to play Deadlock with',
+      key: 'lfg', label: 'LFG', about: 'Find people to play Deadlock with', emoji: 'seven',
       pages: [
         {
           title: '/lfg', command: 'lfg',
@@ -686,8 +704,130 @@ function book(ctx) {
       ],
     },
     {
-      key: 'more', label: 'Other Commands', about: 'Item lookup, invite link, this menu',
+      key: 'tickets', label: 'Tickets', about: 'Support tickets: panels, claiming, transcripts', emoji: 'warden',
       pages: [
+        {
+          title: 'Using Tickets',
+          text: [
+            '**1. Open**',
+            'Press the button on a ticket panel, or run `/ticket open`. You get a private channel with the staff. You can have **1** ticket open per panel.',
+            '',
+            '**2. Talk**',
+            'Some panels ask a few questions first. Your answers are posted in the ticket. Staff can **Claim** the ticket. Once claimed, only the staff member who took it writes in it. Thread tickets have no claiming. They close by locking the thread, and staff can `/ticket reopen` them. `/ticket add` and `/ticket remove` let other people in or out.',
+            '',
+            '**Close Requests**',
+            'Staff can run `/ticket closerequest` to ask you if your issue is resolved. Press **Accept** to close the ticket or **Deny** to keep it open. If a delay was set and nobody answers, it closes by itself.',
+            '',
+            '**3. Close**',
+            'Press **Close** or run `/ticket close`. The whole chat is saved as an HTML file in the transcript channel and sent to you privately, then the channel is deleted. You are then asked in a DM to rate the ticket from **1** to **5** and can add a comment. Staff see it in the transcript channel.',
+          ].join('\n'),
+        },
+        { title: '/ticket', command: 'ticket', text: 'Everyone can `open` a ticket and `close` their own. Ticket staff can `reopen` a closed thread ticket by its number, go `on-call` for thread tickets, `closerequest` (with an optional `close_delay` in hours), `add`, `remove`, `rename`, `claim`, `unclaim`, `transfer`, `switchpanel` and `autoclose-exclude` (this ticket never closes by itself) inside a ticket.' },
+        { title: '/tag', command: 'tag', text: 'Ticket staff send a saved text snippet in the channel. Start typing the tag id and pick it from the list.' },
+        { title: '/managetags', command: 'managetags', text: 'Ticket admins make the tags: `add` opens a pop-up for the text (adding an existing id changes it), `delete` removes one, `list` shows them all. A server can have up to **100** tags.' },
+        { title: '/stats', command: 'stats', text: 'Ticket staff see numbers for a member (`user`: tickets opened, tickets claimed, first answer time, the ratings of the tickets they claimed) or the whole server (`server`: tickets opened, open, closed, first answer time, ticket length, rating, who claimed the most). They count tickets closed since tickets were switched on.' },
+        { title: '/ticket-config', command: 'ticket-config', text: '`setup` makes the **Ticket Admin** and **Ticket Support** roles, a transcripts channel and a Tickets category.\n\n`panel-create` posts a panel with its button, `panel-delete` and `panel-list` manage them.\n\n`form-set` gives a panel up to **5** questions that members answer before a ticket opens, `form-clear` removes them.\n\n`panel-create thread:true` and `panel-mode` make a panel open **private threads** in its channel instead of channels (give your support role Manage Threads in that channel so staff can see them, or have staff go `/ticket on-call`).\n\n`feedback` turns the rating DM after a ticket closes on or off.\n\n`autoclose` closes tickets after hours with no message or no staff answer, or when the opener leaves.\n\n`addadmin`, `removeadmin`, `addsupport`, `removesupport` and `viewstaff` choose the staff, `blacklist` stops someone opening tickets, and `transcripts` sets where transcripts go.\n\nStaff with Manage Server always count as ticket admins.' },
+      ],
+    },
+    {
+      key: 'tournaments', label: 'Tournaments', about: 'Tutorial: teams, verification, matches, scrims', emoji: 'yamato',
+      pages: [
+        {
+          title: 'Playing in a Tournament',
+          text: [
+            '**1. Sign Up**',
+            'Press **Sign Up** on a tournament and name your team. You are its Captain. The team gets a role, and its own channels if the organizers turned them on.',
+            '',
+            '**2. Build Your Team**',
+            'The Captain invites Players and Substitutes with `/team invite`. An invite is posted in the sign-up channel with **Accept** and **Decline**.',
+            '',
+            '**3. Verify**',
+            'Everyone on the team presses **Verify** (or runs `/team verify`) and pastes their Steam profile link. Your Steam profile and game details have to be public. An organizer approves or denies you. You get the team role once you are approved.',
+            '',
+            '**4. Get Ready**',
+            'A team is ready when every player on it is verified and it has enough Players. Rosters lock when sign-ups close. Teams that are not ready are left out of the bracket.',
+            '',
+            '**5. Play**',
+            'Your team is told each match, its time and its length. Before a match your team is pinged and the Captain presses **Check In**. The winning Captain reports the score with `/team report`, and the other Captain presses **Confirm** or **Dispute**.',
+            '',
+            '`/tournament bracket` shows every match. `/tournament history` shows past tournaments.',
+          ].join('\n'),
+        },
+        {
+          title: 'Running a Tournament',
+          text: [
+            'For organizers. Staff with Manage Server pick the organizer roles with `/tournament-config`.',
+            '',
+            '**1.** `/tournament create` sets it up and posts the sign-up embed.',
+            '**2.** Reviews arrive in the review channel as players verify: hours, rank, main, most played heroes and win rates, with anything wrong flagged. Press **Approve**, **Deny** (you give a reason) or **Needs Investigation**.',
+            '**3.** Sign-ups close on time, or now with `/tournament close`. `/tournament teams` shows who is ready.',
+            '**4.** `/tournament start` makes the bracket from the ready teams.',
+            '**5.** `/tournament schedule` sets each match\'s time. Teams are pinged before it and Check In. A team that does not is flagged for you.',
+            '**6.** Captains report results. `/tournament result` enters or corrects one, and settles disputes and forfeits.',
+            '**7.** `/tournament end` saves the final places and can give the winners a role.',
+            '**8.** `/tournament cleanup` deletes every team role and channel, and can save the team chats as text files first.',
+          ].join('\n'),
+        },
+        {
+          title: '/tournament', command: 'tournament',
+          text: [
+            'Everyone can use `bracket` and `history`. The rest is for tournament organizers.',
+            '',
+            '- `create`, `close`, `start`, `end` and `cleanup` run the tournament.',
+            '- `simulate` is a practice run with fake teams. You get the real bracket and buttons for the commands, and it asks if you want team channels. Nothing is saved.',
+            '- `teams`, `seed`, `roster-add` and `roster-remove` manage its teams. The roster commands also work after rosters lock.',
+            '- `schedule` and `result` run its matches. A match is named by its code, like `R1-2`.',
+            '- Write a time like `2026-11-20 18:00` in the time zone you gave as `utc-offset`, or paste a Discord timestamp.',
+          ].join('\n'),
+        },
+        {
+          title: '/team', command: 'team',
+          text: [
+            'Your tournament team. Press **Sign Up** on a tournament to make one. You become its Captain.',
+            '',
+            '**Captain**',
+            '- `invite` invites a member as a Player or a Substitute.',
+            '- `remove` takes a player off the team or takes an invite back.',
+            '- `transfer` hands the team to another player on it.',
+            '- `disband` removes the team from the tournament. Its role and channels are deleted.',
+            '- `report` reports a match your team won. Write the score wins first, like `2-1`.',
+            '',
+            '**Everyone**',
+            '- `verify` opens the Steam link pop-up.',
+            '- `roster` shows the players, Substitutes and open invites.',
+            '- `leave` leaves the team.',
+          ].join('\n'),
+        },
+        {
+          title: '/scrim', command: 'scrim',
+          text: [
+            'A practice match between two teams of a running tournament. Captains only.',
+            '',
+            '- `challenge` asks one team. Their Captain presses **Accept** or **Decline**.',
+            '- `open` posts a scrim in the sign-up channel. The first Captain of another team to press **Accept** gets it.',
+            '- Both teams are pinged before it starts. A scrim has no result and is not part of the bracket.',
+          ].join('\n'),
+        },
+      ],
+    },
+    {
+      key: 'more', label: 'Other Commands', about: 'Item lookup, invite link, this menu', emoji: 'pocket',
+      pages: [
+        {
+          title: '/voice', command: 'voice',
+          text: [
+            'Join a **Creator Channel** and you get your own voice channel. It is deleted when it is empty. You can use the buttons in the controls channel or `/voice`.',
+            '',
+            '**Channel**',
+            '`name`, `limit`, `bitrate`, `region`, `nsfw`, `thread`',
+            '**Access**',
+            '`lock`, `hide`, `waiting-room` (you choose who gets in), `trust`, `untrust`, `invite`, `block`, `unblock`, `kick`',
+            '**Ownership**',
+            '`claim` (when the owner left), `transfer`, `delete`',
+            '',
+            'Your name, limit and bitrate are remembered for your next channel.',
+          ].join('\n'),
+        },
         {
           title: '/item', command: 'item',
           text: [
@@ -703,7 +843,7 @@ function book(ctx) {
       ],
     },
     {
-      key: 'staff', label: 'Staff & Config', about: 'Setup and moderation commands',
+      key: 'staff', label: 'Staff & Config', about: 'Setup and moderation commands', emoji: 'abrams',
       pages: [
         { title: '/xp-config', command: 'xp-config', text: 'Chat XP per message and its cooldown, voice XP, where level-ups are announced (off until a channel is set), channels with no XP, and how often Soul Bags drop.' },
         { title: '/xp', command: 'xp', text: "Change a member's XP or level. Level follows XP; no souls are paid for levels given this way. Every edit goes to the audit log and the member's history." },
@@ -712,13 +852,18 @@ function book(ctx) {
           text: "The staff side of `/souls`: add, take, set or reset a member's souls, see their **history**, a **report** of what paid souls in and out, and **reset-all** (every member's server balance to 0 after a confirm; hero souls stay, a backup is saved first).",
         },
         { title: '/lfg-config', command: 'lfg-config', text: "Set LFG up (`setup` makes the roles, an LFG category and a first region), post the **LFG Pings** dropdown, close lobbies, the empty-lobby timeout, game modes, and the region channels and their roles." },
-        { title: '/reaction-roles', command: 'reaction-roles', text: 'Build an emoji-to-role menu as a draft (`new`, `add`, `remove`, `preview`, then post it), or edit one already posted by its message ID (`menu-add`, `menu-remove`, `menu-edit`, `menu-change`, `delete`).' },
+        { title: '/reaction-roles', command: 'reaction-roles', text: 'Build an emoji-to-role menu as a draft (`new`, `add`, `remove`, `preview`, then post it), or edit one already posted by its message ID (`menu-add`, `menu-remove`, `menu-edit`, `menu-change`, `delete`). Give a menu an `unlock-role` to make it a gate for the server: picking anything on it also gives that role, and you decide what the role can see.' },
         { title: '/auto-mod', command: 'auto-mod', text: 'Censored phrases: a message with one (as a whole word, any case or accent) is deleted and the author is warned. Members with Manage Messages are exempt.' },
+        { title: '/export-chat', command: 'export-chat', text: 'Saves a whole channel as one HTML file and sends it to you privately. Download it and open it in a browser. You can only export a channel you can read. A very long channel is cut to its newest messages.' },
         { title: '/audit-log-config', command: 'audit-log-config', text: "What #audit-log records (every event can be turned on or off), ignored channels and members, the channel, the new-account warning, and a member's full history." },
-        { title: '/stream-config', command: 'stream-config', text: 'The text under the stream title in the Twitch and TikTok go-live alerts.' },
+        { title: '/setup', command: 'setup', text: 'Walks you through setting this server up, one step at a time: the welcome message, the audit log, go-live alerts, level-up announcements, Hideouts, LFG, the Weekly Jackpot and tournament organizers. Every step has a **Skip** button, and nothing is ever undone. Run it again any time.' },
+        { title: '/welcome-config', command: 'welcome-config', text: 'The welcome message for new members: on or off, the channel, and the text (`{member}`, `{server}` and `{count}` are filled in).' },
+        { title: '/stream-config', command: 'stream-config', text: "The Twitch and TikTok go-live alerts: the channel, the streamer names, who gets pinged (everyone, here, a role or nobody) and the text under the stream title." },
         { title: '/shop-config', command: 'shop-config', text: "Sets up this server's Shop: sections on or off, every price, the Hideout level, and where Color Roles are made." },
+        { title: '/tournament-config', command: 'tournament-config', text: 'The roles that can run tournaments (`organizer-add`, `organizer-remove`, `show`). Staff with Manage Server always can.' },
         { title: '/jackpot-config', command: 'jackpot-config', text: "The channel the Weekly Jackpot's winner is announced in. Leave it empty to turn the post off." },
-        { title: '/hideout-config', command: 'hideout-config', text: "The category Hideouts are made in, and removing a member's Hideout for good." },
+        { title: '/hideout-config', command: 'hideout-config', text: "The category Hideouts are made in, and removing a member's Hideout for good. Turn Hideouts on or off for the Shop with `/shop-config section`." },
+        { title: '/tempvoice', command: 'tempvoice', text: 'Temporary voice channels. `setup` makes a category with a **Create Channel** and a controls channel. `add` / `remove` / `edit` manage Creator Channels (the name, with `{user}` and `{number}`, the starting user limit and bitrate), `panel` posts the controls, `show` lists them.' },
         { title: '/farm-config', command: 'farm-config', text: 'Bot owner only: turns Hero Farming cooldowns off for testing. A restart turns them back on.' },
       ],
     },
@@ -732,6 +877,7 @@ function book(ctx) {
 }
 
 // ---- the message ----
+const POOL = ['haze', 'abrams', 'mina', 'celeste', 'paige', 'apollo', 'billy', 'calico', 'the_doorman', 'drifter', 'dynamo', 'graves', 'grey_talon', 'holliday', 'infernus', 'ivy', 'kelvin', 'lady_geist', 'lash', 'mcginnis', 'mirage', 'mo_krill', 'paradox', 'pocket', 'rem', 'seven', 'shiv', 'silver', 'sinclair', 'venator', 'victor', 'vindicta', 'viscous', 'vyper', 'warden', 'wraith', 'yamato', 'baba', 'rat_king', 'solomon', 'deadman_danny', 'nurse_harrow', 'violet'];
 function emojiOf(ctx, name) {
   const e = name && emojiNamed(ctx.guild, name);
   return e ? { id: e.id, name: e.name } : undefined;
@@ -751,7 +897,8 @@ function helpView(ctx, userId, key = 'start', index = 0) {
     categories.map((c) => ({ label: c.label, value: c.key, description: c.about, emoji: emojiOf(ctx, c.emoji), default: c.key === cat.key })),
   );
   const pages = new StringSelectMenuBuilder().setCustomId(`${PAGE_ID}:${userId}:${cat.key}`).setPlaceholder('Pick a page').addOptions(
-    cat.pages.map((p, n) => ({ label: p.title.slice(0, 100), value: String(n), default: n === i })),
+    // Every page gets a coloured hero emoji (never a plain white one); a page's own `emoji` wins, else one is dealt in order from POOL.
+    cat.pages.map((p, n) => ({ label: p.title.slice(0, 100), value: String(n), default: n === i, emoji: emojiOf(ctx, p.emoji ?? POOL[(n + categories.indexOf(cat) * 5) % POOL.length]) })),
   );
   const turn = (to, tag, label, style) => new ButtonBuilder().setCustomId(`${TURN_ID}:${userId}:${cat.key}:${to}:${tag}`).setLabel(label).setStyle(style);
   const nav = new ActionRowBuilder().addComponents(

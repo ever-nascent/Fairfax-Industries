@@ -48,7 +48,7 @@ async function recordEdit(interaction, member, command, before, after) {
     ],
   });
   await audit.log(interaction.guild, 'staff-edit', embed, { userIds: [interaction.user.id, member.id] });
-  await audit.addHistory(member.id, 'staff-edit', `${interaction.user.username} ran ${command}: ${before.replace(/\*/g, '')} → ${after.replace(/\*/g, '')}`);
+  await audit.addHistory(interaction.guildId, member.id, 'staff-edit', `${interaction.user.username} ran ${command}: ${before.replace(/\*/g, '')} → ${after.replace(/\*/g, '')}`);
 }
 
 const signed = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${fmt(Math.abs(n))}`;

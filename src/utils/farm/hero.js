@@ -36,10 +36,10 @@ function scaleNpc(s, scale) {
  *  (slots 1-4 in order) are unlocked; @param corrupted its corrupted item { name, drawback, amount } | null; @param imbues { item name: ability slot };
  *  @param copies the heroes whose ultimate Sinclair may copy: the member's other unlocked heroes (default: the whole roster, for simulations and rivals);
  *  @param kept the kill stacks it brings into the fight ({ item name: stacks }: Glass Cannon, Trophy Collector; items.js KEPT) */
-function buildHero(name, { boons = 0, items = [], buffs = {}, bridge = [], tiers = {}, unlocked = 4, corrupted = null, enhanced = [], fragile = [], imbues = {}, copies = null, kept = {}, healthScale = 1, rebirth = 0, npcScale = 1, tuning = 0, itemCd = {}, aura = 0, lesson = null } = {}) {
+function buildHero(name, { boons = 0, items = [], buffs = {}, bridge = [], tiers = {}, unlocked = 4, corrupted = null, enhanced = [], fragile = [], tempered = {}, imbues = {}, copies = null, kept = {}, healthScale = 1, rebirth = 0, npcScale = 1, tuning = 0, itemCd = {}, aura = 0, lesson = null } = {}) {
   const data = HEROES[name];
   if (!data) throw new Error(`Unknown hero: ${name}`);
-  const unit = new Unit({ name, team: 'hero', stats: heroStats(data, { boons, items, buffs, bridge, corrupted, enhanced, fragile, rebirth }) });
+  const unit = new Unit({ name, team: 'hero', stats: heroStats(data, { boons, items, buffs, bridge, corrupted, enhanced, fragile, tempered, rebirth }) });
   healthScale *= 1 + tuning; // /descend's per-hero tuning (descent.js TUNING): this much more (or less) health and damage
   if (healthScale !== 1) unit.health = unit.stats.maxHealth *= healthScale; // a /descend ascension (A14: lower max health)
   if (tuning) unit.stats.damageDealt = (unit.stats.damageDealt ?? 0) + tuning;
@@ -49,7 +49,7 @@ function buildHero(name, { boons = 0, items = [], buffs = {}, bridge = [], tiers
   unit.boons = boons; // item numbers that scale per boon read it
   unit.copies = copies ?? roster().filter((n) => n !== name);
   unit.kept = kept;
-  unit.items = makeItems(items.map((n) => cardFor(n, corrupted, enhanced, fragile)), unit, imbues);
+  unit.items = makeItems(items.map((n) => cardFor(n, corrupted, enhanced, fragile, tempered)), unit, imbues);
   for (const it of unit.items) if (itemCd[it.name]) it.cdScale = itemCd[it.name]; // Paradox's Time Capsule (Descend): this Item's own cooldown
   unit.held = [...items]; // every item's name, plain-stat ones too (unit.items has only the ones with effects); the screens list them (icons.js)
   unit.abilities = Object.entries(data.BoundAbilities).map(([slot, { Key }]) => {
@@ -61,7 +61,7 @@ function buildHero(name, { boons = 0, items = [], buffs = {}, bridge = [], tiers
     unit.shatter = () => {
       if (unit.health >= unit.stats.maxHealth * FRAGILE_BREAK) return;
       unit.shatter = null;
-      const sheet = (list) => heroStats(data, { boons, items: list, buffs, bridge, corrupted, enhanced, fragile, rebirth });
+      const sheet = (list) => heroStats(data, { boons, items: list, buffs, bridge, corrupted, enhanced, fragile, tempered, rebirth });
       const [before, after] = [sheet(items), sheet(items.filter((n) => !gone.includes(n)))];
       for (const key of Object.keys(after)) if (typeof after[key] === 'number' && key !== 'maxHealth') unit.stats[key] += after[key] - before[key];
       for (const by of ['weaponBy', 'spiritBy', 'lifestealBy', 'spiritLifestealBy']) for (const n of gone) delete unit.stats[by][n];

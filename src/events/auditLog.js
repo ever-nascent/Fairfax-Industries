@@ -1,13 +1,13 @@
 // Audit log: everything Discord reports through gateway events (Discord's own audit log entries go through
 // utils/audit/auditEntries.js). The bot's own messages, reactions and actions are never logged.
 const { AttachmentBuilder, AutoModerationActionType, AutoModerationRuleTriggerType } = require('discord.js');
-const { isHomeGuild, ourGuild } = require('../utils/guild');
 const audit = require('../utils/audit/auditLog');
 const memory = require('../utils/audit/auditMessages');
 const { handleEntry } = require('../utils/audit/auditEntries');
 
 const { COLOR, log, clip, when, duration, who, whoId, entryEmbed } = audit;
-const inOurGuild = (thing) => thing?.guildId && isHomeGuild(thing.guildId);
+// Every server is logged once it has a log channel (/audit-log-config channel; Fairfax's is set already).
+const isOn = async (guildId) => !!guildId && !!(await audit.getSettings(guildId)).channelId;
 const jump = (guildId, channelId, messageId) => `[Go to message](https://discord.com/channels/${guildId}/${channelId}/${messageId})`;
 const channelLine = (id) => `<#${id}> (\`${id}\`)`;
 const fail = (what) => (e) => console.error(`[auditLog] ${what} failed:`, e.message);
@@ -54,7 +54,7 @@ const attachmentList = (files, stickers) =>
 // ---- Messages ----
 
 async function messageDelete(message, client) {
-  if (!inOurGuild(message)) return;
+  if (!(await isOn(message.guildId))) return;
   const saved = memory.take(message.id);
   const authorId = message.author?.id ?? saved?.author;
   if (saved?.own || authorId === client.user.id) return;
@@ -106,7 +106,7 @@ async function messageDelete(message, client) {
 }
 
 async function messageUpdate(oldMessage, message, client) {
-  if (!inOurGuild(message) || message.author?.id === client.user.id) return;
+  if (!(await isOn(message.guildId)) || message.author?.id === client.user.id) return;
   if (message.partial) message = await message.fetch().catch(() => message);
   if (!message.author) return;
   const saved = memory.get(message.id);
@@ -144,7 +144,7 @@ async function messageUpdate(oldMessage, message, client) {
 }
 
 async function messageDeleteBulk(messages, channel, client) {
-  if (!inOurGuild(channel)) return;
+  if (!(await isOn(channel.guildId))) return;
   const { guild } = channel;
   const deleter = await audit.findBulkDeleter(guild, channel.id);
   const lines = [];
@@ -187,7 +187,7 @@ async function messageDeleteBulk(messages, channel, client) {
 async function reaction(event, reactionObj, user, client) {
   if (user.id === client.user.id) return;
   const message = reactionObj.message;
-  if (!inOurGuild(message)) return;
+  if (!(await isOn(message.guildId))) return;
   const added = event === 'reaction-add';
   const authorId = message.author?.id ?? memory.get(message.id)?.author;
   const { emoji } = reactionObj;
@@ -208,7 +208,7 @@ async function reaction(event, reactionObj, user, client) {
 }
 
 async function reactionsCleared(message, emoji) {
-  if (!inOurGuild(message)) return;
+  if (!(await isOn(message.guildId))) return;
   const embed = entryEmbed({
     color: COLOR.remove,
     title: emoji ? 'Reaction Cleared' : 'All Reactions Cleared',
@@ -224,7 +224,7 @@ async function reactionsCleared(message, emoji) {
 
 async function pollVote(added, answer, userId, client) {
   const message = answer.poll?.message;
-  if (!inOurGuild(message) || userId === client.user.id) return;
+  if (!(await isOn(message.guildId)) || userId === client.user.id) return;
   const embed = entryEmbed({
     color: added ? COLOR.add : COLOR.remove,
     title: added ? 'Poll Vote Added' : 'Poll Vote Removed',
@@ -243,12 +243,12 @@ async function pollVote(added, answer, userId, client) {
 // ---- Members ----
 
 async function memberJoin(member) {
-  if (!isHomeGuild(member.guild.id) || member.id === member.client.user.id) return;
+  if (!(await isOn(member.guild.id)) || member.id === member.client.user.id) return;
   const { guild, user } = member;
-  const s = await audit.getSettings();
+  const s = await audit.getSettings(guild.id);
   const age = Date.now() - user.createdTimestamp;
   const isNew = age < s.newAccountDays * 86_400_000;
-  const history = await audit.getHistory(member.id);
+  const history = await audit.getHistory(guild.id, member.id);
   const lastLeave = history.findLast((h) => h.type === 'leave');
   const invite = await audit.usedInvite(guild);
   const joins = history.filter((h) => h.type === 'join').length;
@@ -269,11 +269,11 @@ async function memberJoin(member) {
     thumbnail: user.displayAvatarURL(),
   });
   await log(guild, 'member-join', embed, { userIds: [user.id] });
-  await audit.addHistory(user.id, 'join', `Joined (account ${duration(age)} old, invite: ${invite})`);
+  await audit.addHistory(guild.id, user.id, 'join', `Joined (account ${duration(age)} old, invite: ${invite})`);
 }
 
 async function memberLeave(member) {
-  if (!isHomeGuild(member.guild.id) || member.id === member.client.user.id) return;
+  if (!(await isOn(member.guild.id)) || member.id === member.client.user.id) return;
   const { guild, user } = member;
   const roles = member.roles.cache.filter((r) => r.id !== guild.id).sort((a, b) => b.position - a.position);
   const embed = entryEmbed({
@@ -291,13 +291,18 @@ async function memberLeave(member) {
     thumbnail: user.displayAvatarURL(),
   });
   await log(guild, 'member-leave', embed, { userIds: [user.id] });
-  await audit.addHistory(user.id, 'leave', `Left after ${member.joinedTimestamp ? duration(Date.now() - member.joinedTimestamp) : '?'}`, { roles: roles.map((r) => r.name) });
+  await audit.addHistory(guild.id, user.id, 'leave', `Left after ${member.joinedTimestamp ? duration(Date.now() - member.joinedTimestamp) : '?'}`, { roles: roles.map((r) => r.name) });
 }
 
 // Username, display name and avatar are account-wide, so Discord sends them as a user update.
 async function userUpdate(oldUser, user, client) {
-  const guild = ourGuild(client);
-  if (!guild?.members.cache.has(user.id) || user.id === client.user.id || oldUser.partial) return;
+  if (user.id === client.user.id || oldUser.partial) return;
+  for (const guild of client.guilds.cache.values()) {
+    if (guild.members.cache.has(user.id) && (await isOn(guild.id))) await profileUpdate(guild, oldUser, user);
+  }
+}
+
+async function profileUpdate(guild, oldUser, user) {
   const fields = [];
   if (oldUser.username !== user.username) fields.push({ name: 'Username', value: `\`${oldUser.username}\` → \`${user.username}\`` });
   if (oldUser.globalName !== user.globalName) fields.push({ name: 'Display Name', value: `${oldUser.globalName ?? '*none*'} → ${user.globalName ?? '*none*'}` });
@@ -313,12 +318,12 @@ async function userUpdate(oldUser, user, client) {
     thumbnail: avatarChanged ? user.displayAvatarURL({ size: 256 }) : null,
   });
   await log(guild, 'member-profile', embed, { userIds: [user.id] });
-  for (const f of fields.filter((f) => f.name !== 'Avatar')) await audit.addHistory(user.id, 'name', `${f.name}: ${f.value.replace(/`/g, '')}`);
+  for (const f of fields.filter((f) => f.name !== 'Avatar')) await audit.addHistory(guild.id, user.id, 'name', `${f.name}: ${f.value.replace(/`/g, '')}`);
 }
 
 // Per-server avatar (the rest of a member edit comes from Discord's audit log, with who did it).
 async function memberUpdate(oldMember, member) {
-  if (!isHomeGuild(member.guild.id) || oldMember.partial || oldMember.avatar === member.avatar) return;
+  if (!(await isOn(member.guild.id)) || oldMember.partial || oldMember.avatar === member.avatar) return;
   if (member.id === member.client.user.id) return;
   const old = oldMember.avatar ? `[Old](${oldMember.displayAvatarURL({ size: 512 })})` : 'None';
   const now = member.avatar ? `[New](${member.displayAvatarURL({ size: 512 })})` : 'None (uses their main avatar)';
@@ -338,7 +343,7 @@ async function memberUpdate(oldMember, member) {
 const joinedVoiceAt = new Map(); // member id → when they joined their current channel
 
 async function voiceUpdate(oldState, state, client) {
-  if (!isHomeGuild(state.guild.id) || state.id === client.user.id) return;
+  if (!(await isOn(state.guild.id)) || state.id === client.user.id) return;
   const user = state.member?.user ?? (await client.users.fetch(state.id).catch(() => null));
   const member = { name: 'Member', value: who(user ?? state.id), inline: true };
   const stayed = { name: 'Time There', value: joinedVoiceAt.has(state.id) ? duration(Date.now() - joinedVoiceAt.get(state.id)) : null, inline: true };
@@ -385,7 +390,7 @@ const AUTOMOD_ACTIONS = {
 
 async function autoModAction(execution, client) {
   const { guild, action } = execution;
-  if (!isHomeGuild(guild.id)) return;
+  if (!(await isOn(guild.id))) return;
   const rule = execution.autoModerationRule ?? (await guild.autoModerationRules.fetch(execution.ruleId).catch(() => null));
   const embed = entryEmbed({
     color: COLOR.remove,
@@ -408,22 +413,26 @@ async function autoModAction(execution, client) {
 
 // ---- Startup ----
 
-async function ready(client) {
-  const guild = ourGuild(client);
-  if (!guild) return;
+// Per server, at startup and when the bot joins one: remember its invites and existing deletes, load its AutoMod rules.
+async function prepare(guild) {
+  const s = await audit.getSettings(guild.id);
+  if (!s.channelId) return; // not set up: nothing is logged here
   await audit.snapshotInvites(guild);
   await audit.findDeleter(guild); // remembers existing delete entries so they aren't blamed for new deletes
   await guild.autoModerationRules.fetch().catch(() => null);
-  const s = await audit.getSettings();
-  if (!guild.channels.cache.has(s.channelId)) console.warn(`[auditLog] Log channel ${s.channelId} not found: set one with /audit-log-config channel.`);
-  else console.log(`[auditLog] Logging to #${guild.channels.cache.get(s.channelId).name}`);
+  if (!guild.channels.cache.has(s.channelId)) console.warn(`[auditLog] "${guild.name}": log channel ${s.channelId} not found: set one with /audit-log-config channel.`);
+  else console.log(`[auditLog] "${guild.name}": logging to #${guild.channels.cache.get(s.channelId).name}`);
+}
+
+async function ready(client) {
+  for (const guild of client.guilds.cache.values()) await prepare(guild).catch(fail(`Startup in "${guild.name}"`));
 }
 
 module.exports = [
   { name: 'clientReady', once: true, execute: (client) => ready(client).catch(fail('Startup')) },
   {
     name: 'messageCreate',
-    execute: (message) => (inOurGuild(message) ? memory.remember(message).catch(fail('Saving a message')) : null),
+    execute: async (message) => ((await isOn(message.guildId)) ? memory.remember(message).catch(fail('Saving a message')) : null),
   },
   { name: 'messageDelete', execute: (m, client) => messageDelete(m, client).catch(fail('Message delete')) },
   { name: 'messageUpdate', execute: (o, m, client) => messageUpdate(o, m, client).catch(fail('Message edit')) },
@@ -445,6 +454,6 @@ module.exports = [
   { name: 'inviteDelete', execute: (invite) => audit.forgetInvite(invite) },
   {
     name: 'guildAuditLogEntryCreate',
-    execute: (entry, guild) => (isHomeGuild(guild.id) ? handleEntry(entry, guild).catch(fail('Audit log entry')) : null),
+    execute: async (entry, guild) => ((await isOn(guild.id)) ? handleEntry(entry, guild).catch(fail('Audit log entry')) : null),
   },
 ];

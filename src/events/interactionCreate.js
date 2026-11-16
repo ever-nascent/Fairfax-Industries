@@ -9,7 +9,11 @@ const { runInGuild } = require('../utils/guildContext'); // player data is per s
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
-    if (!interaction.guildId) return; // commands are server-only (deploy-commands.js); a DM has nothing to run for
+    if (!interaction.guildId) {
+      // Commands are server-only (deploy-commands.js). The one thing that happens in a DM: the star buttons and pop-up of a ticket's feedback request.
+      if (!interaction.customId?.startsWith('ticket_fb')) return;
+      return findComponentRoute(interaction)?.execute(interaction).catch((error) => console.error('[tickets] Feedback failed:', error));
+    }
     return runInGuild(interaction.guildId, () => handle(interaction, client));
   },
 };

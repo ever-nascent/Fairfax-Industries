@@ -314,7 +314,7 @@ async function memberUpdate(entry, guild) {
           { name: 'After', value: change.new ?? '*none*', inline: true },
         ],
       });
-      await addHistory(entry.targetId, 'nickname', `Nickname: ${change.old ?? '(none)'} → ${change.new ?? '(none)'}, by ${byText}`);
+      await addHistory(guild.id, entry.targetId, 'nickname', `Nickname: ${change.old ?? '(none)'} → ${change.new ?? '(none)'}, by ${byText}`);
     } else if (change.key === 'communication_disabled_until') {
       const until = change.new ? Date.parse(change.new) : null;
       const fields = until
@@ -327,13 +327,13 @@ async function memberUpdate(entry, guild) {
         by, fields, color: until ? COLOR.remove : COLOR.add, required: Boolean(until),
       });
       const text = until ? `Timed out for ${duration(until - Date.now())} by ${by}` : `Timeout removed by ${by}`;
-      await addHistory(entry.targetId, 'timeout', `${text}${entry.reason ? ` (reason: ${entry.reason})` : ''}`);
+      await addHistory(guild.id, entry.targetId, 'timeout', `${text}${entry.reason ? ` (reason: ${entry.reason})` : ''}`);
     } else if (change.key === 'mute' || change.key === 'deaf') {
       const what = change.key === 'mute' ? 'Muted' : 'Deafened';
       await post(entry, guild, 'voice-mod', change.new ? `Server ${what}` : `Server Un${what.toLowerCase()}`, {
         by, fields: [], color: change.new ? COLOR.remove : COLOR.add,
       });
-      await addHistory(entry.targetId, 'voice', `Server ${change.new ? '' : 'un'}${what.toLowerCase()} by ${by}`);
+      await addHistory(guild.id, entry.targetId, 'voice', `Server ${change.new ? '' : 'un'}${what.toLowerCase()} by ${by}`);
     } else {
       await post(entry, guild, 'member-profile', 'Member Updated', { by, fields: changeFields({ ...entry, changes: [change] }) });
     }
@@ -353,7 +353,7 @@ async function handleEntry(entry, guild) {
   const history = { [A.MemberKick]: 'Kicked', [A.MemberBanAdd]: 'Banned', [A.MemberBanRemove]: 'Unbanned' }[entry.action];
   if (history) {
     const by = await whoId(guild.client, entry.executorId);
-    await addHistory(entry.targetId, history.toLowerCase(), `${history} by ${by}${entry.reason ? ` (reason: ${entry.reason})` : ' (no reason given)'}`);
+    await addHistory(guild.id, entry.targetId, history.toLowerCase(), `${history} by ${by}${entry.reason ? ` (reason: ${entry.reason})` : ' (no reason given)'}`);
   }
 }
 

@@ -12,6 +12,7 @@ const { itemByName } = require('./stats');
 const { itemFile, CORRUPTED_FRAME, enhancedOverlay, crackOverlay } = require('./itemArt');
 const { paintOverlay } = require('./paintSplash');
 const { fusedTile, halfPath } = require('./fuseStitch');
+const { flameFrame, emberOverlay } = require('./emberFrame');
 const { fmt } = require('../format');
 const { RANKS } = require('./rebirth');
 
@@ -77,7 +78,8 @@ const NAME_H = 32;
 const LEGEND_H = TILE + NAME_H + 40; // the row's height: its label, the tile and the name under it
 
 // One item's tile at (x, y): the item's own picture (the game's shop art, as the HUD shows it) with a glow in its kind's colour (a flat tile with
-// the HUD glyph only when that picture is missing), its tier in the corner and its name under it. `frame` / `frameWidth`: the border.
+// the HUD glyph only when that picture is missing), its tier in the corner and its name under it. `frame` / `frameWidth`: the border (`null`: no
+// border and no glow, the legendary's tile: his call Nov 13, "remove that").
 // `flags` = { corrupted, enhanced, fragile, painted }: the Item's marks over its picture.
 // `fusedWith` (Victor's Abomination, Descend) = { name, kind, flags } of the second Item: the tile is then his stitched template
 // (fuseStitch.js, his pick Nov 7), this Item left of the scar and that one right of it, each with its own marks, tier tab and half of the border.
@@ -88,6 +90,7 @@ async function marker(name, flags) {
   return (g, x, y) => {
     if (flags.enhanced) enhancedOverlay(g, x, y, TILE, TILE); // the wiki's blue gradient over the picture
     if (frame) g.drawImage(frame, x, y, TILE, TILE); // the game's corrupted frame over the picture
+    if (flags.tempered) emberOverlay(g, x, y, TILE, name); // a Tempered Item (Descend, Infernus' fire) burns
     if (flags.fragile) crackOverlay(g, x, y, TILE, TILE, name); // a Fragile Item (Descend's Broker) is cracked
     if (flags.painted) paintOverlay(g, x, y, TILE, TILE, name); // Violet's replica (Descend) is splashed with paint
   };
@@ -117,9 +120,10 @@ function tierTab(g, name, x, y, kind, left = false) {
 async function itemTile(g, name, kind, x, y, frame = `rgba(${kind.rgb},0.9)`, frameWidth = 2, flags = {}, fusedWith = null) {
   const art = await artOf(name);
   const mark = await marker(name, flags);
+  if (flags.tempered && frame) frame = 'rgba(255,205,90,1)'; // a Tempered Item's border is hot gold (its flames are drawn first, in heroCard)
   g.save();
   g.shadowColor = `rgba(${kind.rgb},0.45)`;
-  g.shadowBlur = 14;
+  g.shadowBlur = frame ? 14 : 0;
   const fill = g.createLinearGradient(x, y, x, y + TILE);
   fill.addColorStop(0, kind.tile[0]);
   fill.addColorStop(1, kind.tile[1]);
@@ -149,7 +153,7 @@ async function itemTile(g, name, kind, x, y, frame = `rgba(${kind.rgb},0.9)`, fr
     else { try { g.drawImage(await tinted(path.join(ASSETS, 'farm', 'items', `${slug(name)}.png`), kind.ink, 72), x + 14, y + 16); } catch { /* the name under the tile says what it is */ } }
     mark(g, x, y);
     g.restore();
-    box(g, x, y, TILE, TILE, 12, null, frame, frameWidth);
+    if (frame) box(g, x, y, TILE, TILE, 12, null, frame, frameWidth);
     tierTab(g, name, x, y, kind);
   }
   // the name under the tile, on one or two lines
@@ -272,9 +276,10 @@ async function heroCard(view) {
   const joined = new Map((view.fused ?? []).map(([a, b]) => [a, held.find(([n]) => n === b)])); // a fusion is one tile: both Items stitched into it
   for (const [b] of joined.values()) held.splice(held.findIndex(([n]) => n === b), 1);
   const corruptedOnes = [].concat(view.corrupted ?? []);
+  // (a corrupted Item is still Enhanced: both marks show, Nov 13)
   const flagsOf = (name, painted) => {
     const corrupted = corruptedOnes.includes(name);
-    return { corrupted, enhanced: !corrupted && !!view.enhanced?.includes(name), fragile: !!view.fragile?.includes(name), painted };
+    return { corrupted, enhanced: !!view.enhanced?.includes(name), fragile: !!view.fragile?.includes(name), tempered: !!view.tempered?.[name], painted };
   };
   g.textAlign = 'right';
   g.font = FONT(14);
@@ -282,6 +287,10 @@ async function heroCard(view) {
   const open = view.maxItems ?? MAX_ITEMS; // a Descend run on Ascension 8+ has fewer slots: the rest are drawn locked (his ask, Nov 4: a lock, like the game)
   g.fillText(`${held.length} / ${open}`, W - PAD, iy - 4);
   g.textAlign = 'left';
+  // a Tempered Item's flames go down first, under every tile and name, so a second-row fire never covers the names above it
+  held.forEach(([name], i) => {
+    if (view.tempered?.[name] || view.tempered?.[joined.get(name)?.[0]]) flameFrame(g, PAD + (i % COLS) * (TILE + colGap), iy + Math.floor(i / COLS) * (TILE + NAME_H), TILE, name);
+  });
   for (let i = 0; i < MAX_ITEMS; i++) {
     const x = PAD + (i % COLS) * (TILE + colGap);
     const y = iy + Math.floor(i / COLS) * (TILE + NAME_H);
@@ -312,7 +321,7 @@ async function heroCard(view) {
   iy += 2 * (TILE + NAME_H) + 8;
   if (view.legendary) { // the legendary slot, under the 12
     label(g, 'Legendary', PAD, iy + 16);
-    await itemTile(g, view.legendary, LEGENDARY, PAD, iy + 32, `rgba(${LEGENDARY.rgb},1)`, 3, { enhanced: !!view.enhanced?.includes(view.legendary) });
+    await itemTile(g, view.legendary, LEGENDARY, PAD, iy + 32, null, 0, { enhanced: !!view.enhanced?.includes(view.legendary) });
     iy += LEGEND_H;
   }
 

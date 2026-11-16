@@ -28,6 +28,7 @@ const {
   parseEmoji,
   saveMenuRoles,
   saveMenuMode,
+  saveMenuUnlock,
   fetchMenuMessage,
   withIntro,
   dropOption,
@@ -66,7 +67,8 @@ module.exports = {
         .addStringOption((option) =>
           option.setName('description').setDescription('Embed description (shown above the options)'),
         )
-        .addStringOption((option) => option.setName('color').setDescription('Hex color like #5865F2')),
+        .addStringOption((option) => option.setName('color').setDescription('Hex color like #5865F2'))
+        .addRoleOption((option) => option.setName('unlock-role').setDescription('Optional: picking anything on this menu also gives this role (make the menu your server gate)')),
     )
     .addSubcommand((sub) =>
       sub
@@ -107,6 +109,8 @@ module.exports = {
           option.setName('description').setDescription(`New text above the options (${CLEAR} removes it)`).setMaxLength(1500),
         )
         .addStringOption((option) => option.setName('color').setDescription('New hex color like #5865F2'))
+        .addRoleOption((option) => option.setName('unlock-role').setDescription('Picking anything on this menu also gives this role'))
+        .addBooleanOption((option) => option.setName('no-unlock-role').setDescription('True = stop giving the unlock role'))
         .addStringOption((option) =>
           option
             .setName('mode')
@@ -147,7 +151,11 @@ module.exports = {
       const channel = interaction.options.getChannel('channel');
       const color = interaction.options.getString('color');
       if (color && !/^#?[0-9a-f]{6}$/i.test(color)) return reply("That color isn't a hex code. Use 6 digits like `#5865F2`.");
+      const unlock = interaction.options.getRole('unlock-role');
+      const problem = unlock && roleProblem(unlock, interaction.guild);
+      if (problem) return reply(problem);
       await startDraft(guildId, userId, {
+        unlockRoleId: unlock?.id,
         title: interaction.options.getString('title'),
         description: interaction.options.getString('description'),
         color: color && (color.startsWith('#') ? color : `#${color}`),
@@ -205,14 +213,19 @@ module.exports = {
         const description = interaction.options.getString('description');
         const color = interaction.options.getString('color');
         const mode = interaction.options.getString('mode');
-        if (!title && !description && !color && !mode) return reply('Pick at least one thing to change: title, description, color or mode.');
+        const unlock = interaction.options.getRole('unlock-role');
+        const dropUnlock = interaction.options.getBoolean('no-unlock-role');
+        if (!title && !description && !color && !mode && !unlock && !dropUnlock) return reply('Pick at least one thing to change: title, description, color, mode or the unlock role.');
+        const problem = unlock && roleProblem(unlock, interaction.guild);
+        if (problem) return reply(problem);
         if (color && !/^#?[0-9a-f]{6}$/i.test(color)) return reply("That color isn't a hex code. Use 6 digits like `#5865F2`.");
         if (title) embed.setTitle(title === CLEAR ? null : title);
         if (description) embed.setDescription(withIntro(text, description === CLEAR ? '' : description));
         if (color) embed.setColor(color.startsWith('#') ? color : `#${color}`);
         if (title || description || color) await message.edit({ embeds: [embed] });
         if (mode) await saveMenuMode(messageId, menu, mode);
-        const changed = [title && 'title', description && 'description', color && 'color', mode && `mode (now ${mode === 'single' ? 'Single' : 'Multi'})`];
+        if (unlock || dropUnlock) await saveMenuUnlock(messageId, { ...menu, ...(mode ? { mode } : {}) }, unlock ? unlock.id : null);
+        const changed = [unlock && `unlock role (now ${unlock})`, dropUnlock && 'unlock role (removed)', title && 'title', description && 'description', color && 'color', mode && `mode (now ${mode === 'single' ? 'Single' : 'Multi'})`];
         return reply(`Updated menu \`${messageId}\`: ${changed.filter(Boolean).join(', ')}.`);
       }
 

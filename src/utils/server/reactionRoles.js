@@ -29,8 +29,8 @@ function emojiKey(emoji) {
   return emoji.id ?? emoji.name;
 }
 
-async function startDraft(guildId, userId, { title, description, channelId, mode, color }) {
-  return drafts().set(draftKey(guildId, userId), { title, description, channelId, mode, color, pairs: [] });
+async function startDraft(guildId, userId, { title, description, channelId, mode, color, unlockRoleId }) {
+  return drafts().set(draftKey(guildId, userId), { title, description, channelId, mode, color, unlockRoleId, pairs: [] });
 }
 
 const getDraft = (guildId, userId) => drafts().get(draftKey(guildId, userId));
@@ -78,6 +78,7 @@ async function saveMenu(messageId, guildId, channelId, draft) {
     guildId,
     channelId,
     mode: draft.mode,
+    ...(draft.unlockRoleId ? { unlockRoleId: draft.unlockRoleId } : {}), // picking anything on this menu also gives this role (the server's own gate, if staff built one)
     roles: Object.fromEntries(draft.pairs.map((pair) => [pair.key, pair.roleId])),
   });
 }
@@ -123,6 +124,8 @@ function swapEmojis(menu, text, swaps) {
 }
 const saveMenuRoles = (messageId, menu, roles) => store().set(messageId, { ...menu, roles });
 const saveMenuMode = (messageId, menu, mode) => store().set(messageId, { ...menu, mode });
+// roleId null takes the extra role off the menu.
+const saveMenuUnlock = (messageId, menu, roleId) => store().set(messageId, { ...menu, unlockRoleId: roleId ?? undefined });
 
 // ---- Editing a posted menu ----
 // The menu's message, or null if it (or its channel) is gone.
@@ -166,6 +169,7 @@ module.exports = {
   swapEmojis,
   saveMenuRoles,
   saveMenuMode,
+  saveMenuUnlock,
   fetchMenuMessage,
   splitMenuText,
   withIntro,

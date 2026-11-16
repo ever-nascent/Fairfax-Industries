@@ -41,7 +41,7 @@ test('20 levels, each with a line and no name (his call, Oct 29); ascension 0 ke
     [D.REST, D.SKIP_HEAL, 1, 12, 3, D.BOSS_BUFFS, D.SKIP_BUFFS, D.REROLLS_PER_FLOOR]);
   assert.ok(!r0.slowFarm && !r0.shortStock && !r0.deniedSouls && !r0.walkCost);
   const r20 = D.rules({ v: 2, ascension: 20, room: 31 });
-  assert.deepStrictEqual([r20.rest, r20.skipHeal, r20.maxItems, r20.maxRejuvs, r20.walkCost], [D.REST, 0.2, 12, 1, 0.1], 'every level stacks');
+  assert.deepStrictEqual([r20.rest, r20.skipHeal, r20.maxItems, r20.maxRejuvs, r20.walkCost], [D.REST, 0.2, 12, 2, 0.1], 'every level stacks');
   assert.ok(r20.slowFarm && r20.shortStock && r20.deniedSouls);
   assert.deepStrictEqual([9, 10, 20].map((a) => D.rules({ v: 2, ascension: a }).rerolls), [3, 3, 3].map(() => D.REROLLS_PER_FLOOR), 'every level keeps its rerolls');
   assert.deepStrictEqual([0, 9, 10, 18].map((a) => [D.rivalHealth(a), D.allyHealth(a)]), [[0.7, 0.7], [0.7, 0.7], [0.85, 0.85], [0.85, 0.85]], 'A10: tougher heroes (Nov 6)');
@@ -86,12 +86,12 @@ test('the enemies: more of them (A1), room enemies +health (A2) +damage (A6), he
   assert.strictEqual(one('disruptor', null, 18).controls[0].duration, one('disruptor', null, 17).controls[0].duration + D.ASC.longer, 'A18: silences last longer');
   let seed = 1;
   let spec;
-  for (; seed < 500; seed++) { spec = D.roomSpec(seed, 27, 'Haze', 18); if (spec.kind === 'fight' && spec.groups.some((g) => g.affix)) break; }
+  for (; seed < 500; seed++) { spec = D.roomSpec(seed, 32, 'Haze', 18); if (spec.kind === 'fight' && spec.groups.some((g) => g.affix)) break; }
   for (const g of spec.groups.filter((x) => x.affix)) assert.ok(g.affix2 && g.affix2 !== g.affix, 'A18: a second, different affix');
-  for (let s2 = 1; s2 < 100; s2++) { const early = D.roomSpec(s2, 22, 'Haze', 18); if (early.kind === 'fight') assert.ok(early.groups.every((g) => !g.affix2), 'A18: the second affix waits for floor 6'); }
+  for (let s2 = 1; s2 < 100; s2++) { const early = D.roomSpec(s2, 27, 'Haze', 18); if (early.kind === 'fight') assert.ok(early.groups.every((g) => !g.affix2), 'A18: the second affix waits for floor 7'); }
 
   const boss = (a, affix = null) => D.bossFor('guardian', 10, a, affix);
-  assert.ok(Math.abs(boss(12).stats.dps / boss(11).stats.dps - 1.1) < 1e-9 && Math.abs(boss(12).stats.maxHealth / boss(11).stats.maxHealth - 1.1) < 1e-9, 'A12');
+  assert.ok(Math.abs(boss(12).stats.dps / boss(11).stats.dps - 1 - D.ASC.boss) < 1e-9 && Math.abs(boss(12).stats.maxHealth / boss(11).stats.maxHealth - 1 - D.ASC.boss) < 1e-9, 'A12');
   assert.strictEqual(boss(19).stats.controls[0].duration, boss(18).stats.controls[0].duration + D.ASC.longer, 'A19: a boss stun lasts longer');
   for (let s = 1; s < 40; s++) {
     const b = D.roomSpec(s, 15, 'Haze', 19);
@@ -101,7 +101,7 @@ test('the enemies: more of them (A1), room enemies +health (A2) +damage (A6), he
   }
 });
 
-test('bosses: an escort (A4, from floor 5), never back up (A10 revive removed Nov 6); Denied Souls (A9, floors 5-7); one Rejuv at most (A14)', () => {
+test('bosses: an escort (A4, from floor 5), never back up (A10 revive removed Nov 6); Denied Souls (A9, floors 5-7); two Rejuvs at most (A14)', () => {
   const at = (room, a) => ({ ...D.newRun('Haze', 3, a), room });
   const boss = (room, a) => D.enemiesOf(at(room, a), D.specOf(at(room, a), room)).units;
   assert.strictEqual(boss(20, 4).length, 1, 'no escort on floors 1-4');
@@ -119,7 +119,7 @@ test('bosses: an escort (A4, from floor 5), never back up (A10 revive removed No
   assert.strictEqual(win(24, 9).level, 5, 'a fight room still gives one');
   assert.strictEqual({ ...win(5, 13) }.rejuvs, 1);
   const full = (a) => { const d = { ...at(10, a), rejuvs: 2 }; D.afterWin(d, { spec: D.specOf(d, 10), health: 1, rejuvsUsed: 0, kept: {} }); return d.rejuvs; };
-  assert.deepStrictEqual([full(13), full(14)], [3, 1], 'A14: carry at most 1');
+  assert.deepStrictEqual([full(13), full(14)], [3, 2], 'A14: carry at most 2');
 });
 
 test('the hero: locked item slots (A8), slow farm (A5), short stock (A15), Flee costs health (A3)', () => {
@@ -130,11 +130,11 @@ test('the hero: locked item slots (A8), slow farm (A5), short stock (A15), Flee 
   assert.deepStrictEqual(D.addItem(d8, 'Extra Spirit'), { error: 'full' });
   d8.room = 21;
   assert.ok(D.addItem(d8, 'Extra Spirit').ok, 'the 11th slot opens on floor 5');
-  // A5: tiers half a floor behind; A15: 2 items from floor 5
+  // A5: tiers half a floor behind; A15: 2 items, the whole run (his call Nov 15)
   const tiers = (a) => { let t = 0; for (let s = 1; s <= 60; s++) { const d = { ...D.newRun('Haze', s, a), room: 15 }; t += D.rollOffer(d, { ...D.specOf(d, 14), kind: 'fight' }).choices.reduce((n, c) => n + require('../src/utils/farm/stats').itemByName(c).Tier, 0); } return t; };
   assert.ok(tiers(5) < tiers(4), 'A5: lower tiers');
   const count = (a, room) => { const d = { ...D.newRun('Haze', 7, a), room: room + 1 }; const spec = { ...D.specOf(d, room), kind: 'fight' }; return D.rollOffer(d, spec).choices.length; };
-  assert.deepStrictEqual([count(14, 22), count(15, 19), count(15, 22)], [3, 3, 2]);
+  assert.deepStrictEqual([count(14, 32), count(15, 2), count(15, 27), count(15, 32)], [3, 2, 2, 2]);
   const d3 = { ...D.newRun('Haze', 1, 3), health: 0.8 };
   D.walkAway(d3);
   assert.ok(Math.abs(d3.health - 0.7) < 1e-9 && d3.room === 2, 'A3: Flee costs 10% health');

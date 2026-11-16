@@ -39,7 +39,7 @@ const NOT_YOURS = {
   [dviews.DPOINT_ID]: `spend this run's ability points. ${RUN}`, [dviews.DBACK_ID]: `go back on this screen. ${RUN}`, [dviews.DQUIT_ID]: `abandon this run. ${RUN}`,
   [dviews.DAGAIN_ID]: `start another descent from here. ${RUN}`, [dviews.DIMBUE_ID]: `choose where this run's item is imbued. ${RUN}`,
   [dviews.DBONUSSWAP_ID]: `choose this run's bonus item. ${RUN}`,
-  [dviews.DREST_ID]: `choose in this run's room. ${RUN}`, [dviews.DDEAL_ID]: `deal in this run's room. ${RUN}`, [dviews.DTINKER_ID]: `tinker with this run's items. ${RUN}`, [dviews.DTVIEW_ID]: `look at this rest stop's items. ${RUN}`,
+  [dviews.DREST_ID]: `choose in this run's room. ${RUN}`, [dviews.DDOOR_ID]: `pick this run's door. ${RUN}`, [dviews.DDEAL_ID]: `deal in this run's room. ${RUN}`, [dviews.DTINKER_ID]: `tinker with this run's items. ${RUN}`, [dviews.DTVIEW_ID]: `look at this rest stop's items. ${RUN}`,
 };
 const ownerOf = (interaction) => interaction.customId.split(':')[1];
 async function mine(interaction) {
@@ -150,6 +150,7 @@ const STALE = { say: 'That screen is out of date. Here is where your run stands.
 // What a pick did, for the next room's screen.
 function picked(result) {
   if (result.kind === 'buffs') return `Took **${dviews.buffLine(result.name, result.stacks)}** for this run.`;
+  if (result.taken) return `Billy smashed the case. Took **${result.taken.join('**, **') || 'nothing'}**, all Fragile.${result.dropped?.length ? ` Gave up **${result.dropped.join('**, **')}**.` : ''}`;
   const name = `${result.enhanced ? 'Enhanced ' : ''}${result.name}`;
   if (result.kind === 'legendaries') return `**${name}** is in the legendary slot.`;
   if (result.enhancedHeld) return `You Enhanced **${result.name}**.`; // the enhanced copy of an item already held (his wording, Nov 5)
@@ -288,6 +289,16 @@ const descentRoutes = [
   },
   {
     name: 'farm',
+    label: 'Descend door button', // Two Doors (Nov 13): take one of the doors the run stands before
+    matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DDOOR_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const which = interaction.customId.split(':')[3];
+      if (which.startsWith('b')) return (await descent.backThrough(interaction.user.id, roomOf(interaction), Number(which.slice(1)))).ok ? { note: 'You stepped back through the Doorway. It closed behind you.' } : STALE; // the Doorman's Doorway
+      return (await descent.door(interaction.user.id, roomOf(interaction), Number(which))).ok ? {} : STALE;
+    }),
+  },
+  {
+    name: 'farm',
     label: 'Descend walk away button',
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DWALK_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
@@ -312,7 +323,7 @@ const descentRoutes = [
       if (!result.ok) return STALE;
       if (result.pick) return {}; // McGinnis' Upgrade Item with several to aim for: the screen now asks which
       if (action === 'step') return { note: 'The Teleporter hums, and the room around you changes.' };
-      return { note: `${dviews.eventText({ action, ...result })}${result.replay ? '' : ' You gained a level.'}` }; // (the pick screen that follows says it too)
+      return { note: `${dviews.eventText({ action, ...result })}${result.replay || action === 'burrow' ? '' : ' You gained a level.'}` }; // (the pick screen that follows says it too)
     }),
   },
   {
@@ -393,6 +404,15 @@ const descentRoutes = [
       const index = Number(interaction.values?.[0] ?? interaction.customId.split(':')[3]); // a rival's build is a dropdown
       const result = await descent.choose(interaction.user.id, roomOf(interaction), index);
       if (result.error === 'full') return { replace: index };
+      return result.ok ? { note: picked(result) } : STALE;
+    }),
+  },
+  {
+    name: 'farm',
+    label: 'Descend Take All (Billy)',
+    matches: (interaction) => (interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith(`${dviews.DSMASH_ID}:`),
+    execute: (interaction) => descentAction(interaction, async () => {
+      const result = await descent.takeEverything(interaction.user.id, roomOf(interaction), interaction.values ?? []);
       return result.ok ? { note: picked(result) } : STALE;
     }),
   },
