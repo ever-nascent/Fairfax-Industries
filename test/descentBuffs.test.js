@@ -48,7 +48,7 @@ test('little finds add one permanent stack and appear on the result and Build sc
   assert.equal(d.buffs[find.key], 1);
   assert.equal(D.runKit(d).buffs[find.key], 1);
   assert.notDeepEqual(buildHero('Haze', D.runKit(d)).stats, buildHero('Haze', { ...D.runKit(d), buffs: {} }).stats);
-  const window = await views.screen(member, { descent: { ...d, phase: 'ready' } }); // the Buff has a window of its own after the pick (Nov 10)
+  const window = await views.screen(member, { descent: { ...d, phase: 'ready' } }); // the Buff has a window of its own after the pick
   assert.match(window.embeds[0].toJSON().description, /Found a Buff\.\n\*\*.+\*\*\nPermanent for this run\./);
   const build = await views.buildView(member, d);
   assert.match(build.embeds[0].toJSON().fields.find((f) => f.name === 'Permanent Buffs (This Run)').value, new RegExp(BUFFS[find.key].name));
@@ -66,7 +66,7 @@ test('big finds boost the remaining floor fights, then expire after its boss', a
   assert.equal(buildHero('Haze', { ...D.runKit(d), tuning: 0 }).stats.maxHealth - buildHero('Haze', { ...D.runKit(d), tuning: 0, bridge: [] }).stats.maxHealth, 200); // without Haze's Descend tuning (descendTuning.json)
   const nextFight = D.fightRoom(d, fightSpec(seed, 4), () => 0.5);
   assert.equal(nextFight.frames[0].hero.max, buildHero('Haze', D.runKit(d)).stats.maxHealth);
-  const window = await views.screen(member, { descent: { ...d, phase: 'ready' } }); // the Buff has a window of its own after the pick (Nov 10)
+  const window = await views.screen(member, { descent: { ...d, phase: 'ready' } }); // the Buff has a window of its own after the pick
   assert.match(window.embeds[0].toJSON().description, /Found a Buff\.\n\*\*Survival Bridge Buff\*\*\n\+200 Max Health, \+4 Health Regen\nLasts through Floor \*\*1\*\*\./);
   const build = await views.buildView(member, d);
   assert.match(build.embeds[0].toJSON().fields.find((f) => f.name === 'Big Buffs (This Floor)').value, new RegExp(BRIDGE.survival.name));

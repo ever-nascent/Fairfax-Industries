@@ -80,8 +80,8 @@ async function showReport(interaction, days) {
   return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
 }
 
-// /souls is everyone's (his calls, Oct 11: it replaces /wallet): `balance` (the server balance) and `hero` (one of their Hero Farming heroes'
-// own souls), both private. Its other subcommands stay the staff tools (his call: members see them in the list and are refused).
+// /souls is everyone's (it replaces /wallet): `balance` (the server balance) and `hero` (one of their Hero Farming heroes'
+// own souls), both private. Its other subcommands stay the staff tools (members see them in the list and are refused).
 const memberSubs = (built) => built
   .addSubcommand((s) => s.setName('balance').setDescription('Your souls, Soul Boost, Rejuvs and recent activity (only you see it)'))
   .addSubcommand((s) => s.setName('hero').setDescription("One of your Hero Farming heroes: its own souls, level, Rejuvs and buffs (only you see it)")

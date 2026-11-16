@@ -169,7 +169,7 @@ RANKS = [
     ("eternus",   "xrank11_lg_psd.png.pagespeed.ic._3b3yCdqIl.png"),
 ]
 RANK_DIR = ASSETS / "ranks"
-EMOJI_PREFIX = "rank_"          # emoji names become :rank_initiate:, :rank_seeker:, ...
+EMOJI_PREFIX = "rank_"          # emoji names become :rank_initiate:, :rank_seeker:,...
 EMOJI_SIZE = 128                # Discord shows emojis at up to 128x128
 EMOJI_MAX_BYTES = 256 * 1024    # Discord's emoji file size limit
 

@@ -1,5 +1,5 @@
 // Lash's abilities (deadlock.wiki/Lash, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through Ability.value(); this file
-// is only what each ability does. His calls (Oct 5): a Grapple sets up a Ground Strike dive from DIVE metres (there is no height in these fights);
+// is only what each ability does. a Grapple sets up a Ground Strike dive from DIVE metres (there is no height in these fights);
 // Death Slam's tier 1 (a longer throw, useless here) leaves the slammed enemies THROWN seconds from getting back into the fight.
 const { Ability, anyReady } = require('./../ability');
 const { isBoss } = require('./../items');
@@ -10,7 +10,7 @@ const coneReach = (fight, unit, angle) => (fight.foes[0] ? fight.distance(unit, 
 
 // 1. Ground Strike: a stomp on the enemies in reach; after a Grapple it is a dive, with more damage for every metre fallen.
 // T2: a knock-up and a slow. T3: the per-metre damage x2.2 (the wiki's "+120%").
-const DIVE = 10; // metres a Grapple lifts him. ponytail: a placeholder, his to tune
+const DIVE = 10; // metres a Grapple lifts him. (placeholder value)
 class GroundStrike extends Ability {
   constructor(...args) {
     super(...args);
@@ -70,7 +70,7 @@ class Flog extends Ability {
 }
 
 // 4. Death Slam: a channel (no shooting or casting) that latches whips on the enemies in a cone; then they are lifted and stunned, and slammed
-// down: spirit damage and a slow to them and anything around the front one. A boss isn't lifted but takes the slam. T1 (his call): they land
+// down: spirit damage and a slow to them and anything around the front one. A boss isn't lifted but takes the slam. T1: they land
 // further off and can't attack for THROWN seconds more. T3: the slam stuns, and the cone is wider.
 const THROWN = 1;
 class DeathSlam extends Ability {
@@ -79,7 +79,7 @@ class DeathSlam extends Ability {
     this.until = 0;
   }
 
-  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, GroundStrike, Flog); } // combo first (his ask, Nov 6): Grapple into Ground Strike and Flog go first
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, GroundStrike, Flog); } // combo first: Grapple into Ground Strike and Flog go first
   status(fight) { return fight && fight.time < this.until ? 'Channelling' : super.status(fight); }
 
   cast(fight) {

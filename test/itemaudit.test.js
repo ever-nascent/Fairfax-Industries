@@ -1,5 +1,5 @@
 // Run: node --test
-// The item audit (server-plan.md "Item audit"): each item's effect, checked with the wiki's exact numbers (his ask, Oct 22: "make sure that their
+// The item audit: each item's effect, checked with the wiki's exact numbers ("make sure that their
 // exact effects are taking place"). One test per item, grouped by audit batch.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-')); // never the live data/
 const test = require('./group')(__filename);
@@ -340,7 +340,7 @@ test('Spellslinger: each cast in a fight adds a stack (up to 6, 18 s, each refre
   near(it().until - fight.time, 18);
 });
 
-// ===== Asked about by him (Oct 22); the full Spirit tier 2 check comes in its batch =====
+// ===== Asked about by him; the full Spirit tier 2 check comes in its batch =====
 test('Quicksilver Reload: casting the imbued ability when charged (18 s) reloads, +10% fire rate for a fixed 12 s, +44 spirit damage on its first hit', () => {
   const { hero, enemies, fight, it } = setup(['Quicksilver Reload', 'Superior Duration']);
   const ability = it().imbued;
@@ -372,7 +372,7 @@ test('Lucky Shot works in a real fight: its bonus adds about 25% to the gun dama
   assert.ok(bonus / shots > 0.18 && bonus / shots < 0.32, `+${(100 * bonus / shots).toFixed(0)}%`);
 });
 
-// ===== His calls, Oct 22: Silencer back in the shop, Glass Cannon's stacks kept until death =====
+// ===== Silencer back in the shop, Glass Cannon's stacks kept until death =====
 test('Silencer: every bullet cuts the enemy\'s spirit damage 25% for 6 s; Haze builds 9.1% a bullet (the wiki table): the 11th silences 2.5 s, then 10 s immune', () => {
   const { enemies, fight, hit } = setup(['Silencer']);
   hit();
@@ -443,7 +443,7 @@ test('Rebuttal: +75 health; parries the front enemy\'s melee swing every 3.25 s 
   near(hero.stats.maxHealth - plain.hero.stats.maxHealth, 75);
   hero.health = 100;
   fight.damage(enemies[0], hero, 40, 'bullet', { attack: true });
-  near(hero.health, 60, 'a bullet is never parried (his call, Oct 31)');
+  near(hero.health, 60, 'a bullet is never parried');
   hero.health = 100;
   fight.damage(enemies[0], hero, 40, 'melee', { attack: true });
   near(hero.health, 140, 'no damage taken, healed the 40');
@@ -451,9 +451,9 @@ test('Rebuttal: +75 health; parries the front enemy\'s melee swing every 3.25 s 
   const buff = status(hero, 'Rebuttal:rebuttal');
   near(buff.mods.damageDealt, 0.3); near(buff.until - fight.time, 6);
   near(it().cdLeft, 3.25);
-  const parried = status(enemies[0], 'Rebuttal:parried'); // the parry itself (his call, Oct 22)
+  const parried = status(enemies[0], 'Rebuttal:parried'); // the parry itself
   assert.ok(enemies[0].has('stun')); near(parried.until - fight.time, 2.75); near(parried.mods.damageTaken, 0.25);
-  for (const name of ['Walker', 'Mid-Boss', 'Shrine', 'Second Shrine', 'Patron', 'Weakened Patron']) { // his call, Oct 22
+  for (const name of ['Walker', 'Mid-Boss', 'Shrine', 'Second Shrine', 'Patron', 'Weakened Patron']) {
     const boss = setup(['Rebuttal']);
     boss.enemies[0].name = name;
     boss.fight.damage(boss.enemies[0], boss.hero, 40, 'melee', { attack: true });
@@ -1556,7 +1556,7 @@ test('Seraphim Wings: +120% stamina recovery; airborne, +40% damage dealt and -4
   assert.deepStrictEqual(it().dynamicMods(fight), { damageDealt: 0.4, damageTaken: -0.4 });
 });
 
-test('Mystical Piano: 1.7 s later, enemies within 12 m are stunned 6 s (3x the game 2 s, his call Nov 4), then dazed 2 s (slowed, disarmed, silenced, no items); every 23 s', () => {
+test('Mystical Piano: 1.7 s later, enemies within 12 m are stunned 6 s (3x the game 2 s), then dazed 2 s (slowed, disarmed, silenced, no items); every 23 s', () => {
   const { hero, enemies, fight, it } = setup(['Mystical Piano'], { foes: 5 });
   it().cast(fight);
   wait(fight, hero, 1.75);
@@ -1664,7 +1664,7 @@ test('Prism Blast: 6 s untouchable, its beams dealing 270 (+1.75 x spirit) a sec
   assert.deepStrictEqual(far.enemies.map((e) => +(1e6 - e.health).toFixed(6)), [270, 270, 270, 270, 0, 0], '15 m away: the last two are past 30 m');
 });
 
-test('Unstable Concoction: 4 s unstoppable with +3000 health, +10 m/s, +150 spirit, +150% weapon damage, then 30% of max health to enemies within 22 m, a 3 s stun, and the hero at half health (his pick Nov 4); every 25 s', () => {
+test('Unstable Concoction: 4 s unstoppable with +3000 health, +10 m/s, +150 spirit, +150% weapon damage, then 30% of max health to enemies within 22 m, a 3 s stun, and the hero at half health; every 25 s', () => {
   const { hero, enemies, fight, it } = setup(['Unstable Concoction'], { foes: 2 });
   const max = hero.stats.maxHealth;
   fight.useItem(it());

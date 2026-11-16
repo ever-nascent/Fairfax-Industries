@@ -1,5 +1,5 @@
 // Bebop's Bombs, Bebop's game (casino-style Mines): 20 tiles as emoji buttons, 4 hold sticky bombs. Every safe
-// tile raises the prize, Cash Out any time after the first; a bomb loses the bet. Rules: server-plan.md ("Games").
+// tile raises the prize, Cash Out any time after the first; a bomb loses the bet..
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
@@ -66,7 +66,7 @@ const games = () => getStore('minesGames');
 // ---- rules -------------------------------------------------------------------------------------
 
 // What `safe` safe tiles in a row pay, as a multiple of the bet: 95% of the odds of surviving that many picks,
-// rounded down to 2 decimals. 1 safe: x1.18, 2: x1.50, 3: x1.93 ... 16 (the whole board): x4,602.75.
+// rounded down to 2 decimals. 1 safe: x1.18, 2: x1.50, 3: x1.93... 16 (the whole board): x4,602.75.
 function multiplier(safe) {
   let odds = 1;
   for (let i = 0; i < safe; i++) odds *= (TILES - i) / (TILES - BOMBS - i);
@@ -125,7 +125,7 @@ function board(id, game) {
   return rows;
 }
 
-// The template every game follows (his pick Oct 22): one plain line and the state in fields while playing (Bet last); one
+// The template every game follows: one plain line and the state in fields while playing (Bet last); one
 // bold line, the money in fields and green / red once it's over.
 function view(id, game) {
   const safe = game.picked.length;

@@ -1,7 +1,9 @@
-const { PLATFORMS, checkLive, getConfig } = require('../utils/server/streams');
-
+// Event handler: clientReady.
 // Once a minute, for every server that set up alerts (/stream-config; Fairfax's start set up): check each streamer's Twitch and
 // TikTok once, even if several servers follow the same one, and post in that server's alerts channel.
+
+const { PLATFORMS, checkLive, getConfig } = require('../utils/server/streams');
+
 const warned = new Set(); // server ids already complained about, so a broken setup isn't logged every minute
 
 async function tick(client) {

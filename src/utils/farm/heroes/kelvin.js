@@ -1,6 +1,6 @@
 // Kelvin's abilities (deadlock.wiki/Kelvin, checked Oct 5 2026; page updated Oct 2). Numbers come from the wiki data through Ability.value(); this
-// file is only what each ability does. His calls: ally abilities work on the hero alone (Oct 2); Arctic Beam is used when the gun runs dry, and
-// nothing gets in or out of Frozen Shelter: enemies can't hit him and he doesn't attack (Oct 5).
+// file is only what each ability does. ally abilities work on the hero alone; Arctic Beam is used when the gun runs dry, and
+// nothing gets in or out of Frozen Shelter: enemies can't hit him and he doesn't attack.
 const { Ability } = require('./../ability');
 
 // 1. Frost Grenade: spirit damage and a slow on the enemies around the front one, and a heal for Kelvin (the allies' heal is his own).
@@ -31,7 +31,7 @@ class IcePath extends Ability {
 
 // 3. Arctic Beam: a channelled beam on the front enemy, the gun silent meanwhile: spirit damage every tick, and the longer it is held on an
 // enemy the slower it moves and attacks (an NPC attacking slower deals that much less damage; a rival hero's gun fires slower). The gun is the
-// stronger of the two, so (his call) he beams when the gun runs dry: the beam covers the reload. T1: more of both slows. T2: more damage.
+// stronger of the two, so he beams when the gun runs dry: the beam covers the reload. T1: more of both slows. T2: more damage.
 // T3: two more beams on other enemies near the front one.
 class ArcticBeam extends Ability {
   constructor(...args) {
@@ -71,7 +71,7 @@ class ArcticBeam extends Ability {
   }
 }
 
-// 4. Frozen Shelter: used when hurt: an impenetrable dome around himself. Nothing gets in or out (his call): enemies can't hit him, he doesn't
+// 4. Frozen Shelter: used when hurt: an impenetrable dome around himself. Nothing gets in or out: enemies can't hit him, he doesn't
 // attack, and he heals fast (through the heal cap). T2: longer. T3: clears his debuffs, more healing.
 const HURT = 0.5;
 class FrozenShelter extends Ability {

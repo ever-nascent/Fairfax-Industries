@@ -1,5 +1,5 @@
 // Drifter's abilities (deadlock.wiki/Drifter, checked Oct 3 2026). Numbers come from the wiki data through Ability.value(); this file is only
-// what each ability does. His calls (Oct 3): an enemy in Eternal Night's darkness can't attack him at all. An enemy is "isolated" when it is
+// what each ability does. an enemy in Eternal Night's darkness can't attack him at all. An enemy is "isolated" when it is
 // the only one left standing, or in the darkness. Bloodscent's kill bonus lasts the fight only, like the other heroes' growing bonuses.
 const { Ability } = require('./../ability');
 const { DT, MELEE } = require('./../engine');
@@ -91,7 +91,7 @@ class Bloodscent extends Ability {
   }
 }
 
-// 4. Eternal Night: darkness on the strongest enemies: they count as isolated and (his call) can't attack him at all while it lasts, hits or
+// 4. Eternal Night: darkness on the strongest enemies: they count as isolated and can't attack him at all while it lasts, hits or
 // blasts. T1: far more sprint speed meanwhile. T3: longer, and one more enemy.
 class EternalNight extends Ability {
   want(fight) {

@@ -1,6 +1,6 @@
 // Soul Bag: every counted chat message (the chat XP rules, chatCounts in xp.js) has a small chance to drop a bag of
 // souls in that channel; the first member to press Grab keeps it. One bag per cooldown for the whole server.
-// Chance and cooldown: /xp-config soul-bag. Decisions: server-plan.md ("Soul Bag").
+// Chance and cooldown: /xp-config soul-bag..
 const path = require('node:path');
 const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags } = require('discord.js');
 const { SCALE } = require('./economy');
@@ -28,7 +28,7 @@ const GRAB_LINE = '{member} retrieved the soul bag worth {souls}!';
 const GRAB_FOOTER = 'Rest of ya, better luck next bag!';
 const TOO_LATE = "Too slow, pal. That bag's gone.";
 
-// ponytail: the cooldown and the grabbed bags live in memory. A restart lets a bag drop right away and forgets which
+// the cooldown and the grabbed bags live in memory. A restart lets a bag drop right away and forgets which
 // bags were grabbed (a grabbed bag has no button left to press anyway). Keep them in data/ if that ever matters.
 const lastDropAt = new Map(); // server id -> when it last dropped a bag (each server has its own cooldown)
 const grabbed = new Set(); // message ids

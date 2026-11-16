@@ -1,4 +1,4 @@
-// What corrupting an item does, written for members (his ask, Oct 22: show the benefits and the drawback, neatly).
+// What corrupting an item does, written for members (show the benefits and the drawback, neatly).
 // The bonuses are shown the way the wiki and the game show them: each changed stat with the game's own label, before -> after
 // ("Shock Damage 43 -> 80", "Jump Radius 10m -> 15m"). The labels, units and base values come from deadlock-api.com (unofficial; the
 // same API the legendaries come from), saved in assets/farm/corrupted.json and refreshed once a day at startup (loadCorruptionLabels; was weekly until /item, Oct 30).

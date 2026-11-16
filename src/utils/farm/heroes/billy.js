@@ -1,5 +1,5 @@
 // Billy's abilities (deadlock.wiki/Billy, checked Oct 3 2026). Numbers come from the wiki data through Ability.value(); this file is only
-// what each ability does. His calls (Oct 3): Billy swings the bat for the usual reasons and always while Blasted; Rising Ram hits anything.
+// what each ability does. Billy swings the bat for the usual reasons and always while Blasted; Rising Ram hits anything.
 const { Ability } = require('./../ability');
 const { DT, MELEE } = require('./../engine');
 const { isBoss } = require('./../items');
@@ -29,7 +29,7 @@ class Bashdown extends Ability {
 }
 
 // 2. Rising Ram: charges into the front enemy for spirit damage and lifts it (it can't act meanwhile); the impact gives half the cooldown back.
-// T1: weapon damage after. T3: more max health for a while. Hits anything (his call; the game: not objectives).
+// T1: weapon damage after. T3: more max health for a while. Hits anything (the game: not objectives).
 class RisingRam extends Ability {
   want(fight) {
     return fight.foes.length > 0;
@@ -55,7 +55,7 @@ class RisingRam extends Ability {
 
 // 3. Blasted. Passive: a melee hit gives ammo back (a heavy one the whole clip, a light one a share) and leaves the enemy Wrecked. Active: bullets
 // hit Wrecked enemies harder, and every melee hit adds max health for a while and extends Blasted, up to its max duration. Billy swings the bat
-// for the usual reasons only (his call, Oct 5, undoing "always while Blasted" from Oct 3: it made him by far the strongest hero). Hits on non-heroes give a quarter of the health and time (the game's own NonPlayerResourceScalePct).
+// for the usual reasons only (undoing "always while Blasted" from Oct 3: it made him by far the strongest hero). Hits on non-heroes give a quarter of the health and time (the game's own NonPlayerResourceScalePct).
 class Blasted extends Ability {
   constructor(...args) {
     super(...args);

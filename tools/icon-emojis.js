@@ -1,4 +1,4 @@
-// Makes the ability and item emojis (Nov 4, his ask: an icon next to each ability and item name in fights, the hero screen and the
+// Makes the ability and item emojis (an icon next to each ability and item name in fights, the hero screen and the
 // Damage Breakdown). Every fight ability -> assets/emojis/a_<name>.png (the wiki's white icon on a dark circle, so it shows on Discord's light
 // theme too); every shop item and legendary -> assets/emojis/i_<name>.png (its shop picture). The bot uploads them at its next start
 // (src/utils/appEmojis.js). An ability icon missing from assets/trivia/abilities is downloaded from deadlock.wiki first.
@@ -60,7 +60,7 @@ async function main() {
   for (const name of [...ITEM_POOL, ...LEGENDARY_NAMES]) {
     try { fs.writeFileSync(path.join(OUT, `${itemEmojiName(name)}.png`), await itemEmoji(itemFile(name))); made++; } catch (e) { failed.push(`${name}: ${e.message}`); }
   }
-  // Map icons from deadlock.wiki's Cursed Apple page (Nov 4, his ask): the power-ups (our bridge buffs, keyed as in buffs.js BRIDGE), the
+  // Map icons from deadlock.wiki's Cursed Apple page: the power-ups (our bridge buffs, keyed as in buffs.js BRIDGE), the
   // Teleporter, the Curiosity Shop and the Vault Camp (Sinner's Sacrifice). The small minimap ones are scaled up without smoothing.
   const MAP = { powerup_casting: 'farm/bridge/casting.png', powerup_gun: 'farm/bridge/gun.png', powerup_movement: 'farm/bridge/movement.png', powerup_survival: 'farm/bridge/survival.png',
     teleporter: 'farm/icons/teleporter.png', curiosity_shop: 'shop/art/shop_icon.png', vault_camp: 'farm/icons/vault-camp.png' };

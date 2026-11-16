@@ -1,11 +1,13 @@
+// Event handler: clientReady.
+// On startup: look up the :souls: and /trivia streak bar emojis, then run voice XP.
+// Voice XP (off by default, /xp-config voice): once a minute, everyone in a voice channel with at
+// least one other listener gets XP (voiceEarners: not deafened, not the AFK channel, not an ignored channel).
+
 const { ourGuild } = require('../utils/guild');
 const { getSettings, addXp, announceLevelUp, loadSoulsEmoji, voiceEarners } = require('../utils/economy/xp');
 const { loadStreakEmojis } = require('../utils/games/trivia');
 const { runInGuild } = require('../utils/guildContext');
 
-// On startup: look up the :souls: and /trivia streak bar emojis, then run voice XP.
-// Voice XP (off by default, /xp-config voice): once a minute, everyone in a voice channel with at
-// least one other listener gets XP (voiceEarners: not deafened, not the AFK channel, not an ignored channel).
 module.exports = {
   name: 'clientReady',
   once: true,

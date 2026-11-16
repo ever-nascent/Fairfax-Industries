@@ -1,4 +1,4 @@
-// Every hero's good-pick clear rate at each ascension, side by side (Nov 14, his ask: every hero above 45% at every ascension).
+// Every hero's good-pick clear rate at each ascension, side by side (every hero above 45% at every ascension).
 //   node tools/descend-matrix.js [--hero=Name,Name|all] [--asc=0,5,10,15,20|all] [--seeds=20] [--first=1] [--jobs=7] [--bar=0.45]
 // Any other --option (and the environment) is passed on to `farm-sim.js descend`. Never touches data/.
 const path = require('node:path');

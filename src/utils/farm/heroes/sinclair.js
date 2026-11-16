@@ -1,5 +1,5 @@
 // Sinclair's abilities (deadlock.wiki/Sinclair, checked Oct 5 2026; page updated that day). Numbers come from the wiki data through
-// Ability.value(); this file is only what each ability does. His calls (Oct 5): Audience Participation copies the ultimate of a random hero the
+// Ability.value(); this file is only what each ability does. Audience Participation copies the ultimate of a random hero the
 // member has unlocked (a rival hero's in a duel), and it must work for every hero's ultimate; Rabbit Hex works on any enemy; Vexing Bolt always
 // deals its full damage.
 const { Ability } = require('./../ability');
@@ -8,7 +8,7 @@ const { HEROES, ABILITIES } = require('./../stats');
 
 const find = (unit, Cls) => unit.abilities.find((a) => a instanceof Cls);
 
-// 1. Vexing Bolt: a bolt at the front enemy that grows as it flies. It always deals its maximum damage (his call, Oct 5: the redirect, which
+// 1. Vexing Bolt: a bolt at the front enemy that grows as it flies. It always deals its maximum damage (the redirect, which
 // gives it the longer flight, is assumed), to everything around it, half to bosses. With an Assistant out, the Assistant casts one too, weaker.
 // T1: the bolt makes them attack slower. T3: a far higher maximum, a stronger Assistant bolt.
 class VexingBolt extends Ability {
@@ -55,7 +55,7 @@ class SpectralAssistant extends Ability {
 }
 
 // 3. Rabbit Hex: a moment after the cast the enemies around the front one are rabbits for a while: they can't attack or cast, and take more
-// damage (his call: any enemy, not only heroes; a boss shrugs part of it off). T2: longer. T3: wider, more damage taken.
+// damage (any enemy, not only heroes; a boss shrugs part of it off). T2: longer. T3: wider, more damage taken.
 class RabbitHex extends Ability {
   want(fight) { return fight.foes.length > 0; }
 
@@ -71,7 +71,7 @@ class RabbitHex extends Ability {
 }
 
 // 4. Audience Participation: copies an ultimate: a rival hero's in a duel, else that of a random hero the member has unlocked (unit.copies;
-// his call). The copy has this ability's tier and is used by its own rules (some wait for the right moment); once it has been used, this
+// ). The copy has this ability's tier and is used by its own rules (some wait for the right moment); once it has been used, this
 // ability's cooldown becomes a share of the copied one's. The copy (and whatever of its hero's kit it can't work without: a hero file's
 // `copyWith`) sits hidden among Sinclair's abilities until the next copy replaces it.
 class AudienceParticipation extends Ability {

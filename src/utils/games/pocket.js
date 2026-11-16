@@ -1,5 +1,5 @@
 // Pocket's Suitcases, Pocket's game (Deal or No Deal): 20 cases in a 4x5 grid of buttons, each holding a multiple of
-// the bet. Keep one, open the rest in rounds, take Pocket's offer (Deal) or say No Deal. Rules: server-plan.md ("Games").
+// the bet. Keep one, open the rest in rounds, take Pocket's offer (Deal) or say No Deal..
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
@@ -206,7 +206,7 @@ function board(id, game, frozen) {
   return rows;
 }
 
-// The template every game follows (his pick Oct 22): one plain line and the state in fields while playing (Bet last), one
+// The template every game follows: one plain line and the state in fields while playing (Bet last), one
 // bold line, the money in fields and green / red once it's over. Your case is the blue one on the board.
 function view(id, game) {
   const board20 = (frozen) => board(id, game, frozen);

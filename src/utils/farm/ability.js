@@ -4,11 +4,11 @@
 //   want(fight)          the auto-cast rule (default: cast whenever ready)
 //   cast(fight)          the effect, after the wiki's cast delay
 //   tick(fight, dt)      every step, for lasting effects
-//   on(event, fight, p)  'damage' / 'bulletHit' / 'kill' / 'melee' ... payloads, e.g. Fixation stacking on bullet hits
+//   on(event, fight, p)  'damage' / 'bulletHit' / 'kill' / 'melee'... payloads, e.g. Fixation stacking on bullet hits
 //   wantsMelee(fight, t) optional: true when the hero should melee now (engine.js wantMelee)
 //   passive = true       no cooldown, never cast, only tick() and on()
 // Slot 4 is the ultimate (Diviner's Kevlar, Lightning Scroll and ultimate cooldown reduction look for it).
-const MIN_COOLDOWN = 0.2; // cooldown reduction stops at 80% off. ponytail: the game's own cap isn't on the wiki; reductions add up here.
+const MIN_COOLDOWN = 0.2; // cooldown reduction stops at 80% off. the game's own cap isn't on the wiki; reductions add up here.
 const CHARGE_GAP = 1; // seconds between two charges of one ability when the wiki gives no gap (so extra charges don't all fire at once)
 
 class Ability {
@@ -62,12 +62,12 @@ class Ability {
     return v;
   }
 
-  // The spirit power this ability scales with: the hero's, temporary spirit (Infuser ...), imbued spirit and, for a charged ability, charged spirit.
+  // The spirit power this ability scales with: the hero's, temporary spirit (Infuser...), imbued spirit and, for a charged ability, charged spirit.
   spirit(im = this.imbued()) {
     return this.unit.stats.spirit + (this.unit.mod('spirit') + (im.spirit ?? 0) + (this.charged ? this.unit.stat('chargedSpirit') : 0)) * (this.unit.stats.spiritMult ?? 1); // Boundless Spirit's % takes in every source (the wiki)
   }
 
-  // Seconds after its cast delay that the hero casts no other ability (his call, Oct 28: Bullet Dance can't be cut short by a cast). The game's
+  // Seconds after its cast delay that the hero casts no other ability (Bullet Dance can't be cut short by a cast). The game's
   // flags: a channelled ultimate holds the hero for its channel (9999 = until it ends itself: the hero's file handles those), an exclusive one
   // (Bullet Dance, Heavy Barrage, Last Stand) for its duration. A stun or anything else that stops the hero ends it (engine.js step).
   get lockout() {
@@ -129,12 +129,12 @@ class Ability {
   // Whether any of its numbers scale with melee damage (engine.js damage gives such an ability 50% of the Weapon Damage bonus, the wiki).
   get meleeScaled() { return (this._meleeScaled ??= /"Type":"(heavy_)?melee"/.test(JSON.stringify(this.data))); }
 
-  // Stacks the game keeps for good (Sticky Bomb, Combo, Guided Owl, Nox Nostra, Still Life, Bloodscent, Leech Therapy). His call, Oct 28: in
+  // Stacks the game keeps for good (Sticky Bomb, Combo, Guided Owl, Nox Nostra, Still Life, Bloodscent, Leech Therapy). in
   // Descend they last the whole run (descent.js puts them in the run's `kept`, by ability name); on the farm every fight starts without them.
   // Such an ability reads what it brings in with carried(), and has keep() (what it leaves) and stackText() (the screens' Stacks line).
   carried(fallback = 0) { return this.unit.kept?.[this.data.Name] ?? fallback; }
 
-  // Timing for an ability whose stack needs the enemy dead soon after it lands (Assassinate, Guided Owl, Combo; his ask, Oct 29: "the hero
+  // Timing for an ability whose stack needs the enemy dead soon after it lands (Assassinate, Guided Owl, Combo; "the hero
   // should try to use it at that specific time"). The hero's damage per second so far this fight (gun, abilities, items: engine.js `dealt`;
   // nothing to go on in the first second), and whether `e` would die within `seconds` of taking `burst` at that rate.
   dps(fight) { return fight.time > 1 ? (fight.dealt.get(this.unit) ?? 0) / fight.time : 0; }
@@ -155,7 +155,7 @@ class Unimplemented extends Ability {
   get passive() { return true; }
 }
 
-// True while one of the unit's abilities of these kinds is ready to cast: an ultimate's want() uses it to wait for its combo (his ask, Nov 6:
+// True while one of the unit's abilities of these kinds is ready to cast: an ultimate's want() uses it to wait for its combo (
 // Seven ulted before his stun and ball). A locked or cooling-down one doesn't hold it.
 const anyReady = (unit, ...kinds) => unit.abilities.some((a) => kinds.some((K) => a instanceof K) && a.ready());
 

@@ -1,7 +1,7 @@
-// Don't Wake the Bookwyrm, Paige's game (Hangman, his pick Oct 20-21): a word from Deadlock (a hero, an ability or an item: the chapter) is hidden
+// Don't Wake the Bookwyrm, Paige's game (Hangman): a word from Deadlock (a hero, an ability or an item: the chapter) is hidden
 // as blanks. Pick letters from two dropdowns (A-M, N-Z) or press Solve It and type the word. Every wrong letter, and every wrong solve, wakes
 // the Bookwyrm a little more; the 6th wakes her and the bet is lost. Solving it pays the bet x a multiple that falls with every wrong guess.
-// The picture is an open storybook (paigeBook.js, paigeWyrm.js): the Bookwyrm changes every 2 wrong guesses. Rules: server-plan.md ("Games").
+// The picture is an open storybook (paigeBook.js, paigeWyrm.js): the Bookwyrm changes every 2 wrong guesses..
 const path = require('node:path');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { getStore } = require('../../storage');
@@ -90,7 +90,7 @@ const games = () => getStore('hangmanGames');
 
 // ---- the words ---------------------------------------------------------------------------------------------------------
 
-// Upper case, accents off. Letters are A-Z; anything else in a name (space, ' - & , ! digits) is printed from the start.
+// Upper case, accents off. Letters are A-Z; anything else in a name (space, ' - &, ! digits) is printed from the start.
 const normalize = (text) => String(text).normalize('NFD').replace(/\p{M}/gu, '').toUpperCase();
 const isLetter = (ch) => /^[A-Z]$/.test(ch);
 const lettersOf = (word) => [...new Set([...word].filter(isLetter))];
@@ -166,7 +166,7 @@ async function view(id, game, note = null) {
     name: `book_${id}_${game.version}_${Date.now()}.gif`,
     data: await renderBook({ word: game.word, hits: game.hits, wrong: game.wrong, category: game.category, result: game.done ? (game.won ? 'won' : 'lost') : null }),
   };
-  // The template every game follows (his pick Oct 22): one plain line and the state in fields while playing (Bet last), one
+  // The template every game follows: one plain line and the state in fields while playing (Bet last), one
   // bold line, the money in fields and green / red once it's over.
   if (!game.done) {
     const left = MAX_WRONG - game.wrong.length;
@@ -177,7 +177,7 @@ async function view(id, game, note = null) {
   }
   const prize = prizeOf(game);
   const how = game.won ? 'You solved it!' : game.forfeit ? 'You left the story unfinished.' : 'The Bookwyrm awakens!';
-  const lines = game.won ? [how, `The word was **${game.word}**`] : [`**${how} The word was ${game.word}.**`]; // a win: two lines, only the word in bold (his call, Oct 22)
+  const lines = game.won ? [how, `The word was **${game.word}**`] : [`**${how} The word was ${game.word}.**`]; // a win: two lines, only the word in bold
   const fields = resultFields(game.bet, prize, game.balance);
   return gameMessage(HOST, {
     lines, image,

@@ -1,4 +1,4 @@
-// The /descend run log (his ask, Oct 31): every fact that helps balance runs, nothing about who played. One JSON line per event in data/descentLog.jsonl
+// The /descend run log: every fact that helps balance runs, nothing about who played. One JSON line per event in data/descentLog.jsonl
 // (git-ignored): no member or server ids; a run is told apart only by its seed (`run`). Events: `start`, `fight`, `pick`, `walk`, `broker`, `end`.
 // `bal` names the balance era (a hash of the numbers that shape a run), so lines from before a retune can be kept apart. Read with tools/descend-stats.js.
 // Never throws: a full disk must not undo a room.

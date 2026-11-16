@@ -1,6 +1,6 @@
 // Pocket's abilities (deadlock.wiki/Pocket, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through Ability.value(); this
 // file is only what each ability does. Standing rules used: "on hero hit" is any enemy; an ability the gun has to stop for is used when the gun
-// runs dry (his call for Kelvin's beam): Enchanter's Satchel, which also finishes the reload at once (the wiki).
+// runs dry (for Kelvin's beam): Enchanter's Satchel, which also finishes the reload at once (the wiki).
 const { Ability } = require('./../ability');
 const { isBoss } = require('./../items');
 
@@ -55,7 +55,7 @@ class FlyingCloak extends Ability {
 
 // 3. Enchanter's Satchel: used when the gun runs dry: into the suitcase, where nothing can reach Pocket, and the reload is done at once (the
 // wiki); coming out, spirit damage to the enemies around. T2: more damage. T3: wider, and the enemies hit move and attack slower.
-// ponytail: Pocket leaves after the base time; tier 3's longer stay is the player's choice in the game and isn't used.
+// Pocket leaves after the base time; tier 3's longer stay is the player's choice in the game and isn't used.
 class EnchantersSatchel extends Ability {
   want(fight) { return fight.foes.length > 0 && this.unit.weapon.reloadLeft > 0; }
 

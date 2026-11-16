@@ -15,14 +15,14 @@ const { wikiFetch } = require('../wikiFetch');
 
 const WIKI = 'https://deadlock.wiki';
 const OUT = path.join(ASSETS, 'farm');
-const FARM_HEROES = ['Mina', 'Haze', 'Celeste', 'Paige', 'Abrams', // the starter 5, his pick, Oct 1
-  'Apollo', 'Bebop', 'Billy', 'Calico', 'The Doorman', 'Drifter', 'Dynamo', 'Graves', 'Grey Talon', 'Holliday', 'Infernus', 'Ivy', 'Kelvin', 'Lady Geist', 'Lash', 'McGinnis', 'Mirage', 'Mo & Krill', 'Paradox', 'Pocket', 'Rem', 'Seven', 'Shiv', 'Silver', 'Sinclair', 'Venator', 'Victor', 'Vindicta', 'Viscous', 'Vyper', 'Warden', 'Wraith', 'Yamato', // then the rest A to Z, one at a time (his call, Oct 3; each added with addHero below)
+const FARM_HEROES = ['Mina', 'Haze', 'Celeste', 'Paige', 'Abrams', // the starter 5, 
+  'Apollo', 'Bebop', 'Billy', 'Calico', 'The Doorman', 'Drifter', 'Dynamo', 'Graves', 'Grey Talon', 'Holliday', 'Infernus', 'Ivy', 'Kelvin', 'Lady Geist', 'Lash', 'McGinnis', 'Mirage', 'Mo & Krill', 'Paradox', 'Pocket', 'Rem', 'Seven', 'Shiv', 'Silver', 'Sinclair', 'Venator', 'Victor', 'Vindicta', 'Viscous', 'Vyper', 'Warden', 'Wraith', 'Yamato', // then the rest A to Z, one at a time (each added with addHero below)
   'Baba', 'Rat King', 'Solomon', 'Deadman Danny', 'Nurse Harrow', 'Violet']; // the City Never Sleeps heroes, as they come out (Oct 10, Danny Oct 16, Harrow and Violet Oct 20; the wiki still flags them InDevelopment, so a selectable one counts as live)
 
 // Target icons: the minimap camp icons (small / medium / large), each boss's / structure's own icon, and for Crate and Sinner's
 // Sacrifice (the wiki has no icons for them) a square crop of its picture (CROPS) so it fits an embed thumbnail.
 // icons/base-guardian.png, shrine.png, patron.png, patron-weakened.png and trooper*.png (the renders he supplied Oct 3, their background cut off) and icons/lane-*.png (the lane badges from his picture) are not
-// downloaded either, so a refresh leaves them. icons/golden-statue.png is not downloaded: it is the owl statue picture he supplied (Oct 1), kept at its own proportions, so a refresh leaves it.
+// downloaded either, so a refresh leaves them. icons/golden-statue.png is not downloaded: it is the owl statue picture he supplied, kept at its own proportions, so a refresh leaves it.
 const ICONS = {
   'small-camp': 'MapEasyCampIcon.png', 'medium-camp': 'MapMediumCampIcon.png', 'large-camp': 'MapHardCampIcon.png',
   crate: 'Fairfax_crates.png', 'tough-crate': 'Tough_Crate.png', 'sinners-sacrifice': "Sinner's_Sacrifice_machine.png", 'mid-boss': 'Midboss.png',
@@ -155,7 +155,7 @@ async function addHero(name) {
   console.log(`[ok] ${name}: ${hero.MaxHealth} HP, ${w.BulletDamage} x ${w.RoundsPerSecond.toFixed(1)}/s, clip ${w.ClipSize}, reload ${w.ReloadTime}s, ${Math.round(w.DPS)} DPS; ${Object.values(hero.BoundAbilities).map((s) => all[s.Key].Name).join(', ')}`);
 }
 
-// What a refresh would change in one saved file: the keys (heroes, abilities, items ...) whose data differs, added or removed.
+// What a refresh would change in one saved file: the keys (heroes, abilities, items...) whose data differs, added or removed.
 async function changedKeys(file, next) {
   const old = await fs.readFile(path.join(OUT, file), 'utf8').then(JSON.parse, () => ({}));
   return [...new Set([...Object.keys(old), ...Object.keys(next)])].filter((k) => JSON.stringify(old[k]) !== JSON.stringify(next[k]));
@@ -234,5 +234,5 @@ async function refresh() {
 
 module.exports = { refresh, addHero, FARM_HEROES, ICONS, HAUNTS, BUFF_TOMES };
 
-// exitCode, not process.exit(): exiting with a download still open crashes Node on Windows ("Assertion failed: ... UV_HANDLE_CLOSING", Oct 16)
+// exitCode, not process.exit(): exiting with a download still open crashes Node on Windows ("Assertion failed:... UV_HANDLE_CLOSING", Oct 16)
 if (require.main === module) refresh().then((ok) => { process.exitCode = ok ? 0 : 1; }, (e) => { console.error(`NOTHING WAS SAVED. ${e.message}`); process.exitCode = 1; });

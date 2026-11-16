@@ -8,7 +8,7 @@
 //     counts becoming invulnerable, untargetable or immune too (Pocket's satchel, Viscous's Cube, Yamato's ultimate).
 //   Gun questions: the game's own weapon tags (Burst Fire, Spreadshot, Rapid Fire, Long Range, Close Range: heroes.json).
 //   Woman: the wiki's pronouns (She/Her; Pocket and Sinclair are They/Them). First Roster: wiki release date April 24, 2024.
-//   Horns, Tail, Beard: the hero icons and renders. Coat, Human: judgment calls from the renders and lore, his to correct.
+//   Horns, Tail, Beard: the hero icons and renders. Coat, Human: judgment calls from the renders and lore, to check against the game.
 //   The rest (kept from Oct 22): upgrades count (an ability that can gain a charge, barrier or heal through an upgrade is a
 //   Yes); Hat counts Baba's headscarf, Rat King's crown, Seven's headgear and Deadman Danny's helmet, not McGinnis's headband.
 // Every hero's answers must differ from every other hero's (test/abrams.test.js), or two suspects could never be told apart.

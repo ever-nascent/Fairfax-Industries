@@ -1,7 +1,7 @@
 // A Tempered Item's fire on the Hero card (Descend, Infernus' Stoke the Fire; heroCard.js). Two functions, both (g, x, y, size, name):
 // `flameFrame` is drawn behind the tile, before every tile and name of the grid (the tile hides the flames' roots); `emberOverlay` is drawn
 // over the Item's picture, inside the tile's rounded clip. Everything random is seeded by the Item's name, so a redraw never moves it.
-// A Tempered Item's fire (his ask Nov 14, his reference: the "hot vector frames", a frame burning on every side). Fire always rises: the tongues on
+// A Tempered Item's fire (the "hot vector frames", a frame burning on every side). Fire always rises: the tongues on
 // the top edge stand tall, the ones on the sides climb up and lean out, the ones on the bottom edge rise up over the bottom of the picture. Each
 // tongue is three layers added together (a red outer flame with a soft glow, an orange one, a yellow-white core), seeded by the Item's name so a
 // redraw never moves them. `flameFrame` is drawn behind the tile (the tile hides their roots), `emberOverlay` inside it.

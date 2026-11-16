@@ -1,4 +1,4 @@
-// The item shop picture (/base dropdown "Item Shop", or Item Shop on the hero screen), drawn like the in-game shop (his call, Oct 3): the game's own
+// The item shop picture (/base dropdown "Item Shop", or Item Shop on the hero screen), drawn like the in-game shop: the game's own
 // tab art (Weapon "Fairfax", Vitality "MPS", Spirit "Curiosity Catalog") with its four tier boxes, the items as the game's shop cards (card back per
 // kind and tier, the item's shop picture, its name, ACTIVE / IMBUE tags), the tier prices on the dark plates, and the three tabs down the left side.
 // On top of the game's look: what the member owns, can upgrade, or can't afford. The Broker and Sell tabs have no art in the game, so they are drawn
@@ -14,7 +14,7 @@ const { itemFile, CORRUPTED_FRAME } = require('./itemArt');
 const { fmt } = require('../format');
 
 const DIR = path.join(ASSETS, 'farm', 'shop');
-// The script lettering of the shop's name on the background (his call, Oct 3). ponytail: Windows' Gabriola for now; a font file in assets/fonts is the real
+// The script lettering of the shop's name on the background. Windows' Gabriola for now; a font file in assets/fonts is the real
 // home (the VPS has no Windows fonts), the first one found wins and a missing font falls back to the plain bold lettering.
 const SCRIPT_FILES = [path.join(ASSETS, 'fonts', 'script.ttf'), path.join(ASSETS, 'fonts', 'script.otf'), 'C:/Windows/Fonts/Gabriola.ttf'];
 const scriptFile = SCRIPT_FILES.find((f) => fs.existsSync(f));
@@ -53,7 +53,7 @@ const LAYOUT = {
 };
 const ASPECT = 128 / 82; // a shop card's height over its width
 
-// The ribbon (his call, Oct 3): across the middle of a card, a dark one reading OWNED on the greyed cards you have, a solid one in the tab's colour
+// The ribbon: across the middle of a card, a dark one reading OWNED on the greyed cards you have, a solid one in the tab's colour
 // reading UPGRADE on the glowing ones, with a diamond at each end. `size` is half a card's width; a small one (the legend's) has no word.
 function badge(g, cx, cy, size, color, label = 'OWNED') {
   const solid = label === 'UPGRADE' || label === 'CORRUPT', w = size * (solid || label === 'CORRUPTED' ? 1.9 : 1.6), h = size * 0.36, notch = h * 0.35;
@@ -209,10 +209,10 @@ async function tabs(g, open) {
   }
 }
 
-// The page header (his call, Oct 3: its parts have to interact): one band cut into three zones by slanted dividers that catch the tier's light,
+// The page header (its parts have to interact): one band cut into three zones by slanted dividers that catch the tier's light,
 // each zone tinted differently and all sitting on the same lit bottom edge: the tier (title, pips strung on a line), the kind on show (icon, name, how
 // many are yours) and the price. Even tiers run the other way round. The game's own "TIER n" title sits under it, so ours replaces it.
-// The whole header is in the tab's colour (his call, Oct 3); each tier is a shade of it, Tier 1 the palest and Tier 4 the full colour, and the bottom
+// The whole header is in the tab's colour; each tier is a shade of it, Tier 1 the palest and Tier 4 the full colour, and the bottom
 // edge gets one more line per tier.
 const PALE = { 1: 0.6, 2: 0.38, 3: 0.16, 4: 0 }; // how much white each tier's shade has
 const shade = (hex, white) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * (1 - white) + 255 * white).toString(16).padStart(2, '0')).join('');
@@ -307,10 +307,10 @@ async function header(g, kind, tier, info) {
   });
 }
 
-// Faint stamps behind the cards (his call, Oct 3: wording and Deadlock symbols in the background): the tab's own name big across the page,
+// Faint stamps behind the cards (wording and Deadlock symbols in the background): the tab's own name big across the page,
 // the shop's name, and scattered symbols from the game's UI (the tab's icon, the souls glyph, map icons), all in one flat ink. Placed from the
 // kind and tier so every page differs but never changes between draws. Dark ink on the light tiers, light ink on the dark ones.
-const BACKDROP = false; // off for now (his call, Oct 3); set true to bring the words and symbols back
+const BACKDROP = false; // off for now; set true to bring the words and symbols back
 const BRAND = { weapon: 'FAIRFAX', vitality: 'MPS', spirit: 'CURIOSITY CATALOG' };
 const STAMPS = ['walker', 'shrine', 'guardian', 'patron', 'mid-boss', 'base-guardian', 'golden-statue', 'trooper', 'trooper-melee', 'unlock-token', 'patron-weakened']; // the icons with see-through backgrounds (a crate's is a solid square)
 async function backdrop(g, kind, tier) {
@@ -355,7 +355,7 @@ async function backdrop(g, kind, tier) {
   }
 }
 
-// A kind's tab, one tier at a time (his call, Oct 3: the whole page was too small to read): that tier's box of the game's tab art, filling the page,
+// A kind's tab, one tier at a time (the whole page was too small to read): that tier's box of the game's tab art, filling the page,
 // its price plate, and its items as big shop cards. view: { kind, tier, names: [that kind's items], state(name) -> card state }.
 const PAGE_H = 980;
 async function shopTab({ kind, tier, names, state }) {
@@ -395,7 +395,7 @@ async function shopTab({ kind, tier, names, state }) {
   return jpeg(c);
 }
 
-// The Broker page (his call, Oct 3), drawn from a picture of his shop: black street, a rose-lit interior, the pink neon OPEN sign, his fedora silhouette
+// The Broker page, drawn from a picture of his shop: black street, a rose-lit interior, the pink neon OPEN sign, his fedora silhouette
 // and the green eye on the counter. The same header band as the shop, in neon pink with the eye as its mark; the sign says OPEN or CLOSED with the
 // time left, and the items he can corrupt are lit pink with a CORRUPT ribbon and their price under them.
 // view: { open, timer: 'time left or until he opens', cards: [{ name, state }], empty }.
@@ -425,7 +425,7 @@ function emblem(g, cx, cy, L, color, alpha = 1) {
   g.restore();
 }
 
-// The Broker's icon (his ask, Oct 30: a redraw of the cream fedora and round glasses he pasted; a placeholder he will redo): the thumbnail of every Broker
+// The Broker's icon (a redraw of the reference picture; placeholder art): the thumbnail of every Broker
 // screen, the farm's Broker tab and Descend's stall. Cream on see-through, 256 px, kept as a PNG.
 let brokerIconPng;
 function brokerIcon() {
@@ -453,7 +453,7 @@ function brokerIcon() {
   return brokerIconPng;
 }
 
-// The Broker's shop, drawn after the picture of it (his call, Oct 3): the rose-lit room, the Broker as a dark figure against it (pinched fedora, pale
+// The Broker's shop, drawn after the picture of it: the rose-lit room, the Broker as a dark figure against it (pinched fedora, pale
 // eyes, a broad coat), his counter with the glowing sigil on its front, a dripping candle, a stack of books and a bottle. (x, y) is the top left and
 // `u` the scene's width; it is 1.85 u tall.
 function brokerScene(g, x, y, u) {

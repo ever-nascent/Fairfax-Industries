@@ -1,4 +1,4 @@
-// /descend's pick screen (his ask, Oct 24; redrawn Oct 26 to match the game's "Select Items" almost 1 to 1): a blurred street behind a line-drawn
+// /descend's pick screen (redrawn Oct 26 to match the game's "Select Items" almost 1 to 1): a blurred street behind a line-drawn
 // revolver cylinder (6 chambers 60 degrees apart, a scalloped shell with flutes between them), "SELECT ITEMS" top left with a pink line under it.
 // The cylinder spins, slows, clicks into place, then the 3 choices show in its top chambers (vitality left, weapon top, spirit right, like the game):
 // the chamber is tinted by the item's kind and glows inward, the item sits in a framed card (tier marks top right, ACTIVE along the bottom) with its
@@ -204,10 +204,10 @@ function slanted(g, text, x, y, px, fill, outline, turn = 0) {
   g.fillText(text, 0, 0);
   g.restore();
 }
-// The blue ENHANCED badge with the game's own Enhanced arrow (the wiki's Enhanced arrow.png, his pick Oct 30), centred at (x, y).
+// The blue ENHANCED badge with the game's own Enhanced arrow (the wiki's Enhanced arrow.png), centred at (x, y).
 const ARROW = path.join(FARM, 'ui', 'enhanced_arrow.png');
-// The wiki's own style for the word: #3FDCFF, bold, Retail (its Valve Pulp / retail-demo), a 2 px #112179 outline all round and a 6 px #112179 glow (his paste of the wiki's CSS, Oct 30; sizes scaled to `px`).
-const TILT = -4; // degrees: the word leans left, rising to the right (his ask, Oct 30: 3-5)
+// The wiki's own style for the word: #3FDCFF, bold, Retail (its Valve Pulp / retail-demo), a 2 px #112179 outline all round and a 6 px #112179 glow (of the wiki's CSS, Oct 30; sizes scaled to `px`).
+const TILT = -4; // degrees: the word leans left, rising to the right (3-5)
 function enhancedWord(g, x, y, px) {
   const edge = '#112179', d = Math.max(1, px * 0.13);
   g.save();

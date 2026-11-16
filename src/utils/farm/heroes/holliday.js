@@ -1,5 +1,5 @@
 // Holliday's abilities (deadlock.wiki/Holliday, checked Oct 5 2026; page updated Sept 30). Numbers come from the wiki data through
-// Ability.value(); this file is only what each ability does. His call (Oct 5): Crackshot works on everything (the game: not on objectives), "just
+// Ability.value(); this file is only what each ability does. Crackshot works on everything (the game: not on objectives), "just
 // treat it as a crit": a bullet is a headshot with the chance the headshot items use.
 const { Ability } = require('./../ability');
 const { MELEE } = require('./../engine');

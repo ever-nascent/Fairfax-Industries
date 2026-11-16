@@ -1,3 +1,8 @@
+// Event handler: clientReady.
+// On startup, then every 30 s: call off games nobody has clicked for 5 minutes and give the bets back.
+// Also looks up Bebop's :sticky_bomb:, Yamato's stance and Silver's :shell_live: / :shell_blank: emojis in the server.
+// Powder Keg games left from before a restart lost their fuse timer, so they're all called off at startup.
+
 const { expireGames } = require('../utils/games/casino');
 const { ourGuild } = require('../utils/guild');
 const games = ['doorman', 'blackjack', 'sinclair', 'paradox', 'bebop', 'holliday', 'yamato', 'silver', 'rem', 'pocket', 'paige', 'abrams'].map((name) => require(`../utils/games/${name}`));
@@ -8,9 +13,6 @@ const holliday = require('../utils/games/holliday');
 const rem = require('../utils/games/rem');
 const abrams = require('../utils/games/abrams');
 
-// On startup, then every 30 s: call off games nobody has clicked for 5 minutes and give the bets back.
-// Also looks up Bebop's :sticky_bomb:, Yamato's stance and Silver's :shell_live: / :shell_blank: emojis in the server.
-// Powder Keg games left from before a restart lost their fuse timer, so they're all called off at startup.
 module.exports = {
   name: 'clientReady',
   once: true,

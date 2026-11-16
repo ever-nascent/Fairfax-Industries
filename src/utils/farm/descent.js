@@ -1,9 +1,9 @@
-// /descend: a roguelite mode for Hero Farming (his calls Oct 24). One of the member's unlocked heroes goes down room after
+// /descend: a roguelite mode for Hero Farming. One of the member's unlocked heroes goes down room after
 // room from level 0 with no items. Every won room is a level (boons, ability points, abilities unlock at 0 / 2 / 4 / 7 as usual) and an offer of
 // 3 items (vitality / weapon / spirit, like Street Brawl's pick), pick 1 or skip to heal. 12 item slots, upgrade paths kept: an offered upgrade of
 // an item the hero holds replaces it in place. Every 5th room is a boss (one of the real ones, sized to the depth) that gives a bigger pick and a
-// Rejuv; now and then a rival hero blocks the way and wants a duel (his ask, Oct 24). One death ends the run (unless a Rejuv). Score: rooms cleared.
-// It ends (his calls, Oct 24): 8 floors, 40 rooms; the last is the Patron then the Weakened Patron in one fight, like the siege's end. Clearing it is
+// Rejuv; now and then a rival hero blocks the way and wants a duel. One death ends the run (unless a Rejuv). Score: rooms cleared.
+// It ends: 8 floors, 40 rooms; the last is the Patron then the Weakened Patron in one fight, like the siege's end. Clearing it is
 // "Descent Cleared" and a place on the leaderboard, nothing more.
 // No souls: a run never touches a hero's own souls, items or level (it lives on the member: `descent` on the farm record, next to `bestWave`).
 //   descent: { hero, seed, room (the next room to fight, from 1), level, tiers, items: { weapon | vitality | spirit: [names] }, legendary, corrupted (the Broker's one, Oct 30), buffs, bridge, find,
@@ -12,8 +12,8 @@
 //   bestDescent: { rooms, hero } (the member's best run), descentBest: { <hero>: rooms }, descentToken: true once the token was paid,
 //   descentClears: runs that beat the last room.
 // Everything random about a room or an offer comes from `seed` + the room, so closing Discord can't reroll either.
-// ponytail: the enemy numbers (TUNE, BOSS), the archetypes and affixes, the tier weights and the rewards are placeholders tuned with
-// `node tools/farm-sim.js descend`; his calls to change.
+// the enemy numbers (TUNE, BOSS), the archetypes and affixes, the tier weights and the rewards are placeholders tuned with
+// `node tools/farm-sim.js descend`.
 const path = require('node:path');
 const { enemy } = require('./engine');
 const { track } = require('../economy/quests');
@@ -35,132 +35,132 @@ const { specialFor, SPECIALS } = require('./haunts');
 const { HAUNTS } = require('./refresh');
 
 const ROOMS_PER_FLOOR = 5; // 4 fights and a boss
-const FLOORS = 8; // his call, Oct 24
+const FLOORS = 8;
 const LAST_ROOM = FLOORS * ROOMS_PER_FLOOR; // the Patron, then the Weakened Patron
-const TOKEN_ROOM = 25; // the end of floor 5: a Character Unlock Token, once per member (my pick from the plan's example; his call)
-const SKIP_HEAL = 0.25; // skipping a pick heals this share of max health (his open question; my pick)
-const SKIP_BUFFS = 3; // his call Oct 26: every skipped reward also grants three permanent buffs
-const LEGEND_SKIP_BUFFS = 6; // his call Nov 5: a legendary pick follows a boss (already a full heal), so skipping it gives 6 buffs and no heal
-const REST = 0; // the breather after a won room: 15% until Oct 29 (his call: "unless you kill a medic, you dont get a passive heal"), 0 until Nov 2, 5% until Nov 5 (his call after a run died in room 39), 0 again Nov 5 (his call: more difficulty); a Medic Trooper's pack, Skip, bosses and items heal on top
+const TOKEN_ROOM = 25; // the end of floor 5: a Character Unlock Token, once per member
+const SKIP_HEAL = 0.25; // skipping a pick heals this share of max health
+const SKIP_BUFFS = 3; // every skipped reward also grants three permanent buffs
+const LEGEND_SKIP_BUFFS = 6; // a legendary pick follows a boss (already a full heal), so skipping it gives 6 buffs and no heal
+const REST = 0; // the breather after a won room: 15% until Oct 29 ("unless you kill a medic, you dont get a passive heal"), 0 until Nov 2, 5% until Nov 5 (after a run died in room 39), 0 again Nov 5 (more difficulty); a Medic Trooper's pack, Skip, bosses and items heal on top
 const BOSS_BUFFS = 3; // a boss's buff pick gives this many of that permanent buff
-const LITTLE_BUFF_CHANCE = 0.10; // his call, Oct 25: a won fight or rival may turn up one permanent stack
-const BIG_BUFF_CHANCE = 0.05; // his call: a Bridge buff for the rest of this floor
-const REROLLS_PER_FLOOR = 3; // his call, Oct 25
+const LITTLE_BUFF_CHANCE = 0.10; // a won fight or rival may turn up one permanent stack
+const BIG_BUFF_CHANCE = 0.05; // a Bridge buff for the rest of this floor
+const REROLLS_PER_FLOOR = 3;
 const ENHANCED_CHANCE = 0.10; // each displayed item; +3 points after a row with none, reset when one is picked
 const ENHANCED_STEP = 0.03;
 const RIVAL_FROM = 3; // rivals show up from this room (never on a boss room)
 const RIVAL_CHANCE = 0.15;
 const BROKER_FROM = 6; // the Broker's stall can replace a fight room from here (floor 2: tier 3 items start turning up)
-const BROKER_CHANCE = 0.05; // ponytail: placeholder, his to tune
+const BROKER_CHANCE = 0.05; // (placeholder value)
 const BROKER_MAX = 3; // stalls a run: 39 rooms before the Patron minus 3 still reaches level 35, and 29 pick rooms fill 12 items
-// Event rooms (his ask, Nov 4: "more random events that are deadlock like, and give breathing room"; server-plan.md "Descend events"). Runs from
+// Event rooms ("more random events that are deadlock like, and give breathing room"; "Descend events"). Runs from
 // VERSION 3 on. A floor holds at most one, from EVENT_FROM, never on a boss room, beside a rival or a stall. Passing one is +1 level (39 rooms
-// minus up to 8 events and 3 stalls must still reach level 35), no item pick. ponytail: every number here is a placeholder, his to tune.
+// minus up to 8 events and 3 stalls must still reach level 35), no item pick. every number here is (placeholder value)
 const EVENT_FROM = 3;
 const EVENT_CHANCE = Number(process.env.EVENT_CHANCE ?? 0.5); // a floor's chance of an event room (EVENT_CHANCE=0 in the sims: the runs without events, to compare)
 const EVENT_KINDS = ['rest', 'breather', 'urn', 'wounded', 'dealer', 'patron', 'teleporter'];
-// The second batch (his ask, Nov 4: "add everything we discussed"; his calls in server-plan.md "Descend events"):
-const URN_ROOMS = [2, 4]; // the Soul Urn is carried a random number of rooms in this range (his call), then delivered
+// The second batch ("add everything we discussed"; in "Descend events"):
+const URN_ROOMS = [2, 4]; // the Soul Urn is carried a random number of rooms in this range, then delivered
 const URN_BUFFS = 4; // delivering it pays 4 permanent buffs (the game's 4 Golden Statue buffs, the wiki)
-const ALLY_FIGHTS = [2, 4]; // a recruited wounded rival fights beside you a random number of fights in this range (his call)
+const ALLY_FIGHTS = [2, 4]; // a recruited wounded rival fights beside you a random number of fights in this range
 const ALLY_HEALTH = 0.7; // its health, like a rival's
-const BLESSING = 0.2; // the Patron's Favor, Weaken: both of the bottom's Patrons fight with this much less health and damage (my pick, his "you choose")
-// The Patron's Favor is a pick of four (his ask, Nov 4): 'heal' (full health now), 'bless' (weaken the bottom's Patrons), 'empower' (EMPOWER more
+const BLESSING = 0.2; // the Patron's Favor, Weaken: both of the bottom's Patrons fight with this much less health and damage (a default, his "you choose")
+// The Patron's Favor is a pick of four: 'heal' (full health now), 'bless' (weaken the bottom's Patrons), 'empower' (EMPOWER more
 // health, weapon damage and spirit power for the rest of the run, as Rebirth ranks; my number) and 'ally' (a random hero fights beside you, like a recruit).
 const PATRON_GIFTS = ['heal', 'bless', 'empower', 'ally'];
-const EMPOWER = 0.1; // 0.2 until Nov 6 (his call: too strong)
-const TELEPORT_TO = ['broker', 'rest', 'breather', 'urn', 'wounded', 'dealer']; // the Teleporter only lands in no-fight rooms (his call)
-// Hero rooms (his idea, Nov 6; server-plan.md "Hero Encounters"). From VERSION 4 a room that rolls a rival holds a hero who is, a third each, a rival
-// to fight (as before), a wounded hero to assist (the Wounded room: recruit them as an ally; any hero, his call), or a hero interaction (an offer);
+const EMPOWER = 0.1; // 0.2 until Nov 6 (too strong)
+const TELEPORT_TO = ['broker', 'rest', 'breather', 'urn', 'wounded', 'dealer']; // the Teleporter only lands in no-fight rooms
+// Hero rooms. From VERSION 4 a room that rolls a rival holds a hero who is, a third each, a rival
+// to fight (as before), a wounded hero to assist (the Wounded room: recruit them as an ally; any hero), or a hero interaction (an offer);
 // accepting or turning them down passes the room like an event (+1 level and a pick). Interactions are only his approved ones so far
-// (`VISITS[hero]` = its deal, or a list of deals rolled evenly: McGinnis' upgrade or her Mini Turret, his call).
+// (`VISITS[hero]` = its deal, or a list of deals rolled evenly: McGinnis' upgrade or her Mini Turret).
 const VISITS = { Violet: 'replica', Graves: 'ghouls', McGinnis: ['upgrade', 'turret'], Solomon: 'castling', Sinclair: 'assistant', Paige: 'plot', Victor: 'fuse', Paradox: 'capsule', Mirage: 'travel', Rem: 'helper', Dynamo: 'lesson', Ivy: 'rescue', Infernus: 'stoke', 'The Doorman': 'doorway', Billy: 'smash', 'Mo & Krill': 'burrow', 'Nurse Harrow': 'harrow', Vyper: 'venom', 'Rat King': 'rats' };
-// Infernus' Stoke the Fire (my idea from Inscryption's campfire, his yes Nov 13): hand him an Item; each Stoke tempers it (stats.js TEMPERED a Stoke),
+// Infernus' Stoke the Fire (my idea from Inscryption's campfire): hand him an Item; each Stoke tempers it (stats.js TEMPERED a Stoke),
 // the first is safe, each one after burns the Item to ash at STOKE.burn (the Stoke about to be pressed). Take It Back keeps what it has. Placeholders.
 const STOKE = { burn: [0, 0.25, 0.5, 0.75] };
 const DEAL_SINCE = { Ivy: 6, Infernus: 8, 'The Doorman': 8, Billy: 9, 'Mo & Krill': 9, 'Nurse Harrow': 9, Vyper: 9, 'Rat King': 9 }; // the run VERSION a hero's deal came in: an older run's rooms stay as they were
-// ponytail: every number below is a placeholder, his to tune
-const REPLICA_CHANCE = [0.9, 0.7, 0.5, 0.3]; // Violet's copy, by the item's tier (his design: the better the item, the lower the chance)
-const UPGRADE_COST = 0.1; // McGinnis' upgrade costs this share of the current health, win or fail (his call, Nov 7; placeholder)
-const MCGINNIS_CHANCE = [0.8, 0.65, 0.5]; // McGinnis' upgrade of a Tier 1 / 2 / 3 item (a fail makes it Fragile, his call)
-const GHOUL_COST = 0.05; // each Ghoul Graves lends costs this share of the hero's current health (his call, Nov 7); up to MINIONS.ghoul.count of them
-// Paradox's Time Capsule (his ask and calls, Nov 7): a held Item with a cooldown is sealed away and comes back at a random room before the floor ends, its
+// every number below is (placeholder value)
+const REPLICA_CHANCE = [0.9, 0.7, 0.5, 0.3]; // Violet's copy, by the item's tier (the better the item, the lower the chance)
+const UPGRADE_COST = 0.1; // McGinnis' upgrade costs this share of the current health, win or fail (placeholder)
+const MCGINNIS_CHANCE = [0.8, 0.65, 0.5]; // McGinnis' upgrade of a Tier 1 / 2 / 3 item (a fail makes it Fragile)
+const GHOUL_COST = 0.05; // each Ghoul Graves lends costs this share of the hero's current health; up to MINIONS.ghoul.count of them
+// Paradox's Time Capsule (and calls, Nov 7): a held Item with a cooldown is sealed away and comes back at a random room before the floor ends, its
 // cooldown CAPSULE.perRoom shorter for every room it was held (permanently, `itemCd`). A legendary shatters out and rerolls its cooldown altogether (x low..high).
 const CAPSULE = { perRoom: 0.1, legendary: [0.5, 1.3] }; // placeholders
-// Dynamo's Lesson (his ask and calls, Nov 7): he coaches the hero on one kind of enemy of the NEXT floor and grades how well the hero has done so far (the health it
+// Dynamo's Lesson (and calls, Nov 7): he coaches the hero on one kind of enemy of the NEXT floor and grades how well the hero has done so far (the health it
 // has kept: `min` of the health share). The grade sets how much it helps, automatically, for that whole floor: damage taken from that kind cut and damage dealt to it
 // raised by `power`. Placeholders.
 const GRADES = [{ letter: 'A', min: 0.8, power: 0.35 }, { letter: 'B', min: 0.6, power: 0.28 }, { letter: 'C', min: 0.4, power: 0.2 }, { letter: 'D', min: 0.2, power: 0.12 }, { letter: 'F', min: 0, power: 0.06 }];
-// Ivy's Air Drop (his ask and calls, Nov 7): a promise held until a fight (not a boss, not the Patron) would kill the hero. She plucks it out and takes it RESCUE.back rooms back
+// Ivy's Air Drop (and calls, Nov 7): a promise held until a fight (not a boss, not the Patron) would kill the hero. She plucks it out and takes it RESCUE.back rooms back
 // (never past the start of the floor), at RESCUE.health, to a Rest Stop. The rooms from there to the one that was lost are fought again, fresh enemies, with no Level and no pick
 // (the room that was lost pays as usual). Once. Placeholders.
 const RESCUE = { back: 3, health: 0.25 };
 const ASSISTANT = { echo: 0.5, fights: 4 }; // Sinclair's Spectral Assistant: each landed shot is followed by one at half its damage, for 3 fights
-// Minions that fight beside you (his ask, Nov 6), sized off a lane trooper of the room they fight in: Graves' Ghouls (up to 3, until they fall or this floor's boss is beaten), McGinnis'
+// Minions that fight beside you, sized off a lane trooper of the room they fight in: Graves' Ghouls (up to 3, until they fall or this floor's boss is beaten), McGinnis'
 // Mini Turret (1, for 3 fights), the Rift's Rift Troopers (5, for the rest of the floor, its boss included). One that falls is gone.
 const MINIONS = {
-  ghoul: { name: 'Ghoul', health: 0.8, dps: 1, damageType: 'melee', count: 3 }, // no `fights`: they stay until they fall or the floor's boss is beaten (his call, Nov 7)
-  turret: { name: 'Mini Turret', health: 0.7, dps: 1.5, count: 1, tiers: [1, 1.6] }, // stays until it falls or the floor's boss is beaten (his call, Nov 7); the Item given sets its strength (`tiers`: x health and damage by Tier 1 / 2; placeholder)
+  ghoul: { name: 'Ghoul', health: 0.8, dps: 1, damageType: 'melee', count: 3 }, // no `fights`: they stay until they fall or the floor's boss is beaten
+  turret: { name: 'Mini Turret', health: 0.7, dps: 1.5, count: 1, tiers: [1, 1.6] }, // stays until it falls or the floor's boss is beaten; the Item given sets its strength (`tiers`: x health and damage by Tier 1 / 2; placeholder)
   rift: { name: 'Rift Trooper', health: 1, dps: 1, count: 5 },
-  rat: { name: 'Rat', health: 0.25, dps: 0.3, count: 1 }, // the Rat King's (Nov 14): named rats, one more after each fight won with one standing, until the Floor's boss is beaten; `rats` on the entry holds each one's name
-  helper: { name: 'Lil Helper', health: 0.4, dps: 0.5, count: 1 }, // Rem's (his ask, Nov 7): stays until it falls; the Items it is fed set its stats (HELPER)
+  rat: { name: 'Rat', health: 0.25, dps: 0.3, count: 1 }, // the Rat King's: named rats, one more after each fight won with one standing, until the Floor's boss is beaten; `rats` on the entry holds each one's name
+  helper: { name: 'Lil Helper', health: 0.4, dps: 0.5, count: 1 }, // Rem's: stays until it falls; the Items it is fed set its stats (HELPER)
 };
-// Rem's Lil Helper (his ask and calls, Nov 7): feed it an Item to take it (the Item is gone), then any Item you are offered but not taking, on every pick screen.
-// An Item's slot picks the stat (Weapon: its damage, Vitality: its health, Spirit: the resist it gives you) and its tier sets how much, perTier a tier (his call:
+// Rem's Lil Helper (and calls, Nov 7): feed it an Item to take it (the Item is gone), then any Item you are offered but not taking, on every pick screen.
+// An Item's slot picks the stat (Weapon: its damage, Vitality: its health, Spirit: the resist it gives you) and its tier sets how much, perTier a tier (
 // "each tier is 2%"). The aura is capped (a resist that never ends would make the run unloseable). Placeholders.
-// No limit on feeding, and none on the resist (his call: "we don't have a limit"): the resist compounds, so it keeps growing but a plain 100% is never reached.
-// Nurse Harrow (his call Nov 14: "3 perma buffs per heal, you can hit it as long as you have buffs, and you can choose to leave at any time"): each heal costs `cost`
-// Perma-Buff stacks (from the biggest pile) and restores `heal` of Max Health (my number, his to set). Mo & Krill's Burrow needs BURROW_MIN rooms to dig past.
+// No limit on feeding, and none on the resist ("we don't have a limit"): the resist compounds, so it keeps growing but a plain 100% is never reached.
+// Nurse Harrow ("3 perma buffs per heal, you can hit it as long as you have buffs, and you can choose to leave at any time"): each heal costs `cost`
+// Perma-Buff stacks (from the biggest pile) and restores `heal` of Max Health . Mo & Krill's Burrow needs BURROW_MIN rooms to dig past.
 const HARROW = { heal: 0.3, cost: 3 };
 const BURROW_MIN = 2;
-const VENOM_ROOMS = 3; // Vyper's poisoned weapon: rooms it lasts (his call, Nov 14); the poison itself is `VENOM` in engine.js
-// The Rat King's rats (his yes Nov 14): Rabies Ronnie is `ronnie` x a Rat's health and damage and his bites may give an enemy rabies (`infect` a bite; the engine's `rabid`: it fights
-// the other enemies, for good, never a boss or a hero). A Rat's bite takes Bullet Resist off an enemy (`GNAW` in engine.js). Up to `cap` Rats. Placeholders but his picks.
+const VENOM_ROOMS = 3; // Vyper's poisoned weapon: rooms it lasts; the poison itself is `VENOM` in engine.js
+// The Rat King's rats: Rabies Ronnie is `ronnie` x a Rat's health and damage and his bites may give an enemy rabies (`infect` a bite; the engine's `rabid`: it fights
+// the other enemies, for good, never a boss or a hero). A Rat's bite takes Bullet Resist off an enemy (`GNAW` in engine.js). Up to `cap` Rats. Placeholders but .
 const RAT = { cap: 6, ronnie: 4, infect: 0.25 };
 const HELPER = { perTier: 0.02, aura: 0.02 };
-// The Rift (his ask, Nov 6): you and 1-6 rival heroes, everyone against everyone. Win it and 5 Rift Troopers fight with you for the rest of the floor.
-// Lose it and your hero flees (never dies here) with the health it had left, at least `flee`, and gets nothing (his call). Rift Troopers, the wiki
+// The Rift: you and 1-6 rival heroes, everyone against everyone. Win it and 5 Rift Troopers fight with you for the rest of the floor.
+// Lose it and your hero flees (never dies here) with the health it had left, at least `flee`, and gets nothing. Rift Troopers, the wiki
 // (Unstable Rift / Trooper, Nov 6): larger, black, +100% health and damage over a normal trooper, +20% more for each Rift before it (at most +160%),
 // 25% melee resist, 30% spirit resist (+5% a Rift, at most 45%). The rivals are rolled like a rival room's (a level or two lower, 70% health).
-// With a Rejuv in hand the hero fights on below `flee` (it dies and gets back up instead; his call, Nov 6). A rival may flee too (his ask, Nov 6):
-// once at `rivalFlee.at` of its health it has one `chance` to run, and is out of the Rift (ponytail: placeholders, his to tune).
+// With a Rejuv in hand the hero fights on below `flee` (it dies and gets back up instead). A rival may flee too:
+// once at `rivalFlee.at` of its health it has one `chance` to run, and is out of the Rift (placeholders, to tune).
 const RIFT = { heroes: [1, 6], flee: 0.1, seconds: 120, rivalFlee: { at: 0.3, chance: 0.4 }, bonus: 1, step: 0.2, cap: 1.6, melee: 0.25, spirit: 0.3, spiritStep: 0.05, spiritCap: 0.45 };
 const REST_HEAL = 0.35; // the rest stop's Rest
-const TINKER_CHANCE = 0.60; // the rest stop's Tinker enhancing the item ("more often than not"); a failed one does nothing and gives no heal (his call)
+const TINKER_CHANCE = 0.60; // the rest stop's Tinker enhancing the item ("more often than not"); a failed one does nothing and gives no heal
 const BREATHER = { buff: 0.5, heal: 0.3 }; // what the crates and the Golden Statue give: a permanent buff, else a heal, else a bridge buff
 const BREATHER_HEAL = 0.30;
 const SLOT_ROOMS = [20, 30]; // Ascension 8+: 10 item slots, one more after each of these rooms
-const BROKER_COST = 0.10; // his call (Oct 30): corrupting costs a small share of max health, not souls
+const BROKER_COST = 0.10; // corrupting costs a small share of max health, not souls
 const AFFIX_FROM = 4; // enemies may roll an affix from this room, more often deeper
 const MAX_AFFIXED = 2; // affixed groups a fight room holds at most, one more from A18 (Nov 2: from floor 5 a third of the rooms had 3-5)
 const MAX_UNITS = 6; // enemies in one room (the live message has a field per enemy)
 const UPGRADE_CHANCE = 0.35; // each pick slot offers an upgrade of a held item this often, when there is one
 const STALE_MS = 60 * 1000; // a 'fighting' claim older than this (the bot stopped mid-fight) can be fought again
 
-// Ascensions (his ask Oct 26; his calls: 20 levels, unlocked per member, picked on the start screen and fixed once the run starts). Each level keeps
+// Ascensions (20 levels, unlocked per member, picked on the start screen and fixed once the run starts). Each level keeps
 // every level below it. Clearing the descent at level N unlocks N + 1 for all of the member's heroes.
-// Redesigned Oct 29 (his ask: "focus more on our game and less so being a carbon copy of slay the spire's, and to actually increase difficulty"; his
-// calls: no names, just "Ascension N"; A17-A19 kept). Runs started before that finish on the old rules (descentLegacy.js, his call).
+// Redesigned Oct 29 ("focus more on our game and less so being a carbon copy of slay the spire's, and to actually increase difficulty"; his
+// calls: no names, just "Ascension N"; A17-A19 kept). Runs started before that finish on the old rules (descentLegacy.js).
 // "Elites" are affixed enemies; "room enemies" are a fight room's (not bosses or rivals).
-// ponytail: the sizes in ASC are placeholders (Oct 29: before room fights were made to hurt, 4 / 1 / 2 of 56 good-pick runs cleared A12 / A16 / A20;
-// after, about half clear A0 and 4 / 28 A4); his calls, he says when it is too hard.
+// the sizes in ASC are placeholders (Oct 29: before room fights were made to hurt, 4 / 1 / 2 of 56 good-pick runs cleared A12 / A16 / A20;
+// after, about half clear A0 and 4 / 28 A4); he says when it is too hard.
 const MAX_ASCENSION = 20;
 // Sim only: ASC_ONLY=n turns on rule n alone (tools/farm-sim.js --only=n), at any ascension >= n; unset, rules stack as usual.
 const ONLY = Number(process.env.ASC_ONLY) || 0;
 const on = (a, n) => (ONLY ? n === ONLY && a >= n : a >= n);
-// Oct 29 retune (his ask: "adjust the ascensions appropriately"; good picks cleared nothing from A5 up): A3 rivals no longer a level closer, A5 half a
-// floor behind instead of a whole one, A11 elites +10% instead of +20%, A14 1 Rejuv (his call, after a day at 2), A15 from floor 5 instead of 3, A16 +5% resist
+// Oct 29 retune ("adjust the ascensions appropriately"; good picks cleared nothing from A5 up): A3 rivals no longer a level closer, A5 half a
+// floor behind instead of a whole one, A11 elites +10% instead of +20%, A14 1 Rejuv (after a day at 2), A15 from floor 5 instead of 3, A16 +5% resist
 // instead of +10%, floor 1-2 bosses a little softer (EARLY_BOSS); then A1 +1 threat point instead of 2, A2 / A6
 // +5% instead of +10%, A7 cuts healing 10% instead of 20%; then A17 / A19 10% more often (was 25%) and 0.5 s longer (was 1 s), A18 rivals 1 level
 // below you (was your level).
-// Nov 2 reshape (his ask: "balance the modes once and for all"; measured rule by rule, each from full health along the same runs: A1 +25% health lost,
+// Nov 2 reshape ("balance the modes once and for all"; measured rule by rule, each from full health along the same runs: A1 +25% health lost,
 // A9 +25%, A18 +21%, A11 +12%, while A3, A10, A19 and A20 cost 0-1%): A1 from floor 6 (was floor 3), A4 from floor 5 (was 4), A8 10 slots (was 9), A9
 // only floors 5-7's bosses, A10 from floor 2 at 40% (was floor 5 at 30%), A11 +5% (was 10%), A13 90% / 20% (was 80% / 15%), A18 half again as many
 // affixes (was twice) and the second affix from floor 6. Each level now adds a similar step.
-// Nov 6: the Oct 29 redesign's numbers were put back ("re-add all of the ascension difficulties"), undone Nov 7 (his call: "revert the ascension
-// difficulties to as they were before"), and put back again Nov 13 (his call: "re-add the difficulty that was removed before"; he picked the Nov 6 numbers):
-// the retune and the Nov 2 reshape above are NOT in force. A10 stays tougher heroes (Nov 6), A14 1 Rejuv, at most 2 affixed groups a room (3 from A18).
-// Nov 6 (his calls): A10's boss revive ("floor bosses get back up once at 40% health") is gone; A10 was 1 Reroll a Floor for a few hours (too hard), now tougher heroes.
+// Nov 6: the Oct 29 redesign's numbers were put back ("re-add all of the ascension difficulties"), undone Nov 7 ("revert the ascension
+// difficulties to as they were before"), and put back again Nov 13 ("re-add the difficulty that was removed before"; he picked the Nov 6 numbers):
+// the retune and the Nov 2 reshape above are NOT in force. A10 stays tougher heroes, A14 1 Rejuv, at most 2 affixed groups a room (3 from A18).
+// Nov 6: A10's boss revive ("floor bosses get back up once at 40% health") is gone; A10 was 1 Reroll a Floor for a few hours (too hard), now tougher heroes.
 const ASC = { room: 0.05, elite: 0.05, boss: 0.05, wards: 0.02, healbane: 0.1, faster: 0.9, bossFaster: 0.95, siege: 0.45, longer: 0.4, walkCost: 0.1, heroHealth: 0.85 };
 const ASCENSIONS = [
   null,
@@ -173,7 +173,7 @@ const ASCENSIONS = [
   { text: `Every enemy hit cuts your healing ${ASC.healbane * 100}% for 3 s.` },
   { text: '10 item slots; one more opens after the bosses of Floors 4 and 6.' },
   { text: 'The bosses of Floors 5, 6 and 7 give no level.' },
-  { text: `Rival, Rift and recruited heroes are a level closer and have ${ASC.heroHealth * 100}% health, not ${ALLY_HEALTH * 100}%.` }, // his pick Nov 6 (1 Reroll a Floor, which replaced the boss revive that day, hit too hard)
+  { text: `Rival, Rift and recruited heroes are a level closer and have ${ASC.heroHealth * 100}% health, not ${ALLY_HEALTH * 100}%.` }, // (1 Reroll a Floor, which replaced the boss revive that day, hit too hard)
   { text: `Affixed enemies have ${ASC.elite * 100}% more health and damage.` },
   { text: `Bosses have ${ASC.boss * 100}% more health and damage.` },
   { text: 'Skip heals 20% instead of 25%; bosses heal you back to 90% instead of full.' },
@@ -183,7 +183,7 @@ const ASCENSIONS = [
   { text: `Enemies curse, control, debuff and heal 10% more often; their curses and stuns last ${ASC.longer} s longer.` },
   { text: `More affixes, two on each from Floor 7; rivals a level closer; silences and disarms ${ASC.longer} s longer.` },
   { text: `Bosses use blasts, controls, debuffs and specials ${Math.round((1 - ASC.bossFaster) * 100)}% sooner; their stuns and curses ${ASC.longer} s longer.` },
-  { text: 'Room 40 is the Base Guardian, the Shrine, the Patron and the Weakened Patron in one fight.' }, // the two openers fight with ASC.siege of their health (Nov 14)
+  { text: 'Room 40 is the Base Guardian, the Shrine, the Patron and the Weakened Patron in one fight.' }, // the two openers fight with ASC.siege of their health
 ];
 // The run's own numbers at its ascension (`d.ascension`, 0 for runs from before ascensions).
 function rules(d) {
@@ -192,12 +192,12 @@ function rules(d) {
   return {
     ascension: d?.ascension ?? 0,
     rest: REST,
-    bossHeal: at(13) ? 0.9 : 1, // a won boss heals back up to this (his call, Oct 29)
-    skipHeal: at(13) ? 0.2 : SKIP_HEAL, // A13 was "the breather heals 10%" until the breather went (Oct 29)
+    bossHeal: at(13) ? 0.9 : 1, // a won boss heals back up to this
+    skipHeal: at(13) ? 0.2 : SKIP_HEAL, // A13 was "the breather heals 10%" until the breather went
     startHealth: 1,
     maxItems: at(8) ? MAX_ITEMS - SLOT_ROOMS.filter((r) => room <= r).length : MAX_ITEMS,
     lockedSlots: at(8) ? SLOT_ROOMS.filter((r) => room <= r) : [], // the rooms after which the locked item slots open (the build card's locks)
-    maxRejuvs: at(14) ? 2 : MAX_REJUVS, // 1 from Oct 29 (his call); 2 since Nov 14 (alone it took 14 points off the clear rate, the most of any level)
+    maxRejuvs: at(14) ? 2 : MAX_REJUVS, // 1 from Oct 29; 2 since Nov 14 (alone it took 14 points off the clear rate, the most of any level)
     enhanced: ENHANCED_CHANCE, enhancedStep: ENHANCED_STEP, bossBuffs: BOSS_BUFFS, healthScale: 1,
     little: LITTLE_BUFF_CHANCE, big: BIG_BUFF_CHANCE, skipBuffs: SKIP_BUFFS, rerolls: REROLLS_PER_FLOOR,
     slowFarm: at(5), shortStock: at(15), deniedSouls: at(9) && room > 20 && room < LAST_ROOM, walkCost: at(3) ? ASC.walkCost : 0,
@@ -215,7 +215,7 @@ function faster(e, k = ASC.faster) {
   e.stats.debuffs = (e.stats.debuffs ?? []).map((d) => ({ ...d, every: d.every * k }));
   if (e.stats.special?.chance) e.stats.special = { ...e.stats.special, chance: Math.min(1, e.stats.special.chance / k) };
 }
-// The hero's crowd control with one of `tags` lasts `ASC.longer` seconds more (his calls Oct 28: A17 room enemies' and A19 bosses' curses and stuns
+// The hero's crowd control with one of `tags` lasts `ASC.longer` seconds more (A17 room enemies' and A19 bosses' curses and stuns
 // (a grapple is a stun), A18 room enemies' silences and disarms).
 const CURSE_STUN = ['curse', 'stun'];
 const SILENCE_DISARM = ['silence', 'disarm'];
@@ -227,18 +227,18 @@ function longer(e, tags) {
 }
 
 // How strong a room's enemies are: room 1 at TUNE, then TUNE.growth more every room, compounding (a kitted hero is many times a fresh one, like waves).
-// Oct 29 (his ask, twice: room fights too easy, then "make all enemies hit harder and more accurately"): dps 1 -> 1.3 (rooms and bosses), room enemies
+// Oct 29 (twice: room fights too easy, then "make all enemies hit harder and more accurately"): dps 1 -> 1.3 (rooms and bosses), room enemies
 // +10% damage a floor, and every Descend enemy's `accuracy` (engine.js: the share of hits a dodge or evasion would take that land anyway).
 // What the hero can take off a Descend enemy's damage at most, slows and damage cuts together (engine.js attackRate / output; Nov 2): uncapped, the heroes
-// and items that slow or weaken (Graves, Solomon, Lady Geist, Juggernaut, Suppressor ...) left a boss 17-40% of its damage and carried every run.
+// and items that slow or weaken (Graves, Solomon, Lady Geist, Juggernaut, Suppressor...) left a boss 17-40% of its damage and carried every run.
 const OUTPUT_FLOOR = 0.5;
-const TUNE = { health: 1.0, dps: 1.0, // Nov 6, his call: health 0.85 -> 1.0 again // Nov 6, his call: 0.9 -> 1.0 (it felt too easy) // health 1 -> 0.85 and hpLate below: Nov 2, his call (enemy health cut, enemy damage kept) // Oct 31, his call: enemy damage lower, twice (1.1 -> 1.0 -> 0.9; 10 good-pick Venator runs: A0 6 cleared, A10 2, A20 2)
- growth: 0.14, knee: 15, late: 0.05, hpLate: 0.05, roomFloor: 0.1, accuracy: 0.5 }; // late and hpLate 0.066 -> 0.05 (Nov 14, his ask: every hero above 45% at every ascension; Ascension 20 runs ended on Floors 7 and 8)
+const TUNE = { health: 1.0, dps: 1.0, // health 0.85 -> 1.0 again // 0.9 -> 1.0 (it felt too easy) // health 1 -> 0.85 and hpLate below: (enemy health cut, enemy damage kept) // enemy damage lower, twice (1.1 -> 1.0 -> 0.9; 10 good-pick Venator runs: A0 6 cleared, A10 2, A20 2)
+ growth: 0.14, knee: 15, late: 0.05, hpLate: 0.05, roomFloor: 0.1, accuracy: 0.5 }; // late and hpLate 0.066 -> 0.05 (every hero above 45% at every ascension; Ascension 20 runs ended on Floors 7 and 8)
 // `growth` a room up to room `knee`, then `late` a room: steep where a build's picks start to tell, gentler towards the bottom
-// Nov 4 (his ask, "a bit too easy again"): the full `late` growth again on every room to the end; from Nov 2 rooms 36-40 grew half as fast.
+// Nov 4 ("a bit too easy again"): the full `late` growth again on every room to the end; from Nov 2 rooms 36-40 grew half as fast.
 const lateRooms = (room) => Math.max(0, room - TUNE.knee);
 const power = (room) => (1 + TUNE.growth) ** (Math.min(room, TUNE.knee) - 1) * (1 + TUNE.late) ** lateRooms(room);
-// Enemy health grows a little slower than enemy damage past the knee (`hpLate` instead of `late`; his call Nov 2: 6.6% -> 5.5% a room). Nov 6, his call: back to 6.6% (same as damage).
+// Enemy health grows a little slower than enemy damage past the knee (`hpLate` instead of `late`; 6.6% -> 5.5% a room). back to 6.6% (same as damage).
 const hpPower = (room) => (1 + TUNE.growth) ** (Math.min(room, TUNE.knee) - 1) * (1 + TUNE.hpLate) ** lateRooms(room);
 const floorOf = (room) => Math.ceil(room / ROOMS_PER_FLOOR);
 const budgetOf = (room, a = 0) => Math.min(10, 5 + Math.floor(room / 4)) + (on(a, 1) && room > 25 ? 1 : 0); // threat points a fight room spends on enemies
@@ -262,14 +262,14 @@ const take = (list, n, rng) => { const a = [...list]; const out = []; while (out
 // ---- the enemies ----
 // A medic heals everyone standing: a chance each second (the engine's `special`, like a Haunt's).
 const MEND = { name: 'Mend', text: 'heals every enemy for 6% of its health.', chance: 0.3, use(fight) { for (const e of fight.enemies) if (e.alive && e.team === 'enemy') e.health = Math.min(e.stats.maxHealth, e.health + e.stats.maxHealth * 0.06); } };
-// A Medic Trooper drops a Medic Pack as it dies, like in the game (his ask, Oct 29). The game's heals over 2 s for a share of missing health plus a flat
-// part (the sources disagree on the numbers); here it heals at once, so the last Medic of a room still heals. ponytail: 15% of missing + 5% of max
-// health is my placeholder.
+// A Medic Trooper drops a Medic Pack as it dies, like in the game. The game's heals over 2 s for a share of missing health plus a flat
+// part (the sources disagree on the numbers); here it heals at once, so the last Medic of a room still heals. 15% of missing + 5% of max
+// health is a placeholder.
 const MEDIC_PACK = { missing: 0.15, flat: 0.05 };
 const MEDIC = { ...MEND, deathName: 'Medic Pack', onDeath(fight, medic, hero) { fight.heal(hero, (hero.stats.maxHealth - hero.health) * MEDIC_PACK.missing + hero.stats.maxHealth * MEDIC_PACK.flat, 'cast', 'Medic Pack'); } };
-// Debuffing attacks (his ask, Oct 29: "attacks that apply debuffs, resist reduction, bullet slowing, DoT poison"; engine.js `debuffs`): every `every` s
+// Debuffing attacks ("attacks that apply debuffs, resist reduction, bullet slowing, DoT poison"; engine.js `debuffs`): every `every` s
 // a hit worth `hit` s of its damage that, unless dodged, leaves `mods` on the hero for `duration` s (a `dot` share of its damage a second is poison).
-// ponytail: every number is my placeholder; his to say when it is too much.
+// every number is a placeholder; tune if it proves too much.
 const DEBUFFS = {
   shred: { id: 'shred', name: 'Eroding Round', note: '-10% bullet and spirit resist', every: 7, hit: 1, duration: 10, mods: { bulletResist: -0.1, spiritResist: -0.1 } },
   pierce: { id: 'pierce', name: 'Piercing Round', note: '-20% bullet resist', every: 8, hit: 1.5, duration: 10, mods: { bulletResist: -0.2 } },
@@ -277,8 +277,8 @@ const DEBUFFS = {
   chill: { id: 'chill', name: 'Slowing Round', note: '25% slower and -20% fire rate', every: 7, hit: 1, duration: 8, mods: { slow: 0.25, fireRate: -0.2 } },
   cripple: { id: 'cripple', name: 'Crippling Blow', note: '20% slower and -15% fire rate', every: 9, hit: 1.5, type: 'melee', duration: 6, mods: { slow: 0.2, fireRate: -0.15 } },
   poison: { id: 'poison', name: 'Poison', note: 'poisoned', every: 8, hit: 0.5, type: 'spirit', duration: 8, dot: 0.25 }, // dot 0.6 -> 0.25 (Nov 2: always running, it was +66% damage)
-  burn: { id: 'burn', name: 'Flame Round', note: 'burning', verb: 'sets you on fire', every: 8, hit: 0.5, type: 'spirit', duration: 6, dot: 0.2 }, // 0.5 -> 0.2 (Nov 2)
-  venom: { id: 'venom', name: 'Venom Bite', note: 'poisoned', every: 6, hit: 0.5, type: 'spirit', duration: 6, dot: 0.2 }, // 0.5 -> 0.2 (Nov 2)
+  burn: { id: 'burn', name: 'Flame Round', note: 'burning', verb: 'sets you on fire', every: 8, hit: 0.5, type: 'spirit', duration: 6, dot: 0.2 }, // 0.5 -> 0.2
+  venom: { id: 'venom', name: 'Venom Bite', note: 'poisoned', every: 6, hit: 0.5, type: 'spirit', duration: 6, dot: 0.2 }, // 0.5 -> 0.2
 };
 const ICONS = path.join(ASSETS, 'farm', 'icons');
 // The archetypes a fight room's budget is spent on (room 1 numbers): cost in threat points, count per pick, picture (the trooper renders).
@@ -294,8 +294,8 @@ const ARCHETYPES = {
   caster: { name: 'Hexer', plural: 'Hexers', cost: 5, icon: 'trooper-medic', stats: { maxHealth: 400, dps: 10, distance: 18, damageType: 'spirit', blast: { every: 8, damage: 70, maxHealthPct: 0, curse: 1, type: 'spirit', tags: ['curse'] }, debuffs: [DEBUFFS.hex] }, text: 'spirit damage and a curse' },
   disruptor: { name: 'Disruptor', plural: 'Disruptors', cost: 2, icon: 'trooper-medic', stats: { maxHealth: 420, dps: 11, distance: 18, controls: [{ id: 'silence', every: 9, duration: 1.2, tags: ['silence'], verb: 'silenced' }] }, text: 'silences abilities' },
   grappler: { name: 'Grappler', plural: 'Grapplers', cost: 3, icon: 'trooper-melee', stats: { maxHealth: 550, dps: 14, distance: 5, controls: [{ id: 'grapple', every: 10, duration: 1, tags: ['stun', 'immobilize'], verb: 'grappled' }] }, text: 'grapples and interrupts' },
-  // /farm's enemies (his ask, Oct 29): the lane troopers and the camp Haunts (about 150 health and 4-5 damage a threat point;
-  // a Haunt's special is on top). Oct 29 (his ask): room fights made to hurt, the archetypes +60% damage too; his to say when it is too hard. A Haunt group rolls a family (its name, picture and in-game special, haunts.js);
+  // /farm's enemies: the lane troopers and the camp Haunts (about 150 health and 4-5 damage a threat point;
+  // a Haunt's special is on top). Oct 29: room fights made to hurt, the archetypes +60% damage too. A Haunt group rolls a family (its name, picture and in-game special, haunts.js);
   // small Haunts have no special, like in the game.
   trooper: { name: 'Ranged Trooper', plural: 'Ranged Troopers', cost: 2, icon: 'trooper', stats: { maxHealth: 300, dps: 8, distance: 15 }, text: 'a lane trooper with a gun' },
   meleeTrooper: { name: 'Melee Trooper', plural: 'Melee Troopers', cost: 3, icon: 'trooper-melee', stats: { maxHealth: 350, dps: 9, distance: 4, damageType: 'melee', debuffs: [DEBUFFS.cripple] }, text: 'charges in and swings' },
@@ -305,7 +305,7 @@ const ARCHETYPES = {
   large: { name: 'Large Haunt', size: 'large', cost: 5, stats: { maxHealth: 600, dps: 16, distance: 10 }, text: 'a big camp Haunt' },
 };
 for (const a of Object.values(ARCHETYPES)) if (a.icon) a.icon = path.join(ICONS, `${a.icon}.png`);
-// What each floor's fight rooms are made of (his calls, Oct 29): 1 the lanes (troopers), 2 Tier 1 camps (small Haunts), 3 Tier 2 (medium and small),
+// What each floor's fight rooms are made of: 1 the lanes (troopers), 2 Tier 1 camps (small Haunts), 3 Tier 2 (medium and small),
 // 4 Tier 3 (large and medium), 5 every camp and the troopers, 6 the base (the archetypes above), 7 the Shrines (the archetypes and the troopers), 8 everything.
 const TROOPERS = ['trooper', 'meleeTrooper', 'medicTrooper'];
 const CAMPS = ['small', 'medium', 'large'];
@@ -318,7 +318,7 @@ const sizeWord = (size) => size[0].toUpperCase() + size.slice(1);
 const groupName = (g) => (g.family ? `${sizeWord(ARCHETYPES[g.type].size)} ${familyName(g.family)}` : ARCHETYPES[g.type].name);
 const groupPlural = (g) => (g.family ? `${groupName(g)}s` : ARCHETYPES[g.type].plural);
 const groupText = (g) => ARCHETYPES[g.type].text;
-// A group's special attack, for the room screen (his ask, Oct 29: a debuffing attack is shown as the enemy's special attack): a Haunt's
+// A group's special attack, for the room screen (a debuffing attack is shown as the enemy's special attack): a Haunt's
 // family special (medium and large), else the archetype's debuffing attack. "Piercing Round: -20% bullet resist for 10 s".
 const debuffText = (d) => `${d.name}: ${d.dot || d.dotMax ? d.verb ?? 'poisons you' : d.note} for ${d.duration} s`;
 const groupSpecial = (g) => (g.family ? (ARCHETYPES[g.type].size !== 'small' && SPECIALS[g.family] ? `${SPECIALS[g.family].name}: ${SPECIALS[g.family].text}` : null)
@@ -332,9 +332,9 @@ const sided = (file, side) => {
 };
 const groupPicture = (g, side = null) => (g.family ? hauntFile(g.family, ARCHETYPES[g.type].size) : sided(ARCHETYPES[g.type].icon, side));
 // Affixes (the Isaac "champion" idea): the four camp traits plus a few the engine already knows (regen, lifesteal, a heal cut, a curse, more health).
-// ponytail: Berserk from the plan still needs engine work; left out until he wants it. Armor-breaking is Eroding (Oct 29).
+// Berserk from the plan still needs engine work; left out until needed. Armor-breaking is Eroding.
 const resist = (x) => Math.max(0, Math.min(0.9, x));
-// The camp traits are named for Descend here (his picks, Oct 31); /farm keeps its own names (TRAITS in play.js).
+// The camp traits are named for Descend here; /farm keeps its own names (TRAITS in play.js).
 const TRAIT_NAMES = { Armored: 'Plated', Warded: 'Hexproof', Ironclad: 'Stalwart', Brittle: 'Brittle' };
 const AFFIXES = {
   ...Object.fromEntries(TRAITS.filter((t) => t.name).map((t) => [TRAIT_NAMES[t.name], { text: t.bullet > 0 && t.spirit > 0 ? 'resists everything' : t.bullet > 0 ? 'resists bullets' : t.spirit > 0 ? 'resists spirit' : 'takes more of everything',
@@ -346,7 +346,7 @@ const AFFIXES = {
   Stunning: { text: 'stuns now and then', apply(e) { e.stats.controls.push({ id: 'stun', every: 10, duration: 0.8, tags: ['stun'], verb: 'stunned' }); } },
   Silencing: { text: 'silences abilities', apply(e) { e.stats.controls.push({ id: 'silence', every: 10, duration: 2.5, tags: ['silence'], verb: 'silenced' }); } }, // 1 s -> 2.5 s (Nov 2: 1 s cost no hero anything)
   Seizing: { text: 'seizes and interrupts', apply(e) { e.stats.controls.push({ id: 'grapple', every: 11, duration: 1, tags: ['stun', 'immobilize'], verb: 'seized' }); } },
-  Disarming: { text: 'disarms: no shooting for a moment', apply(e) { e.stats.controls.push({ id: 'disarm', every: 10, duration: 1.5, tags: ['disarm'], verb: 'disarmed' }); } }, // his ask and numbers, Oct 28
+  Disarming: { text: 'disarms: no shooting for a moment', apply(e) { e.stats.controls.push({ id: 'disarm', every: 10, duration: 1.5, tags: ['disarm'], verb: 'disarmed' }); } }, // and numbers, Oct 28
   Lulling: { text: 'lulls you to sleep; damage wakes you', apply(e) { e.stats.controls.push({ id: 'sleep', every: 14, duration: 1.5, tags: ['sleep'], wake: 0.2, verb: 'put to sleep' }); } },
   Eroding: { text: 'Eroding Round: -10% bullet and spirit resist for 10 s', apply(e) { e.stats.debuffs.push({ ...DEBUFFS.shred }); } },
   Slowing: { text: 'Slowing Round: slows you and your fire rate for 8 s', apply(e) { e.stats.debuffs.push({ ...DEBUFFS.chill }); } },
@@ -356,14 +356,14 @@ const AFFIXES = {
   Undying: { text: 'cheats death once and gets back up with 30% health', apply(e) { e.stats.undying = 0.3; } },
   Adaptive: { text: 'adapts to the damage it takes: slowly gains resist, parries, or hits harder', apply(e) { e.stats.adaptive = true; } },
 };
-// An affixed enemy's name shows its affixes in brackets, bold where Discord renders it (his ask, Oct 28): "**[Plated]** Brute"; `plain` for titles and buttons.
+// An affixed enemy's name shows its affixes in brackets, bold where Discord renders it: "**[Plated]** Brute"; `plain` for titles and buttons.
 const affixTag = (affix, plain = false) => (plain ? `[${affix}]` : `**[${affix}]**`);
 const affixChance = (room, a = 0) => (a >= 1 ? Math.min(0.8, 1.25 * (0.15 + 0.03 * (room - AFFIX_FROM))) : Math.min(0.6, 0.15 + 0.03 * (room - AFFIX_FROM)));
 
 // The bosses (his plan: chosen at random from the real ones), their identity kept (resists, damage type, stomp / curse, sustain, picture) and
 // their health and damage set by the depth.
 const BOSS = { health: 1800, dps: 15, resist: 0.2 }; // resist: the average resist `health` is meant for
-const EARLY_BOSS = 1.0; // Nov 6, his call: 0.85 -> 1.0 (no softer early bosses); floors 1-2's bosses' health (Oct 29: the floor 2 boss ended most runs of the weaker heroes, the Doorman, Sinclair, Abrams ...)
+const EARLY_BOSS = 1.0; // 0.85 -> 1.0 (no softer early bosses); floors 1-2's bosses' health (Oct 29: the floor 2 boss ended most runs of the weaker heroes, the Doorman, Sinclair, Abrams...)
 const BOSSES = {
   guardian: { name: 'Guardian', icon: TARGETS.guardian.icon, make: () => TARGETS.guardian.enemies()[0] },
   walker: { name: 'Walker', icon: TARGETS.walker.icon, make: () => TARGETS.walker.enemies()[0] },
@@ -372,8 +372,8 @@ const BOSSES = {
   shrine: { name: 'Shrine', icon: SIEGE.stages[1].icon, make: () => SIEGE.stages[1].enemies()[0] },
   patron: { name: 'Patron', icon: SIEGE.stages[3].icon, make: () => SIEGE.stages[3].enemies()[0] },
   'weakened-patron': { name: 'Weakened Patron', icon: SIEGE.stages[4].icon, make: () => SIEGE.stages[4].enemies()[0] },
-  // From VERSION 3 the bottom's Patron is one of the two, rolled for each run (his call, Nov 4): the same fight as the Patron, its own name and picture.
-  // Pictures with no background (his call, Nov 5): the Archmother keeps his Oct 3 pictures; the wiki has none for the Hidden King's weakened form, so his icon.
+  // From VERSION 3 the bottom's Patron is one of the two, rolled for each run: the same fight as the Patron, its own name and picture.
+  // Pictures with no background: the Archmother keeps his Oct 3 pictures; the wiki has none for the Hidden King's weakened form, so his icon.
   archmother: { name: 'Archmother', icon: SIEGE.stages[3].icon, make: () => SIEGE.stages[3].enemies()[0] },
   'archmother-weak': { name: 'Weakened Archmother', icon: SIEGE.stages[4].icon, make: () => SIEGE.stages[4].enemies()[0] },
   'hidden-king': { name: 'Hidden King', icon: path.join(ICONS, 'hidden-king.png'), make: () => SIEGE.stages[3].enemies()[0] },
@@ -383,9 +383,9 @@ const PATRONS = ['archmother', 'hidden-king'];
 const PATRON_KEYS = new Set(['patron', 'weakened-patron', 'archmother', 'archmother-weak', 'hidden-king', 'hidden-king-weak']);
 const FLOOR_BOSSES = ['guardian', 'walker', 'mid-boss', 'base-guardian', 'shrine']; // the Patron waits at the bottom (LAST_ROOM)
 const FINAL = ['patron', 'weakened-patron'];
-// The Patrons' troopers come sooner here (Nov 6): his room 40 fights took 15-55 s for both forms, so the siege's first wave at 15 s would often never come.
-// ponytail: placeholders, his to tune.
-// Nov 6, his pick ("fewer waves"): every 15 s instead of 10. Good-pick runs, 10 each: Paradox A0 2 -> 6 cleared (20 s also 6), Haze A0 6 -> 8; Paradox
+// The Patrons' troopers come sooner here: his room 40 fights took 15-55 s for both forms, so the siege's first wave at 15 s would often never come.
+// placeholders, to tune.
+// ("fewer waves"): every 15 s instead of 10. Good-pick runs, 10 each: Paradox A0 2 -> 6 cleared (20 s also 6), Haze A0 6 -> 8; Paradox
 // A12 unchanged (those runs end on floor 7).
 const PATRON_WAVES = { first: 3, every: Number(process.env.PATRON_EVERY ?? 15) }; // PATRON_EVERY=n in the sims: another wave timing, to compare
 function bossFor(key, room, a = 0, affix = null) {
@@ -420,11 +420,11 @@ function bossFor(key, room, a = 0, affix = null) {
 //   { room, floor, ascension, kind: 'fight', groups: [{ type, affix, affix2? }] } | { kind: 'boss', boss, affix?, final?, first? } | { kind: 'rival', rival }
 // (the rolls an ascension adds come after the others, so a room at ascension 0 is the same as before ascensions)
 // Whether room `room` rolls a rival (the room's first roll, `rng` its dice when given), and whether it is one: never right after a rival room
-// (his call, Oct 29: "hero fights should not be back to back"; the room then holds a fight instead).
+// ("hero fights should not be back to back"; the room then holds a fight instead).
 const rivalRolled = (seed, room, ascension, rng = dice(seed, room, 'room')) => room >= RIVAL_FROM && room % ROOMS_PER_FLOOR !== 0 && room !== LAST_ROOM && rng() < RIVAL_CHANCE * (on(ascension, 3) ? 1.5 : 1);
 const rivalRoom = (seed, room, ascension) => room >= RIVAL_FROM && rivalRolled(seed, room, ascension) && !rivalRoom(seed, room - 1, ascension);
-// The Broker's stall (his ask, Oct 30): a room with no fight that replaces one now and then, never beside a rival or another stall, and at most
-// BROKER_MAX a run (his call: a stall gives no level and no pick, so a run must still be able to reach level 35 and a full build). It has its own dice,
+// The Broker's stall: a room with no fight that replaces one now and then, never beside a rival or another stall, and at most
+// BROKER_MAX a run (a stall gives no level and no pick, so a run must still be able to reach level 35 and a full build). It has its own dice,
 // so a room that is not a stall is exactly what it was before. The stalls of a run, in order (from the seed and the ascension alone).
 const stallRooms = (seed, ascension) => {
   const stalls = [];
@@ -461,11 +461,11 @@ const eventRooms = (seed, ascension, v = VERSION) => {
   }
   return out;
 };
-// The repeat rule (his ask, Nov 7; VERSION 5): the run's special rooms (hero rooms' three outcomes, the Broker's stalls, event rooms) in order, each
+// The repeat rule (VERSION 5): the run's special rooms (hero rooms' three outcomes, the Broker's stalls, event rooms) in order, each
 // one's kind chosen with the kind that came last made less likely: x EVENT_REPEAT, once more for each time in a row it came. A different kind coming
 // puts the old one back to normal. A wounded hero is one kind whether a hero room or an event room held it. Same rooms as before, only the kinds move.
-const EVENT_REPEAT = 0.7; // placeholder, his to tune
-// VERSION 7 (his ask, Nov 8: "you shouldn't just get back to back to back rival fights"): the hero rooms are chosen against the hero rooms only, so an event or a
+const EVENT_REPEAT = 0.7; // (placeholder value)
+// VERSION 7 ("you shouldn't just get back to back to back rival fights"): the hero rooms are chosen against the hero rooms only, so an event or a
 // stall between two of them no longer breaks a run of rivals, and the same outcome never comes a third time in a row (HERO_REPEAT_MAX).
 const HERO_REPEAT_MAX = 2;
 function specials(seed, ascension, v = VERSION) {
@@ -556,12 +556,12 @@ function fightGroups(room, ascension, rng) {
   if (on(ascension, 18) && room > 30) for (const g of groups) if (g.affix) g.affix2 = pick(Object.keys(AFFIXES).filter((k) => k !== g.affix), rng);
   return groups;
 }
-// ---- Two Doors (VERSION 8; his pick Nov 13, server-plan.md "Two Doors") ----
+// ---- Two Doors (VERSION 8; "Two Doors") ----
 // After a room, the next one is a choice of doors (DOORS of them); a Floor's boss and the bottom are the only way forward. A door is a Fight Room (its
 // enemies shown), a Mystery Room (a Rival, a hero's deal, a Wounded Rival or the Broker; the Soul Urn and a Teleporter can hide there too; what is
 // inside is not shown) or a named door (OWN_DOORS). Two doors are never the same kind, unless both are fights. The door taken is kept on the run
-// (`path`), so the room stays what it was when the run's state moves on. His calls: every room still gives its Level (Level 35 is always reached);
-// a named door gives no pick (`noPick`), a Mystery Room and a fight do. Every number is a placeholder, his to tune.
+// (`path`), so the room stays what it was when the run's state moves on. every room still gives its Level (Level 35 is always reached);
+// a named door gives no pick (`noPick`), a Mystery Room and a fight do. Every number is (placeholder value)
 const DOORS = 2;
 const DOOR = { fight: 0.64, mystery: 0.18 }; // a door's chance to be a fight / a Mystery Room; the rest is a named door
 const OWN_DOORS = ['rift', 'rest', 'breather', 'urn', 'dealer', 'teleporter'];
@@ -613,7 +613,7 @@ function chooseDoor(d, index) {
   else if (d.doorway?.room < spec.room) delete d.doorway; // walked on: it closes
   return { ok: true, spec: door };
 }
-// The Doorman's Doorway (my idea, his yes Nov 13): a held promise (`doorway: true`). At the next choice of doors the ones not taken are kept
+// The Doorman's Doorway (my idea): a held promise (`doorway: true`). At the next choice of doors the ones not taken are kept
 // (`doorway: { room, doors }`); once that room is done the run can step back through one of them and play it too, under the same room number, or
 // walk on (the Doorway then closes). One use. `doorwayOpen`: the doors that can be stepped back through right now.
 const doorwayOpen = (d) => (d.doorway?.doors && d.phase === 'ready' && d.room === d.doorway.room + 1 && !d.replay && !d.path?.[d.room] ? d.doorway.doors : []);
@@ -648,7 +648,7 @@ const specOf = (d, room = d.room) => {
   const open = room >= d.room && !((d.ghoulFrom != null || d.harrowFrom != null) && room === d.room);
   return withoutAlly(d, (open ? (x) => withoutHeld(d, x) : (x) => x)(to ? { ...spec, kind: to, teleported: true, ...(to === 'wounded' ? { rival: woundedRival(d.seed, room, d.hero) } : {}) } : spec));
 };
-// The deals the hero still has running (his ask, Nov 7: Paige's Plot Armor, Sinclair's Assistant, Graves' Ghouls and McGinnis' Turret are not offered
+// The deals the hero still has running (Paige's Plot Armor, Sinclair's Assistant, Graves' Ghouls and McGinnis' Turret are not offered
 // again until they are used up). An interaction whose deal is held becomes another deal, or a rival when none is left.
 const floorBoss = (room) => floorOf(room) * ROOMS_PER_FLOOR;
 const buffTotal = (d) => Object.values(d.buffs ?? {}).reduce((a, b) => a + b, 0);
@@ -661,7 +661,7 @@ function withoutHeld(d, spec) {
   const { hero, deal, ...rest } = spec;
   return { ...rest, kind: 'rival', rival: pick(roster().filter((n) => n !== d.hero), dice(d.seed, spec.room, 'not-held')) };
 }
-// The hero fighting beside you (`ally`) never shows up anywhere else while it is with you (his call, Nov 6): a rival, a wounded hero or one of the
+// The hero fighting beside you (`ally`) never shows up anywhere else while it is with you: a rival, a wounded hero or one of the
 // Rift's heroes who would be it is another hero (from the room's own dice), an interaction with it is a rival room instead.
 function withoutAlly(d, spec) {
   const ally = d.ally?.hero;
@@ -691,7 +691,7 @@ const unitsOf = (spec) => spec.groups.flatMap((g) => {
   const k = power(spec.room);
   const champ = elite && on(asc, 11) ? 1 + ASC.elite : 1;
   const health = hpPower(spec.room) * (on(asc, 2) ? 1 + ASC.room : 1) * champ;
-  // room enemies hit harder each floor (Oct 29, his ask: "you can only die to bosses and never to troopers": a kitted hero healed through them)
+  // room enemies hit harder each floor ("you can only die to bosses and never to troopers": a kitted hero healed through them)
   const hit = k * (1 + TUNE.roomFloor * (floorOf(spec.room) - 1)) * (on(asc, 6) ? 1 + ASC.room : 1) * champ;
   return Array.from({ length: a.count ?? 1 }, () => {
     const s = a.stats;
@@ -740,7 +740,7 @@ const bossName = (spec, plain = false) => [spec.affix && affixTag(spec.affix, pl
 const roomPicture = (spec, stage = 0) => (spec.final ? BOSSES[finalKeys(spec)[stage] ?? 'patron'].icon : spec.kind === 'boss' ? BOSSES[spec.boss].icon : spec.kind === 'fight' ? groupPicture(spec.groups[0], spec.side) : null);
 
 // ---- the run's hero ----
-// Each hero's Descend tuning (Nov 2, his ask: "balance the modes once and for all, so Ascension 20 is beatable for all characters"): this much more (or
+// Each hero's Descend tuning ("balance the modes once and for all, so Ascension 20 is beatable for all characters"): this much more (or
 // less) health and damage in every run, so every hero's runs end about as often. Measured, never typed: `node tools/descend-tuning.js` plays good-pick
 // runs at Ascension 20 and saves assets/farm/descendTuning.json; re-run it after changing heroes, items, enemies or ascensions.
 let TUNING = {};
@@ -753,7 +753,7 @@ const runKit = (d) => ({
 });
 // The run's corrupted items: a list ({ name, drawback, amount }); a run saved while the Broker held one at a time has an object.
 const corruptedOf = (d) => [].concat(d.corrupted ?? []);
-// The run's Fragile Items (his ask, Oct 30; the Broker's stall): names, at most one at a time. Weaker than the real thing (stats.js fragileCard) until the
+// The run's Fragile Items (the Broker's stall): names, at most one at a time. Weaker than the real thing (stats.js fragileCard) until the
 // Broker mends one into an Enhanced item at a later stall; a Rejuv used in a won fight shatters them (afterWin).
 const fragileOf = (d) => d.fragile ?? [];
 const pointsLeft = (d) => POINTS(d.level) - pointsSpent(d.tiers);
@@ -761,7 +761,7 @@ const pointsLeft = (d) => POINTS(d.level) - pointsSpent(d.tiers);
 // A rival rolls its kit around the hero's (encounter.js) but RIVAL.levels lower and with RIVAL.health of its health: a fair duel would end half the runs.
 // Ascensions: 1 level closer from A18.
 const RIVAL = { levels: 2, health: 0.7 };
-// A10 (his pick, Nov 6, after 1 Reroll a Floor hit too hard): rivals, the Rift's heroes and recruited allies a level closer and at ASC.heroHealth.
+// A10 (after 1 Reroll a Floor hit too hard): rivals, the Rift's heroes and recruited allies a level closer and at ASC.heroHealth.
 const rivalLevels = (a) => Math.max(0, RIVAL.levels - (on(a, 10) ? 1 : 0) - (on(a, 18) ? 1 : 0)); // A10 a level closer, A18 one more (never above yours)
 const rivalHealth = (a = 0) => (on(a, 10) ? ASC.heroHealth : RIVAL.health);
 const allyHealth = (a = 0) => (on(a, 10) ? ASC.heroHealth : ALLY_HEALTH);
@@ -810,13 +810,13 @@ function fightRoom(d, spec, rng = Math.random) {
       : [{ name: `Room ${spec.room}`, enemies }];
   const run = simulate(d.hero, 'descend', {
     rng, stages, health: d.health, rejuvs: d.rejuvs, ...kit, allies: d.ally ? [allyUnit(d.ally, d.ascension ?? 0)] : [],
-    minions: minionUnits(d, spec), echo: d.assistant ? ASSISTANT.echo : 0, plotArmor: !!d.plotArmor, venom: !!d.venom, // what the hero rooms lent (Nov 6)
+    minions: minionUnits(d, spec), echo: d.assistant ? ASSISTANT.echo : 0, plotArmor: !!d.plotArmor, venom: !!d.venom, // what the hero rooms lent
     ...(rift ? { ffa: true, flee: RIFT.flee, maxSeconds: RIFT.seconds } : {}),
   });
   return { ...run, spec, ...(spec.kind === 'rival' ? { theirs: rivalKitFor(spec, d, kit), theirHealth: rivalHealth(d.ascension ?? 0) } : {}) };
 }
 
-// ---- minions (Nov 6): `minions` on the run, [{ kind, count, fights? (left), floor? (a Rift's: until that floor's boss is beaten), rifts? }] ----
+// ---- minions: `minions` on the run, [{ kind, count, fights? (left), floor? (a Rift's: until that floor's boss is beaten), rifts? }] ----
 // Each one is a lane trooper of the room it fights in, at its kind's share of health and damage (a Rift Trooper: the wiki's bonus for the Rifts before it).
 function minionUnit(m, room, rat = null) {
   const s = MINIONS[m.kind];
@@ -856,7 +856,7 @@ function rollRat(d, room) {
 }
 const lend = (d, kind, extra = {}) => { d.minions = [...(d.minions ?? []).filter((m) => m.kind !== kind), { kind, count: MINIONS[kind].count, ...(MINIONS[kind].fights ? { fights: MINIONS[kind].fights } : {}), ...extra }]; };
 // The Rift lost: the hero fled with the health it had left (at least RIFT.flee) and gets nothing; the room is passed.
-// A Rejuv, or the hero nearly dead (they broke mid-fight, hero.js), shatters the Fragile Items (his calls, Oct 30): after a won room and a fled Rift.
+// A Rejuv, or the hero nearly dead (they broke mid-fight, hero.js), shatters the Fragile Items: after a won room and a fled Rift.
 function shatterAfter(d, run) {
   if (!((run.rejuvsUsed > 0 || run.fragileBroke?.length) && fragileOf(d).length)) return;
   d.shattered = { room: run.spec.room, names: [...fragileOf(d)], why: run.fragileBroke?.length ? 'health' : 'rejuv' };
@@ -948,11 +948,11 @@ function itemOffer(d, rng, bonus = 0, room = d.room) {
 }
 
 // The reward for room `spec` just cleared: a boss gives 1 of 3 permanent buffs (or on odd floors from 3, 1 of 3 legendaries), a beaten rival any
-// one of its own items (`theirs`: the kit it fought with; his ask, Oct 29), anything else 3 items.
+// one of its own items (`theirs`: the kit it fought with), anything else 3 items.
 function rollOffer(d, spec, roll = 0, theirs = null) {
   if (spec.kind === 'rival' && theirs) {
     const owned = SLOTS.flatMap((s) => d.items[s]);
-    // an enhanced copy of an item you hold (not yet enhanced) is offered too: it replaces yours in place (his ask, Nov 2)
+    // an enhanced copy of an item you hold (not yet enhanced) is offered too: it replaces yours in place
     const upgradesMine = (n) => owned.includes(n) && theirs.enhanced?.includes(n) && !d.enhanced?.includes(n);
     const choices = [...new Set(theirs.items)].filter((n) => !NO_RUN_ITEMS.has(n) && (upgradesMine(n) || (!owned.includes(n) && !heldIn(n, d.items))));
     if (choices.length) return { kind: 'items', rival: spec.rival, theirs, choices, enhanced: choices.filter((n) => theirs.enhanced?.includes(n)), room: spec.room, roll }; // its enhanced items stay enhanced // none it can take: the usual 3, a tier up
@@ -992,12 +992,12 @@ function rollFind(d, spec) {
 }
 
 // ---- the run's changes (pure: on a run d, inside a record update or in the simulations) ----
-// One copy of `name` leaves the build (`all`: every copy). Violet's replica is the only way to hold two (his call, Nov 6): while a copy stays, its
+// One copy of `name` leaves the build (`all`: every copy). Violet's replica is the only way to hold two: while a copy stays, its
 // state (Enhanced, Fragile, imbue, stacks) stays too, and only the leaving copy's corruption goes.
-// A give-up dropdown names Violet's copy as '<item> (Replica)' (his ask, Nov 7): dropping that takes her copy (its paint) instead of the original.
+// A give-up dropdown names Violet's copy as '<item> (Replica)': dropping that takes her copy (its paint) instead of the original.
 const REPLICA = ' (Replica)';
 const plain = (n) => (n?.endsWith(REPLICA) ? n.slice(0, -REPLICA.length) : n);
-// Victor's fusions (his ask, Nov 7): `d.fused` = pairs of held Items stitched into one. Both stay in the build and both work; the pair takes one slot
+// Victor's fusions: `d.fused` = pairs of held Items stitched into one. Both stay in the build and both work; the pair takes one slot
 // (`slotsUsed`) and the picture shows them as one. Losing a part ends the fusion (the other stays on its own).
 const fusedOf = (d) => d.fused ?? [];
 const slotsUsed = (d) => countItems(d.items) - fusedOf(d).length + (d.capsule && !d.capsule.legendary ? 1 : 0); // the capsule keeps its Item's slot
@@ -1036,7 +1036,7 @@ function giveUp(d, name) {
 function addItem(d, name, replace = null, enhanced = false) {
   const card = itemByName(name);
   const { used } = priceFor(card, d.items);
-  if (used.some((u) => d.enhanced?.includes(u))) enhanced = true; // an upgrade of an enhanced item stays enhanced (his call, Oct 28)
+  if (used.some((u) => d.enhanced?.includes(u))) enhanced = true; // an upgrade of an enhanced item stays enhanced
   let replaced = null;
   if (enhanced && SLOTS.some((s) => d.items[s].includes(name))) { // the enhanced copy of a held item: yours becomes enhanced, nothing added
     if (!(d.enhanced ??= []).includes(name)) d.enhanced.push(name);
@@ -1088,7 +1088,7 @@ function takeChoice(d, index, replace = null) {
     if (extra.error) return extra;
     const bonus = d.offer.bonuses?.[index];
     if (bonus) {
-      if (!addItem(next, bonus).error) extra.bonus = bonus; // no room (an offer made before this rule): just the upgrade
+      if (!addItem(next, bonus).error) extra.bonus = bonus; // no room (an offer made before t): just the upgrade
     }
     for (const key of Object.keys(d)) if (!(key in next)) delete d[key]; // what addItem deleted on the copy (a fusion that ended) must go here too
     Object.assign(d, next);
@@ -1151,7 +1151,7 @@ function rerollChoice(d) {
   d.offer = rollOffer(d, spec, (d.offer.roll ?? 0) + 1);
   return { ok: true };
 }
-// Recruit the rival just beaten instead of taking its item or skipping: it fights beside you for a few fights, then leaves with no gift (his ask, Nov 5).
+// Recruit the rival just beaten instead of taking its item or skipping: it fights beside you for a few fights, then leaves with no gift.
 function recruitDefeated(d) {
   const recruit = d.phase === 'offer' && d.offer?.recruit;
   if (!recruit) return { error: 'none' };
@@ -1195,7 +1195,7 @@ function afterWin(d, run) {
   if (spec.kind === 'boss') d.health = Math.max(d.health, r.bossHeal);
   d.rejuvs = Math.min(r.maxRejuvs, Math.max(0, d.rejuvs - run.rejuvsUsed) + (spec.kind === 'boss' ? 1 : 0));
   shatterAfter(d, run);
-  d.kept = { ...d.kept, ...run.kept, ...run.stacks }; // the items' kill stacks and the abilities' (his call, Oct 28: they last the run)
+  d.kept = { ...d.kept, ...run.kept, ...run.stacks }; // the items' kill stacks and the abilities' (they last the run)
   afterMinions(d, run, spec);
   if (spec.kind === 'rift') { lend(d, 'rift', { floor: spec.floor, rifts: d.riftsWon ?? 0 }); d.riftsWon = (d.riftsWon ?? 0) + 1; } // the Rift won: its troopers, for the rest of the floor
   if (spec.kind === 'boss') d.bridge = []; // the Bridge buffs helped against this floor's boss; they expire now
@@ -1203,13 +1203,13 @@ function afterWin(d, run) {
   d.find = replayed ? null : rollFind(d, spec);
   if (d.find?.kind === 'little') d.buffs[d.find.key] = (d.buffs[d.find.key] ?? 0) + 1;
   else if (d.find?.kind === 'big') (d.bridge ??= []).push(d.find.key);
-  if (d.find) d.finding = d.find; // shown in a window of its own once the pick is done (his ask, Nov 10); the buff itself is already counted
+  if (d.find) d.finding = d.find; // shown in a window of its own once the pick is done; the buff itself is already counted
   else delete d.finding;
   const leaving = d.ally && --d.ally.left <= 0 ? d.ally : null; // a recruited rival's last fight: it leaves, and its gift is the pick (any 1 item of its build)
   if (leaving) { d.ally = null; if (!leaving.noGift && !replayed) d.allyLeft = { room: spec.room, hero: leaving.hero }; } // a defeated rival recruited for a while (recruitDefeated) leaves without a gift
   const gift = leaving && !leaving.noGift && !replayed;
   d.offer = spec.final || replayed ? null : gift ? rollOffer(d, { ...spec, kind: 'rival', rival: leaving.hero }, 0, leaving.kit) : rollOffer(d, spec, 0, run.theirs);
-  if (d.offer && spec.kind === 'rival' && run.theirs && !gift) d.offer.recruit = { hero: spec.rival, kit: run.theirs }; // a beaten rival can be recruited instead of looted (his ask, Nov 5)
+  if (d.offer && spec.kind === 'rival' && run.theirs && !gift) d.offer.recruit = { hero: spec.rival, kit: run.theirs }; // a beaten rival can be recruited instead of looted
   roomPassed(d, spec.room);
   d.room = spec.room + 1;
   if (d.replay && spec.room >= d.replay.until) delete d.replay;
@@ -1306,7 +1306,7 @@ function swapChoices(d, name) {
   while (out.length < 3 && out.length < pool.length) { const n = pick(pool, rng); if (!out.includes(n)) out.push(n); }
   return out;
 }
-// Every other event's choice (pure, on a run d). 'leave' passes any event room. Returns { ok, ... } or { error }.
+// Every other event's choice (pure, on a run d). 'leave' passes any event room. Returns { ok,... } or { error }.
 function eventAct(d, action, name) {
   const spec = specOf(d);
   if (d.phase !== 'ready' || !(EVENT_KINDS.includes(spec.kind) || spec.kind === 'visit' || spec.kind === 'rift')) return { error: 'none' };
@@ -1348,7 +1348,7 @@ function eventAct(d, action, name) {
     d.phase = 'offer';
     return { ok: true, action, name: item, choices };
   }
-  if (spec.kind === 'patron' && PATRON_GIFTS.includes(action)) { // the other Patron's blessing, the member's pick of four (his ask, Nov 4)
+  if (spec.kind === 'patron' && PATRON_GIFTS.includes(action)) { // the other Patron's blessing, the member's pick of four
     const by = otherPatron(patronOf(d) ?? 'archmother');
     if (action === 'bless') d.blessing = by; // weaken the bottom's Patrons
     else if (action === 'heal') d.health = 1;
@@ -1379,9 +1379,9 @@ const tierOf = (name) => Math.min(4, itemByName(name).Tier);
 const replicaChance = (name) => REPLICA_CHANCE[tierOf(name) - 1];
 // The held items not stitched into a fusion, once each (the deals that take, copy or trade an item skip a fusion).
 const loose = (d) => [...new Set(held(d))].filter((n) => !fusedParts(d).includes(n));
-// The items Violet can copy: any held one (Enhanced, Fragile or corrupted too; the legendary slot never, his call).
+// The items Violet can copy: any held one (Enhanced, Fragile or corrupted too; the legendary slot never).
 const replicables = loose;
-// Victor's Abomination (his ask, Nov 7): two different held Items, any slots. The chance falls with their tiers; a success fuses them into one slot, a fail
+// Victor's Abomination: two different held Items, any slots. The chance falls with their tiers; a success fuses them into one slot, a fail
 // leaves both in the build but Fragile. The pair is picked in two steps (`fusePick.a`, then `.b`), then the Stitch button.
 const fuseables = loose;
 // Dynamo's Lesson: the kinds of enemy on the NEXT floor (archetype keys, once each), the grade the hero has earned (the health it has kept) and the lesson in force.
@@ -1409,7 +1409,7 @@ function feedOffer(d, index) {
   if (!offer.choices.length) { d.fedAll = { room: offer.room, names: offer.fed }; d.offer = null; d.phase = 'ready'; return { ok: true, pick: true, done: true, name }; }
   return { ok: true, pick: true, name };
 }
-// Mirage's Traveler (his ask and calls, Nov 7): the member picks what the NEXT room is, from the no-fight rooms the Teleporter can reach, and Mirage's ult takes them
+// Mirage's Traveler (and calls, Nov 7): the member picks what the NEXT room is, from the no-fight rooms the Teleporter can reach, and Mirage's ult takes them
 // there (`teleported`, like the Teleporter, but for the next room and by choice). Only this floor (the room before a boss never gets her, see visitOf), the Urn's
 // carrier can't be teleported, a Broker's stall only from BROKER_FROM, a wounded hero only without an ally, a second Urn never; not a kind the next room already is.
 const travelKinds = (d, room = d.room) => (d.urn ? [] : TELEPORT_TO.filter((k) => (k !== 'broker' || (room + 1 >= BROKER_FROM && stallsLeft(d))) && (k !== 'wounded' || !d.ally) && specOf(d, room + 1).kind !== k));
@@ -1433,11 +1433,11 @@ function castleChoices(d, name) {
   return take(pool, 3, dice(d.seed, d.room, 'castling', name));
 }
 const castleables = (d) => loose(d).filter((n) => castleChoices(d, n).length);
-// A hero room's choice (not Turn Down, which is eventAct's 'leave'). Returns { ok, ... } or { error }; `pick: true` when Violet still needs to know
+// A hero room's choice (not Turn Down, which is eventAct's 'leave'). Returns { ok,... } or { error }; `pick: true` when Violet still needs to know
 // which item her replica replaces (a full build).
 function visitAct(d, spec, action, name) {
   const passed = (what) => passEvent(d, { action, hero: spec.hero, deal: spec.deal, ...what }, spec);
-  // Graves' Ghouls (his call, Nov 7): the member chooses how many (1 to 3, `ghouls-<n>`; 'accept' = all of them), each costs GHOUL_COST of the current health.
+  // Graves' Ghouls: the member chooses how many (1 to 3, `ghouls-<n>`; 'accept' = all of them), each costs GHOUL_COST of the current health.
   const ghouls = spec.deal === 'ghouls' && (action === 'accept' ? MINIONS.ghoul.count : Number(/^ghouls-(\d)$/.exec(action)?.[1]));
   if (ghouls) {
     if (ghouls > MINIONS.ghoul.count) return { error: 'none' };
@@ -1447,7 +1447,7 @@ function visitAct(d, spec, action, name) {
     passed({ action: 'ghouls', count: ghouls, from, to: d.health });
     return { ok: true, action: 'ghouls', deal: spec.deal, hero: spec.hero, count: ghouls, from, to: d.health };
   }
-  // Graves, one Ghoul a click (his call, Nov 7): 'ghoul' summons one for GHOUL_COST of the current health and stays in the room until the third (or 'done').
+  // Graves, one Ghoul a click: 'ghoul' summons one for GHOUL_COST of the current health and stays in the room until the third (or 'done').
   if ((action === 'ghoul' || action === 'done') && spec.deal === 'ghouls') {
     const have = d.minions?.find((m) => m.kind === 'ghoul')?.count ?? 0;
     if (action === 'ghoul' ? have >= MINIONS.ghoul.count : have < 1) return { error: 'none' };
@@ -1509,7 +1509,7 @@ function visitAct(d, spec, action, name) {
     if (!want || !held(d).includes(plain(name)) || plain(name) === want) return { error: 'item' };
     return replicate(d, spec, want, name);
   }
-  // McGinnis' tinkering (his calls, Nov 7): the member picks an Item (`item`, kept as tinkerPick), then a button: Enhance It, Upgrade Item (which Item
+  // McGinnis' tinkering: the member picks an Item (`item`, kept as tinkerPick), then a button: Enhance It, Upgrade Item (which Item
   // in its tree she tries for is asked next when there are several) or, for a Fragile one, Repair the Item. Each costs UPGRADE_COST of the current
   // health, win or fail. A name passed with the button overrides the pick (the tests).
   if (spec.deal === 'upgrade' && ['item', 'upgrade', 'enhance', 'repair', 'into'].includes(action)) {
@@ -1530,7 +1530,7 @@ function visitAct(d, spec, action, name) {
       if (success) {
         const added = addItem(d, into);
         if (added.error) return added;
-      } else if (!fragileOf(d).includes(item)) (d.fragile ??= []).push(item); // the fail: the item turns Fragile (his call)
+      } else if (!fragileOf(d).includes(item)) (d.fragile ??= []).push(item); // the fail: the item turns Fragile
       const from = cost();
       passed({ action: 'upgrade', name: item, into: success ? into : null, success, from, to: d.health, mood: success ? 'gloat' : 'critical', reveal: true });
       if (success) beginImbues(d, [into]);
@@ -1567,7 +1567,7 @@ function visitAct(d, spec, action, name) {
     s.n += 1;
     return s.n >= STOKE.burn.length ? end(false) : { ok: true, pick: true, name: s.name, stokes: s.n };
   }
-  // Victor's Abomination (his ask, Nov 7): pick a first Item (`fuseA`), a second (`fuseB`), then `fuse` (the Stitch button). A fail leaves both in the build, Fragile.
+  // Victor's Abomination: pick a first Item (`fuseA`), a second (`fuseB`), then `fuse` (the Stitch button). A fail leaves both in the build, Fragile.
   if (spec.deal === 'fuse' && ['fuseA', 'fuseB', 'fuse'].includes(action)) {
     if (action === 'fuseA') {
       if (!fuseables(d).includes(name)) return { error: 'item' };
@@ -1590,7 +1590,7 @@ function visitAct(d, spec, action, name) {
     passed({ action: 'fuse', a, b, success, mood: success ? 'gloat' : 'critical', reveal: true });
     return { ok: true, action: 'fuse', a, b, success };
   }
-  // Paradox's Time Capsule (his ask, Nov 7): seal an Item; it returns before the floor ends (a random room after this one, the boss's at the latest).
+  // Paradox's Time Capsule: seal an Item; it returns before the floor ends (a random room after this one, the boss's at the latest).
   if (action === 'capsule' && spec.deal === 'capsule') {
     if (!capsulables(d).includes(name)) return { error: 'item' };
     const legendary = name === d.legendary;
@@ -1658,7 +1658,7 @@ function visitAct(d, spec, action, name) {
   }
   return { error: 'none' };
 }
-// Violet copies `name` (an exact replica: the same state, his call Nov 6), giving up `replace` for it on a full build; a fail ruins the original.
+// Violet copies `name` (an exact replica: the same state), giving up `replace` for it on a full build; a fail ruins the original.
 function replicate(d, spec, name, replace) {
   delete d.replicaPick;
   const success = dice(d.seed, spec.room, 'replica')() < replicaChance(name);
@@ -1669,7 +1669,7 @@ function replicate(d, spec, name, replace) {
     (d.replicas ??= []).push(name); // her copy is painted on the Hero card (paintSplash.js); a copy that leaves is the first one (dropItem)
     if (corruption) d.corrupted = [...corruptedOf(d), { ...corruption }];
   } else dropItem(d, name);
-  // reveal: her result gets a screen of its own before the pick (his ask, Nov 7), cleared by its Continue button (`seen`)
+  // reveal: her result gets a screen of its own before the pick, cleared by its Continue button (`seen`)
   passEvent(d, { action: 'replica', hero: spec.hero, deal: spec.deal, name, success, ...(success && replace ? { replaced: plain(replace) } : {}), mood: success ? 'gloat' : 'critical', reveal: true });
   return { ok: true, action: 'replica', name, success, replaced: success ? plain(replace) : null };
 }
@@ -1687,11 +1687,11 @@ function corrupt(d, name) {
   d.room += 1;
   return { ok: true, name, ...roll, lost: BROKER_COST };
 }
-// Fragile Items (his ask, Oct 30): at a stall, a hero holding no tier 3 or 4 item (and no Fragile Item yet) is forced to take a random one (room left for it
+// Fragile Items: at a stall, a hero holding no tier 3 or 4 item (and no Fragile Item yet) is forced to take a random one (room left for it
 // always: stalls start at room 6). A later stall mends it into an Enhanced item for free, and the hero stays to deal again (corrupt something, or Leave).
 const fragileDue = (d) => specOf(d).kind === 'broker' && !fragileOf(d).length && !SLOTS.some((s) => d.items[s].some((n) => itemByName(n).Tier >= 3)) && slotsUsed(d) < rules(d).maxItems;
 // The item this stall's Broker will hand over (fixed by the seed, so the stall screen can show it before it is taken).
-// Only tier 3 or 4 (his call, Oct 30: so it is worth taking), any kind, nothing the hero holds or holds part of.
+// Only tier 3 or 4 (so it is worth taking), any kind, nothing the hero holds or holds part of.
 function fragileGift(d) {
   const rng = dice(d.seed, d.room, 'fragile');
   const owned = SLOTS.flatMap((s) => d.items[s]);
@@ -1722,9 +1722,9 @@ function newRun(hero, seed, ascension = 0) {
   return { v: Number(process.env.DESCEND_V) || VERSION, hero, seed, ascension, room: 1, level: 0, tiers: {}, items: { weapon: [], vitality: [], spirit: [] }, legendary: null, enhanced: [], fragile: [], enhancedChance: r.enhanced, rerolls: r.rerolls, buffs: {}, bridge: [], find: null, rejuvs: 0, health: r.startHealth, kept: {}, imbues: {}, offer: null, phase: 'ready' };
 }
 
-// Runs started before the Oct 29 ascensions and floors (no `v`) finish on the old rules (his call): descentLegacy.js is this file as it was then. Everything outside this file reaches a run through RUN, which sends an old run (and its rooms, `legacy` on the spec) there.
-// ponytail: delete descentLegacy.js, `legacy` and RUN's wrappers once no saved run lacks `v`.
-const VERSION = 9; // 9 (Nov 14): Billy's Smash and Grab; 8 (Nov 13): Two Doors; 7 (Nov 8): hero rooms are spaced against hero rooms only, never the same outcome three times in a row; 6 (Nov 7): Ivy's Rescue; 3 (Nov 4): event rooms; 4 (Nov 6): hero rooms and the Rift; 5 (Nov 7): a kind that just came is less likely next (`specials`)
+// Runs started before the Oct 29 ascensions and floors (no `v`) finish on the old rules: descentLegacy.js is this file as it was then. Everything outside this file reaches a run through RUN, which sends an old run (and its rooms, `legacy` on the spec) there.
+// delete descentLegacy.js, `legacy` and RUN's wrappers once no saved run lacks `v`.
+const VERSION = 9; // 9: Billy's Smash and Grab; 8: Two Doors; 7: hero rooms are spaced against hero rooms only, never the same outcome three times in a row; 6: Ivy's Rescue; 3: event rooms; 4: hero rooms and the Rift; 5: a kind that just came is less likely next (`specials`)
 const legacy = (d) => !!d && !d.v;
 let OLD;
 const old = () => (OLD ??= require('./descentLegacy'));
@@ -1744,7 +1744,7 @@ const RUN = {
 const log = (d, event, data) => descentLog.record({ TUNE, ASC, BOSS, RIVAL, TIER_WEIGHTS }, d, event, data);
 
 // ---- the member's run (data/farm.json) ----
-// The best so far (inside a record update): the member's (the highest ascension first, then rooms; his call Oct 26) and this hero's rooms.
+// The best so far (inside a record update): the member's (the highest ascension first, then rooms) and this hero's rooms.
 function noteBest(r, d) {
   const rooms = d.room - 1;
   const ascension = d.ascension ?? 0;
@@ -1753,9 +1753,9 @@ function noteBest(r, d) {
   r.descentBest = { ...r.descentBest, [d.hero]: Math.max(r.descentBest?.[d.hero] ?? 0, rooms) };
 }
 
-// The highest ascension the member may pick (per member, his call): one above the highest they cleared.
+// The highest ascension the member may pick (per member): one above the highest they cleared.
 const ascensionOf = (r) => r?.descentAscension ?? 0;
-// The member's run counters for /descend stats (his ask, Nov 4; counted from then on): descentStats = { runs, deaths, abandoned, rooms, bosses,
+// The member's run counters for /descend stats (counted from then on): descentStats = { runs, deaths, abandoned, rooms, bosses,
 // rivals, events, killedBy: { <what>: n } }.
 function bump(r, key, n = 1) {
   const s = (r.descentStats ??= {});
@@ -1768,7 +1768,7 @@ function killerOf(spec, run) {
   const top = [...(run.taken ?? [])].sort((a, b) => b.dealt - a.dealt)[0];
   return top ? top.name.replace(/\s+\d+$/, '').replace(/^\[[^\]]+\]\s*/, '') : roomLine(spec);
 }
-// Starts a run with one of the member's unlocked heroes at an ascension they unlocked (fixed for the run, his call).
+// Starts a run with one of the member's unlocked heroes at an ascension they unlocked (fixed for the run).
 // Returns { ok } or { error: 'running' | 'locked' | 'ascension' }.
 const startRun = (userId, hero, seed = Math.floor(Math.random() * 2 ** 31), ascension = 0) => updateFarmUser(userId, (r) => {
   if (r.descent) return { error: 'running' };
@@ -1808,14 +1808,14 @@ async function fight(userId, { rng = Math.random, now = Date.now() } = {}) {
     const d = r.descent;
     if (!d) return;
     delete d.fightingAt;
-    if (!run.won && spec.kind === 'rift') { // the Rift lost: the hero flees and the run goes on (his call, Nov 6)
+    if (!run.won && spec.kind === 'rift') { // the Rift lost: the hero flees and the run goes on
       fleeRift(d, run);
       run.fled = true;
       noteBest(r, d);
       run.next = structuredClone(d);
       return;
     }
-    if (!run.won && canRescue(d, spec)) { // Ivy's Rescue (his ask, Nov 7): the run goes on, back at a Rest Stop
+    if (!run.won && canRescue(d, spec)) { // Ivy's Rescue: the run goes on, back at a Rest Stop
       run.rescued = rescue(d, run);
       run.next = structuredClone(d);
       return;
@@ -1841,7 +1841,7 @@ async function fight(userId, { rng = Math.random, now = Date.now() } = {}) {
     if (spec.final) { // the descent is cleared: the run ends here
       r.descentClears = (r.descentClears ?? 0) + 1;
       const a = d.ascension ?? 0;
-      // each ascension (1-20) cleared for the first time is a Character Unlock Token, while a hero is left to unlock (his call, Oct 28)
+      // each ascension (1-20) cleared for the first time is a Character Unlock Token, while a hero is left to unlock
       if (a >= 1 && a > (r.descentCleared ?? -1) && tokenUseful(r)) { r.tokens = (r.tokens ?? 0) + 1; run.ascensionToken = a; }
       r.descentCleared = Math.max(r.descentCleared ?? -1, a); // the highest ascension cleared
       const unlocked = a < MAX_ASCENSION && a + 1 > ascensionOf(r) ? a + 1 : null;
@@ -1950,7 +1950,7 @@ const takeBonusItem = (userId, replace) => updateFarmUser(userId, (r) => {
   if (!out?.error) log(r.descent, 'pick', { room: r.descent.room - 1, how: 'rival-item', ...(replace ? { replace } : {}), hp: +r.descent.health.toFixed(3) });
   return out;
 });
-// Ends the run where it stands (his open question; my pick: a run waits as long as the member likes, and Abandon ends it). Returns the run or null.
+// Ends the run where it stands (a run waits as long as the member likes, and Abandon ends it). Returns the run or null.
 const abandon = (userId) => updateFarmUser(userId, (r) => {
   const d = r.descent;
   if (!d || d.phase === 'fighting') return null;

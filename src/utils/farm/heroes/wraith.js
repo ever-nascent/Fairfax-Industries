@@ -1,5 +1,5 @@
 // Wraith's abilities (deadlock.wiki/Wraith, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through Ability.value(); this
-// file is only what each ability does. Standing rules used: Project Mind (a teleport) is a way out when hurt, like his calls for the Doorman's
+// file is only what each ability does. Standing rules used: Project Mind (a teleport) is a way out when hurt, like for the Doorman's
 // Doorway, Calico's Ava and Mirage's Traveler, and its range tier keeps enemies off her a second longer, like Dynamo's; a bullet is a headshot
 // with the headshot items' chance; hero-only abilities work on any enemy.
 const { Ability } = require('./../ability');

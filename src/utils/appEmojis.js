@@ -1,4 +1,4 @@
-// The bot's own emojis (Nov 4, his ask): every picture in assets/emojis/<name>.png is uploaded as an application emoji, which the
+// The bot's own emojis: every picture in assets/emojis/<name>.png is uploaded as an application emoji, which the
 // bot can show in any server (server emojis only showed where the bot shares the server). Run by src/index.js before the bot logs in:
 // a missing one is uploaded, one whose file changed is replaced (the sha1 of each uploaded file is kept in data/appEmojis.json).
 // Emojis left in the app with no file are kept. Never fatal: lookups fall back to the server's emojis (guild.js emojiNamed).

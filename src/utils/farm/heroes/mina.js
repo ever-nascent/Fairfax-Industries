@@ -1,15 +1,15 @@
 // Mina's abilities (deadlock.wiki/Mina, checked Oct 2 2026). Numbers come from the wiki data through Ability.value(); this file is only
-// what each ability does. His calls (Oct 2): bites on any enemy grow Nox Nostra for the rest of the fight; Sanguine Retreat slips an enemy's
+// what each ability does. bites on any enemy grow Nox Nostra for the rest of the fight; Sanguine Retreat slips an enemy's
 // blast, and in fights without blasts is used when hurt.
 const { Ability } = require('./../ability');
 const { isBoss, npcShare } = require('./../items');
 
-// His idea (Oct 29): every Love Bites proc heals her a little, a share of her max health (not on the wiki; Mina was the weakest hero in Descend, and
+// every Love Bites proc heals her a little, a share of her max health (not on the wiki; Mina was the weakest hero in Descend, and
 // Rake's heal needs kills that deep runs hardly ever give her). `heal.pct` is the knob.
 const heal = { pct: 0.06 };
 
 // 1. Rake: slashes the enemies in reach for spirit damage plus a share of their missing health, finishes off non-boss enemies left under the
-// execute threshold, and heals for every kill. ponytail: the missing-health share is cut against NPCs like the items' health shares (npcShare);
+// execute threshold, and heals for every kill. the missing-health share is cut against NPCs like the items' health shares (npcShare);
 // the float isn't simulated.
 class Rake extends Ability {
   want(fight) {
@@ -30,7 +30,7 @@ class Rake extends Ability {
 
 // 2. Sanguine Retreat: disperses, out of everyone's reach (and unable to act) for a moment; every recast adds another moment. Slips an enemy's
 // blast as it lands; in a fight without blasts it is used when hurt. T1: fire rate and extra bullets after. T3's range does nothing here.
-// ponytail: the recasts follow straight on, as one longer flight.
+// the recasts follow straight on, as one longer flight.
 class SanguineRetreat extends Ability {
   want(fight) {
     return fight.foes.length > 0 && !fight.foes.some((e) => e.stats.blast) && this.unit.health < this.unit.stats.maxHealth * 0.5;
@@ -54,7 +54,7 @@ class SanguineRetreat extends Ability {
 
 // 3. Love Bites (passive): every bullet adds spirit damage. Bullets, Rake and bats fill a bar on the enemy (it empties after a few quiet seconds);
 // a full bar is a bite of bonus spirit damage, then that enemy can't be bitten for a while. T1: the bite slows. T3: fire rate after a bite.
-// Every bite adds bats to Nox Nostra for the rest of the fight. ponytail: headshot build-up isn't modelled.
+// Every bite adds bats to Nox Nostra for the rest of the fight. headshot build-up isn't modelled.
 class LoveBites extends Ability {
   get passive() { return true; }
 
@@ -98,12 +98,12 @@ class LoveBites extends Ability {
 }
 
 // 4. Nox Nostra: a cloud of bats, so many a second, shared out over the enemies in reach: each deals spirit damage (full to bosses: they aren't
-// "objectives" here, his call Oct 31), silences (a silenced boss holds its blast) and builds Love Bites. T3: each bat also takes a share of current health (capped on bosses).
-// ponytail: the bats are shared evenly; the game's lock-on isn't simulated.
+// "objectives" here, ), silences (a silenced boss holds its blast) and builds Love Bites. T3: each bat also takes a share of current health (capped on bosses).
+// the bats are shared evenly; the game's lock-on isn't simulated.
 class NoxNostra extends Ability {
   constructor(...args) {
     super(...args);
-    this.bonus = this.carried(); // bats added by bites, this fight (his call, Oct 2); a Descend run keeps them (ability.js carried)
+    this.bonus = this.carried(); // bats added by bites, this fight; a Descend run keeps them (ability.js carried)
     this.left = 0; // bats still to fly
   }
 

@@ -1,8 +1,8 @@
-// Abrams' Interrogation: the case board picture (his pick Oct 22: the corkboard, with the case folder worked in; no circles,
+// Abrams' Interrogation: the case board picture (the corkboard, with the case folder worked in; no circles,
 // X's or stamps). A corkboard in a wooden frame: the case folder top left (case number, suspects left or the status), a
 // "WHO?" card top right, the suspects still in as pinned photos (as big as fits) with red string to the WHO? card once 12 or
 // fewer are left, and a manila "Cleared" folder along the bottom with every ruled-out suspect tucked into it. Each question
-// asked pins up a sticky note of its clue plus one random item (a clipping, a map, a receipt ...: his ask, "random stuff gets
+// asked pins up a sticky note of its clue plus one random item (a clipping, a map, a receipt...: "random stuff gets
 // added over time"), placed where nothing else is. When the case ends everyone else is filed away and the culprit stays up,
 // with a tape label (CAUGHT, or YOUR PICK and THE CULPRIT joined by string). A duel draws two boards side by side.
 const path = require('node:path');
@@ -185,7 +185,7 @@ function crinkle(g, w, h, seed, strength = 1) {
   g.restore();
 }
 // An old Polaroid's picture in the box (x, y, w, h): warm faded colours, lifted blacks, a soft dark edge and, when `leak`,
-// a light leak from one corner (his ask: the old-time detective feel).
+// a light leak from one corner (the old-time detective feel).
 function aged(g, x, y, w, h, leak = 0) {
   g.save();
   g.beginPath();
@@ -346,7 +346,7 @@ function noteTape(g, x, y, { color, angle, w, h, torn }) {
   g.restore();
 }
 
-// Every note differs, like his reference: some flat, some with a hard folded-up bottom corner, some with a soft curled one,
+// Every note differs, like some flat, some with a hard folded-up bottom corner, some with a soft curled one,
 // some with the bottom edge lifting a little; the tape across the top middle, over a corner, or off to one side, in any
 // pastel, torn or cut straight, at its own angle.
 const FOLDS = ['flat', 'hard', 'soft', 'lift'];
@@ -381,7 +381,7 @@ function stickyNote([q, yes], rnd) {
       const outline = () => {
         g.beginPath();
         if (fold === 'lift') {
-          // his reference: the lower part of the sheet bends toward you. The far side curves in, the bottom edge sags
+          // the lower part of the sheet bends toward you. The far side curves in, the bottom edge sags
           // up in the middle and the near bottom corner flares out to a point, its side edge bowing a little (drawn
           // for the left, mirrored for the right)
           g.save();
@@ -423,7 +423,7 @@ function stickyNote([q, yes], rnd) {
       g.save();
       outline();
       g.clip();
-      // clean flat paper (his reference): only a soft light-to-dark wash, no creases
+      // clean flat paper: only a soft light-to-dark wash, no creases
       const wash = g.createLinearGradient(0, 0, W * 0.4, H);
       wash.addColorStop(0, 'rgba(255,250,225,.22)');
       wash.addColorStop(1, 'rgba(70,60,50,.07)');
@@ -472,9 +472,9 @@ function stickyNote([q, yes], rnd) {
         g.beginPath();
         g.moveTo(...h);
         if (soft) {
-          g.quadraticCurveTo(cx + ix * size * 0.3, H - size * 0.3, ...v); // the bend is round ...
+          g.quadraticCurveTo(cx + ix * size * 0.3, H - size * 0.3, ...v); // the bend is round...
         } else g.lineTo(...v);
-        g.lineTo(cx + ix * size, H - size); // ... the folded tip stays pointed
+        g.lineTo(cx + ix * size, H - size); //... the folded tip stays pointed
         g.closePath();
         g.fill();
         noShadow(g);
@@ -981,7 +981,7 @@ async function drawBoard(g, ox, oy, board) {
   g.restore();
 }
 
-// Deadlock's look over the whole board (his ask): comic halftone shade in the corners, a teal cast in the shadows,
+// Deadlock's look over the whole board: comic halftone shade in the corners, a teal cast in the shadows,
 // then the film grain and vignette every game picture ends with.
 let grainTexture;
 function finish(g) {
@@ -1002,7 +1002,7 @@ async function renderBoard(board) {
   return jpeg(c);
 }
 
-// A duel: two boards side by side, each under its detective's name. boards: [{ detective, ...board }, two of them].
+// A duel: two boards side by side, each under its detective's name. boards: [{ detective,...board }, two of them].
 async function renderDuel(boards) {
   const TOP = 40;
   const c = createCanvas(W * 2 + 20, H + TOP);

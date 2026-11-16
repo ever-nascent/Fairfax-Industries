@@ -1,5 +1,5 @@
 // Run: node --test
-// /descend's ascensions (descent.js ASCENSIONS, his ask Oct 26, redesigned Oct 29): 20 levels, unlocked per member, fixed for the run.
+// /descend's ascensions (descent.js ASCENSIONS, redesigned Oct 29): 20 levels, unlocked per member, fixed for the run.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 process.env.FARM_FRAME_MS = '0';
 const test = require('./group')(__filename);
@@ -32,7 +32,7 @@ async function clearAt(id, ascension) {
   try { return (await D.fight(id, { rng: seeded(3) })).run; } finally { Object.assign(D.TUNE, saved); }
 }
 
-test('20 levels, each with a line and no name (his call, Oct 29); ascension 0 keeps every number as it was', () => {
+test('20 levels, each with a line and no name; ascension 0 keeps every number as it was', () => {
   assert.strictEqual(D.ASCENSIONS.length, D.MAX_ASCENSION + 1);
   for (let a = 1; a <= D.MAX_ASCENSION; a++) assert.ok(!D.ASCENSIONS[a].name && D.ASCENSIONS[a].text.length <= 100, `A${a}`);
   assert.deepStrictEqual(D.rules({ v: 2 }), D.rules({ v: 2, ascension: 0 }));
@@ -130,7 +130,7 @@ test('the hero: locked item slots (A8), slow farm (A5), short stock (A15), Flee 
   assert.deepStrictEqual(D.addItem(d8, 'Extra Spirit'), { error: 'full' });
   d8.room = 21;
   assert.ok(D.addItem(d8, 'Extra Spirit').ok, 'the 11th slot opens on floor 5');
-  // A5: tiers half a floor behind; A15: 2 items, the whole run (his call Nov 15)
+  // A5: tiers half a floor behind; A15: 2 items, the whole run
   const tiers = (a) => { let t = 0; for (let s = 1; s <= 60; s++) { const d = { ...D.newRun('Haze', s, a), room: 15 }; t += D.rollOffer(d, { ...D.specOf(d, 14), kind: 'fight' }).choices.reduce((n, c) => n + require('../src/utils/farm/stats').itemByName(c).Tier, 0); } return t; };
   assert.ok(tiers(5) < tiers(4), 'A5: lower tiers');
   const count = (a, room) => { const d = { ...D.newRun('Haze', 7, a), room: room + 1 }; const spec = { ...D.specOf(d, room), kind: 'fight' }; return D.rollOffer(d, spec).choices.length; };
@@ -143,7 +143,7 @@ test('the hero: locked item slots (A8), slow farm (A5), short stock (A15), Flee 
   assert.strictEqual(d2.health, 0.8);
 });
 
-test('runs started before the redesign finish on the old rules (his call, Oct 29)', () => {
+test('runs started before the redesign finish on the old rules', () => {
   const old = { ...D.newRun('Haze', 4, 6) };
   delete old.v;
   assert.ok(D.legacy(old) && !D.legacy(D.newRun('Haze', 4, 6)));
@@ -182,7 +182,7 @@ test('unlocks are per member: clearing at N unlocks N + 1 for every hero; a run 
   assert.ok(run.won && run.complete.unlocked === undefined, 'nothing past 20');
   const patron = run.spec.patron; // the run's own Patron (Nov 4: the Archmother or the Hidden King)
   assert.deepStrictEqual(run.stageNames, ['Base Guardian', 'Shrine', D.BOSSES[patron].name, D.BOSSES[`${patron}-weak`].name], 'A20: the whole siege at the bottom');
-  for (const frame of [run.frames[0], run.frames.at(-1)]) assert.strictEqual((await dviews.fightView(run, frame)).embeds[0].toJSON().description, undefined, 'no "is fighting" line (his ask, Oct 29)');
+  for (const frame of [run.frames[0], run.frames.at(-1)]) assert.strictEqual((await dviews.fightView(run, frame)).embeds[0].toJSON().description, undefined, 'no "is fighting" line');
   const done = await dviews.completeView(member(id), run);
   assert.match(done.embeds[0].toJSON().description, /on Ascension 20/);
   assert.strictEqual(done.embeds[0].toJSON().image.url, 'attachment://hero.jpg', 'the build is the hero card image');
@@ -228,7 +228,7 @@ test('the start screen: an ascension dropdown once one is unlocked, the pick goe
   assert.ok(room.embeds[0].toJSON().fields.some((f) => f.name === 'Ascension' && f.value === '**1**'));
 });
 
-test('tokens (his call, Oct 28): each ascension cleared for the first time is a Character Unlock Token, only while a hero is left to unlock', async () => {
+test('tokens: each ascension cleared for the first time is a Character Unlock Token, only while a hero is left to unlock', async () => {
   const { tokenUseful } = require('../src/utils/farm/play');
   const { roster } = require('../src/utils/farm/hero');
   const id = 'asctoken';

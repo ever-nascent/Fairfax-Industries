@@ -1,7 +1,7 @@
-// The paint over an Item Violet painted in Descend (her replica; heroCard.js itemTile, only her copies: `replicas` on the run). His asks
+// The paint over an Item Violet painted in Descend (her replica; heroCard.js itemTile, only her copies: `replicas` on the run). 
 // Nov 7: "much more effort", then his second reference picture (a flat vector spatter frame; round 1's "a line with a dot" was rejected).
-// Built by a design panel (4 designers, 3 judges, a refine and an art director's pass), his pick. About 3 ms a 100 px tile.
-// Violet's replica: a flat paint-spatter frame over an item tile, after Zechariah's reference: separate ragged splats hugging the
+// Built by a design panel (4 designers, 3 judges, a refine and an art director's pass), . About 3 ms a 100 px tile.
+// Violet's replica: a flat paint-spatter frame over an item tile, after separate ragged splats hugging the
 // edges and corners (each its own blot, with white between them), arms and fingers radiating out of them, small paler specks inside,
 // white knocked through their inner side where they break up, and a long cloud of small flecks (teardrops, slivers, shards, mostly
 // tiny) flying in toward a clean middle. Drawn with paths only, seeded only by the item name.

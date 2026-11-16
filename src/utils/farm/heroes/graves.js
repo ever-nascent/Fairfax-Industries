@@ -1,5 +1,5 @@
 // Graves' abilities (deadlock.wiki/Graves, checked Oct 5 2026; page updated Oct 2). Numbers come from the wiki data through Ability.value(); this
-// file is only what each ability does. His calls (Oct 5): Ghouls draw fire; the jar starts a fight full and is emptied when she dies, and only
+// file is only what each ability does. Ghouls draw fire; the jar starts a fight full and is emptied when she dies, and only
 // death refills it, like the game; the gun deals full damage anywhere (stats.js NO_FALLOFF); Grasping Hands' tier 1 (a longer rift, useless here)
 // grabs the enemies a second time when the rift closes.
 // Her summons are not units: Deadheads and Ghouls are kept on the ability that owns them and deal Graves' damage.
@@ -52,7 +52,7 @@ class JarOfDead extends Ability {
   }
 
   tick(fight) {
-    const down = this.unit.statuses.some((s) => s.id === 'rejuv'); // she died and a Rejuv is getting her up: the jar is lost (his call)
+    const down = this.unit.statuses.some((s) => s.id === 'rejuv'); // she died and a Rejuv is getting her up: the jar is lost
     if (down && !this.down) { this.charges = 0; this.death = 0; }
     this.down = down;
     this.heads = this.heads.filter((h) => h.until > fight.time);
@@ -80,12 +80,12 @@ class JarOfDead extends Ability {
 }
 
 // 2. Grasping Hands: a rift opens under the enemies within half its length of the front one: spirit damage and an immobilize (she walks up and
-// melees), and a Ghoul is raised. T1 (his call): the rift grabs them once more as it closes. T2: more damage, longer. T3: a second Ghoul.
+// melees), and a Ghoul is raised. T1: the rift grabs them once more as it closes. T2: more damage, longer. T3: a second Ghoul.
 // Every Ghoul is kept here, whoever raised it (Borrowed Decree's too: this slot unlocks first). The numbers are Borrowed Decree's (its innate).
 // A Ghoul walks up to the enemies, then claws at Haunts and troopers once a second (melee damage, to those right around the front one) until
 // its time is up; anything else (a boss, a rival hero) it blows up on: spirit damage around it and a slow. While a Ghoul is clawing, an enemy's
-// hit lands on it instead of Graves DRAW_FIRE of the time (his call: Ghouls draw fire). A Ghoul's death is 1 death for the jar.
-// ponytail: WALK, SWING and DRAW_FIRE are placeholders (the wiki gives no Ghoul speeds); his to tune.
+// hit lands on it instead of Graves DRAW_FIRE of the time (Ghouls draw fire). A Ghoul's death is 1 death for the jar.
+// WALK, SWING and DRAW_FIRE are placeholders (the wiki gives no Ghoul speeds); to tune.
 const WALK = 2;
 const SWING = 1;
 const DRAW_FIRE = 0.5;

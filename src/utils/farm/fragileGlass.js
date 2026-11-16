@@ -1,7 +1,7 @@
-// The broken glass over a Fragile Item's picture (Descend's Broker; his ask, Oct 30, after his reference picture of a shattered pane).
+// The broken glass over a Fragile Item's picture (Descend's Broker; after picture of a shattered pane).
 // Drawn by code, never from a picture. A panel of three designers drew candidates from the reference, a judge picked the cleanest at the
 // 100 px Hero card tile as the base, its hole and rim were improved, and he then picked the looks he likes by seeing them on four items
-// (his call: "I liked how all of these looked except for 2, just use those with no rotation changes").
+// ("I liked how all of these looked except for 2, just use those with no rotation changes").
 // So there are exactly THREE looks, fixed: the glass this drawing makes for the seeds in LOOKS (Extra Health, Mystic Burst, Close Quarters),
 // always at that orientation, never turned or re-rolled. An item gets one of the three by its name (FNV-1a), so different items still
 // differ a little. What drawGlass makes: the item greyed a bit (a 45-degree gradient like the Enhanced one: colour drained, strongest

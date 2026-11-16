@@ -1,7 +1,7 @@
 // Paradox's abilities (deadlock.wiki/Paradox, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through Ability.value();
-// this file is only what each ability does. His calls: Time Wall cuts the bullet damage she takes by WALL_BLOCK while it stands (Nov 6: the game
+// this file is only what each ability does. Time Wall cuts the bullet damage she takes by WALL_BLOCK while it stands (Nov 6: the game
 // freezes every enemy bullet that touches it, so she steps out of the way; "half is too strong"; until then it did nothing against enemies);
-// Kinetic Carbine is charged the moment it is ready (his call, Nov 6; it used to follow his rule for Kelvin's beam: charged when the gun ran dry).
+// Kinetic Carbine is charged the moment it is ready (it used to follow for Kelvin's beam: charged when the gun ran dry).
 const WALL_BLOCK = 0.25;
 const FIRED_SHOWN = 1.5; // seconds the live fight shows Kinetic Carbine as Fired
 const { Ability } = require('./../ability');
@@ -9,17 +9,17 @@ const { MELEE, headshotChance } = require('./../engine');
 const { isBoss, npcShare } = require('./../items');
 const { HEROES, itemByName } = require('./../stats');
 
-// Kinetic Carbine and her build (his calls, Nov 6). The game's on-shot items that work on the Carbine shot (the wiki's Kinetic Carbine page; the
-// rest, Headshot Booster, Tesla Bullets, Toxic Bullets ..., don't).
-const CARBINE_PROCS = new Set(['Restorative Shot', 'Mystic Shot', 'Weakening Headshot', 'Crippling Headshot', 'Hollow Point', 'Haunting Shot']); // Haunting Shot: his ask Nov 6 (a next-bullet item like Mystic Shot; the wiki doesn't say)
-// Express Shot too (his ask, Nov 6), the wiki's way: the Carbine shot gets its smaller secondary-fire bonus, and it fires one regular bullet with its bigger one.
+// Kinetic Carbine and her build. The game's on-shot items that work on the Carbine shot (the wiki's Kinetic Carbine page; the
+// rest, Headshot Booster, Tesla Bullets, Toxic Bullets..., don't).
+const CARBINE_PROCS = new Set(['Restorative Shot', 'Mystic Shot', 'Weakening Headshot', 'Crippling Headshot', 'Hollow Point', 'Haunting Shot']); // Haunting Shot: (a next-bullet item like Mystic Shot; the wiki doesn't say)
+// Express Shot too, the wiki's way: the Carbine shot gets its smaller secondary-fire bonus, and it fires one regular bullet with its bigger one.
 // In a gun build she saves these procs (their own cooldowns) for the Carbine shot instead of spending them on a normal bullet just before it.
 const SAVED_PROCS = new Set(['Restorative Shot', 'Mystic Shot', 'Weakening Headshot', 'Crippling Headshot', 'Express Shot', 'Haunting Shot']);
 // What makes a gun (Carbine) build: on-hit gun items (the Weapon items that react to bullet hits) and anything imbued into the Carbine. A bomb
 // (Pulse Grenade) build: spirit power and ability duration items (more pulses) and anything imbued into the grenade. Not every Spirit item: the
 // Carbine build (deadlocklabs.gg "Carbine Paradox", his example Nov 6) runs Mystic Burst, Tankbuster, Spirit Burn and Mystic Reverb off the
-// Carbine's big spirit hit. Whichever she holds more of, with at least 2 (a tie, or fewer: the Carbine just fills her reloads). ponytail: my
-// picks, his to change.
+// Carbine's big spirit hit. Whichever she holds more of, with at least 2 (a tie, or fewer: the Carbine just fills her reloads). my
+// picks, to change.
 const BOMB = new Set(['Extra Spirit', 'Improved Spirit', 'Boundless Spirit', 'Duration Extender', 'Superior Duration', 'Mystic Expansion', 'Greater Expansion',
   'Escalating Exposure', 'Mystic Vulnerability', 'Arcane Surge', 'Surge of Power', 'Echo Shard']);
 const ON_HIT = new Set(['Hollow Point', 'Point Blank', 'Escalating Resilience', 'Mystic Shot', 'Express Shot', 'Headshot Booster', 'Headhunter', 'Weakening Headshot',
@@ -66,9 +66,9 @@ class PulseGrenade extends Ability {
 }
 
 // 2. Time Wall: a wall between her and the enemies: her bullets pass through it and deal more weapon damage while it stands, and the enemies'
-// bullets freeze in it, so she takes WALL_BLOCK less bullet damage meanwhile (his call, Nov 6); the enemies it lands on (within half its width of
+// bullets freeze in it, so she takes WALL_BLOCK less bullet damage meanwhile; the enemies it lands on (within half its width of
 // the front one) are slowed. T1: longer, wider. T2: more weapon damage, and it silences the enemies it lands on. T3: charges (one wall at a time).
-// She shoots the Carbine through it (his ask, Nov 6): the wall goes up as the Carbine starts charging, so the shot gets its weapon damage; otherwise only
+// She shoots the Carbine through it: the wall goes up as the Carbine starts charging, so the shot gets its weapon damage; otherwise only
 // when the wall would be back before the Carbine is.
 class TimeWall extends Ability {
   want(fight) {
@@ -97,14 +97,14 @@ class KineticCarbine extends Ability {
     this.fireAt = 0;
   }
 
-  // Charged the moment it is ready (his call, Nov 6: "why would Carbine only fire if you're out of ammo"; until then it waited for a reload, and a
+  // Charged the moment it is ready ("why would Carbine only fire if you're out of ammo"; until then it waited for a reload, and a
   // big magazine never ran dry in a room fight, so it never fired); a bomb build waits for the grenade's amp.
   want(fight) {
     const target = fight.foes[0];
     if (!target) return false;
     return buildOf(this.unit) === 'bomb' ? target.statuses.some((s) => s.id === 'pulse_amp') : true;
   }
-  // the live fight shows it Charging, then Fired for a moment after the shot, then its cooldown (his ask, Nov 6)
+  // the live fight shows it Charging, then Fired for a moment after the shot, then its cooldown
   status(fight) { return fight && this.fireAt ? 'Charging' : fight && this.firedAt != null && fight.time - this.firedAt < FIRED_SHOWN ? 'Fired' : super.status(fight); }
 
   cast(fight) {

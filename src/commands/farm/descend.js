@@ -9,7 +9,7 @@ const { screen, leaderboardView, statsView } = require('../../utils/farm/descent
 const { leaderboard, startRun, ascensionOf, MAX_ASCENSION } = require('../../utils/farm/descent');
 
 // /descend: Hero Farming's roguelite mode (utils/farm/descent.js). Public like the farm's commands; only the runner can press its buttons.
-// /descend run with a hero starts the run at once, no dropdown (his ask, Nov 4); ascension defaults to the highest unlocked, like the start screen.
+// /descend run with a hero starts the run at once, no dropdown; ascension defaults to the highest unlocked, like the start screen.
 module.exports = {
   data: new SlashCommandBuilder().setName('descend').setDescription('Take a hero down room after room, from level 0, picking items as you go')
     .addSubcommand((s) => s.setName('run').setDescription('Start a run, or carry on with the one you have')

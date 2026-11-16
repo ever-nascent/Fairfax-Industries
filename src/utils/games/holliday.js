@@ -1,7 +1,7 @@
 // Holliday's Powder Keg, Holliday's game (casino Crash): the fuse burns, the multiplier climbs, Cash Out before the
 // keg blows. The start message is a GIF of the fuse burning at a steady pace while the multiplier and the souls a
 // Cash Out would pay count up; the bot's own clock decides the payout and when the keg blows.
-// Rules: server-plan.md ("Games").
+//.
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
@@ -22,7 +22,7 @@ const RTP = 0.95; // cashing out at any multiplier returns 95% on average: the h
 const FRAME_MS = 125; // GIF frame length (8 a second: the flame still moves smoothly, the file stays smaller)
 // The GIF shows up on players' screens about this long after the message is posted (it has to download first),
 // so the bot's clock starts then; otherwise the keg blows at a number the GIF hasn't reached yet.
-// ponytail: a fixed guess, measure it if the keg still seems to blow early
+// a fixed guess, measure it if the keg still seems to blow early
 const GIF_DELAY_MS = 1000;
 const BUTTON_ID = 'keg'; // custom id: keg:<game id>:cash
 const { pay, openGame } = forGame(BUTTON_ID); // souls go through these, tagged for the ledger
@@ -300,7 +300,7 @@ const hash = (n) => { const x = Math.sin(n * 91.345 + 47.853) * 43758.5453; retu
 const noise = (x) => { const i = Math.floor(x), u = x - i, s = u * u * (3 - 2 * u); return (hash(i) * (1 - s) + hash(i + 1) * s) * 2 - 1; };
 const fbm = (x) => noise(x) * 0.6 + noise(x * 2.3 + 17) * 0.3 + noise(x * 5.1 + 31) * 0.1;
 
-// How far the flame's centre line leans at height S (0 base .. 1 tip) on frame T: a slow lean plus waves rising up it.
+// How far the flame's centre line leans at height S (0 base.. 1 tip) on frame T: a slow lean plus waves rising up it.
 const bend = (S, T) => FH * (0.13 * fbm(T * 0.23 + 9) * S ** 1.5 + 0.12 * S ** 1.2 * fbm(S * 2.4 - T * 0.9 + 3));
 // One layer's outline: a teardrop round at the bottom, pointed at the tip, its edges rippling.
 // H: the whole flame's height (the layers share its bend); h / r / lift: this layer's height, half width, lift.
@@ -352,7 +352,7 @@ const held = (f, end, frame) => (frame % 2 ? Math.round((1 - Math.min(1, ((frame
 // The same light on the keg once the flame is near it: only the icon's own pixels, only its near top corner.
 let lit;
 function kegLight(g, c) {
-  const near = 1 - Math.hypot(c.x - 220, c.y - 120) / 150; // 0 far .. 1 on the stub
+  const near = 1 - Math.hypot(c.x - 220, c.y - 120) / 150; // 0 far.. 1 on the stub
   if (near <= 0) return;
   lit ??= createCanvas(KW, KW);
   const k = lit.getContext('2d');
@@ -627,7 +627,7 @@ async function renderEnd(game) {
 // ---- messages ----------------------------------------------------------------------------------
 
 async function endView(id, game) {
-  // The template every game follows (his pick Oct 22): one bold line, the money in fields, green / red.
+  // The template every game follows: one bold line, the money in fields, green / red.
   const lines = game.lost
     ? [`**BOOM! The keg blew at ${times(game.crash)}.**`]
     : [`**You cashed out at ${times(game.cashedAt)}. The keg would have blown at ${times(game.crash)}.**`];

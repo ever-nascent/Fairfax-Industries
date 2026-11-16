@@ -1,5 +1,5 @@
 // Shiv's abilities (deadlock.wiki/Shiv, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through Ability.value(); this file
-// is only what each ability does. Standing rules used: Killing Blow's execute threshold is cut against NPCs like every health share (his call for
+// is only what each ability does. Standing rules used: Killing Blow's execute threshold is cut against NPCs like every health share (for
 // Grey Talon's owl), and so is the knives' current-health damage. Taken by me: rage is full at BonusAbilityResource (10) in the game data.
 const { Ability } = require('./../ability');
 const { DT, MELEE } = require('./../engine');
@@ -44,7 +44,7 @@ class SerratedKnives extends Ability {
 // 2. Slice and Dice: a dash through the enemies in its path: spirit damage, and each hit takes spirit resist off them (stacking, each stack on
 // its own clock). At full rage an echo retraces the dash a moment later and hits them again. T1: shorter cooldown. T2: a bigger shred, further.
 // T3: more damage, and every enemy hit takes time off the cooldown.
-const ECHO = 1; // seconds until the echo. ponytail: the wiki says "after a short delay"
+const ECHO = 1; // seconds until the echo. the wiki says "after a short delay"
 class SliceAndDice extends Ability {
   constructor(...args) {
     super(...args);

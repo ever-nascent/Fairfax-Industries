@@ -1,5 +1,5 @@
 // Mirage's abilities (deadlock.wiki/Mirage, checked Oct 5 2026; page updated Oct 3). Numbers come from the wiki data through Ability.value(); this
-// file is only what each ability does. His call (Oct 5): Traveler (a teleport across the map in the game) is a way out when hurt, like the
+// file is only what each ability does. Traveler (a teleport across the map in the game) is a way out when hurt, like the
 // Doorman's Doorway and Calico's Ava.
 const { Ability } = require('./../ability');
 const { DT } = require('./../engine');
@@ -31,7 +31,7 @@ class FireScarabs extends Ability {
 
 // 2. Dust Devil: a whirlwind through the enemies in its path: spirit damage, a short lift and a slow; nothing can touch Mirage meanwhile, and
 // bullets miss more often for a while after. T2: more evasion. T3: a second whirlwind a moment later.
-// ponytail: AGAIN is when the tier 3 recast comes (the game: within 6 s, the player's choice).
+// AGAIN is when the tier 3 recast comes (the game: within 6 s, the player's choice).
 const AGAIN = 2;
 class DustDevil extends Ability {
   want(fight) { return fight.foes.length > 0; }
@@ -88,7 +88,7 @@ class DjinnsMark extends Ability {
   }
 
   // The ability's active (the wiki: "consume all Djinn Marks to deal their damage now", its own cooldown): used when the marks on an enemy would kill it.
-  // ponytail: his rule (Nov 2) is only "it would kill"; the estimate takes the enemy's spirit resist but no other amplification.
+  // is only "it would kill"; the estimate takes the enemy's spirit resist but no other amplification.
   pops(e, m) {
     return m.stacks > 0 && this.value('ProcDamageBase') * this.data.DMarkMultiplierPerStack ** (m.stacks - 1) * (1 - (e.stats.spiritResist ?? 0)) >= e.health;
   }
@@ -104,10 +104,10 @@ class DjinnsMark extends Ability {
   }
 }
 
-// 4. Traveler: used when hurt (his call): Mirage teleports out, out of every enemy's reach and not attacking for the wait, and comes back.
+// 4. Traveler: used when hurt: Mirage teleports out, out of every enemy's reach and not attacking for the wait, and comes back.
 // A barrier after (the Nov 2026 patch moved it from T2 to the base). T1: faster and a higher fire rate after. T2: far shorter cooldown.
 // T3: the barrier grows with spirit power (its "can't be interrupted by damage" has nothing to act on here: nothing interrupts the teleport).
-// ponytail: the barrier lasts as long as tier 1's bonuses (the wiki gives it no time).
+// the barrier lasts as long as tier 1's bonuses (the wiki gives it no time).
 const HURT = 0.5;
 const BARRIER_FOR = 12;
 class Traveler extends Ability {

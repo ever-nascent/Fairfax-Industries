@@ -1,10 +1,12 @@
+// Event handler: clientReady.
+// On startup: a #roles menu whose emoji was replaced in the server (the startup check does that when a hero's wiki icon changes) points at
+// an emoji id that no longer exists. Read its name from the menu text, find the emoji now in the server, and fix the text, the saved menu and
+// the bot's reaction. The new reaction lands at the end of the row. Normally nothing is stale and nothing is requested.
+
 const { EmbedBuilder } = require('discord.js');
 const { ourGuild } = require('../utils/guild');
 const rr = require('../utils/server/reactionRoles');
 
-// On startup: a #roles menu whose emoji was replaced in the server (the startup check does that when a hero's wiki icon changes) points at
-// an emoji id that no longer exists. Read its name from the menu text, find the emoji now in the server, and fix the text, the saved menu and
-// the bot's reaction. The new reaction lands at the end of the row (his call, Oct 23). Normally nothing is stale and nothing is requested.
 module.exports = {
   name: 'clientReady',
   once: true,

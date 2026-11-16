@@ -1,5 +1,5 @@
 // Bebop's abilities (deadlock.wiki/Bebop, checked Oct 3 2026). Numbers come from the wiki data through Ability.value(); this file is only
-// what each ability does. His calls (Oct 3): Sticky Bomb grows with any enemy it hits or kills, for the rest of the fight only; Grapple Arm's
+// what each ability does. Sticky Bomb grows with any enemy it hits or kills, for the rest of the fight only; Grapple Arm's
 // tier 2 (range, which does nothing here) stuns the hooked enemy for a moment instead. "On hero hit" effects work on any enemy.
 const { Ability, anyReady } = require('./../ability');
 const { MELEE } = require('./../engine');
@@ -31,7 +31,7 @@ class ExplodingUppercut extends Ability {
 }
 
 // 2. Sticky Bomb: sticks to the front enemy and explodes after its fuse (at once if that enemy dies): spirit damage around it. Every enemy a
-// bomb hits or kills makes the next ones stronger for the rest of the fight (his call; the game: heroes, for good), half as fast after
+// bomb hits or kills makes the next ones stronger for the rest of the fight (the game: heroes, for good), half as fast after
 // OnHitDiminish hits / OnKillDiminish kills. The damage is set when the bomb is thrown. T3: speed and debuff resist on cast.
 class StickyBomb extends Ability {
   constructor(...args) {
@@ -78,7 +78,7 @@ class StickyBomb extends Ability {
 }
 
 // 3. Grapple Arm: hooks the enemy standing furthest back and pulls it up to the front one (a boss isn't moved), for melee damage and a slow;
-// Bebop stands close to it for a moment. T1: it takes more bullet damage. T2: it can't act for a moment (his call: the tier's range does nothing here).
+// Bebop stands close to it for a moment. T1: it takes more bullet damage. T2: it can't act for a moment (the tier's range does nothing here).
 class GrappleArm extends Ability {
   want(fight) {
     return fight.foes.length > 0;
@@ -99,7 +99,7 @@ class GrappleArm extends Ability {
   }
 }
 
-// 4. Hyper Beam: after its wind-up, a long beam through every enemy: spirit damage and a slow (the same to bosses: they aren't the game's "objectives" here, his call Oct 31). The gun
+// 4. Hyper Beam: after its wind-up, a long beam through every enemy: spirit damage and a slow (the same to bosses: they aren't the game's "objectives" here). The gun
 // is silent while it lasts. T3: the beam heals Bebop for a share of its damage (less from NPCs than from a hero).
 class HyperBeam extends Ability {
   constructor(...args) {
@@ -107,7 +107,7 @@ class HyperBeam extends Ability {
     this.until = 0;
   }
 
-  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, ExplodingUppercut, StickyBomb, GrappleArm); } // combo first (his ask, Nov 6): hook, bomb and uppercut before the beam
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, ExplodingUppercut, StickyBomb, GrappleArm); } // combo first: hook, bomb and uppercut before the beam
 
   status(fight) {
     return fight && fight.time < this.until ? 'Beaming' : super.status(fight);

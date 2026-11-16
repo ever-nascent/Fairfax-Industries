@@ -1,12 +1,12 @@
-// The startup check (his ask, Oct 16: "when i restart, it does everything it needs to ... check that we have all the needed data and
+// The startup check ("when i restart, it does everything it needs to... check that we have all the needed data and
 // that its up to date"). `Start Bot.bat` runs it after `npm install` and before the bot; it never stops the bot from starting.
-// Nothing here calls Python (Oct 23): images and emojis are fetched in Node. data/startupCheck.json keeps the day and what each part was
+// Nothing here calls Python: images and emojis are fetched in Node. data/startupCheck.json keeps the day and what each part was
 // refreshed from (page edits, and the wiki's sha1 of every image).
 //   every start   nothing, when the daily check already ran today and nothing is missing that was never tried: no request at all,
 //                 one line of output. Missing and never tried (a hero just added to HEROES, a deleted image, an image with no record) runs
 //                 the daily check right away; missing but already asked about (Nurse Harrow's voice lines, a portrait the wiki has no file
 //                 for) waits for the next daily check.
-//   once a day    (his call, Oct 16) new playable heroes the bot doesn't list (deadlock-api.com, only reported: adding one is his call);
+//   once a day    new playable heroes the bot doesn't list (deadlock-api.com, only reported: adding one is);
 //                 one wiki query for the last edit of every data page and the sha1 of every hero image (icons, full-body renders, the
 //                 rival portraits of the two portrait categories, Silver's wolf too); only what changed is downloaded (a file's record is
 //                 written after it is saved, so a failure is tried again; the first run replaces what differs from the wiki's; a file the wiki
@@ -98,7 +98,7 @@ const MOODS = { 'Gloat Portraits': 'gloat', 'Critical Health Portraits': 'critic
 const ALIASES = { doorman: 'the doorman', bily: 'billy', 'werewolf silver': 'silver wolf' }; // the wiki's spellings (the only hand-kept names, with EXTRA)
 const EXTRA = { violet: { gloat: 'File:Violet gloat.png', critical: 'File:Violet ciritcal.png' } }; // on the wiki, but in neither category
 const portraitHeroes = () => [...roster().map((n) => n.toLowerCase()), 'silver wolf']; // Silver's wolf face is a hero of its own on the wiki
-// "File:Mirage Gloat .png" -> "mirage"; null when it names nobody on our list.
+// "File:Mirage Gloat.png" -> "mirage"; null when it names nobody on our list.
 function heroOfPortrait(title) {
   let name = title.replace(/^File:/i, '').replace(/\.\w+$/, '').trim();
   for (let again = true; again;) { const next = name.replace(/\s+(gloat|critical|health|portrait)$/i, '').trim(); again = next !== name; name = next; }
@@ -197,7 +197,7 @@ async function newHeroes() {
     const list = await (await get('https://api.deadlock-api.com/v1/assets/heroes?only_active=true')).json();
     const ours = new Set(HEROES.map((h) => h.name));
     const fresh = list.filter((h) => h.player_selectable && !h.disabled && !ours.has(h.name)).map((h) => h.name);
-    if (fresh.length) report.needs.push(`New playable heroes not in the bot yet: ${fresh.join(', ')} (ask Claude to add them)`);
+    if (fresh.length) report.needs.push(`New playable heroes not in the bot yet: ${fresh.join(', ')} (add them to HEROES in src/utils/heroes.js and src/utils/farm/refresh.js)`);
   } catch (e) {
     report.unreachable.push(`deadlock-api.com (new-hero check): ${e.message}`);
   }

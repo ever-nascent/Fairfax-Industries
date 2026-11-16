@@ -1,9 +1,9 @@
-// Abrams' Interrogation, Abrams' game (Guess Who; his idea Oct 22, built from the mock-up he approved): the culprit is one
+// Abrams' Interrogation, Abrams' game (Guess Who; built from the approved mock-up): the culprit is one
 // of the 44 heroes. Each turn you're dealt a hand of HAND yes/no questions (abramsCase.js; only ones that still rule
 // someone out) and ask one; the case board crosses off every suspect it rules out. Accuse any time; a wrong name loses.
 // Solo, against Abrams' case: at most MAX_QUESTIONS questions, and the fewer you ask the more a right accusation pays
 // (PAYOUT). Against a member (opponent:): each picks a secret hero for the other to find, turns alternate, no question
-// limit, the first right accusation takes the pot and a wrong one loses it. Rules: server-plan.md ("Games").
+// limit, the first right accusation takes the pot and a wrong one loses it..
 const path = require('node:path');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const { getStore } = require('../../storage');
@@ -26,7 +26,7 @@ const { takeBet, pay, openGame } = forGame(BUTTON_ID); // souls go through these
 // Solo pays bet x PAYOUT[questions asked] for a right accusation. Simulated Oct 23 with the reworked questions
 // (tools/interrogation-rtp.js): a player who always asks the best question in the hand and accuses at the best moment gets
 // about 95% back and wins 92% of cases; weaker play gets less (the Oct 22 table, 1.75 / 1.4 / 1.15 at 3-5 questions, gave
-// 100% with the better questions). Oct 23, his ask (it was too hard to profit): hand of 5, 7 questions, a flatter table; good play now returns about 106%, careless play about 88%.
+// 100% with the better questions). (it was too hard to profit): hand of 5, 7 questions, a flatter table; good play now returns about 106%, careless play about 88%.
 const HAND = 5;
 const MAX_QUESTIONS = 7;
 const PAYOUT = [4, 3, 2.25, 1.7, 1.35, 1.1, 1, 1];
@@ -52,7 +52,7 @@ const TIMEOUT_LINES = ['The case went cold while you stared at the board.', "Can
 
 // Games in progress, saved so a restart doesn't eat bets. key: game id
 // Solo: { userId, name, bet, opponentId: null, culprit, phase: 'play', hunts: { [userId]: board }, turn, mode, done, at }
-// Duel: { ..., opponentId, opponentName, phase: 'invite' | 'pick' | 'play', secrets: { [user id]: hero } }
+// Duel: {..., opponentId, opponentName, phase: 'invite' | 'pick' | 'play', secrets: { [user id]: hero } }
 // board (one per detective): { suspects: [names], asked: [[question index, yes]], hand: [question indexes] }
 const games = () => getStore('interrogationGames');
 
@@ -95,7 +95,7 @@ const loadHeroEmojis = (g) => {
 const emojiOf = (name) => heroEmoji(guild, HEROES.find((h) => h.name === name)?.slug);
 
 const view = (message) => ({ ...gameMessage(HOST, message), content: '' });
-const clueLine = ([q, yes]) => `> ${QUESTIONS[q].text}\n**${yes ? 'Yes' : 'No'}**`; // the question quoted, the answer bold under it, no emoji (his ask Oct 22)
+const clueLine = ([q, yes]) => `> ${QUESTIONS[q].text}\n**${yes ? 'Yes' : 'No'}**`; // the question quoted, the answer bold under it, no emoji
 const picture = (id, data) => ({ name: `case_${id}_${Date.now()}.jpg`, data });
 const boardPicture = (id, game, userId, extra = {}) => ({ left: game.hunts[userId].suspects, caseNo: caseNo(id), clues: game.hunts[userId].asked, ...extra });
 

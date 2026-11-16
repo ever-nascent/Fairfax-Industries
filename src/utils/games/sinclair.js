@@ -1,5 +1,5 @@
 // /rabbit-in-the-hat, Sinclair's game: three top hats, the rabbit is under one. Sinclair shuffles (an animated
-// GIF), you pick a hat; a win pays 2.85x the bet (95% back on a 1-in-3 pick, like the other games; 2.5x returned 83%). Rules: server-plan.md ("Games").
+// GIF), you pick a hat; a win pays 2.85x the bet (95% back on a 1-in-3 pick, like the other games; 2.5x returned 83%)..
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
@@ -257,7 +257,7 @@ async function startGame(user, name, bet) {
     lines: ['Sinclair shuffles the hats. Where is the rabbit?'],
     fields: [['Win Pays', winnings(bet)], ['Bet', bet]],
     buttons: HX.map((_, i) => [`${BUTTON_ID}:${id}:${i}`, `Hat ${i + 1}`, ButtonStyle.Secondary]),
-    footer: pickRandom(START_LINES), // already "Henry: ..." / "Savannah: ..."
+    footer: pickRandom(START_LINES), // already "Henry:..." / "Savannah:..."
     image: { name: `shuffle_${id}.gif`, data: await renderShuffle() },
   });
 }
@@ -278,13 +278,13 @@ async function pickHat(id, userId, pick) {
   const user = await pay(userId, won ? winnings(game.bet) : 0);
   await games().delete(id);
   return gameMessage(HOST, {
-    // the template every game follows (his pick Oct 22): one bold line, the money in fields, green or red; the line names the
-    // hats, so no field repeats them (his call)
+    // the template every game follows: one bold line, the money in fields, green or red; the line names the
+    // hats, so no field repeats them
     lines: [won ? `**Hat ${pick + 1}, and there's the rabbit!**` : `**Hat ${pick + 1} is empty. The rabbit was under Hat ${game.rabbit + 1}.**`],
     fields: resultFields(game.bet, won ? winnings(game.bet) : 0, user.souls),
     color: won ? GREEN : RED,
     buttons: [playAgainButton(AGAIN_ID, game.bet, game.userId)],
-    footer: pickRandom(won ? WIN_LINES : LOSE_LINES), // already "Henry: ..." / "Savannah: ..."
+    footer: pickRandom(won ? WIN_LINES : LOSE_LINES), // already "Henry:..." / "Savannah:..."
     mood: won ? 'injured' : 'gloat', // he's hurt when you win, he gloats when you lose
     image: { name: `reveal_${id}.jpg`, data: await renderReveal(pick, game.rabbit) },
   });
@@ -295,7 +295,7 @@ async function timeoutView(id, game, balance) {
   return timeoutMessage(HOST, {
     image: { name: `hats_${id}.jpg`, data: await renderReveal(null, null) },
     staked: staked(game), balance, againId: AGAIN_ID, bet: game.bet, userId: game.userId,
-    line: pickRandom(TIMEOUT_LINES), // already "Henry: ..." / "Savannah: ..."
+    line: pickRandom(TIMEOUT_LINES), // already "Henry:..." / "Savannah:..."
   });
 }
 

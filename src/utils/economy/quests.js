@@ -1,6 +1,6 @@
-// Daily and weekly quests (his ask, Oct 30). The same quests for everyone: 3 dailies and 2 weeklies picked from the pools below by
+// Daily and weekly quests. The same quests for everyone: 3 dailies and 2 weeklies picked from the pools below by
 // the date (UTC midnight, weeklies from Monday, like /urn), each paid the moment its goal is reached. Progress is counted by
-// `track(userId, kind)`, called where the thing happens (a bet taken, a fight won, a counted chat message ...). Saved in data/quests.json.
+// `track(userId, kind)`, called where the thing happens (a bet taken, a fight won, a counted chat message...). Saved in data/quests.json.
 const { createHash } = require('node:crypto');
 const { AsyncLocalStorage } = require('node:async_hooks');
 const { EmbedBuilder, MessageFlags } = require('discord.js');
@@ -67,7 +67,7 @@ const noted = new AsyncLocalStorage();
 
 // Counts `n` of `kind` for a member towards every running quest of that kind and pays the ones it completes.
 // Never throws: a quest problem must not break the game or fight it was counted for. Returns the quests completed.
-// ponytail: the payout comes after the progress is saved, so a crash between the two loses one reward; add a paid flag if that matters.
+// the payout comes after the progress is saved, so a crash between the two loses one reward; add a paid flag if that matters.
 async function track(userId, kind, n = 1, now = new Date()) {
   if (process.env.NO_QUESTS) return []; // tests that count exact balances set this (a quest would pay into them)
   try {

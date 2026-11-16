@@ -1,12 +1,12 @@
 // Viscous' abilities (deadlock.wiki/Viscous, checked Oct 5 2026; page updated Sept 30). Numbers come from the wiki data through Ability.value();
-// this file is only what each ability does. The Cube follows his call for Kelvin's Frozen Shelter (Oct 5): used on himself when hurt, nothing
+// this file is only what each ability does. The Cube follows for Kelvin's Frozen Shelter: used on himself when hurt, nothing
 // gets in or out. Taken by me: how often the rolling Goo Ball comes back to the same enemy (ROLL).
 const { Ability } = require('./../ability');
 const { MELEE, LIFESTEAL_VS_NPC } = require('./../engine');
 
 // 1. Splatter: a ball of goo on the front enemy that bounces: every bounce hits the enemies around again for less (the wiki's shares for the
 // second, third and fourth hit on the same target), and the goo slows them. T1: more damage, wider. T2: shorter cooldown. T3: one more bounce.
-const BOUNCE = 0.4; // seconds between two bounces. ponytail: the wiki gives none
+const BOUNCE = 0.4; // seconds between two bounces. the wiki gives none
 class Splatter extends Ability {
   want(fight) { return fight.foes.length > 0; }
 
@@ -57,7 +57,7 @@ class PuddlePunch extends Ability {
 
 // 4. Goo Ball: a rolling ball for a while: no shooting (he can still cast), bullet and spirit resist, and every ROLL seconds he rolls through
 // the enemies around the front one: spirit damage and a short stun. T1: shorter cooldown. T2: more damage, more resist. T3: longer, longer stun.
-const ROLL = 2; // ponytail: seconds between two passes over the same enemies; the wiki gives none
+const ROLL = 2; // seconds between two passes over the same enemies; the wiki gives none
 class GooBall extends Ability {
   constructor(...args) {
     super(...args);

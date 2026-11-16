@@ -1,4 +1,4 @@
-// /item (his ask, Oct 30): look up any shop item (the 156 shop items + the 17 legendaries) by typing part of its name.
+// /item: look up any shop item (the 156 shop items + the 17 legendaries) by typing part of its name.
 // `search` is the autocomplete (typos, word order and partial words all work); `itemView` is the embed: what it does, its in-game price,
 // what it is built from and upgrades into, with Details / Enhanced / Corrupted buttons and a View Upgrade Tree dropdown.
 // Item data is the wiki's cards (stats.js) with the game's tooltips and bonus labels from deadlock-api.com (tooltips.js, corruption.js, refreshed
@@ -113,7 +113,7 @@ function sectionOf(card, view) {
 }
 
 // Everything to send for one item and view. The item is the thumbnail; an item with an upgrade tree (parts or upgrades) also gets the View Upgrade Tree dropdown,
-// which opens any item in that tree in the same message (his ask, Oct 30: no upgrade pictures in the embed).
+// which opens any item in that tree in the same message (no upgrade pictures in the embed).
 async function itemView(card, view = 'details', userId = '0') {
   if (!has(card, view)) view = 'details';
   if (!have(card)) await fetchMissing().catch(() => {}); // a first-time picture; the embed still works without it

@@ -214,7 +214,7 @@ function channelIdOf(entry) {
   return entry.extra?.channel?.id ?? null;
 }
 
-// Fields some entry types carry on top of their changes (who an overwrite is for, how many were moved, ...).
+// Fields some entry types carry on top of their changes (who an overwrite is for, how many were moved,...).
 async function extraFields(entry, guild) {
   const x = entry.extra;
   switch (entry.action) {
@@ -343,7 +343,7 @@ async function memberUpdate(entry, guild) {
 async function handleEntry(entry, guild) {
   const own = entry.executorId === guild.client.user.id;
   if (entry.action === A.MemberRoleUpdate) return roleUpdate(entry, guild, own);
-  if (own) return; // the bot's own work (LFG lobbies, emoji uploads, ...) isn't logged
+  if (own) return; // the bot's own work (LFG lobbies, emoji uploads,...) isn't logged
   if (entry.action === A.MemberUpdate) return memberUpdate(entry, guild);
   const type = TYPES[entry.action];
   if (!type) return;

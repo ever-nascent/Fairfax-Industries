@@ -295,7 +295,7 @@ module.exports = {
     if (menus.length === 0) return reply("There are no active Reaction Role Menu's in this server");
     const lines = menus.map(
       ([messageId, menu]) =>
-        `\`${messageId}\` in <#${menu.channelId}> — ${menu.mode === 'single' ? 'Single' : 'Multi'}, ${Object.keys(menu.roles).length} Choice(s)`,
+        `\`${messageId}\` in <#${menu.channelId}>: ${menu.mode === 'single' ? 'Single' : 'Multi'}, ${Object.keys(menu.roles).length} Choice(s)`,
     );
     return interaction.reply({ embeds: [replyEmbed(lines.join('\n')).setTitle('Reaction Role Menus')], flags: MessageFlags.Ephemeral });
   },

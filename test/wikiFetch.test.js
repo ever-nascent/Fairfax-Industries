@@ -1,3 +1,4 @@
+// utils/wikiFetch.js: a refused or timed-out wiki request is tried again, then the answer is handed back.
 process.env.WIKI_GAP_MS = '0';
 process.env.WIKI_RETRY_WAITS_MS = '1,1';
 const test = require('./group')(__filename);

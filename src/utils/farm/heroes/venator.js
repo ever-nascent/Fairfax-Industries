@@ -1,5 +1,5 @@
 // Venator's abilities (deadlock.wiki/Venator, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through Ability.value();
-// this file is only what each ability does. His call (Oct 5): an enemy Gutshot pushes back hits a wall half the time (there are no walls here).
+// this file is only what each ability does. an enemy Gutshot pushes back hits a wall half the time (there are no walls here).
 // Standing rules used: "players only" abilities work on any enemy; health shares are cut against NPCs.
 const { Ability } = require('./../ability');
 const { MELEE } = require('./../engine');
@@ -108,7 +108,7 @@ class IraDomini extends Ability {
 
   want(fight) { return fight.foes.length > 0; }
   status(fight) { return fight && fight.time < this.until ? 'Crossbow' : super.status(fight); }
-  get lockout() { return DRAW + (this.data.StakeCount - 1) * RELOAD + DRAW; } // no other cast while the crossbow is out (his call, Oct 28)
+  get lockout() { return DRAW + (this.data.StakeCount - 1) * RELOAD + DRAW; } // no other cast while the crossbow is out
 
   cast(fight) {
     const stakes = this.data.StakeCount;

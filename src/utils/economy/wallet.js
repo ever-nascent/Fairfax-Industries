@@ -1,4 +1,4 @@
-// What `/souls balance` and `/souls hero` show (his calls, Oct 11: they replace `/wallet`; both private). The command is `/souls` (utils/economy/ledger.js),
+// What `/souls balance` and `/souls hero` show (they replace `/wallet`; both private). The command is `/souls` (utils/economy/ledger.js),
 // whose other subcommands are the staff tools.
 const { EmbedBuilder } = require('discord.js');
 const { triviaOdds, REJUV_MAX, URN_MAX_DAYS } = require('./xp');

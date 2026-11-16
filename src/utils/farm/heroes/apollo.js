@@ -1,10 +1,10 @@
 // Apollo's abilities (deadlock.wiki/Apollo, checked Oct 3 2026). Numbers come from the wiki data through Ability.value(); this file is only
-// what each ability does. His calls (Oct 3): half of Flawless Advance's stabs are perfect; Riposte parries any enemy's hit and blasts; Sigil's
+// what each ability does. half of Flawless Advance's stabs are perfect; Riposte parries any enemy's hit and blasts; Sigil's
 // tier 2 gives its stamina back for hitting any enemy.
 const { Ability } = require('./../ability');
 
 // 1. Disengaging Sigil: a sphere that explodes on the enemies around the front one: spirit damage and a slow. T1: fire rate after. T2: a stamina
-// charge back when it hits. T3: a second sigil. ponytail: the leap backwards does nothing here; the recast follows RECAST_AFTER seconds on.
+// charge back when it hits. T3: a second sigil. the leap backwards does nothing here; the recast follows RECAST_AFTER seconds on.
 const RECAST_AFTER = 1;
 class DisengagingSigil extends Ability {
   want(fight) {
@@ -31,7 +31,7 @@ class DisengagingSigil extends Ability {
 
 // 2. Riposte: never cast on its own. When it is ready, the next hit on Apollo (or an enemy's blast) is parried: it does nothing, the attacker is
 // stunned and takes more melee damage for a while (a stunned enemy is one the hero walks up to and melees). T3: lifesteal against it.
-// ponytail: the 0.8 s stance and the 0.3 s of invulnerability are just "the next hit".
+// the 0.8 s stance and the 0.3 s of invulnerability are just "the next hit".
 class Riposte extends Ability {
   want() { return false; }
 
@@ -51,8 +51,8 @@ class Riposte extends Ability {
 }
 
 // 3. Flawless Advance: lunging stabs through the enemies in a line. In the game the damage is the player's timing; here half the stabs are
-// perfect (his call), the rest well held. T1: a perfect stab that hits heals. T2: bullet resist while lunging. T3: more damage.
-// ponytail: a stab every STAB_EVERY seconds; the recast window, stacks and bleed numbers the wiki doesn't explain are left out.
+// perfect, the rest well held. T1: a perfect stab that hits heals. T2: bullet resist while lunging. T3: more damage.
+// a stab every STAB_EVERY seconds; the recast window, stacks and bleed numbers the wiki doesn't explain are left out.
 const STAB_EVERY = 0.6;
 const PERFECT_CHANCE = 0.5;
 class FlawlessAdvance extends Ability {

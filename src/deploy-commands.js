@@ -1,7 +1,7 @@
 // Registers the bot's slash commands with Discord. The bot does this itself on startup (only when a command changed),
 // so `npm start` is all a host needs; `npm run deploy` does it by hand.
 // Every command is registered for every server the bot is in, and only works inside a server (not in DMs). A command whose
-// file sets `homeOnly: true` is built for the Fairfax server alone (stream alerts, the audit log, Hideouts ...): it is
+// file sets `homeOnly: true` is built for the Fairfax server alone (stream alerts, the audit log, Hideouts...): it is
 // registered in Fairfax only, so other servers never see it.
 try { process.loadEnvFile(); } catch {}
 const crypto = require('node:crypto');

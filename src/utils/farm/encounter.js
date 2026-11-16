@@ -1,4 +1,4 @@
-// Hero Farming: encounters (his calls, Oct 2-3; server-plan.md "Hero unlocks"). After a won fight a hero the member hasn't unlocked may show
+// Hero Farming: encounters. After a won fight a hero the member hasn't unlocked may show
 // up; beating it unlocks it. The rival is a full hero (engine.js runs it through a mirrored view of the fight): the member's hero level, as many
 // ability points spent at random, an item of the same tier for each of the member's, and the hero's permanent buffs (a fair fight).
 // This file is the rules only: who shows up, what it carries, and the duel itself. The member's side (the offer, the unlock) is in play.js.
@@ -12,7 +12,7 @@ const { isWolf } = require('./heroes/silver');
 const { pickRandom } = require('../random');
 const { rejuvIcon, titleCase } = require('../format');
 
-const ENCOUNTER_CHANCE = 0.05; // per won fight. ponytail: placeholder, his to tune
+const ENCOUNTER_CHANCE = 0.05; // per won fight. (placeholder value)
 const DUEL_SECONDS = 120; // a duel nobody has won by then: the rival slips away (counts as lost; costs nothing)
 const FRAME_STEPS = 10; // a snapshot every second of fight: duels are short (about 10 s), a trip's 3 s would show two or three
 const MAX_FRAMES = 14;
@@ -40,7 +40,7 @@ function rivalKit(kit, rng = Math.random, hero = null) {
   const items = [];
   for (const name of kit.items) {
     const tier = Math.min(4, itemByName(name).Tier);
-    const choices = ITEM_POOL.filter((n) => itemByName(n).Tier === tier && !items.some((m) => m === n || sameLine(m, n)) && canBuy(hero, n)); // never an item and its upgrade (his rule, Nov 5)
+    const choices = ITEM_POOL.filter((n) => itemByName(n).Tier === tier && !items.some((m) => m === n || sameLine(m, n)) && canBuy(hero, n)); // never an item and its upgrade
     if (choices.length) items.push(pickRandom(choices, rnd));
   }
   // as many enhanced items as the member has (Descend; the farm has none), on random ones of its own
@@ -51,7 +51,7 @@ function rivalKit(kit, rng = Math.random, hero = null) {
 
 // The duel, played at once like a trip (play.js simulate): the member's hero against the rival. Returns a run the fight screens can replay:
 //   { encounter: true, hero, rival, won, timedOut, seconds, rejuvsUsed, frames, log: [[seconds, text]] }
-// `rejuvs`: the hero's Rejuvs work here like in the siege and are used up (his call, Oct 10); a rival never has any.
+// `rejuvs`: the hero's Rejuvs work here like in the siege and are used up; a rival never has any.
 function duel(heroName, kit, rivalName, theirs, { rng = Math.random, rejuvs = 0 } = {}) {
   const startKit = { ...kit, kept: { ...kit.kept } }; // the build as the duel started (the breakdown's Your Build)
   const hero = buildHero(heroName, kit);

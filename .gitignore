@@ -9,9 +9,6 @@ data/*.jsonl
 data/backups/
 # audit-log copies of members' images: private, never upload
 data/auditFiles/
-# mock-up scratch folder
-Claude outputs/
-.claude/
 # copies made by /souls reset-all
 data/resetBackups/
 # copy of every member file made before the move to per-server data

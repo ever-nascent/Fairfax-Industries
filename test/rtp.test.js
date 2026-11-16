@@ -1,4 +1,4 @@
-// Run: node --test. What each betting game gives back in the long run (his call, Oct 5: about 95% everywhere), so a
+// Run: node --test. What each betting game gives back in the long run (about 95% everywhere), so a
 // change to a payout or a rule can't quietly move the odds. Throwaway data folder, never the live data/.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('./group')(__filename);

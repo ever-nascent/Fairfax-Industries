@@ -1,16 +1,16 @@
 // Solomon's abilities (deadlock.wiki/Solomon, checked Oct 10 2026; page updated that day). Numbers come from the wiki data through
 // Ability.value(); this file is only what each ability does. His pieces stay on the board and are moved by hand in the game; here nobody steers,
-// so (his calls, Oct 10): squares hit the enemies standing within their reach of the front one, once each time they light up; the rooks hit again
+// so: squares hit the enemies standing within their reach of the front one, once each time they light up; the rooks hit again
 // on every bounce (there is always a wall, the Doorman's cart rule). Taken by me: moving a piece never stops him shooting; the King's barrier goes
 // up whenever ready and his one move slips a blast (like Dynamo and Mina); the Queen leaps as soon as each leap is ready; Checkmate takes any enemy.
 const { Ability } = require('./../ability');
 const { isBoss, npcShare } = require('./../items');
 
 // How many times the bishop is moved before Solomon recalls it (and its cooldown starts). Infinity = it stays out all fight, the game as written.
-// ponytail: the one knob for how strong the bishop is; his call once he has seen the numbers (server-plan.md "Solomon").
+// the one knob for how strong the bishop is; once the numbers are checked.
 const BISHOP = { moves: Infinity };
 const SQUARE = 3; // metres a square (the game data's GroundAuraSpacing)
-const BOUNCE = 1; // seconds between two passes of the rooks. ponytail: the wiki gives no rook speed.
+const BOUNCE = 1; // seconds between two passes of the rooks. the wiki gives no rook speed.
 
 const boons = (a) => a.unit.boons ?? 0;
 // a "power_increase" number: what the wiki data adds per boon (Ability.value() doesn't read it)
@@ -114,7 +114,7 @@ class KingsideKnight extends Ability {
 }
 
 // 3. Rook Battery: a pair of rooks runs through the enemies in front: spirit damage and an immobilize (he walks up and melees), and again every
-// time they come back off a wall (his call). T1: the enemies hit attack slower for a while (an NPC deals that much less damage, the Sinclair rule).
+// time they come back off a wall. T1: the enemies hit attack slower for a while (an NPC deals that much less damage, the Sinclair rule).
 // T2: a share of their current health on top (cut against NPCs like every health share). T3: one more bounce, shorter cooldown, a longer immobilize.
 class RookBattery extends Ability {
   want(fight) { return fight.foes.length > 0; }
@@ -169,7 +169,7 @@ class DevelopQueen extends Ability {
       }
     };
     hit(SQUARE, false);
-    fight.at(0.5, () => fight.running(this, () => { if (this.unit.alive) hit(squares(this), true); })); // ponytail: the bishop's square delay; the wiki gives the queen's none
+    fight.at(0.5, () => fight.running(this, () => { if (this.unit.alive) hit(squares(this), true); })); // the bishop's square delay; the wiki gives the queen's none
   }
 
   tick(fight) {

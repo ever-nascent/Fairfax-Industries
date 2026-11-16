@@ -2,7 +2,7 @@
 const { createJsonStore } = require('./jsonAdapter');
 const { currentGuild } = require('../utils/guildContext');
 
-// Stores whose entries are a member's own progress: one copy per server (his call, Oct 30). Their keys are saved as
+// Stores whose entries are a member's own progress: one copy per server. Their keys are saved as
 // `<server id>:<user id>`; `getStore` hands back a view of the current server's part (guildContext.js), so callers
 // keep using plain user ids. `all()` lists only this server's entries, ids without the prefix.
 const PER_SERVER = new Set(['xp', 'farm', 'quests', 'lockle', 'hideouts']);

@@ -1,4 +1,4 @@
-// Tournaments after sign-up (steps 3 to 7 of server-plan.md "Scrims and tournaments"): verification reviews, closing sign-ups, making the bracket,
+// Tournaments after sign-up (steps 3 to 7 of "Scrims and tournaments"): verification reviews, closing sign-ups, making the bracket,
 // match times, pings, Check-In, results, scrims, ending a tournament, its history and cleanup.
 // Teams and sign-up: tournaments.js. Bracket maths: bracket.js. Lookups and the review embed: verification.js.
 // Commands: commands/general/tournament.js, team.js, scrim.js. Buttons: components/tournament.js. The minute sweep: events/tournamentReady.js.
@@ -370,7 +370,7 @@ const resultRow = (t, matchId) => new ActionRowBuilder().addComponents(
   new ButtonBuilder().setCustomId(`${RESULT_ID}:${t.id}:${matchId}:x`).setLabel('Dispute').setStyle(ButtonStyle.Danger),
 );
 
-// The other Captain answers a report. Confirm records it; Dispute hands it to the organizers. Returns { ok, t, before, confirmed, ... }.
+// The other Captain answers a report. Confirm records it; Dispute hands it to the organizers. Returns { ok, t, before, confirmed,... }.
 const answerReport = (id, matchId, byId, confirm) => T.change(id, (t) => {
   const m = t.bracket?.matches[matchId];
   if (!m?.report || m.report.disputed) return T.no('noReport');
@@ -566,7 +566,7 @@ async function exportText(channel, maxBytes = EXPORT_MAX_BYTES) {
   return { text: lines.reverse().join('\n'), count: lines.length, cut };
 }
 
-// Deletes every team channel, role and category of an ended tournament. With `exportChannel`, each team's chat is posted there first as a .txt file.
+// Deletes every team channel, role and category of an ended tournament. With `exportChannel`, each team's chat is posted there first as a.txt file.
 // Returns { ok, teams, exported, failed: [team names whose chat could not be exported; their channels are kept] }.
 async function cleanup(guild, id, exportChannel = null) {
   const t = await T.getTournament(id);

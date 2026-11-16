@@ -33,7 +33,7 @@ class SiphonLife extends Ability {
 }
 
 // 2. Shoulder Charge: rams the first enemy for spirit damage and stuns it. T3: every pellet hits harder for a few seconds after.
-// ponytail: the stun needs a wall in the game; here every charge ends in one.
+// the stun needs a wall in the game; here every charge ends in one.
 class ShoulderCharge extends Ability {
   want(fight) {
     return fight.foes.length > 0;
@@ -90,7 +90,7 @@ class InfernalResilience extends Ability {
 }
 
 // 4. Seismic Impact: leaps and crashes down on every enemy within its radius for spirit damage and a stun.
-// T3: Unstoppable while it lands (immune to a blast's curse or stomp). ponytail: the leap takes no time here.
+// T3: Unstoppable while it lands (immune to a blast's curse or stomp). the leap takes no time here.
 class SeismicImpact extends Ability {
   want(fight) {
     return fight.foes.length > 0;

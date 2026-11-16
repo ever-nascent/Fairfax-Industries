@@ -1,6 +1,6 @@
 // Ivy's abilities (deadlock.wiki/Ivy, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through Ability.value(); this file
-// is only what each ability does. His calls: ally abilities work on the hero alone (Oct 2); Kudzu Connection gives half its bonuses, the game's
-// own rule for Ivy with no connection (Oct 5).
+// is only what each ability does. ally abilities work on the hero alone; Kudzu Connection gives half its bonuses, the game's
+// own rule for Ivy with no connection.
 const { Ability } = require('./../ability');
 const { DT } = require('./../engine');
 
@@ -35,7 +35,7 @@ class EntanglingThorns extends Ability {
   }
 }
 
-// 2. Kudzu Connection: with no ally to connect to, the game gives Ivy half its bonuses (his call: that rule): fire rate and bullet lifesteal for a
+// 2. Kudzu Connection: with no ally to connect to, the game gives Ivy half its bonuses (that rule): fire rate and bullet lifesteal for a
 // while. No replicated healing: there is nobody to copy it from. T1: move speed. T2: more of both. T3: always on.
 const SOLO = 0.5;
 class KudzuConnection extends Ability {
@@ -75,7 +75,7 @@ class StoneForm extends Ability {
 
 // 4. Air Drop: nobody to carry, so she flies solo and drops a bomb: spirit damage in a wide area, then more damage dealt for a while.
 // T1: a barrier when she lands. T2: the enemies hit are slowed. T3: and silenced; better spirit scaling.
-// ponytail: the bomb lands at once and the flight isn't simulated; the barrier lasts as long as the damage bonus (the wiki gives it no time).
+// the bomb lands at once and the flight isn't simulated; the barrier lasts as long as the damage bonus (the wiki gives it no time).
 class AirDrop extends Ability {
   want(fight) { return fight.foes.length > 0; }
 

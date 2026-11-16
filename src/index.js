@@ -1,7 +1,7 @@
 // The entry point: `npm start` / Start Bot.bat runs this file. In order: back up the souls files, run the one-time economy migrations,
 // load every command (src/commands) and event (src/events), register the slash commands with Discord, then log in.
 // Nothing feature-specific lives here; to add a feature, add a command/event/component file and it is picked up on its own.
-try { process.loadEnvFile(); } catch {} // .env (missing = the DISCORD_TOKEN check below says so)
+try { process.loadEnvFile(); } catch {} //.env (missing = the DISCORD_TOKEN check below says so)
 const { Client, GatewayIntentBits, Partials, REST } = require('discord.js');
 const { loadCommands } = require('./handlers/loadCommands');
 const { loadEvents } = require('./handlers/loadEvents');

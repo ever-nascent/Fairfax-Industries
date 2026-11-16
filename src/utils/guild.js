@@ -1,5 +1,5 @@
 // The home server (Fairfax) and setup helpers for channels and emojis. The bot serves any server; `isHomeGuild` is for the
-// features that are built for Fairfax only (welcome, the audit log, stream alerts, Hideouts ...).
+// features that are built for Fairfax only (welcome, the audit log, stream alerts, Hideouts...).
 const { ChannelType } = require('discord.js');
 const { GUILD_ID } = require('../config');
 

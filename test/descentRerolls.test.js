@@ -1,3 +1,4 @@
+// Descend item rerolls (3 a floor, none for boss rewards) and the Enhanced pity counter (src/utils/farm/descent.js).
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-dreroll-'));
 const test = require('./group')(__filename);
 const assert = require('node:assert/strict');
@@ -77,7 +78,7 @@ test('taking an upgrade also gives its shown lower-tier BONUS item, but only whe
   assert.equal(result.bonus, 'Extra Regen');
   assert.deepEqual(d.items.vitality.sort(), ['Extra Regen', 'Fortitude'].sort());
 
-  // his call Oct 26: a BONUS only comes with room for it once the upgrade is in, and nothing ever asks which item to give up for one
+  // a BONUS only comes with room for it once the upgrade is in, and nothing ever asks which item to give up for one
   const build = (seed, size) => {
     const run = D.newRun('Haze', seed);
     run.items.vitality = ['Extra Health'];

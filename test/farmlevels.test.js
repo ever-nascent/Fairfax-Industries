@@ -12,7 +12,7 @@ const views = require('../src/utils/farm/views');
 
 const seeded = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
 const member = (id) => ({ id, guild: { emojis: { cache: { find: () => undefined } } }, toString: () => `<@${id}>` });
-// the current hero's own souls (his call, Oct 11: farm souls are per hero, apart from the server balance)
+// the current hero's own souls (farm souls are per hero, apart from the server balance)
 const giveSouls = (id, n) => changeRecord(id, (r) => { r.souls += n; });
 const heroSouls = async (id) => (await getFarmUser(id)).souls;
 
@@ -160,7 +160,7 @@ test('a trip adds its souls to the hero (levels), and the hero screen fits Disco
   assert.strictEqual(view.components.length, 2, 'upgrade menu, buttons');
   const sell = await views.shopView(member(id), { ...record, souls: 5, items: { weapon: ['Rapid Rounds'] } }, 'sell');
   assert.strictEqual(sell.components.length, 3, 'tabs, sell menu, Back / Hero');
-  // the item shop (his calls, Oct 3): tabs, price buttons, one buy menu, Back / Hero; a picture drawn like the in-game shop
+  // the item shop: tabs, price buttons, one buy menu, Back / Hero; a picture drawn like the in-game shop
   for (const kind of ['weapon', 'vitality', 'spirit']) {
     const menus = [];
     for (const tier of [1, 2, 3, 4]) {
@@ -212,7 +212,7 @@ test('every target grows with each clear, up to a cap, and pays a little more', 
   assert.strictEqual((await getFarmUser('old1')).clears['mid-boss'], 4);
 });
 
-test('progress is per hero: souls, level, tiers, items, cooldowns, lanes, growth, Rejuvs and buffs are saved under the hero (his calls, Oct 2 and Oct 11)', async () => {
+test('progress is per hero: souls, level, tiers, items, cooldowns, lanes, growth, Rejuvs and buffs are saved under the hero (and Oct 11)', async () => {
   const { updateFarmUser, updateHero } = require('../src/utils/farm/play');
   const farm = require('../src/storage').getStore('farm');
   // a record from before progress was per hero: its level, tiers and items become its hero's; what was shared until Oct 11 too
@@ -235,7 +235,7 @@ test('progress is per hero: souls, level, tiers, items, cooldowns, lanes, growth
   // updateHero edits a hero that is not the current one, without switching
   assert.strictEqual(await updateHero('ph1', 'Abrams', (h, r) => { h.souls += 3; return `${r.hero} ${h.souls}`; }), 'Haze 10');
   assert.deepStrictEqual([(await getFarmUser('ph1')).hero, (await farm.get('ph1')).heroes.Abrams.souls], ['Haze', 10]);
-  // what was shared until Oct 11 goes to Haze (his call: the only hero anyone had played), even when another hero is the current one
+  // what was shared until Oct 11 goes to Haze (the only hero anyone had played), even when another hero is the current one
   await farm.set('ph2', { hero: 'Abrams', heroes: { Haze: { earned: 900, tiers: {}, items: {} }, Abrams: { earned: 0, tiers: {}, items: {} } }, buffs: { fireRate: 1 }, rejuvs: 2, down: { 'guardian:york': 5 }, bridge: ['gun'], bestWave: 4, tokens: 1 });
   await updateFarmUser('ph2', () => {});
   const moved = await farm.get('ph2');

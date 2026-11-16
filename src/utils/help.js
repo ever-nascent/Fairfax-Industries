@@ -1,4 +1,4 @@
-// /help: every page of the help menu, and the message that shows one (his ask, Nov 4: "an in-depth, interactive help menu that goes over every
+// /help: every page of the help menu, and the message that shows one ("an in-depth, interactive help menu that goes over every
 // command, and what it does and how to use the bot", with tutorials for Hero Farming, Descend and the Shop).
 // A category is a list of pages; the dropdowns pick a category and a page, Back / Next step through it (a tutorial is just a category whose
 // first pages are steps). A page with `command` also gets "How To Use" fields built from that command's own options (its `data`), so a new
@@ -146,7 +146,7 @@ function book(ctx) {
             '',
             "**Hero Farming is apart:** each farm hero earns and spends its **own** souls. They never touch your balance, and your balance never buys farm items.",
             '',
-            'Check your balance any time with `/souls balance` (only you see it).',
+            'Check your balance with `/souls balance` (only you see it).',
           ].join('\n'),
         },
         {
@@ -416,7 +416,7 @@ function book(ctx) {
             '',
             '**1.** Run `/base`. The first time, it opens the **hero pick**: your first hero is free.',
             '**2.** Everything is saved **per hero**: its own souls, level, items, ability points, cooldowns, buffs and Rejuvs.',
-            '**3.** More heroes are unlocked with **Character Unlock Tokens** (step 10). Switching between unlocked heroes is free, any time (**Switch Hero** on `/base`).',
+            '**3.** More heroes are unlocked with **Character Unlock Tokens** (step 10). Switching between unlocked heroes is free (**Switch Hero** on `/base`).',
             '',
             "Farm messages are public, but only you can press the buttons that act. Anyone can press **Hero**, the build buttons or **Damage Breakdown** to see yours privately.",
           ].join('\n'),
@@ -774,7 +774,7 @@ function book(ctx) {
             'Everyone can use `bracket` and `history`. The rest is for tournament organizers.',
             '',
             '- `create`, `close`, `start`, `end` and `cleanup` run the tournament.',
-            '- `simulate` is a practice run with fake teams. You get the real bracket and buttons for the commands, and it asks if you want team channels. Nothing is saved.',
+            '- `simulate` is a practice run with fake teams. You get the real bracket and buttons for the commands, and it asks if you want team channels.',
             '- `teams`, `seed`, `roster-add` and `roster-remove` manage its teams. The roster commands also work after rosters lock.',
             '- `schedule` and `result` run its matches. A match is named by its code, like `R1-2`.',
             '- Write a time like `2026-11-20 18:00` in the time zone you gave as `utc-offset`, or paste a Discord timestamp.',
@@ -856,7 +856,7 @@ function book(ctx) {
         { title: '/auto-mod', command: 'auto-mod', text: 'Censored phrases: a message with one (as a whole word, any case or accent) is deleted and the author is warned. Members with Manage Messages are exempt.' },
         { title: '/export-chat', command: 'export-chat', text: 'Saves a whole channel as one HTML file and sends it to you privately. Download it and open it in a browser. You can only export a channel you can read. A very long channel is cut to its newest messages.' },
         { title: '/audit-log-config', command: 'audit-log-config', text: "What #audit-log records (every event can be turned on or off), ignored channels and members, the channel, the new-account warning, and a member's full history." },
-        { title: '/setup', command: 'setup', text: 'Walks you through setting this server up, one step at a time: the welcome message, the audit log, go-live alerts, level-up announcements, Hideouts, LFG, the Weekly Jackpot and tournament organizers. Every step has a **Skip** button, and nothing is ever undone. Run it again any time.' },
+        { title: '/setup', command: 'setup', text: 'Walks you through setting this server up, one step at a time: the welcome message, the audit log, go-live alerts, level-up announcements, Hideouts, LFG, the Weekly Jackpot and tournament organizers. Every step has a **Skip** button. Run it again to change something.' },
         { title: '/welcome-config', command: 'welcome-config', text: 'The welcome message for new members: on or off, the channel, and the text (`{member}`, `{server}` and `{count}` are filled in).' },
         { title: '/stream-config', command: 'stream-config', text: "The Twitch and TikTok go-live alerts: the channel, the streamer names, who gets pinged (everyone, here, a role or nobody) and the text under the stream title." },
         { title: '/shop-config', command: 'shop-config', text: "Sets up this server's Shop: sections on or off, every price, the Hideout level, and where Color Roles are made." },

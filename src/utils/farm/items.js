@@ -1,7 +1,7 @@
-// Hero Farming: what items do in a fight. An item's stats (health, fire rate, lifesteal ...) are added by stats.js; this file is the rest of what
+// Hero Farming: what items do in a fight. An item's stats (health, fire rate, lifesteal...) are added by stats.js; this file is the rest of what
 // its card says: procs, buffs that start after a reload, a cast, a dash or a melee, debuffs on enemies, barriers, heals, parries, imbues and the
 // actives a hero uses by itself. Numbers come from the wiki card through `value()` (with spirit power, boon and duration scaling), so only the rules
-// live here, grouped by the system that drives them. Every shop item and legendary is here or is plain stats (stats.js). Rules: server-plan.md.
+// live here, grouped by the system that drives them. Every shop item and legendary is here or is plain stats (stats.js)..
 // The engine (engine.js) calls these hooks, like it does for a hero's abilities (ability.js):
 //   on(event, fight, payload)    'damage' 'bulletHit' 'kill' 'cast' 'reloadStart' 'reloadEnd' 'melee' 'dash' 'slide' 'heal' 'attacked' (an enemy hit
 //                                about to land: change hit.amount) 'blast' (set parried) 'cc' (set blocked) 'ccLanded' 'unstealth'
@@ -15,27 +15,27 @@
 //   preventDeath(fight)          true to survive a killing blow; respawnCut(fight) how much shorter a Rejuv's wait is
 // Enemies on a farm are all NPCs, so "enemy hero" effects work on every enemy here; the wiki's own NPC reductions are kept where it gives them.
 // Allies' items work on the hero only (it fights alone).
-// ponytail: headshots (the hero's Precision) and the active-reload timing are chances, the engine has no aiming.
+// headshots (the hero's Precision) and the active-reload timing are chances, the engine has no aiming.
 const { MIN_COOLDOWN } = require('./ability');
 const { SPIRIT_LIFESTEAL_VS_NPC, isHeadshot, missChance, headshotChance } = require('./engine');
 
 // Effects that take a share of an enemy's max health are weaker against NPCs: half against camp creeps (the wiki's own DotMultiplerTroopers 0.5 for Toxic
-// Bullets), and far less against bosses. ponytail: the boss share is a guess, so a 13,000 health Mid-Boss doesn't lose a quarter of it to one item.
+// Bullets), and far less against bosses. the boss share is a guess, so a 13,000 health Mid-Boss doesn't lose a quarter of it to one item.
 const BOSS_HEALTH = 3000;
 const isBoss = (unit) => unit.stats.maxHealth > BOSS_HEALTH;
 const npcShare = (target) => (isBoss(target) ? 0.15 : 0.5);
 // Monster Rounds' "+X% weapon damage vs. NPCs" also reaches the hero's summons (the wiki's list: Graves' Deadheads and Ghouls, McGinnis' turrets); a rival hero takes none of it.
 const summonScale = (unit, target) => (target.team === 'hero' ? 1 : 1 + (unit.stats.npcWeapon ?? 0));
 const ACTIVE_RELOAD_CHANCE = 0.7;
-// ponytail: placeholders for what the cards don't say: how long Shadow Weave lies low before striking,
-// Shrink Ray's evasion (his call, Oct 3). Not in our copy of the legendaries' cards (deadlock-api.com has them, Oct 22): Mystical Piano's 2 s stun,
+// placeholders for what the cards don't say: how long Shadow Weave lies low before striking,
+// Shrink Ray's evasion. Not in our copy of the legendaries' cards (deadlock-api.com has them, Oct 22): Mystical Piano's 2 s stun,
 // Prism Blast's 30 m beam.
 const PARRY_COOLDOWN = 4.5; // the wiki's Parry page: a missed parry waits 4.5 s (Rebuttal's -1.75 makes it 2.75)
 const LIE_LOW = 4;
 const SHRINK_EVASION = 0.2;
-const PIANO_STUN = 6; // 2 s -> 6 s (Nov 4, his ask: three times as long, to make it viable)
+const PIANO_STUN = 6; // 2 s -> 6 s (three times as long, to make it viable)
 const PRISM_REACH = 30;
-const CONCOCTION_LEFT = 0.5; // Unstable Concoction leaves the hero at this share of max health (Nov 4, his pick: it left 1 health and was useless)
+const CONCOCTION_LEFT = 0.5; // Unstable Concoction leaves the hero at this share of max health (it left 1 health and was useless)
 // durations the hero's duration bonus doesn't stretch (timers, not effects)
 const KEEP = new Set(['ImmunityDuration', 'BuildUpDuration', 'DamageThresholdDuration', 'InvisFadeToDuration', 'SummonDuration', 'DelayDuration', 'ShrinkDuration']);
 const num = (v) => (typeof v === 'number' ? v : parseFloat(v) || 0);
@@ -192,7 +192,7 @@ define('Berserker', {
   },
   weaponBonus() { return this.stacks * this.pct('WeaponPowerPerStack'); },
 });
-// Kill stacks kept on the hero from fight to fight until it dies (his calls, Oct 22: Glass Cannon "perma until death", Trophy Collector "trophy stacks
+// Kill stacks kept on the hero from fight to fight until it dies (Glass Cannon "perma until death", Trophy Collector "trophy stacks
 // disappear on death"): item name -> the item's stack field. `kept` on the hero's record (play.js); a death, even one a Rejuv gets the hero up from,
 // loses them all.
 const KEPT = { 'Glass Cannon': 'kills', 'Trophy Collector': 'stacks' };
@@ -232,7 +232,7 @@ define('Fortitude', {
   tick(fight, dt) { if (fight.time - this.unit.lastHit >= this.value('RestoreDelay') && this.hurt < 1) fight.heal(this.unit, this.pct('HealLifePercentOutOfCombat') * this.maxHealth * dt, 'regen'); },
   dynamicMods() { return this.hurt >= this.value('HealthThreshold') / 100 ? { moveSpeed: this.value('BonusMoveSpeed') } : null; },
 });
-// Trophy Collector: every kill is a stack (max 16): sprint, ability range, and souls per minute (his call, Oct 3: they go into a won trip's pay);
+// Trophy Collector: every kill is a stack (max 16): sprint, ability range, and souls per minute (they go into a won trip's pay);
 // kept until death (above).
 define('Trophy Collector', {
   init() { this.stacks = keptAtStart(this); },
@@ -277,7 +277,7 @@ define('Crippling Headshot', {
 });
 define('Lucky Shot', { on(event, fight, p) { if (bulletHit(this, event, p) && fight.rng() < this.pct('ProcChance')) fight.damage(this.unit, p.target, p.amount * this.pct('CritDamagePercent'), 'bullet', { events: false, noEvade: true }); } }); // the bonus can't be evaded (the wiki)
 // Ricochet: the bounce is a bullet too, so other bullet items proc on it (but it doesn't bounce again, can't headshot, and Tesla Bullets, Capacitor and
-// Siphon Bullets skip it: the wiki). Bullets bounce off bosses, Walkers and Shrines too: the wiki's "no bounce off objectives" doesn't apply, they aren't objectives (his calls Oct 30 and 31).
+// Siphon Bullets skip it: the wiki). Bullets bounce off bosses, Walkers and Shrines too: the wiki's "no bounce off objectives" doesn't apply, they aren't objectives.
 define('Ricochet', {
   on(event, fight, p) {
     if (!bulletHit(this, event, p) || p.opts.ricochet || p.opts.pierced) return; // a bullet that pierces bounces off the first target only (the wiki)
@@ -384,10 +384,10 @@ define('Haunting Shot', {
 });
 
 // Bullets build up on a target; a full bar (100) triggers the effect. The card's build-up per shot is scaled by each hero's gun (the wiki's Toxic
-// Bullets table, checked Oct 3 2026: Haze 7.4% a bullet, Abrams 3.4% a pellet x 9, Mina 15.7%, Celeste 28.7%, Paige 22.3%, Apollo 21.5%, Bebop 6.1%, Billy 6.1%, Calico 1.5% a pellet x 9, The Doorman 28.7%, Drifter 8% a pellet x 3, Dynamo 16.2%, Graves 7.2%, Grey Talon 29.3%, Holliday 25.1%, Infernus 7.4%, Ivy 5.3% and Kelvin 16.2% (Oct 5), where the card says 1.28%).
-// ponytail: a hero missing here builds up at the middle of them; add its row from that table when it gets a file in heroes/.
-const BUILD_UP = { Haze: 7.4 / 1.28, Abrams: (3.4 * 9) / 1.28, Mina: 15.7 / 1.28, Celeste: 28.7 / 1.28, Paige: 26.0 / 1.28, Apollo: 21.5 / 1.28, Bebop: 6.1 / 1.28, Billy: 6.1 / 1.28, Calico: (1.5 * 9) / 1.28, 'The Doorman': 30.2 / 1.28, Drifter: (8 * 3) / 1.28, Dynamo: 16.2 / 1.28, Graves: 7.2 / 1.28, 'Grey Talon': 29.3 / 1.28, Holliday: 25.1 / 1.28, Infernus: 7.4 / 1.28, Ivy: 5.3 / 1.28, Kelvin: 16.2 / 1.28, 'Lady Geist': 25.1 / 1.28, Lash: 11.4 / 1.28, McGinnis: 6.1 / 1.28, Mirage: 21.0 / 1.28, 'Mo & Krill': (3.1 * 4) / 1.28, Paradox: 9.1 / 1.28, Pocket: (3.8 * 7) / 1.28, Rem: 16.1 / 1.28, Seven: 11.4 / 1.28, Shiv: (4.6 * 6) / 1.28, Silver: (5.1 * 7) / 1.28, Sinclair: 21.0 / 1.28, Venator: 8.7 / 1.28, Victor: 11.4 / 1.28, Vindicta: 14.7 / 1.28, Viscous: 13.6 / 1.28, Vyper: 5.1 / 1.28, Warden: 16.2 / 1.28, Wraith: 6.7 / 1.28, Yamato: (4.6 * 5) / 1.28, Baba: (6.2 * 3) / 1.28, 'Rat King': (6.5 * 2) / 1.28, Solomon: 26.0 / 1.28, 'Deadman Danny': 15.6 / 1.28, 'Nurse Harrow': 21.5 / 1.28, Violet: 30.8 / 1.28 }; // Baba: 6.2% a pellet x 3, Rat King: 6.5% a pellet x 2, Solomon 26% (table checked Oct 10); Danny 15.6% an uncharged shot (Oct 16); Nurse Harrow 21.5%, Violet 30.8% (Oct 20); table re-checked Oct 22: Paige 26%, The Doorman 30.2%, Nurse Harrow 21.5% (were 22.3, 28.7, 7.4)
-// The cards' build-up numbers don't compare across items: the wiki's own per-hero tables (Oct 22) have Slowing Bullets building 1.83x as fast as Toxic
+// Bullets table, checked Oct 3 2026: Haze 7.4% a bullet, Abrams 3.4% a pellet x 9, Mina 15.7%, Celeste 28.7%, Paige 22.3%, Apollo 21.5%, Bebop 6.1%, Billy 6.1%, Calico 1.5% a pellet x 9, The Doorman 28.7%, Drifter 8% a pellet x 3, Dynamo 16.2%, Graves 7.2%, Grey Talon 29.3%, Holliday 25.1%, Infernus 7.4%, Ivy 5.3% and Kelvin 16.2%, where the card says 1.28%).
+// a hero missing here builds up at the middle of them; add its row from that table when it gets a file in heroes/.
+const BUILD_UP = { Haze: 7.4 / 1.28, Abrams: (3.4 * 9) / 1.28, Mina: 15.7 / 1.28, Celeste: 28.7 / 1.28, Paige: 26.0 / 1.28, Apollo: 21.5 / 1.28, Bebop: 6.1 / 1.28, Billy: 6.1 / 1.28, Calico: (1.5 * 9) / 1.28, 'The Doorman': 30.2 / 1.28, Drifter: (8 * 3) / 1.28, Dynamo: 16.2 / 1.28, Graves: 7.2 / 1.28, 'Grey Talon': 29.3 / 1.28, Holliday: 25.1 / 1.28, Infernus: 7.4 / 1.28, Ivy: 5.3 / 1.28, Kelvin: 16.2 / 1.28, 'Lady Geist': 25.1 / 1.28, Lash: 11.4 / 1.28, McGinnis: 6.1 / 1.28, Mirage: 21.0 / 1.28, 'Mo & Krill': (3.1 * 4) / 1.28, Paradox: 9.1 / 1.28, Pocket: (3.8 * 7) / 1.28, Rem: 16.1 / 1.28, Seven: 11.4 / 1.28, Shiv: (4.6 * 6) / 1.28, Silver: (5.1 * 7) / 1.28, Sinclair: 21.0 / 1.28, Venator: 8.7 / 1.28, Victor: 11.4 / 1.28, Vindicta: 14.7 / 1.28, Viscous: 13.6 / 1.28, Vyper: 5.1 / 1.28, Warden: 16.2 / 1.28, Wraith: 6.7 / 1.28, Yamato: (4.6 * 5) / 1.28, Baba: (6.2 * 3) / 1.28, 'Rat King': (6.5 * 2) / 1.28, Solomon: 26.0 / 1.28, 'Deadman Danny': 15.6 / 1.28, 'Nurse Harrow': 21.5 / 1.28, Violet: 30.8 / 1.28 }; // Baba: 6.2% a pellet x 3, Rat King: 6.5% a pellet x 2, Solomon 26% (table checked Oct 10); Danny 15.6% an uncharged shot; Nurse Harrow 21.5%, Violet 30.8%; table re-checked Oct 22: Paige 26%, The Doorman 30.2%, Nurse Harrow 21.5% (were 22.3, 28.7, 7.4)
+// The cards' build-up numbers don't compare across items: the wiki's own per-hero tables have Slowing Bullets building 1.83x as fast as Toxic
 // Bullets for every hero (Weighted Shots the same), though their cards say 0.7 to Toxic's 1.28. So an item's card number is scaled to match its table.
 const BUILD_SCALE = { 'Slowing Bullets': (1.83 * 1.28) / 0.7, 'Weighted Shots': (1.83 * 1.28) / 0.7, 'Spiritual Overflow': (1.188 * 1.28) / 1.08, Silencer: (1.23 * 1.28) / 1.04, Inhibitor: (1.662 * 1.28) / 0.77 }; // Weighted Shots: Slowing Bullets' table; Spiritual Overflow 1.188x, Silencer 1.23x, Inhibitor 1.662x Toxic (their tables, Oct 22)
 const buildUpPerShot = (item) => item.value('BuildUpPerShot') * (BUILD_UP[item.unit.name] ?? 15 / 1.28) * (BUILD_SCALE[item.name] ?? 1);
@@ -407,7 +407,7 @@ define('Toxic Bullets', buildUp(function (fight, target) { // NPCs take half (Do
 const inhibit = function (fight, target) { this.debuff(fight, target, 'inhibit', this.value('DebuffDuration'), { damageDealt: this.pct('OutgoingDamagePenaltyPercent'), healAmp: this.pct('HealAmpReceivePenaltyPercent') }); };
 const inhibitor = buildUp(inhibit);
 define('Inhibitor', inhibitor, { on(event, fight, p) { if (bulletHit(this, event, p) && this.marked(p.target, 'inhibit')) inhibit.call(this, fight, p.target); else inhibitor.on.call(this, event, fight, p); } });
-// Silencer (back in the shop, his call Oct 22): every bullet cuts the enemy's spirit damage 25% for 6 s; bullets build up to a 2.5 s silence (a
+// Silencer (back in the shop): every bullet cuts the enemy's spirit damage 25% for 6 s; bullets build up to a 2.5 s silence (a
 // silenced enemy holds its blast), then that enemy can't be built up for 10 s after it ends (the wiki).
 const silencer = buildUp(function (fight, target) {
   this.debuff(fight, target, 'silence', this.value('SilenceDuration'), {}, ['silence']);
@@ -581,7 +581,7 @@ define('Mystic Conduit', {
   },
 });
 
-// ===== MELEE (his call, Oct 3: the hero melees when it has a reason; a melee item's ready proc is one) =====
+// ===== MELEE (the hero melees when it has a reason; a melee item's ready proc is one) =====
 const meleeReady = { wantsMelee() { return this.cdLeft <= 0; } };
 const onMelee = (fn) => ({ on(event, fight, p) { if (event === 'melee' && this.mine(p.source)) fn.call(this, fight, p); } });
 define('Melee Lifesteal', { wantsMelee() { return this.cdLeft <= 0 && this.hurt < 0.9; } },
@@ -644,9 +644,9 @@ define('Shadow Strike', {
 });
 
 // ===== PARRIES AND HITS: CHANGE AN ENEMY'S HIT OR BLAST BEFORE IT LANDS =====
-// Rebuttal (his call, Oct 3): parries the front enemy's next hit on its cooldown: heals it, sends it back, then more damage for a while. The parry itself
-// (his call, Oct 22; the wiki's Parry page) stuns the attacker 2.75 s and it takes 25% more damage meanwhile (the page gives no length for that; taken
-// as the stun's). Melee swings only, never a bullet or spirit hit (his call, Oct 31; a rival's gun shots used to be parried and the stun lasted as long as the cooldown, so it locked the hero out for good). A duel's heavy melee has its own parry (engine.js melee). Walkers, the Mid-Boss, the Shrines and the Patron can't be parried (his call, Oct 22).
+// Rebuttal: parries the front enemy's next hit on its cooldown: heals it, sends it back, then more damage for a while. The parry itself
+// (the wiki's Parry page) stuns the attacker 2.75 s and it takes 25% more damage meanwhile (the page gives no length for that; taken
+// as the stun's). Melee swings only, never a bullet or spirit hit (a rival's gun shots used to be parried and the stun lasted as long as the cooldown, so it locked the hero out for good). A duel's heavy melee has its own parry (engine.js melee). Walkers, the Mid-Boss, the Shrines and the Patron can't be parried.
 const CURSE_STUN = 0.3; // Cursed Relic's short stun (the wiki)
 const REVERB_SLOW = 2; // Mystic Reverb's slow: the wiki gives no duration
 const PARRY_STUN = 2.75;
@@ -664,9 +664,9 @@ define('Rebuttal', {
     this.debuff(fight, hit.source, 'parried', PARRY_STUN, { damageTaken: PARRY_VULNERABLE }, ['stun']);
   },
 });
-// Counterspell (his call, Oct 3): parries the next enemy blast: no damage, no curse; heals and gives spirit power and speed.
-// Oct 28 (his call): any other crowd control but a curse (a stun, silence, grapple, disarm, sleep) is parried COUNTER_CHANCE of the time, then cooldown.
-const COUNTER_CHANCE = 0.5; // how often the parry is timed right (his call, Oct 28)
+// Counterspell: parries the next enemy blast: no damage, no curse; heals and gives spirit power and speed.
+// Oct 28: any other crowd control but a curse (a stun, silence, grapple, disarm, sleep) is parried COUNTER_CHANCE of the time, then cooldown.
+const COUNTER_CHANCE = 0.5; // how often the parry is timed right
 define('Counterspell', {
   on(event, fight, p) {
     if (p.target !== this.unit) return;
@@ -776,11 +776,11 @@ define('Guardian Ward', ACTIVE, barrierItem('GuardianWardCombatBarrier', 'BuffDu
 define('Divine Barrier', ACTIVE, barrierItem('CombatBarrier', 'BuffDuration', function (fight) { this.buff(fight, 'speed', this.value('BuffDuration'), { moveSpeed: this.value('BonusMoveSpeed') }); fight.cleanse(this.unit, 1, { stuns: false }); }));
 const hurtActive = (hurtBelow, cast) => ({ want(fight) { return fight.foes.length > 0 && this.hurt < hurtBelow; }, cast });
 // Healing actives are saved for the recovery they provide, rather than spent at the
-// first scratch. His call: a healing active starts below half health.
+// first scratch. a healing active starts below half health.
 const healActive = (cast) => hurtActive(0.5, cast);
 define('Healing Nova', ACTIVE, healActive(function (fight) { this.regen(fight, this.value('TotalHealthRegen') / this.value('RegenDuration'), this.value('RegenDuration')); }));
 define('Rescue Beam', ACTIVE, healActive(function (fight) { const t = this.value('AbilityChannelTime') || 2.5; this.regen(fight, (this.pct('HealPercentAmount') * this.maxHealth) / t, t); }));
-// Dispel Magic: used when something is on the hero to purge (a curse, a slow, a healing cut ...); only a purge that removed something heals and gives
+// Dispel Magic: used when something is on the hero to purge (a curse, a slow, a healing cut...); only a purge that removed something heals and gives
 // speed (the wiki).
 define('Dispel Magic', ACTIVE, {
   whileControlled: true, // usable while stunned or asleep (engine.js), never while cursed
@@ -793,7 +793,7 @@ define('Dispel Magic', ACTIVE, {
   },
 });
 define('Warp Stone', ACTIVE, {
-  want() { return false; }, // his call, Oct 24: teleport out of an incoming hit, regardless of health
+  want() { return false; }, // teleport out of an incoming hit, regardless of health
   cast(fight) { this.buff(fight, 'resist', this.value('CasterBuffDuration'), { bulletResist: this.pct('BulletResist') }); },
   on(event, fight, p) {
     if (p.target !== this.unit || p.source === this.unit || !this.ready() || this.unit.has('noItems') || this.unit.has('stun') || this.unit.has('blind')) return;
@@ -819,11 +819,11 @@ define('Metal Skin', ACTIVE, {
   want(fight) { return this.hurt < 0.8 && fight.foes.some((e) => e.stats.damageType === 'bullet' || e.stats.damageType === 'mixed'); },
   cast(fight) { this.buff(fight, 'metal', this.value('AbilityDuration'), { bulletTaken: -1, moveSpeed: this.value('ActiveMoveSpeedPenalty') }); }, // slower meanwhile (the wiki: -1.5 m/s)
 });
-// Healing Rite: a long heal over time; damage from a rival hero ends it (the game's "enemy players or objectives": bosses aren't objectives here, his call Oct 31).
+// Healing Rite: a long heal over time; damage from a rival hero ends it (the game's "enemy players or objectives": bosses aren't objectives here).
 define('Healing Rite', ACTIVE, healActive(function (fight) { this.regen(fight, this.value('TotalHealthRegen') / this.value('RegenDuration'), this.value('RegenDuration')); this.buff(fight, 'speed', this.value('RegenDuration'), { moveSpeed: this.value('BonusSprintSpeed') }); }), {
   on(event, fight, p) { if (event === 'damage' && p.target === this.unit && p.source.team === 'hero' && p.source !== this.unit) { fight.removeStatus(this.unit, `${this.name}:regen`); fight.removeStatus(this.unit, `${this.name}:speed`); } },
 });
-// Restorative Locket (his call, Oct 3): a stack per enemy blast and per enemy spirit hit (max 25); the active heals per stack and gives back stamina.
+// Restorative Locket: a stack per enemy blast and per enemy spirit hit (max 25); the active heals per stack and gives back stamina.
 define('Restorative Locket', ACTIVE, {
   init() { this.stacks = 0; },
   on(event, fight, p) {
@@ -853,7 +853,7 @@ define('Celestial Blessing', ACTIVE, hurtActive(0.5, function (fight) {
   fight.cleanse(this.unit);
   this.buff(fight, 'blessing', this.value('BuffDuration'), { moveSpeed: this.value('BuffMoveSpeedBonus'), staminaCdr: this.pct('StaminaCooldownReduction') });
 }));
-// Veil Walker (his call, Oct 3): the hero passes a veil every time it's ready: a heal, and invisibility with speed until it next attacks (the wiki: the
+// Veil Walker: the hero passes a veil every time it's ready: a heal, and invisibility with speed until it next attacks (the wiki: the
 // speed ends with the invisibility).
 define('Veil Walker', {
   tick(fight) {
@@ -886,7 +886,7 @@ define('Infuser', ACTIVE, buffActive('infuse', function () { return { spiritLife
 define('Heroic Aura', ACTIVE, buffActive('aura', function () { return { fireRate: this.pct('BonusFireRate'), moveSpeed: this.value('ActiveBonusMoveSpeed') }; }));
 define('Fleetfoot', ACTIVE, buffActive('fleet', function () { return { moveSpeed: this.value('ActiveBonusMoveSpeed'), slowResist: this.pct('SlowResistancePercent') }; }));
 define('Shrink Ray', ACTIVE, buffActive('shrink', function () { return { moveSpeed: this.value('BonusMoveSpeed'), fireRate: this.pct('BonusFireRate'), evasion: SHRINK_EVASION }; }, 'ShrinkDuration'));
-// Cultist Sacrifice (his call, Oct 3): eats one enemy that isn't a boss (or a rival hero) outright for 170% of its souls (a won trip pays them), then a long buff.
+// Cultist Sacrifice: eats one enemy that isn't a boss (or a rival hero) outright for 170% of its souls (a won trip pays them), then a long buff.
 define('Cultist Sacrifice', ACTIVE, {
   prey(fight) { return fight.foes.filter((e) => !isBoss(e) && e.team === 'enemy').sort((a, b) => b.health - a.health)[0]; },
   want(fight) { return !!this.prey(fight); },
@@ -898,10 +898,10 @@ define('Cultist Sacrifice', ACTIVE, {
     this.unit.addMaxHealth(this.value('BonusHealth'));
   },
 });
-// Split Shot (his call, Nov 8: it was a full-damage copy that never missed): for a few seconds every shot fires up to four more bullets in a 45 degree
+// Split Shot (it was a full-damage copy that never missed): for a few seconds every shot fires up to four more bullets in a 45 degree
 // cone (the wiki's SpreadAngleDegrees). Each reaches only an enemy inside the cone, rolls its own miss and headshot, and does the gun's damage at that
-// range. Hitting more than one enemy stacks weapon damage (any enemy, not only heroes: his call).
-// ponytail: enemies only have a depth (`offset`, 4 m apart), so the cone's width at the target's distance (2 x d x tan 22.5 degrees) is compared with it.
+// range. Hitting more than one enemy stacks weapon damage (any enemy, not only heroes).
+// enemies only have a depth (`offset`, 4 m apart), so the cone's width at the target's distance (2 x d x tan 22.5 degrees) is compared with it.
 const SPLIT_CONE = 2 * Math.tan(Math.PI / 8);
 define('Split Shot', ACTIVE, {
   init() { this.until = 0; this.stacks = 0; },
@@ -925,7 +925,7 @@ define('Split Shot', ACTIVE, {
 // ===== ACTIVES THAT HURT, HOLD OR SILENCE ENEMIES =====
 const blast = (hit, radius) => ({ cast(fight) { for (const e of radius ? this.near(fight, radius) : fight.foes) hit.call(this, fight, e); } });
 define('Cold Front', ACTIVE, blast(function (fight, e) { fight.damage(this.unit, e, this.value('Damage'), 'spirit'); this.slow(fight, e, this.pct('MovementSpeedSlow'), this.value('AbilityDuration')); }, 'EndRadius'));
-// Silence Wave: damage, and silenced enemies hold their blasts (his call, Oct 3).
+// Silence Wave: damage, and silenced enemies hold their blasts.
 define('Silence Wave', ACTIVE, blast(function (fight, e) { fight.damage(this.unit, e, this.value('Damage'), 'spirit'); this.debuff(fight, e, 'silence', this.value('AbilityDuration'), {}, ['silence']); }));
 define('Arctic Blast', ACTIVE, blast(function (fight, e) {
   fight.damage(this.unit, e, this.value('Damage'), 'spirit');
@@ -1023,7 +1023,7 @@ define('Torment Pulse', {
   },
 });
 
-// ===== VOID, STEALTH AND ESCAPES (his calls, Oct 3) =====
+// ===== VOID, STEALTH AND ESCAPES =====
 // Ethereal Shift: when low, a few seconds where nothing can touch the hero (nor can it act), then spirit, spirit resist and speed.
 define('Ethereal Shift', ACTIVE, hurtActive(0.35, function (fight) {
   const d = this.value('AbilityDuration');
@@ -1039,7 +1039,7 @@ define('Prism Blast', ACTIVE, {
     if (fight.time < this.until && fight.foes.length) for (const e of fight.near(PRISM_REACH * this.unit.range - fight.distance(this.unit, fight.foes[0]))) fight.damage(this.unit, e, this.value('DPS') * dt, 'spirit', { events: false });
   },
 });
-// Magic Carpet (his call, Oct 3): when low, the hero flies off for a while: nothing can hit it and it can't shoot; out-of-combat regen starts. It
+// Magic Carpet: when low, the hero flies off for a while: nothing can hit it and it can't shoot; out-of-combat regen starts. It
 // comes back once healed to 70% or when the carpet's time is up.
 define('Magic Carpet', ACTIVE, hurtActive(0.3, function (fight) {
   fight.at(this.value('SummonDuration'), () => { if (this.unit.alive) this.buff(fight, 'carpet', this.value('AbilityDuration'), {}, ['untargetable', 'hold', 'airborne']); });
@@ -1058,8 +1058,8 @@ define('Shadow Weave', ACTIVE, hurtActive(0.4, function (fight) {
     }
   },
 });
-// Unstable Concoction (a legendary; his call, Oct 3): a huge buff, then the hero explodes (damage from its max health, a stun) and is left at
-// CONCOCTION_LEFT of its max health instead of dying (Nov 4, his pick; it was 1 health). Used whenever enemies are in range.
+// Unstable Concoction (a legendary): a huge buff, then the hero explodes (damage from its max health, a stun) and is left at
+// CONCOCTION_LEFT of its max health instead of dying (it was 1 health). Used whenever enemies are in range.
 define('Unstable Concoction', ACTIVE, {
   want(fight) { return this.near(fight, 'Radius').length > 0; },
   cast(fight) {
@@ -1094,7 +1094,7 @@ define('Recharging Rush', {
   },
 });
 
-// ===== IMBUES (his call, Oct 3: the member picks the ability; `imbue` is what it adds to it) =====
+// ===== IMBUES (the member picks the ability; `imbue` is what it adds to it) =====
 define('Mystic Expansion', { get imbue() { return { range: this.pct('TechRangeMultiplier') }; } });
 define('Compress Cooldown', { get imbue() { return { cdr: this.pct('CooldownReduction') }; } });
 define('Duration Extender', { get imbue() { return { duration: this.pct('BonusAbilityDurationPercent') }; } });
@@ -1178,7 +1178,7 @@ define('Frostbite Charm', {
   },
 });
 
-// Items with an imbue: buying one asks which ability (his call, Oct 3).
+// Items with an imbue: buying one asks which ability.
 const IMBUES = Object.keys(FX).filter((name) => Object.getOwnPropertyDescriptor(FX[name].prototype, 'imbue') || ['Quicksilver Reload', 'Mercurial Magnum', 'Echo Shard', 'Mystic Reverb'].includes(name));
 
 // The item objects for a hero (an item without effects of its own is just stats and needs none). `cards` are the cards it fights with

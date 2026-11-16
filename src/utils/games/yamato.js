@@ -1,6 +1,6 @@
 // Duel of Stances, Yamato's game: rock paper scissors with his three stances. Against Yamato (he picks when the
 // game starts, a win pays 1.85x, a tie gives the bet back) or against another member (both stake the bet,
-// picks are secret, the winner takes the pot, a tie refunds both). Rules: server-plan.md ("Games").
+// picks are secret, the winner takes the pot, a tie refunds both)..
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
@@ -88,7 +88,7 @@ function loadStanceEmojis(guild) {
 
 // Every view but the invite clears the invite's @mention text.
 const view = (message) => ({ ...gameMessage(HOST, { title: 'Duel of Stances', ...message }), content: '' });
-// Emoji-only, so the three fit one row on a phone (with names they wrapped, his ask Oct 21); the key names them.
+// Emoji-only, so the three fit one row on a phone (with names they wrapped); the key names them.
 const stanceButtons = (id) =>
   [Object.entries(STANCES).map(([key, s]) => [`${BUTTON_ID}:${id}:${key}`, null, ButtonStyle.Secondary, { emoji: s.emoji }])];
 const stanceKey = () => Object.keys(STANCES).map((k) => `${stanceText(k)} Beats ${STANCES[STANCES[k].beats].emoji}`);
@@ -125,7 +125,7 @@ async function startGame(user, name, bet, opponent = null) {
   return opponent ? inviteView(id, game) : pickView(id, game);
 }
 
-// Both stances are in (or it's against Yamato): the picks, who won, the pot. The template every game follows (his pick
+// Both stances are in (or it's against Yamato): the picks, who won, the pot. The template every game follows (
 // Oct 22): one bold line, the money in fields, green / red.
 function resultView(game, outcome, balance) {
   const [mine, theirs] = solo(game) ? [game.picks[game.userId], game.yamato] : [game.picks[game.userId], game.picks[game.opponentId]];

@@ -1,5 +1,5 @@
 // Hero Farming: builds a fighting hero (a Unit) from the wiki data. Each file in heroes/ is one character's own
-// ability logic: `module.exports = { name: 'Haze', abilities: { 1: SleepDagger, 2: ..., 3: ..., 4: ... } }`
+// ability logic: `module.exports = { name: 'Haze', abilities: { 1: SleepDagger, 2:..., 3:..., 4:... } }`
 // (a slot may be left out). They are loaded by hero name, like src/commands/. A hero without a file still fights with
 // its gun; its abilities never fire.
 const fs = require('node:fs');
@@ -20,7 +20,7 @@ const heroNames = () => Object.keys(HEROES);
 const roster = () => heroNames().filter((n) => LOGIC[n]);
 const heroInfo = (name) => LOGIC[name]?.info ?? [];
 
-// The "vs. NPCs" bonuses (Monster Rounds) at `scale` of the wiki's numbers: in /descend every enemy is an NPC, so a tier 1 item was always on (his call Nov 2: halved there).
+// The "vs. NPCs" bonuses (Monster Rounds) at `scale` of the wiki's numbers: in /descend every enemy is an NPC, so a tier 1 item was always on (halved there).
 function scaleNpc(s, scale) {
   const w = s.npcWeapon * (1 - scale);
   s.weaponDamageMult -= w;

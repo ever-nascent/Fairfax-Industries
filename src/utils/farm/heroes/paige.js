@@ -1,10 +1,10 @@
 // Paige's abilities (deadlock.wiki/Paige, checked Oct 2 2026). Numbers come from the wiki data through Ability.value(); this file is only
-// what each ability does. His calls (Oct 2): ally abilities work on Paige alone; the knights arrive half way to their full amp; Rallying
+// what each ability does. ally abilities work on Paige alone; the knights arrive half way to their full amp; Rallying
 // Charge is kept for when she is hurt.
 const { Ability } = require('./../ability');
 
 // 1. Bookwyrm: a dragon flies through the group, spirit damage to every enemy in its path, and leaves a trail that burns them for a while.
-// T2: a second charge. ponytail: one trail at a time (a second dragon only keeps it burning longer); the path's width does nothing here.
+// T2: a second charge. one trail at a time (a second dragon only keeps it burning longer); the path's width does nothing here.
 class Bookwyrm extends Ability {
   constructor(...args) {
     super(...args);
@@ -29,7 +29,7 @@ class Bookwyrm extends Ability {
   }
 }
 
-// 2. Plot Armor: a barrier on Paige herself (his call: ally abilities work on the hero alone), and while it holds, more weapon damage
+// 2. Plot Armor: a barrier on Paige herself (ally abilities work on the hero alone), and while it holds, more weapon damage
 // (T1: and fire rate). T3's extra allies do nothing; its barrier scaling does.
 class PlotArmor extends Ability {
   want(fight) {
@@ -69,8 +69,8 @@ class CaptivatingRead extends Ability {
 }
 
 // 4. Rallying Charge: knights ride through every enemy (spirit damage and a stun) and heal Paige, who is faster for a while (a blast is easier
-// to dodge). Damage and healing grow with the distance ridden: here always half way to the full amp (his call). Kept for when she is hurt
-// (his call). ponytail: one hit per enemy (the two waves aren't simulated); T2's wider charge does nothing, it already reaches every enemy.
+// to dodge). Damage and healing grow with the distance ridden: here always half way to the full amp. Kept for when she is hurt
+//. one hit per enemy (the two waves aren't simulated); T2's wider charge does nothing, it already reaches every enemy.
 const AMP_SHARE = 0.5;
 const HURT = 0.6;
 class RallyingCharge extends Ability {

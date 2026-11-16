@@ -1,7 +1,9 @@
+// Event handler: guildMemberUpdate.
+// Picking a Patron in #roles makes a new member a Citizen, which unlocks the rest of the server.
+
 const { isHomeGuild } = require('../utils/guild');
 const { giveCitizen, isUnlocked } = require('../utils/server/memberRoles');
 
-// Picking a Patron in #roles makes a new member a Citizen, which unlocks the rest of the server.
 module.exports = {
   name: 'guildMemberUpdate',
   async execute(_old, member) {

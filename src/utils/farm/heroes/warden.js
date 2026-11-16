@@ -1,5 +1,5 @@
 // Warden's abilities (deadlock.wiki/Warden, checked Oct 5 2026; page updated Sept 30). Numbers come from the wiki data through Ability.value();
-// this file is only what each ability does. His call (Oct 5): Alchemical Flask's tier 1 (a stamina charge in the game, which only a rival hero
+// this file is only what each ability does. Alchemical Flask's tier 1 (a stamina charge in the game, which only a rival hero
 // has) leaves the enemies it hits WINDED seconds from attacking. Standing rules used: hero-only abilities work on any enemy; a weapon damage
 // cut takes nothing off an enemy that deals spirit damage and half off a mixed one (the Doorman's bell); an aura around him reaches the
 // enemies around the front one.
@@ -7,7 +7,7 @@ const { Ability, anyReady } = require('./../ability');
 const { isBoss } = require('./../items');
 
 // 1. Alchemical Flask: spirit damage around the front enemy, a slow, and less weapon damage from the enemies hit for a while.
-// T1 (his call): they can't attack for a moment (a rival hero also loses a stamina charge). T2: more damage, a bigger weapon damage cut.
+// T1: they can't attack for a moment (a rival hero also loses a stamina charge). T2: more damage, a bigger weapon damage cut.
 // T3: shorter cooldown, wider, and they attack slower.
 const WINDED = 1;
 class AlchemicalFlask extends Ability {
@@ -68,7 +68,7 @@ class LastStand extends Ability {
     this.next = 0;
   }
 
-  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, AlchemicalFlask, Willpower, BindingWord); } // combo first (his ask, Nov 6): the flask, the barrier and the curse go first
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, AlchemicalFlask, Willpower, BindingWord); } // combo first: the flask, the barrier and the curse go first
   status(fight) { return fight && fight.time < this.until ? 'Standing' : super.status(fight); }
 
   on(event, fight, p) {

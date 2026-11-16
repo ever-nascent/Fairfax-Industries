@@ -30,7 +30,7 @@ function deleteCopies(saved) {
 }
 
 // Drops messages older than 7 days, then writes the file if anything changed.
-// ponytail: rewrites the whole file every 30 s; fine for a community server, a database if it ever gets huge.
+// rewrites the whole file every 30 s; fine for a community server, a database if it ever gets huge.
 function save() {
   if (!messages) return;
   const cutoff = Date.now() - KEEP_MS;

@@ -159,7 +159,7 @@ class EntanglingBola extends Dual {
 // a close cone that also hits the enemies right beside its target, and every hit a stack of fire rate; she fights among the enemies. Every hit
 // also keeps the wolf out a little longer. Abilities 1-3 are the wolf's meanwhile. T1: bullet and spirit resist as the wolf. T2: faster, more
 // health. T3: a kill as the wolf starts its time over and readies its abilities.
-// ponytail: BESIDE is how far to either side the wolf's cone reaches.
+// BESIDE is how far to either side the wolf's cone reaches.
 const BESIDE = 4;
 class LycanCurse extends Ability {
   constructor(...args) {

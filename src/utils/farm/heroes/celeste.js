@@ -1,10 +1,10 @@
 // Celeste's abilities (deadlock.wiki/Celeste, checked Oct 2 2026). Numbers come from the wiki data through Ability.value(); this file is only
-// what each ability does. His calls (Oct 2): Radiant Daggers stacks on every enemy hit; the prism's tier 1 adds move speed while it is up (no
+// what each ability does. Radiant Daggers stacks on every enemy hit; the prism's tier 1 adds move speed while it is up (no
 // penalty without it); the orb hits a lone enemy once, unless the tier 3 prism is up to bounce it back.
 const { Ability } = require('./../ability');
 
 // 1. Light Eater: a flare on the enemies in reach (spirit damage) that marks them: Celeste's bullets deal extra spirit damage to a marked enemy
-// (at most once per TickRate) and spirit damage to it heals her. ponytail: only bullets count as "attacked by Celeste".
+// (at most once per TickRate) and spirit damage to it heals her. only bullets count as "attacked by Celeste".
 class LightEater extends Ability {
   constructor(...args) {
     super(...args);
@@ -90,7 +90,7 @@ class RadiantDaggers extends Ability {
 
 // 4. Shining Wonder: an orb that hits the front enemy (spirit damage and a slow) and bounces on between the enemies in reach. With nothing else to
 // bounce to it stops, unless the tier 3 prism is up to send it back; so Celeste keeps the orb for the prism when she has that tier.
-// ponytail: a bounce every BOUNCE_EVERY seconds is a placeholder (the wiki gives no travel time); the dash reduction does nothing here.
+// a bounce every BOUNCE_EVERY seconds is a placeholder (the wiki gives no travel time); the dash reduction does nothing here.
 const BOUNCE_EVERY = 0.3;
 class ShiningWonder extends Ability {
   want(fight) {

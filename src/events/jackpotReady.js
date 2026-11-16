@@ -1,10 +1,12 @@
+// Event handler: clientReady.
+// The Weekly Jackpot's draw (utils/economy/jackpot.js): on startup, then every 5 minutes, every server whose week has turned gets its
+// winner drawn, paid and announced. A draw missed while the bot was off happens at the next start.
+
 const { drawAndAnnounce, servers } = require('../utils/economy/jackpot');
 const { runInGuild } = require('../utils/guildContext');
 
 const CHECK_MS = 5 * 60_000;
 
-// The Weekly Jackpot's draw (utils/economy/jackpot.js): on startup, then every 5 minutes, every server whose week has turned gets its
-// winner drawn, paid and announced. A draw missed while the bot was off happens at the next start.
 module.exports = {
   name: 'clientReady',
   once: true,

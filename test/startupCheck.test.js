@@ -14,7 +14,7 @@ const { HEROES } = require('../src/utils/heroes');
 const { createCanvas } = require('@napi-rs/canvas');
 const { main, deps, toSquarePng, heroOfPortrait, portraitFiles } = require('../tools/startup-check');
 const { roster } = require('../src/utils/farm/hero');
-delete process.env.DISCORD_TOKEN; // .env was loaded; no Discord calls in tests
+delete process.env.DISCORD_TOKEN; //.env was loaded; no Discord calls in tests
 
 const A = process.env.ASSETS_DIR;
 const STAMP = path.join(process.env.DATA_DIR, 'startupCheck.json');

@@ -1,7 +1,7 @@
 # How the bot works
 
 A map for reading and changing The Shopkeeper yourself. Start here, then open the files it points to.
-(`CLAUDE.md` and `server-plan.md` are the detailed notes and the history of every decision; this file is the short version.)
+This file is the short version. `README.md` covers installing and running the bot.
 
 ## 1. What it is made of
 
@@ -143,7 +143,7 @@ Convention: a constant in CAPITALS near the top of a file is a knob meant to be 
 ## 10. Reading tips
 
 - **Start with the file's top comment.** Every file says what it is and where the related pieces are.
-- **"(his call, Oct 3)"** in a comment means you decided that rule; `server-plan.md` has the full story under that date. They're history, safe to skip while learning.
-- **`// ponytail:`** marks a deliberate shortcut and when it would need upgrading.
+- **A date in a comment** (like "Oct 29") says when a rule last changed. It is history, safe to skip while learning.
+- **"Placeholder"** in a comment marks a number that was picked without testing. Change it freely and re-run the simulations (`tools/`).
 - Many lines are long. Turn on word wrap (VS Code: `Alt+Z`) and use **Go to Definition** (`F12` on a function name) to jump to where something is defined, and **Find All References** (`Shift+F12`) to see who uses it. That's the fastest way to follow the code.
 - In the code, `d` is a Descend run, `e` an enemy, `r` a set of rules, `s` a stat sheet: short names for things used on every line.

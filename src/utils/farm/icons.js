@@ -1,4 +1,4 @@
-// The ability and item emojis (Nov 4, his ask) and the line they sit in, his format: "Emoji : Name : Stack N : Cooldown/Active" (the
+// The ability and item emojis and the line they sit in, his format: "Emoji : Name : Stack N : Cooldown/Active" (the
 // Stack part only when there are stacks). Pictures: assets/emojis/a_<ability>.png and i_<item>.png, made by tools/icon-emojis.js.
 const { emojiNamed } = require('../guild');
 
@@ -18,15 +18,15 @@ const withIcon = (icon, text) => [`${icon ?? ''}`, text].filter(Boolean).join(' 
 const iconOf = (name) => abilityIcon(name) || itemIcon(name);
 
 // One line: "<icon> : Name : Stack 3 : Cooldown 4s".
-// Stacks read "3 Stacks" (his ask, Nov 4), between the name and the rest.
+// Stacks read "3 Stacks", between the name and the rest.
 const iconLine = (icon, name, stacks, status) => [icon, name, stacks ? `${stacks} Stack${stacks === 1 ? '' : 's'}` : '', status].filter(Boolean).join(' : ');
 
 // The fight's status words in his format: "12s" -> "Cooldown 12s", "Ready" -> "Active" ("Ready x2" -> "Active x2"); a hero's own wording
-// (Passive, +30% Weapon, 50% ...) is kept.
-// A cooldown number in one backtick each, Discord's code style (his ask, Nov 5): "Cooldown `12s`".
+// (Passive, +30% Weapon, 50%...) is kept.
+// A cooldown number in one backtick each, Discord's code style: "Cooldown `12s`".
 const cooldownText = (s) => `Cooldown \`${s}\``;
 // A cooldown at the start ("4s  -  3 Marked") or after the charges ("Ready x1  -  4s") gets the same; "5s Left" / "Wolf 5s" are durations, kept.
-// The charges in backticks too (his ask, Nov 6): "Active `x2`".
+// The charges in backticks too: "Active `x2`".
 const statusWord = (s) => s.replace(/^Ready/, 'Active').replace(/^(\d+s)(?=$|  -  )|(?<=^Active x\d+  -  )(\d+s)$/, (t) => cooldownText(t)).replace(/^Active (x\d+)/, 'Active `$1`');
 
 // The stacks an ability or item holds right now (a number on it: `stacks`, Glass Cannon's `kills`, an ability's kill count), or 0.
@@ -39,7 +39,7 @@ const itemStatus = (it) => {
   if (left > 0) return cooldownText(`${Math.ceil(left)}s`);
   return it.active ? 'Active' : 'Ready'; // a passive with a proc timer that is ready
 };
-// Whether an item has anything to show in a fight or on the hero screen (his ask, Nov 4: a plain passive has no charges or cooldowns, so it is left
+// Whether an item has anything to show in a fight or on the hero screen (a plain passive has no charges or cooldowns, so it is left
 // out): an active, a passive with its own cooldown or charge-up (a proc), or stacks right now.
 const timed = (it) => !!it && (it.active || it.infos.some((i) => i.Cooldown || i.ChargeUp));
 const shown = (it) => !!it && (timed(it) || stacksOf(it) > 0);

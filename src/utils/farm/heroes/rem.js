@@ -1,5 +1,5 @@
 // Rem's abilities (deadlock.wiki/Rem, checked Oct 5 2026; page updated Oct 4). Numbers come from the wiki data through Ability.value(); this file
-// is only what each ability does. Rem is a support hero; ally abilities work on the hero alone (his call, Oct 2). His calls (Oct 5): Tag Along
+// is only what each ability does. Rem is a support hero; ally abilities work on the hero alone. Tag Along
 // is its heals only (nobody to hide on: Rem keeps fighting and can be hit); Naptime's tier 1 leaves anything that wakes GROGGY seconds from
 // attacking (the game: a stamina charge, which only a rival hero has).
 const { Ability } = require('./../ability');
@@ -64,7 +64,7 @@ class LilHelpers extends Ability {
 
 // 4. Naptime: a channel (no shooting or casting, less damage taken), then the enemies in the gaze fall asleep: no attacks. A sleeper wakes when
 // its time is up, or once it has taken SleepDamageThreshold damage (not before MinSleepTime), to a headache of spirit damage. A boss shrugs part
-// of the sleep off. T1 (his call): whatever wakes can't attack for GROGGY seconds more (a rival hero also loses a stamina charge). T2: wider,
+// of the sleep off. T1: whatever wakes can't attack for GROGGY seconds more (a rival hero also loses a stamina charge). T2: wider,
 // longer. T3: shorter cooldown, and Rem takes even less damage and can't be stopped while channelling.
 const GROGGY = 1;
 class Naptime extends Ability {

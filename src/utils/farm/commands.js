@@ -1,5 +1,5 @@
-// What the farm commands (/base, /jungle, /lane, /siege) do when run. The replies are public (his call, Oct 4); only the member who ran
-// one can press its buttons. Rules: server-plan.md ("Hero Farming").
+// What the farm commands (/base, /jungle, /lane, /siege) do when run. The replies are public; only the member who ran
+// one can press its buttons..
 const { getFarmUser, play } = require('./play');
 const { pickView, homeView, heroView, targetView, roamView, notReady } = require('./views');
 

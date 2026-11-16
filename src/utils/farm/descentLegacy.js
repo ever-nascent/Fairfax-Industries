@@ -1,11 +1,11 @@
-// FROZEN (Oct 29): descent.js as it was before the ascension redesign. Only runs started before then (no `v`, an ascension above 0) are played
-// with it, through descent.js RUN (his call: they finish on the old rules). Never change it; delete it once no such run is left.
-// /descend: a roguelite mode for Hero Farming (plan: descend-plan.md; his calls Oct 24). One of the member's unlocked heroes goes down room after
+// FROZEN: descent.js as it was before the ascension redesign. Only runs started before then (no `v`, an ascension above 0) are played
+// with it, through descent.js RUN (they finish on the old rules). Never change it; delete it once no such run is left.
+// /descend: a roguelite mode for Hero Farming (plan: descend-plan.md). One of the member's unlocked heroes goes down room after
 // room from level 0 with no items. Every won room is a level (boons, ability points, abilities unlock at 0 / 2 / 4 / 7 as usual) and an offer of
 // 3 items (vitality / weapon / spirit, like Street Brawl's pick), pick 1 or skip to heal. 12 item slots, upgrade paths kept: an offered upgrade of
 // an item the hero holds replaces it in place. Every 5th room is a boss (one of the real ones, sized to the depth) that gives a bigger pick and a
-// Rejuv; now and then a rival hero blocks the way and wants a duel (his ask, Oct 24). One death ends the run (unless a Rejuv). Score: rooms cleared.
-// It ends (his calls, Oct 24): 8 floors, 40 rooms; the last is the Patron then the Weakened Patron in one fight, like the siege's end. Clearing it is
+// Rejuv; now and then a rival hero blocks the way and wants a duel. One death ends the run (unless a Rejuv). Score: rooms cleared.
+// It ends: 8 floors, 40 rooms; the last is the Patron then the Weakened Patron in one fight, like the siege's end. Clearing it is
 // "Descent Cleared" and a place on the leaderboard, nothing more.
 // No souls: a run never touches a hero's own souls, items or level (it lives on the member: `descent` on the farm record, next to `bestWave`).
 //   descent: { hero, seed, room (the next room to fight, from 1), level, tiers, items: { weapon | vitality | spirit: [names] }, legendary, buffs, bridge, find,
@@ -14,8 +14,8 @@
 //   bestDescent: { rooms, hero } (the member's best run), descentBest: { <hero>: rooms }, descentToken: true once the token was paid,
 //   descentClears: runs that beat the last room.
 // Everything random about a room or an offer comes from `seed` + the room, so closing Discord can't reroll either.
-// ponytail: the enemy numbers (TUNE, BOSS), the archetypes and affixes, the tier weights and the rewards are placeholders tuned with
-// `node tools/farm-sim.js descend`; his calls to change.
+// the enemy numbers (TUNE, BOSS), the archetypes and affixes, the tier weights and the rewards are placeholders tuned with
+// `node tools/farm-sim.js descend`.
 const path = require('node:path');
 const { enemy } = require('./engine');
 const { TARGETS, SIEGE } = require('./targets');
@@ -30,16 +30,16 @@ const { getStore } = require('../../storage');
 const { simulate, updateFarmUser, getFarmUser, hasHero, tokenUseful, MAX_REJUVS, TRAITS } = require('./play');
 
 const ROOMS_PER_FLOOR = 5; // 4 fights and a boss
-const FLOORS = 8; // his call, Oct 24
+const FLOORS = 8;
 const LAST_ROOM = FLOORS * ROOMS_PER_FLOOR; // the Patron, then the Weakened Patron
-const TOKEN_ROOM = 25; // the end of floor 5: a Character Unlock Token, once per member (my pick from the plan's example; his call)
-const SKIP_HEAL = 0.25; // skipping a pick heals this share of max health (his open question; my pick)
-const SKIP_BUFFS = 3; // his call Oct 26: every skipped reward also grants three permanent buffs
+const TOKEN_ROOM = 25; // the end of floor 5: a Character Unlock Token, once per member
+const SKIP_HEAL = 0.25; // skipping a pick heals this share of max health
+const SKIP_BUFFS = 3; // every skipped reward also grants three permanent buffs
 const REST = 0.15; // a breather between two rooms, like waves'
 const BOSS_BUFFS = 3; // a boss's buff pick gives this many of that permanent buff
-const LITTLE_BUFF_CHANCE = 0.10; // his call, Oct 25: a won fight or rival may turn up one permanent stack
-const BIG_BUFF_CHANCE = 0.05; // his call: a Bridge buff for the rest of this floor
-const REROLLS_PER_FLOOR = 3; // his call, Oct 25
+const LITTLE_BUFF_CHANCE = 0.10; // a won fight or rival may turn up one permanent stack
+const BIG_BUFF_CHANCE = 0.05; // a Bridge buff for the rest of this floor
+const REROLLS_PER_FLOOR = 3;
 const ENHANCED_CHANCE = 0.10; // each displayed item; +3 points after a row with none, reset when one is picked
 const ENHANCED_STEP = 0.03;
 const RIVAL_FROM = 3; // rivals show up from this room (never on a boss room)
@@ -49,10 +49,10 @@ const MAX_UNITS = 6; // enemies in one room (the live message has a field per en
 const UPGRADE_CHANCE = 0.35; // each pick slot offers an upgrade of a held item this often, when there is one
 const STALE_MS = 60 * 1000; // a 'fighting' claim older than this (the bot stopped mid-fight) can be fought again
 
-// Ascensions (his ask Oct 26, after Slay the Spire's 20; his calls: 20 levels, unlocked per member, picked on the start screen and fixed once the
+// Ascensions (after Slay the Spire's 20; 20 levels, unlocked per member, picked on the start screen and fixed once the
 // run starts). Each level keeps every level below it. Clearing the descent at level N unlocks N + 1 for all of the member's heroes.
 // "Elites" are affixed enemies and rivals (like StS's elites: tougher, better rewards); "normal" enemies are the rest of a fight room.
-// ponytail: the sizes in ASC are placeholders tuned with `node tools/farm-sim.js descend --ascension=20` so good picks still clear it; his calls.
+// the sizes in ASC are placeholders tuned with `node tools/farm-sim.js descend --ascension=20` so good picks still clear it; .
 const MAX_ASCENSION = 20;
 const ASC = { hit: 0.1, health: 0.1, bossHit: 0.1, bossHealth: 0.1, faster: 0.8, longer: 1 };
 const ASCENSIONS = [
@@ -104,7 +104,7 @@ function faster(e) {
   e.stats.controls = (e.stats.controls ?? []).map((c) => ({ ...c, every: c.every * ASC.faster }));
   if (e.stats.special?.chance) e.stats.special = { ...e.stats.special, chance: Math.min(1, e.stats.special.chance / ASC.faster) };
 }
-// The hero's crowd control with one of `tags` lasts `ASC.longer` seconds more (his calls Oct 28: A17 room enemies' and A19 bosses' curses and stuns
+// The hero's crowd control with one of `tags` lasts `ASC.longer` seconds more (A17 room enemies' and A19 bosses' curses and stuns
 // (a grapple is a stun), A18 room enemies' silences and disarms).
 const CURSE_STUN = ['curse', 'stun'];
 const SILENCE_DISARM = ['silence', 'disarm'];
@@ -155,7 +155,7 @@ const ARCHETYPES = {
 };
 for (const a of Object.values(ARCHETYPES)) a.icon = path.join(ICONS, `${a.icon}.png`);
 // Affixes (the Isaac "champion" idea): the four camp traits plus a few the engine already knows (regen, lifesteal, a heal cut, a curse, more health).
-// ponytail: Berserk / Armor-breaking from the plan still need engine work; left out until he wants them.
+// Berserk / Armor-breaking from the plan still need engine work; left out until needed.
 const resist = (x) => Math.max(0, Math.min(0.9, x));
 const AFFIXES = {
   ...Object.fromEntries(TRAITS.filter((t) => t.name).map((t) => [t.name, { text: t.bullet > 0 && t.spirit > 0 ? 'resists everything' : t.bullet > 0 ? 'resists bullets' : t.spirit > 0 ? 'resists spirit' : 'takes more of everything',
@@ -167,10 +167,10 @@ const AFFIXES = {
   Stunning: { text: 'stuns now and then', apply(e) { e.stats.controls.push({ id: 'stun', every: 10, duration: 0.8, tags: ['stun'], verb: 'stunned' }); } },
   Silencing: { text: 'silences abilities', apply(e) { e.stats.controls.push({ id: 'silence', every: 10, duration: 1, tags: ['silence'], verb: 'silenced' }); } },
   Grappling: { text: 'grapples and interrupts', apply(e) { e.stats.controls.push({ id: 'grapple', every: 11, duration: 1, tags: ['stun', 'immobilize'], verb: 'grappled' }); } },
-  Disarming: { text: 'disarms: no shooting for a moment', apply(e) { e.stats.controls.push({ id: 'disarm', every: 10, duration: 1.5, tags: ['disarm'], verb: 'disarmed' }); } }, // his ask and numbers, Oct 28
+  Disarming: { text: 'disarms: no shooting for a moment', apply(e) { e.stats.controls.push({ id: 'disarm', every: 10, duration: 1.5, tags: ['disarm'], verb: 'disarmed' }); } }, // and numbers, Oct 28
   Shielded: { text: 'half again the health', apply(e) { e.stats.maxHealth *= 1.5; e.health = e.stats.maxHealth; } },
 };
-// An affixed enemy's name shows its affixes in brackets, bold where Discord renders it (his ask, Oct 28): "**[Armored]** Brute"; `plain` for titles and buttons.
+// An affixed enemy's name shows its affixes in brackets, bold where Discord renders it: "**[Armored]** Brute"; `plain` for titles and buttons.
 const affixTag = (affix, plain = false) => (plain ? `[${affix}]` : `**[${affix}]**`);
 const affixChance = (room, a = 0) => (a >= 1 ? Math.min(0.8, 1.6 * (0.15 + 0.03 * (room - AFFIX_FROM))) : Math.min(0.6, 0.15 + 0.03 * (room - AFFIX_FROM)));
 const BOSS_AFFIXES = Object.keys(AFFIXES).filter((k) => k !== 'Shielded'); // A19: half again a boss's health would be too much on top
@@ -403,7 +403,7 @@ function dropItem(d, name) {
 function addItem(d, name, replace = null, enhanced = false) {
   const card = itemByName(name);
   const { used } = priceFor(card, d.items);
-  if (used.some((u) => d.enhanced?.includes(u))) enhanced = true; // an upgrade of an enhanced item stays enhanced (his call, Oct 28)
+  if (used.some((u) => d.enhanced?.includes(u))) enhanced = true; // an upgrade of an enhanced item stays enhanced
   let replaced = null;
   if (!used.length && countItems(d.items) >= rules(d).maxItems) {
     if (!replace) return { error: 'full' };
@@ -446,7 +446,7 @@ function takeChoice(d, index, replace = null) {
     if (extra.error) return extra;
     const bonus = d.offer.bonuses?.[index];
     if (bonus) {
-      if (!addItem(next, bonus).error) extra.bonus = bonus; // no room (an offer made before this rule): just the upgrade
+      if (!addItem(next, bonus).error) extra.bonus = bonus; // no room (an offer made before t): just the upgrade
     }
     Object.assign(d, next);
   }
@@ -517,7 +517,7 @@ function afterWin(d, run) {
   const r = rules(d);
   d.health = Math.min(1, run.health + r.rest);
   d.rejuvs = Math.min(r.maxRejuvs, Math.max(0, d.rejuvs - run.rejuvsUsed) + (spec.kind === 'boss' ? 1 : 0));
-  d.kept = { ...d.kept, ...run.kept, ...run.stacks }; // the items' kill stacks and the abilities' (his call, Oct 28: they last the run)
+  d.kept = { ...d.kept, ...run.kept, ...run.stacks }; // the items' kill stacks and the abilities' (they last the run)
   if (spec.kind === 'boss') d.bridge = []; // the Bridge buffs helped against this floor's boss; they expire now
   if (spec.room % ROOMS_PER_FLOOR === 0) d.rerolls = r.rerolls;
   d.find = rollFind(d, spec);
@@ -533,7 +533,7 @@ function newRun(hero, seed, ascension = 0) {
 }
 
 // ---- the member's run (data/farm.json) ----
-// The best so far (inside a record update): the member's (the highest ascension first, then rooms; his call Oct 26) and this hero's rooms.
+// The best so far (inside a record update): the member's (the highest ascension first, then rooms) and this hero's rooms.
 function noteBest(r, d) {
   const rooms = d.room - 1;
   const ascension = d.ascension ?? 0;
@@ -542,9 +542,9 @@ function noteBest(r, d) {
   r.descentBest = { ...r.descentBest, [d.hero]: Math.max(r.descentBest?.[d.hero] ?? 0, rooms) };
 }
 
-// The highest ascension the member may pick (per member, his call): one above the highest they cleared.
+// The highest ascension the member may pick (per member): one above the highest they cleared.
 const ascensionOf = (r) => r?.descentAscension ?? 0;
-// Starts a run with one of the member's unlocked heroes at an ascension they unlocked (fixed for the run, his call).
+// Starts a run with one of the member's unlocked heroes at an ascension they unlocked (fixed for the run).
 // Returns { ok } or { error: 'running' | 'locked' | 'ascension' }.
 const startRun = (userId, hero, seed = Math.floor(Math.random() * 2 ** 31), ascension = 0) => updateFarmUser(userId, (r) => {
   if (r.descent) return { error: 'running' };
@@ -595,7 +595,7 @@ async function fight(userId, { rng = Math.random, now = Date.now() } = {}) {
     if (spec.final) { // the descent is cleared: the run ends here
       r.descentClears = (r.descentClears ?? 0) + 1;
       const a = d.ascension ?? 0;
-      // each ascension (1-20) cleared for the first time is a Character Unlock Token, while a hero is left to unlock (his call, Oct 28)
+      // each ascension (1-20) cleared for the first time is a Character Unlock Token, while a hero is left to unlock
       if (a >= 1 && a > (r.descentCleared ?? -1) && tokenUseful(r)) { r.tokens = (r.tokens ?? 0) + 1; run.ascensionToken = a; }
       r.descentCleared = Math.max(r.descentCleared ?? -1, a); // the highest ascension cleared
       const unlocked = a < MAX_ASCENSION && a + 1 > ascensionOf(r) ? a + 1 : null;
@@ -622,7 +622,7 @@ const reroll = (userId, room) => updateFarmUser(userId, (r) => (r.descent?.offer
 const spend = (userId, slot) => updateFarmUser(userId, (r) => (r.descent ? spendPoint(r.descent, slot) : { error: 'none' }));
 const imbue = (userId, slot) => updateFarmUser(userId, (r) => (r.descent ? setImbue(r.descent, slot) : { error: 'none' }));
 const takeBonusItem = (userId, replace) => updateFarmUser(userId, (r) => (r.descent ? takeBonus(r.descent, replace) : { error: 'none' }));
-// Ends the run where it stands (his open question; my pick: a run waits as long as the member likes, and Abandon ends it). Returns the run or null.
+// Ends the run where it stands (a run waits as long as the member likes, and Abandon ends it). Returns the run or null.
 const abandon = (userId) => updateFarmUser(userId, (r) => {
   const d = r.descent;
   if (!d || d.phase === 'fighting') return null;

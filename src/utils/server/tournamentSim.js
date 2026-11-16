@@ -119,7 +119,7 @@ async function simulate(interaction) {
   const sim = { format: 'single', count: 4, t: null, log: [], channels: new Map(), category: null, picked: null };
 
   const intro = () => ({
-    embeds: [replyEmbed('A practice tournament with fake teams. You get the real bracket and can run the commands an organizer uses, with buttons. Nothing is saved and no member is pinged.\n\nPick a format and how many teams, then press **Start**.').setTitle('Tournament Simulation')],
+    embeds: [replyEmbed('A practice tournament with fake teams. You get the real bracket and can run the commands an organizer uses, with buttons. No member is pinged.\n\nPick a format and how many teams, then press **Start**.').setTitle('Tournament Simulation')],
     components: [
       row(new StringSelectMenuBuilder().setCustomId(id(run, 'format')).setPlaceholder('Format')
         .addOptions(Object.entries(T.FORMATS).map(([value, label]) => ({ label, value, default: value === sim.format })))),

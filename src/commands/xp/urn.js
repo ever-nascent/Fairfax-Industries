@@ -43,7 +43,7 @@ function claimedMessage(member, { souls, user, rejuvUsed }) {
     .setThumbnail('attachment://soul_urn_render.png')
     .setDescription(`${member} delivered the urn for ${boldSouls(souls)}.`)
     .addFields(
-      { name: 'Streak', value: `${bar}\n**${days}**${user.urnStreak >= URN_MAX_DAYS ? ' (max bonus)' : ''}` }, // the bar on its own line (his call, Oct 2)
+      { name: 'Streak', value: `${bar}\n**${days}**${user.urnStreak >= URN_MAX_DAYS ? ' (max bonus)' : ''}` }, // the bar on its own line
       { name: 'Balance', value: soulsText(user.souls), inline: true },
       { name: 'Next Urn', value: `<t:${nextUrn()}:R>`, inline: true },
     )

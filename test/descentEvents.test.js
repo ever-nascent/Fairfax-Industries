@@ -1,4 +1,4 @@
-// Descend event rooms (Nov 4): the rest stop and the quiet corner, where they go, and what they do.
+// Descend event rooms: the rest stop and the quiet corner, where they go, and what they do.
 process.env.DESCEND_V = '7'; // these checks are about the fixed rooms from before Two Doors (test/doors.test.js has the doors)
 const test = require('./group')(__filename);
 const assert = require('node:assert');
@@ -83,7 +83,7 @@ test('both rooms draw within Discord limits', async () => {
   }
 });
 
-// ---- the second batch (Nov 4): the Soul Urn, a wounded rival, the Curiosity Dealer, a Patron's Favor, the Teleporter ----
+// ---- the second batch: the Soul Urn, a wounded rival, the Curiosity Dealer, a Patron's Favor, the Teleporter ----
 const gear = { weapon: ['Headshot Booster', 'Rapid Rounds'], vitality: ['Extra Health'], spirit: [] };
 const roomOf = (kind) => { const d = runAt(kind); Object.assign(d, { level: 8, items: structuredClone(gear) }); return d; };
 const nextFight = (d) => { d.offer = null; d.phase = 'ready'; while (D.NO_FIGHT.has(D.specOf(d).kind)) d.room += 1; };

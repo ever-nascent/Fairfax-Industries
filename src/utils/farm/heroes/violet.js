@@ -88,7 +88,7 @@ class FlowState extends Ability {
 // spirit damage and a stun. The subject drops a sketch she picks up: one of four buffs for the rest of the fight, by the hero sketched (the wiki's
 // table). The sketch breaks off if the subject dies or she is stunned. T1: health regen on the cast, refreshed on a pickup. T2: the subject deals
 // less damage while drawn. T3: shorter cooldown, a longer stun, faster while drawing.
-const SKETCHES = { // the wiki's table (Oct 20)
+const SKETCHES = { // the wiki's table
   weapon: ['Deadman Danny', 'Grey Talon', 'Holliday', 'Infernus', 'Ivy', 'Mina', 'Paradox', 'Venator', 'Vindicta', 'Wraith'],
   spirit: ['Baba', 'Celeste', 'The Doorman', 'Dynamo', 'Graves', 'Lady Geist', 'McGinnis', 'Paige', 'Rem', 'Seven', 'Sinclair', 'Solomon', 'Violet', 'Viscous'],
   health: ['Abrams', 'Bebop', 'Billy', 'Kelvin', 'Mo & Krill', 'Rat King', 'Shiv', 'Silver', 'Victor', 'Warden'],

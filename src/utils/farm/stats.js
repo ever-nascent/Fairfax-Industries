@@ -1,7 +1,7 @@
 // Hero Farming: a hero's fighting stats = the wiki's base stats + level boons + the items it holds.
 // This file is the stats: the innate stat lines on the wiki's item cards (ITEM_STATS), and corruption (a corrupted item's card has the
 // game's corrupted bonuses added, and the hero carries its one drawback). What an item does beyond its stats (procs, actives, buffs) is in items.js.
-// Data comes from `npm run farm-data` (assets/farm/*.json). Rules: server-plan.md ("Hero Farming").
+// Data comes from `npm run farm-data` (assets/farm/*.json)..
 const path = require('node:path');
 const { ASSETS } = require('../art');
 const { applyBuffs, BRIDGE, KIT_BUFFS, stackResist } = require('./buffs');
@@ -17,24 +17,24 @@ const LEGENDARIES = Object.values(load('legendaries')); // Tier 5, never sold: t
 const itemByName = (name) => ITEMS.find((i) => i.Name.toLowerCase() === String(name).toLowerCase())
   ?? LEGENDARIES.find((i) => i.Name.toLowerCase() === String(name).toLowerCase());
 
-// Precision on items (his ask, Oct 22: "add precision % increases to any item that you think should have precision, and add headshot precision to
+// Precision on items ("add precision % increases to any item that you think should have precision, and add headshot precision to
 // items that you personally think should have them"): flat points on the item's innate stats, written onto the loaded cards below so the shop
-// pictures, the item pages and the stat sheet all see them. Two groups: the headshot items (Crippling Headshot +15 is his call; the others
-// "slightly", +5), and my picks, the items whose bullet speed / zoom did nothing in fights (distance isn't a factor here), bigger for a higher
-// tier. The base is 25 and a buff is 1. ponytail: placeholder numbers apart from Crippling Headshot's.
-// Oct 28 (his ask): two stats, shown apart on the hero card: Precision (does the bullet land: spread pellets far away; my picks, the bullet speed /
+// pictures, the item pages and the stat sheet all see them. Two groups: the headshot items (Crippling Headshot +15 is the others
+// "slightly", +5), and chosen defaults, the items whose bullet speed / zoom did nothing in fights (distance isn't a factor here), bigger for a higher
+// tier. The base is 25 and a buff is 1. placeholder numbers apart from Crippling Headshot's.
+// Oct 28: two stats, shown apart on the hero card: Precision (does the bullet land: spread pellets far away; chosen defaults, the bullet speed /
 // zoom / range items and Lucky Shot) and Headshot Precision (the headshot chance in %; the headshot items, plus Sharpshooter's zoom).
-// Oct 29 (his calls): the headshot items give Headshot Precision only, and the most of it; an item with bullet velocity (its card's Bullet
+// Oct 29: the headshot items give Headshot Precision only, and the most of it; an item with bullet velocity (its card's Bullet
 // Velocity line) gives Precision, a lot (VELOCITY.precision a % of velocity: +10 for the usual +60%; +15 until his "a bit" less), and some Headshot Precision, less than any
 // headshot item (VELOCITY.headshot a %, at most VELOCITY.headshotMax). The fights have no bullet travel time, so this is what velocity does.
 const num = (v) => (typeof v === 'number' ? v : parseFloat(v) || 0); // the wiki writes distances "7m"
-const ITEM_PRECISION = { 'Long Range': 5, 'Lucky Shot': 5 }; // no bullet velocity; my picks (Oct 22)
-// a set amount (none from velocity on top); Infinite Rounds 25, his call Oct 29: a legendary beats every headshot item
+const ITEM_PRECISION = { 'Long Range': 5, 'Lucky Shot': 5 }; // no bullet velocity; chosen defaults
+// a set amount (none from velocity on top); Infinite Rounds 25, a legendary beats every headshot item
 const ITEM_HEADSHOT = { 'Crippling Headshot': 15, 'Headshot Booster': 5, 'Weakening Headshot': 5, Headhunter: 5, 'Spirit Rend': 5, 'Infinite Rounds': 25 };
-const VELOCITY = { precision: 1 / 6, headshot: 1 / 20, headshotMax: 4 }; // ponytail: my placeholders
+const VELOCITY = { precision: 1 / 6, headshot: 1 / 20, headshotMax: 4 }; // placeholders
 const velocityOf = (card) => num(Object.values(card).filter((info) => info?.Type).flatMap((info) => [...(info.Main ?? []), ...(info.Alt ?? [])])
   .find((l) => l.Key === 'BonusBulletSpeedPercent')?.Value);
-// Written (or rewritten) from the card's own velocity, so an enhanced / corrupted card with more velocity gets more Precision (his call, Oct 31).
+// Written (or rewritten) from the card's own velocity, so an enhanced / corrupted card with more velocity gets more Precision.
 function setPrecision(card) {
   const innate = Object.values(card).find((info) => info?.Type === 'Innate');
   if (!innate) return;
@@ -53,7 +53,7 @@ const ITEM_STATS = {
   BonusBaseHealth: (s, v) => { s.baseHealthPct += v / 100; }, // Colossus: % more of the hero's own health
   BonusHealthRegen: (s, v) => { s.healthRegen += v; },
   BaseAttackDamagePercent: (s, v) => { s.weaponDamageMult += v / 100; },
-  BonusFireRate: (s, v) => { s.fireBonus += v / 100; }, // fire rate increases add up (the wiki; his call Oct 31); heroStats turns the sum into fireRate
+  BonusFireRate: (s, v) => { s.fireBonus += v / 100; }, // fire rate increases add up (the wiki); heroStats turns the sum into fireRate
   BonusClipSizePercent: (s, v) => { s.clip *= 1 + v / 100; },
   BulletResist: (s, v) => { s.bulletResist = stackResist(s.bulletResist, v / 100); }, // each resist takes its share of what the others let through
   TechResist: (s, v) => { s.spiritResist = stackResist(s.spiritResist, v / 100); },
@@ -112,7 +112,7 @@ function effectValue(card, key) {
   return num(card.Other?.[key]?.Value);
 }
 
-// The innate stat lines of an item card: [[key, value], ...].
+// The innate stat lines of an item card: [[key, value],...].
 function innateStats(card) {
   return Object.entries(card)
     .filter(([k, info]) => k.startsWith('Info') && info.Type === 'Innate')
@@ -121,7 +121,7 @@ function innateStats(card) {
     .map((s) => [s.Key, parseFloat(s.Value)]);
 }
 
-// ---- corruption (his calls, Oct 3; levels.js has the Broker) ----
+// ---- corruption (levels.js has the Broker) ----
 // A corrupted item's card: the game's CorruptedUpgrades are added to the item's own numbers wherever the card has them (a cooldown change goes to the
 // cooldown of its active, or of its proc for ProcCooldown); a key the card doesn't have becomes a new stat line. Kept per item name.
 // Cached per card OBJECT, never per name (Nov 13, his report: "corrupting an Item should not remove its enhanced power"): a corrupted card is made from
@@ -176,12 +176,12 @@ const DRAWBACKS = {
 const drawbackText = ({ drawback, amount }) => `-${+amount.toFixed(2)}${DRAWBACKS[drawback].unit} ${DRAWBACKS[drawback].name}`;
 
 // The card an item fights with: its corrupted card if it is the hero's corrupted item.
-// `corrupted`: { name, drawback, amount }, null, or a list of them (a /descend run can carry several, his call Oct 30; a farm hero has one).
+// `corrupted`: { name, drawback, amount }, null, or a list of them (a /descend run can carry several, a farm hero has one).
 const corruptedList = (corrupted) => [].concat(corrupted ?? []);
-// A Fragile Item (his ask, Oct 30; descent.js, the Broker's stall): the Broker's cracked gift, weaker until he mends it. Its innate stat lines (the
-// numbers on the card's stat list) are scaled by FRAGILE; its passive and active effects are left alone. ponytail: scale effect numbers too if this is too mild.
+// A Fragile Item (descent.js, the Broker's stall): the Broker's cracked gift, weaker until he mends it. Its innate stat lines (the
+// numbers on the card's stat list) are scaled by FRAGILE; its passive and active effects are left alone. scale effect numbers too if this is too mild.
 const FRAGILE = 0.7;
-const FRAGILE_BREAK = 0.10; // a hero under this share of its health shatters its Fragile Items, mid-fight (hero.js; his call, Oct 30)
+const FRAGILE_BREAK = 0.10; // a hero under this share of its health shatters its Fragile Items, mid-fight (hero.js)
 function fragileCard(card) {
   if (!card) return card;
   if (madeFrom(card, 'fragile')) return madeFrom(card, 'fragile');
@@ -221,7 +221,7 @@ const cardFor = (name, corrupted, enhanced = [], fragile = [], tempered = {}) =>
   return temperedCard(corruptedList(corrupted).some((c) => c.name === name) ? corruptCard(card) : card, tempered?.[name]);
 };
 
-// Guns that deal full damage at any distance: Graves' beam (the wiki: no falloff; his call, Oct 5: its 17 m limit isn't simulated). The game data's
+// Guns that deal full damage at any distance: Graves' beam (the wiki: no falloff; its 17 m limit isn't simulated). The game data's
 // falloff numbers for it only shape Essence Theft's build-up (heroes/graves.js).
 const NO_FALLOFF = new Set(['Graves']);
 // Pellets of a spread shot that always land: one of Rat King's two is perfectly accurate (the wiki); the other can miss like any shotgun pellet.
@@ -278,9 +278,9 @@ function heroStats(hero, { boons = 0, items = [], buffs = {}, bridge = [], corru
     slideScale: 0,
     attackRange: 0,
     precision: PRECISION.base, // flat points: above the base, more spread pellets landing (engine.js)
-    headshot: PRECISION.base, // Headshot Precision: the headshot chance in % (engine.js headshotChance; his call, Oct 28: apart from Precision)
+    headshot: PRECISION.base, // Headshot Precision: the headshot chance in % (engine.js headshotChance; apart from Precision)
     headshotBonus: HEADSHOT_BONUS + (hero.CritDamageBonusPercent || 0) / 100, // a headshot's bonus bullet damage (engine.js HEADSHOT_BONUS)
-    noHeadshot: hero.Weapon?.CanCrit === false || hero.Name === 'Graves', // Graves: the wiki says she can't crit, her beam's data says it can // the wiki: Deadman Danny and Paige can't headshot (Oct 29, his call for Danny)
+    noHeadshot: hero.Weapon?.CanCrit === false || hero.Name === 'Graves', // Graves: the wiki says she can't crit, her beam's data says it can // the wiki: Deadman Danny and Paige can't headshot (for Danny)
     bonusCharges: 0,
     chargedSpirit: 0,
     chargedCdr: 0,

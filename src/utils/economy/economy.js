@@ -1,6 +1,6 @@
-// One knob for the whole souls economy (his call, Oct 2: souls are one universal currency, x10 everywhere). Every faucet (/urn, level-ups,
+// One knob for the whole souls economy (souls are one universal currency, x10 everywhere). Every faucet (/urn, level-ups,
 // /trivia, Lockle, farm trips) and every price (Shop, Hideout, game minimum bets) is written as "the old number x SCALE", so they stay in step.
-// Since Oct 11 Hero Farming's souls are each hero's own, apart from the server balance (his call; moveToHeroes below).
+// Since Oct 11 Hero Farming's souls are each hero's own, apart from the server balance (moveToHeroes below).
 // Hero Farming's item prices are the wiki's own and are NOT scaled; the souls the economy pays are what grew to meet them.
 const { getStore, getRawStore } = require('../../storage');
 
@@ -40,7 +40,7 @@ async function migrate() {
   return true;
 }
 
-// Run once at startup, after `migrate` (his calls, Oct 11; it ran for Fairfax, the only server then, so it runs in that server's context): Hero Farming souls became each hero's own, so every member who has a hero gets
+// Run once at startup, after `migrate` (it ran for Fairfax, the only server then, so it runs in that server's context): Hero Farming souls became each hero's own, so every member who has a hero gets
 // their whole server balance moved into Haze's own souls (the only hero anyone had played; their current hero if they have no Haze), after a
 // backup copy of both files. Their buffs, Rejuvs, growth, cooldowns and lanes, shared until now, go to the same hero (farm/play.js `load`);
 // every farm record is rewritten in the per-hero layout. Both sides of each move are lines in the souls ledger ('farm-move').

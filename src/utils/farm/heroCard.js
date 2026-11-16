@@ -1,4 +1,4 @@
-// The picture on the hero screen (/hero, or the Hero button on /base), drawn after the in-game HUD (his call, Oct 3: "it looks a lot better than
+// The picture on the hero screen (/hero, or the Hero button on /base), drawn after the in-game HUD ("it looks a lot better than
 // ours"): the level badge with its ring and the souls, the three stat groups under their emblems (weapon orange, vitality green, spirit purple),
 // the items as the HUD shows them (the item's own picture with its tier numeral in the corner, 2 x 2 per kind = the HUD's 6 x 2 grid), and the ability bar: white discs with
 // the ability glyphs, numbered 1-4, with the three upgrade pips above each. Art: assets/farm/ui and assets/farm/items (the game's own icons from
@@ -71,7 +71,7 @@ const box = (g, x, y, w, h, r, fill, stroke, lw = 1.5) => {
   if (stroke) { g.lineWidth = lw; g.strokeStyle = stroke; g.stroke(); }
 };
 
-// The legendary slot's tile (his call, Oct 22): gold, its own row under the 12 items, drawn only once the hero has a legendary.
+// The legendary slot's tile: gold, its own row under the 12 items, drawn only once the hero has a legendary.
 const LEGENDARY = { rgb: '255,196,72', tile: ['#ffd77a', '#e9a92f'], ink: '#3d2603' };
 const TILE = 100;
 const NAME_H = 32;
@@ -79,10 +79,10 @@ const LEGEND_H = TILE + NAME_H + 40; // the row's height: its label, the tile an
 
 // One item's tile at (x, y): the item's own picture (the game's shop art, as the HUD shows it) with a glow in its kind's colour (a flat tile with
 // the HUD glyph only when that picture is missing), its tier in the corner and its name under it. `frame` / `frameWidth`: the border (`null`: no
-// border and no glow, the legendary's tile: his call Nov 13, "remove that").
+// border and no glow, the legendary's tile: "remove that").
 // `flags` = { corrupted, enhanced, fragile, painted }: the Item's marks over its picture.
 // `fusedWith` (Victor's Abomination, Descend) = { name, kind, flags } of the second Item: the tile is then his stitched template
-// (fuseStitch.js, his pick Nov 7), this Item left of the scar and that one right of it, each with its own marks, tier tab and half of the border.
+// (fuseStitch.js), this Item left of the scar and that one right of it, each with its own marks, tier tab and half of the border.
 const artOf = async (name) => { try { return await image(itemFile(name)); } catch { return null; } }; // null: no shop art for it
 // The marks, drawn by a plain function (the fused template draws them inside each half's clip, so nothing in it may wait).
 async function marker(name, flags) {
@@ -284,7 +284,7 @@ async function heroCard(view) {
   g.textAlign = 'right';
   g.font = FONT(14);
   g.fillStyle = 'rgba(255,255,255,0.45)';
-  const open = view.maxItems ?? MAX_ITEMS; // a Descend run on Ascension 8+ has fewer slots: the rest are drawn locked (his ask, Nov 4: a lock, like the game)
+  const open = view.maxItems ?? MAX_ITEMS; // a Descend run on Ascension 8+ has fewer slots: the rest are drawn locked (a lock, like the game)
   g.fillText(`${held.length} / ${open}`, W - PAD, iy - 4);
   g.textAlign = 'left';
   // a Tempered Item's flames go down first, under every tile and name, so a second-row fire never covers the names above it

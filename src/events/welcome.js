@@ -1,3 +1,7 @@
+// Event handler: guildMemberAdd, messageReactionAdd, guildMemberUpdate.
+// The Shopkeeper walks a new member through the gate: #welcome -> (react in) #rules -> (pick a Patron in) #roles -> the whole server.
+// {rules} / {roles} become channel links.
+
 const { ChannelType } = require('discord.js');
 const { isHomeGuild } = require('../utils/guild');
 const { getWelcome, render } = require('../utils/server/welcome');
@@ -5,8 +9,6 @@ const { replyEmbed } = require('../utils/embeds');
 const { pickRandom } = require('../utils/random');
 const { isUnlocked } = require('../utils/server/memberRoles');
 
-// The Shopkeeper walks a new member through the gate: #welcome -> (react in) #rules -> (pick a Patron in) #roles -> the whole server.
-// {rules} / {roles} become channel links.
 const WELCOME_LINES = [
   "Well, look what the cat dragged in! Pull up a crate and make yourself at home. First stop is {rules}, I run a tight shop. Read it over, then react to it so I know you did.",
   "Hey, hey, a new face! Welcome to the Cursed Apple, pal. Head over to {rules} and give it a read. When you're done, react to it and I'll point you to the next stop.",
@@ -45,7 +47,7 @@ async function greet(member, channelName, title, lines, lifetimeMs) {
   if (message && lifetimeMs) setTimeout(() => message.delete().catch(() => {}), lifetimeMs);
 }
 
-const rulesSent = new Set(); // ponytail: in memory, so a restart lets a member trigger it once more; harmless
+const rulesSent = new Set(); // in memory, so a restart lets a member trigger it once more; harmless
 
 module.exports = [
   {

@@ -102,7 +102,7 @@ test('a game: bet taken, two dropdowns and Solve It, only the player plays, a wi
   assert.deepStrictEqual(optionsOf(start, 1), [...'NOPQRSTUVWXYZ']);
   assert.match(start.components[2].components[0].data.custom_id, /^hangman_solve:/);
   assert.match(text(start), /Pick a letter below, or press \*\*Solve It\*\*/);
-  assert.deepStrictEqual(start.embeds[0].toJSON().fields.map((f) => f.name), ['Guesses Left', 'Solving Pays', 'Bet']); // no Chapter field: the book names it (his call Oct 22)
+  assert.deepStrictEqual(start.embeds[0].toJSON().fields.map((f) => f.name), ['Guesses Left', 'Solving Pays', 'Bet']); // no Chapter field: the book names it
   assert.strictEqual(field(start, 'Guesses Left'), '6 of 6');
   assert.match(field(start, 'Solving Pays'), /1,550/);
   assert.ok(start.files.some((f) => f.name.startsWith('book_')), 'the book picture is attached');
@@ -121,7 +121,7 @@ test('a game: bet taken, two dropdowns and Solve It, only the player plays, a wi
   assert.match((await paige.solveError(id, 'someone-else')), /Tester's story/);
   assert.strictEqual(await paige.solveError(id, user.id), null);
   const won = await paige.solve(id, user.id, 'Mystic Burst');
-  assert.match(text(won), /^You solved it!\nThe word was \*\*MYSTIC BURST\*\*$/m); // a win: two lines, only the word in bold (his call, Oct 22)
+  assert.match(text(won), /^You solved it!\nThe word was \*\*MYSTIC BURST\*\*$/m); // a win: two lines, only the word in bold
   assert.match(field(won, 'Bet'), /^.*1,000 Souls$/);
   assert.match(field(won, 'Won'), /1,350 Souls/);
   assert.match(field(won, 'New Balance'), /100,350 Souls/);

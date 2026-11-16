@@ -1,6 +1,6 @@
 // Hideout (Shop, level 20+, 6,400 x SCALE souls): a private voice channel + a matching text channel, one per member,
 // kept for good. Only the owner, staff (Administrator) and members the owner adds get in. The owner runs it from
-// a control panel the bot pins in the text channel. Rules: server-plan.md ("Hideout").
+// a control panel the bot pins in the text channel..
 const { SCALE } = require('../economy/economy');
 const {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, ModalBuilder, OverwriteType, PermissionFlagsBits: P,
@@ -16,7 +16,7 @@ const HIDEOUT_PRICE = 6400 * SCALE;
 const HIDEOUT_LEVEL = 20;
 const RENAME_EVERY_MS = 24 * 60 * 60_000; // one rename a day
 const MAX_MEMBERS = 25; // the panel's Remove dropdown lists 25, and a channel holds at most 100 permission entries
-const MAX_IN_CATEGORY = 50; // Discord's limit; each Hideout takes 2, so a full category opens "<name> 2", "<name> 3" ...
+const MAX_IN_CATEGORY = 50; // Discord's limit; each Hideout takes 2, so a full category opens "<name> 2", "<name> 3"...
 const CATEGORY = 'Hideouts'; // made on startup; staff can switch it with /hideout-config category
 const COLOR = 0xa8702c; // bronze, like the Tier 4 panel
 const PANEL_ID = 'hideout'; // custom ids: hideout:<owner id>:<rename|limit> (buttons), add_pick / remove_pick
@@ -43,7 +43,7 @@ function overwrites(guild, ownerId, hideout, present = true) {
   return list;
 }
 
-// "Zechariah's Hideout" -> "zechariahs-hideout" (text channel names are lowercase, no spaces).
+// "Sam's Hideout" -> "sams-hideout" (text channel names are lowercase, no spaces).
 const textName = (name) => name.toLowerCase().replace(/['’]/g, '').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 100) || 'hideout';
 
 // Is `text` a censored phrase (the censor's list, /auto-mod censor)? Hideout names go through it too.
@@ -57,7 +57,7 @@ async function defaultName(member) {
   return 'A Hideout';
 }
 
-// The category to make `needed` channels in: the saved one, or its first overflow category ("<name> 2", "<name> 3" ...)
+// The category to make `needed` channels in: the saved one, or its first overflow category ("<name> 2", "<name> 3"...)
 // with room, made when they are all full.
 async function parentWithRoom(guild, categoryId, needed) {
   const base = guild.channels.cache.get(categoryId);

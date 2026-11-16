@@ -1,5 +1,5 @@
 // Run: node --test. Corrupted items: the bonuses (from deadlock-api.com's labels) and the drawback, as the Hero screen shows them.
-// The sample below is deadlock-api.com's item data for 4 items, cut down to the fields corruption.js reads (Oct 22, 2026).
+// The sample below is deadlock-api.com's item data for 4 items, cut down to the fields corruption.js reads.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('./group')(__filename);
 const assert = require('node:assert');

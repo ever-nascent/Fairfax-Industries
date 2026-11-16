@@ -1,4 +1,4 @@
-// Stacks the game keeps for good (his call, Oct 28): in Descend an ability's stacks last the run (the run's `kept`, by ability name), on the
+// Stacks the game keeps for good: in Descend an ability's stacks last the run (the run's `kept`, by ability name), on the
 // farm a fight starts without them; Glass Cannon's and Trophy Collector's are kept everywhere. The screens list them (views.js stackLines).
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('./group')(__filename);

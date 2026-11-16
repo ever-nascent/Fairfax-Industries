@@ -1,4 +1,4 @@
-// Tournaments: the organizer roles, a tournament's settings and its sign-up embed. Rules and decisions: server-plan.md "Scrims and tournaments".
+// Tournaments: the organizer roles, a tournament's settings and its sign-up embed. Rules and decisions "Scrims and tournaments".
 // Commands: commands/admin/tournament-config.js, commands/general/tournament.js; buttons: components/tournament.js.
 // Built so far: step 1 (organizer roles, creating a tournament, the sign-up embed) and step 2 (teams: sign-up, role and channels, invites, the waiting list;
 // commands/general/team.js, events/tournamentMemberLeft.js). Verification, brackets and matches come next.
@@ -146,7 +146,7 @@ const running = async (guildId) => Object.values(await tournaments().all()).filt
 const isClosed = (t, now = Date.now()) => now >= t.closesAt; // sign-ups closed: rosters are locked
 const teamOf = (t, userId) => Object.values(t.teams).find((team) => team.members[userId]) ?? null;
 const teamsInOrder = (t) => Object.values(t.teams).sort((a, b) => a.createdAt - b.createdAt);
-// 0 = in the tournament; 1, 2, ... = its place on the waiting list.
+// 0 = in the tournament; 1, 2,... = its place on the waiting list.
 const waitingPlace = (t, teamId) => Math.max(0, teamsInOrder(t).findIndex((team) => team.id === teamId) - t.teamCap + 1);
 const count = (team, sub) => [...Object.values(team.members), ...Object.values(team.invites)].filter((m) => Boolean(m.sub) === sub).length;
 

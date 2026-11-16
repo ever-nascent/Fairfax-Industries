@@ -1,6 +1,6 @@
 // Deadman Danny's abilities (deadlock.wiki/Deadman_Danny, checked Oct 16 2026; data updated Oct 15). Numbers come from the wiki data through
 // Ability.value(); this file is only what each ability does. Standing rule used: "on hero hit" is any enemy.
-// His calls (Oct 16): the charged shot is only fired to cash in a Strix Salvo mark; Close The Deal waits until an enemy is below 50% health.
+// the charged shot is only fired to cash in a Strix Salvo mark; Close The Deal waits until an enemy is below 50% health.
 // Taken by me (say if wrong): the charge takes CHARGE_TIME (the game data gives none), the grab GRAB_TIME, Chimera's T1 (faster venting: heat
 // isn't simulated) shortens the cooldown by T1_CUT, Jettison Fuel's spray builds up items like his shots would at his fire rate.
 // He can't die from his own damage (Kami-Labs, Oct 28). Not simulated: steering the flight, heat and overheating, a charged shot hurting himself (it hits an enemy every time).
@@ -8,18 +8,18 @@ const { Ability } = require('./../ability');
 const { missChance } = require('./../engine');
 const { HEROES } = require('./../stats');
 
-const CHARGE_TIME = 0.5; // ponytail: seconds to charge a shot at his base fire rate (fire rate items shorten it, the wiki); placeholder
+const CHARGE_TIME = 0.5; // seconds to charge a shot at his base fire rate (fire rate items shorten it, the wiki); placeholder
 const CHARGED = { damage: 48, perBoon: 1.6, ammo: 2, buildUp: 3, radius: 2.5, edge: 0.7 }; // the wiki: 48 weapon damage in 2.5 m, 70% at the edge, 3x build-up; +1.6 a boon (LevelScaling.BulletDamageAltFire)
-const GRAB_TIME = 2; // ponytail: seconds up and down with the grabbed enemy (the wiki gives no duration); placeholder
+const GRAB_TIME = 2; // seconds up and down with the grabbed enemy (the wiki gives no duration); placeholder
 const HEIGHT = 1700 / 39.37; // Close The Deal's MaxHeight in metres (the game's units are inches): about 43 m
-const T1_CUT = 4; // ponytail: Chimera Mk1 T1's -4%/s heat drain read as -4 s cooldown; placeholder
+const T1_CUT = 4; // Chimera Mk1 T1's -4%/s heat drain read as -4 s cooldown; placeholder
 const boons = (a) => a.unit.boons ?? 0;
 const area = (fight, radius) => (fight.foes.length ? fight.near(radius) : []); // a delayed effect may land when nobody is left standing
 const salvo = (unit) => unit.abilities.find((a) => a instanceof StrixSalvo);
 
 // 1. Strix Salvo: missiles land along a line through the group, one per enemy (up to 3, 5 at T3), and go off a moment later: spirit damage and a
 // mark. A charged shot at a marked enemy uses a mark up: bonus spirit damage and a fading slow. Danny charges a shot only when there is a mark to
-// cash in (his call), so this ability also fires his charged shots. T1: shorter cooldown. T2: more damage. T3: +2 missiles, longer, better scaling.
+// cash in, so this ability also fires his charged shots. T1: shorter cooldown. T2: more damage. T3: +2 missiles, longer, better scaling.
 class StrixSalvo extends Ability {
   constructor(...args) {
     super(...args);
@@ -173,7 +173,7 @@ class JettisonFuel extends Ability {
   }
 }
 
-// 4. Close The Deal: once an enemy is below half health (his call), he grabs the lowest one and flies it up and down (GRAB_TIME: neither of them
+// 4. Close The Deal: once an enemy is below half health, he grabs the lowest one and flies it up and down (GRAB_TIME: neither of them
 // acts; a boss shrugs off part of the hold): spirit damage on landing, more for the height fallen and more again if it is below half health,
 // then a short stun. He takes a share of it himself and is stunned a moment. T1: more damage. T2: shorter cooldown. T3: longer stun, more a metre.
 class CloseTheDeal extends Ability {

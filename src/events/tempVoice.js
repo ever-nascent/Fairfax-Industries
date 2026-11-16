@@ -1,6 +1,8 @@
+// Event handler: voiceStateUpdate, channelDelete, clientReady.
+// TempVoice: make a room when someone joins a Creator Channel, delete empty ones, keep the records true.
+
 const tv = require('../utils/server/tempVoice');
 
-// TempVoice: make a room when someone joins a Creator Channel, delete empty ones, keep the records true.
 const log = (what) => (e) => console.error(`[tempvoice] ${what} failed:`, e.message);
 module.exports = [
   {

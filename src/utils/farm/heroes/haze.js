@@ -33,7 +33,7 @@ class SleepDagger extends Ability {
 // seen for 1.5 s after being hit or attacking); using an item doesn't, and neither does Sleep Dagger. An escape: cast when hurt and (T1+) nobody can see
 // her, she holds her fire (engine.js `hold`: no gun, daggers still fly) until she has healed to 80% or it runs out. T2: a second charge (ability.js
 // charges). T3: dispels her debuffs on use and gives bullet lifesteal for PostInvisBuffDuration after the invisibility ends.
-// ponytail: spotting is by the enemy's own distance (a lone enemy 18 m or closer always sees her), not a per-moment check.
+// spotting is by the enemy's own distance (a lone enemy 18 m or closer always sees her), not a per-moment check.
 class SmokeBomb extends Ability {
   hiddenFrom(e) { return (e.stats.distance ?? 15) > this.value('SpottedRadius'); }
 
@@ -74,7 +74,7 @@ class SmokeBomb extends Ability {
 // 0.2 to the bullet's own damage (the wiki's "+0.2 Weapon Damage /stack", DamageBonusFixedPerStack: a flat amount like a boon's
 // +0.143 bullet damage; Oct 11: it was read as 0.2%, about a twentieth of the game's), raised by weapon damage and cut by falloff
 // like the rest of the bullet. T1: every 20 stacks, spirit damage. T2: +40 max stacks, +5 s. T3: +0.11 per stack.
-// ponytail: headshots (3 stacks) aren't modelled, nor the wiki's BossDamageScale.
+// headshots (3 stacks) aren't modelled, nor the wiki's BossDamageScale.
 class Fixation extends Ability {
   get passive() { return true; }
 
@@ -117,10 +117,10 @@ class Fixation extends Ability {
 // 4. Bullet Dance: a 3.5 s channel (no other cast meanwhile: ability.js lockout) with +25% fire rate, +7 bullet damage (flat per bullet, T1 +7 more:
 // the wiki's table has no %), 30% evasion, never reloading, perfect accuracy, immune to Disarm; each shot goes to any enemy within its 16 m radius
 // (engine.js fireWeapon: `spread`), and every bullet procs bullet items and Fixation like a normal one.
-// ponytail: the 65 degree cone isn't modelled (enemies stand in a line); no slide / channel movement.
+// the 65 degree cone isn't modelled (enemies stand in a line); no slide / channel movement.
 class BulletDance extends Ability {
   want(fight) {
-    return fight.enemies.some((e) => e.alive) && !this.unit.statuses.some((s) => s.hold); // as soon as it is ready (his call Oct 30), never while she hides
+    return fight.enemies.some((e) => e.alive) && !this.unit.statuses.some((s) => s.hold); // as soon as it is ready, never while she hides
   }
 
   cast(fight) {
@@ -135,7 +135,7 @@ class BulletDance extends Ability {
 }
 
 // What the hero pick (/base) shows: each ability's general description, in slot order (the 4th is her Ultimate).
-// ponytail: written by hand from the wiki's ability text; the wiki has no short form to read. No pronouns, on purpose.
+// written by hand from the wiki's ability text; the wiki has no short form to read. No pronouns, on purpose.
 const info = [
   ['Sleep Dagger', 'Throws a dagger that damages and puts the target to sleep. Throwing it does not break invisibility.'],
   ['Smoke Bomb', 'Fades out of sight, invisible and faster. Attacking breaks it.'],

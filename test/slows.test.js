@@ -1,3 +1,4 @@
+// Enemy slows in the fight engine: how a slow stretches the time between attacks, how slows stack and resist, and how they end.
 const test = require('./group')(__filename);
 const assert = require('node:assert/strict');
 const { Fight, enemy } = require('../src/utils/farm/engine');

@@ -10,7 +10,7 @@ const hideout = require('../src/utils/shop/hideout');
 const guild = { id: require('../src/config').GUILD_ID, roles: { everyone: { id: 'everyone' } }, members: { me: { id: 'bot' } } }; // Hideouts are a Fairfax feature
 
 test('text channel names follow the voice name', () => {
-  assert.strictEqual(hideout.textName("Zechariah's Hideout"), 'zechariahs-hideout');
+  assert.strictEqual(hideout.textName("Sam's Hideout"), 'sams-hideout');
   assert.strictEqual(hideout.textName('  The Den!! '), 'the-den');
   assert.strictEqual(hideout.textName('!!!'), 'hideout');
 });
@@ -57,16 +57,16 @@ function fakeServer() {
 test('a Hideout channel deleted by hand is made again (same name, members, a new pinned panel); remove ends it for good', async () => {
   const { g, made } = fakeServer();
   const store = getStore('hideouts');
-  const h = await hideout.makeChannels(g, 'owner', { name: "Zechariah's Hideout", members: ['friend'], renamedAt: 0 });
+  const h = await hideout.makeChannels(g, 'owner', { name: "Sam's Hideout", members: ['friend'], renamedAt: 0 });
   await store.set('owner', h);
-  assert.deepStrictEqual(made.map((c) => c.name), ["Zechariah's Hideout", 'zechariahs-hideout']);
+  assert.deepStrictEqual(made.map((c) => c.name), ["Sam's Hideout", 'sams-hideout']);
 
   g.channels.cache.delete(h.textId); // staff deleted the text channel
   await hideout.channelDeleted(g, h.textId);
   const after = await store.get('owner');
   assert.strictEqual(after.voiceId, h.voiceId); // the voice channel was left alone
   assert.notStrictEqual(after.textId, h.textId);
-  assert.strictEqual(made.at(-1).name, 'zechariahs-hideout');
+  assert.strictEqual(made.at(-1).name, 'sams-hideout');
   assert.ok(made.at(-1).permissionOverwrites.list.some((o) => o.id === 'friend'));
 
   assert.ok(await hideout.removeHideout(g, 'owner'));

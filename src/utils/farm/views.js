@@ -1,4 +1,4 @@
-// Hero Farming: every farm message, drawn like the previews he approved one at a time (server-plan.md, "Hero Farming"). Each view
+// Hero Farming: every farm message, drawn like the approved previews. Each view
 // returns { embeds, components, files }. Heroes have no pronouns in the text, on purpose. Souls-coloured embeds are the menus and live
 // fights, green is a win, red a loss.
 const path = require('node:path');
@@ -67,7 +67,7 @@ const LABELS = {
   'mid-boss': 'Mid-Boss', siege: 'Base Siege', waves: 'Waves',
 };
 const HOME_ORDER = ['small-camp', 'medium-camp', 'large-camp', 'guardian', 'walker', 'mid-boss', 'roam', 'siege'];
-// ponytail: the descriptions are mine, short and plain; reword them in one place here.
+// the descriptions are mine, short and plain; reword them in one place here.
 const TEXT = {
   'small-camp': 'Three small Haunts guard this camp.',
   'medium-camp': 'Five Haunts guard this camp: two medium and three small.',
@@ -125,7 +125,7 @@ const slugOf = (name) => HEROES.find((h) => h.name === name).slug;
 const heroText = (guild, name) => { const e = heroEmoji(guild, slugOf(name)); return e ? `<:${e.name}:${e.id}> ` : ''; };
 const row = (...components) => new ActionRowBuilder().addComponents(...components);
 
-// The hero's icon (his call, Oct 3: the icon, not the full-body art), kept as a PNG per hero.
+// The hero's icon (the icon, not the full-body art), kept as a PNG per hero.
 const thumbs = new Map();
 async function heroPicture(name) {
   const slug = slugOf(name);
@@ -153,7 +153,7 @@ const statLines = (name) => {
 // ---- hero pick ----
 // No `selected`: the list of heroes. With one: that hero's stats and abilities and a Select button (nothing is saved until then).
 // A member who already has a hero (`record`) gets the same screen for switching: each hero shows its level or its unlock price, and the
-// button is Switch (any time, his call Oct 11) or Unlock (a Character Unlock Token).
+// button is Switch (any time) or Unlock (a Character Unlock Token).
 async function pickView(member, selected = null, record = null, mode = 'switch') {
   const guild = member.guild;
   const names = roster();
@@ -180,8 +180,8 @@ async function pickView(member, selected = null, record = null, mode = 'switch')
       ? (pool.length ? `${tokens > 0 ? `You have **${tokens}** Character Unlock Token${tokens === 1 ? '' : 's'}.\nSelect a Hero to Unlock with one of your Character Tokens.` : noToken}\n\n${locked}` : 'You have unlocked every hero.')
       : `Each hero keeps its own souls, level, abilities and items,\nand its own buffs, cooldowns and ${rejuvIcon()}Rejuvs.\n\n` +
         pool.map((n) => `${heroText(guild, n)}**${n}**  -  Level ${levelOf(n)}${n === record.hero ? '  -  Current Hero' : ''}`).join('\n'),
-    ).setFooter({ text: unlock ? tokenText(tokens) : 'You can switch any time.' });
-    if (unlock) { // the token in the corner, like its own screen (his ask Nov 5)
+    ).setFooter({ text: unlock ? tokenText(tokens) : 'Switching is free.' });
+    if (unlock) { // the token in the corner, like its own screen
       e.setThumbnail('attachment://token.png');
       files.push(new AttachmentBuilder(path.join(ICONS, 'unlock-token.png'), { name: 'token.png' }));
     }
@@ -204,7 +204,7 @@ async function pickView(member, selected = null, record = null, mode = 'switch')
       )
       .setThumbnail('attachment://thumb.png')
       .setFooter({ text: current ? 'Pick another hero to switch or unlock.'
-        : owned ? `You can switch any time. ${selected} has its own souls, items and cooldowns.`
+        : owned ? `Switching is free. ${selected} has its own souls, items and cooldowns.`
         : switching ? `Unlocking does not switch. ${selected} starts at level 0 with no souls or items. ${tokenText(tokens)}`
         : `Select to make ${selected} your hero. Your first hero is free.` });
     files.push(await heroPicture(selected));
@@ -225,7 +225,7 @@ const targetMenu = (userId, record, now, current) =>
   new StringSelectMenuBuilder().setCustomId(`${TARGET_ID}:${userId}`).setPlaceholder(`Choose where to send ${record.hero}`).addOptions(
     [...places().map(([key, lane]) => ({
       label: nameOf(key, lane), value: slotOf(key, lane), description: `${status(record, key, now, lane)}  -  ${every(cooldownSeconds(key))}`.slice(0, 100), default: slotOf(key, lane) === current,
-    })), { label: 'Item Shop', value: 'shop', description: 'Buy, sell and corrupt items', ...emojiOf('curiosity_shop') }], // his call, Oct 3: the shop opens from this dropdown
+    })), { label: 'Item Shop', value: 'shop', description: 'Buy, sell and corrupt items', ...emojiOf('curiosity_shop') }], // the shop opens from this dropdown
   );
 
 // What a trip pays this member: camps pay more as their hero levels, every target as it has grown with their clears.
@@ -245,7 +245,7 @@ const payText = (key, record) => {
 // The stats the hero fights with right now: base, its boons (level), items, permanent buffs and what its own abilities add
 // (Abrams' Infernal Resilience: health and regen), so it is the very sheet a fight uses.
 const currentStats = (record) => buildHero(record.hero, fightKit({ ...record, items: itemsOf(record.items) })).stats;
-// The stacks a hero carries into its next fight (his ask, Oct 28): each ability's, then each item's, with what they give ("**Guided Owl:** 3 kills:
+// The stacks a hero carries into its next fight: each ability's, then each item's, with what they give ("**Guided Owl:** 3 kills:
 // +6 Spirit Power"). Empty when it has none.
 const stackLines = (hero) => [...hero.abilities.map((a) => [a.data.Name, a.stackText?.()]), ...hero.items.map((it) => [it.name, it.stackText?.()])]
   .filter(([, text]) => text).map(([name, text]) => `**${name}:** ${text}`);
@@ -333,7 +333,7 @@ const statsFor = (st) => {
 };
 
 // mode: 'main' | 'imbue:<item>' (pick its ability). Buying, selling and the Broker are in the item shop (shopView).
-// The souls shown are the hero's own (his call, Oct 11).
+// The souls shown are the hero's own.
 async function heroView(member, record, mode = 'main') {
   const hero = record.hero;
   const p = progress(record.earned);
@@ -348,7 +348,7 @@ async function heroView(member, record, mode = 'main') {
   const held = [...SLOTS.flatMap((slot) => owned[slot]), ...(record.legendary ? [record.legendary] : [])]; // the 12 and the legendary slot
   const reborn = rankOf(record.rebirth);
   const notes = reborn ? [`**Rebirth: ${rankText(member.guild, reborn)}**  -  +${Math.round(BONUS * reborn * 100)}% Health, Weapon Damage and Spirit Power`] : [];
-  const itemFields = []; // what the hero's items are doing, one field each (his call, Oct 3)
+  const itemFields = []; // what the hero's items are doing, one field each
   const imbued = held.filter((n) => IMBUES.includes(n));
   const abilityName = (slot) => slots.find((a) => a.slot === slot)?.name ?? `Ability ${slot}`;
   if (imbued.length) itemFields.push({ name: 'Imbued', value: imbued.map((n) => `> ${n}\nInto ${abilityName(record.imbues?.[n] ?? 1)}`).join('\n') });
@@ -356,15 +356,15 @@ async function heroView(member, record, mode = 'main') {
   const built = buildHero(hero, fightKit({ ...record, items: owned }));
   const stacks = stackLines(built);
   if (stacks.length) itemFields.push({ name: 'Stacks', value: stacks.join('\n').slice(0, 1024) });
-  // Each ability and item with its icon (his ask, Nov 4): "Icon : Name : Stack N : Cooldown / Active"
+  // Each ability and item with its icon: "Icon : Name : Stack N : Cooldown / Active"
   const kitFields = [
     ...splitField('Abilities', built.abilities.filter((a) => !a.hidden).map((a) => iconLine(abilityIcon(a.name), a.name, stacksOf(a), abilityOutOfFight(a, slots.find((s) => s.slot === a.slot)?.locked)))),
-    ...((list) => (list.length ? splitField('Items', list) : []))(heldItems(built).filter(([, it]) => shown(it)).map(([name, it]) => iconLine(itemIcon(name), name, stacksOf(it), timed(it) ? itemOutOfFight(it) : ''))), // a plain passive is left out (his ask, Nov 4)
+    ...((list) => (list.length ? splitField('Items', list) : []))(heldItems(built).filter(([, it]) => shown(it)).map(([name, it]) => iconLine(itemIcon(name), name, stacksOf(it), timed(it) ? itemOutOfFight(it) : ''))), // a plain passive is left out
   ];
   const components = [];
   const button = (id, label) => new ButtonBuilder().setCustomId(id).setLabel(label).setStyle(ButtonStyle.Secondary);
   const [where, kind] = mode.split(':');
-  if (where === 'imbue' && held.includes(kind)) { // which ability the item goes into (his call, Oct 3: the member picks; free to change)
+  if (where === 'imbue' && held.includes(kind)) { // which ability the item goes into (the member picks; free to change)
     notes.push(titleCase(`Choose the ability to imbue ${kind} into.`));
     components.push(row(new StringSelectMenuBuilder().setCustomId(`${IMBUESET_ID}:${member.id}:${kind}`).setPlaceholder(titleCase(`Imbue ${kind} into`))
       .addOptions(slots.filter((a) => !NO_ULT_IMBUE.has(kind) || a.slot !== 4).map((a) => ({ label: a.name, value: String(a.slot), default: (record.imbues?.[kind] ?? 1) === a.slot, description: a.slot === 4 ? 'Ultimate' : `Ability ${a.slot}` }))))); // Echo Shard, Omnicharge Signet: non-ultimates only (the wiki)
@@ -376,7 +376,7 @@ async function heroView(member, record, mode = 'main') {
         .addOptions(upgradable.map((a) => ({ label: `${a.name}  -  Tier ${a.tier + 1}`, value: String(a.slot), description: `Costs ${plural(TIER_COSTS[a.tier], 'Ability Point')}` })))));
     }
     const legends = record.legendaries ?? [];
-    if (legends.length > 1) { // which of its legendaries is in the legendary slot (his call, Oct 22: change it at will)
+    if (legends.length > 1) { // which of its legendaries is in the legendary slot (change it at will)
       components.push(row(new StringSelectMenuBuilder().setCustomId(`${LEGEND_ID}:${member.id}`).setPlaceholder('Change your legendary')
         .addOptions(legends.map((n) => ({ label: n, value: n, default: n === record.legendary, description: n === record.legendary ? 'In the legendary slot' : 'Put it in the legendary slot' })))));
     }
@@ -391,13 +391,13 @@ async function heroView(member, record, mode = 'main') {
   if (notes.length) e.setDescription(notes.join('\n'));
   e.addFields(kitFields);
   if (itemFields.length) e.addFields(itemFields.map((f) => ({ ...f, inline: true })));
-  // the corrupted item on its own full-width field: its bonuses (before -> after), then its drawback (his ask, Oct 22)
+  // the corrupted item on its own full-width field: its bonuses (before -> after), then its drawback
   if (record.corrupted) e.addFields({ name: `Corrupted: ${record.corrupted.name}`, value: corruptionBlock(record.corrupted) });
   return { embeds: [e], components, files: [soulsFile(), await heroPicture(hero), new AttachmentBuilder(card, { name: 'hero.jpg' })] };
 }
 
-// ---- the item shop (his calls, Oct 3): drawn like the in-game shop, one tab at a time (shopCard.js) ----
-// Tabs: Weapon / Vitality / Spirit, each with price buttons 800 / 1,600 / 3,200 / 6,400 (his call, Oct 3: one tier at a time, big enough to read; no tier
+// ---- the item shop: drawn like the in-game shop, one tab at a time (shopCard.js) ----
+// Tabs: Weapon / Vitality / Spirit, each with price buttons 800 / 1,600 / 3,200 / 6,400 (one tier at a time, big enough to read; no tier
 // has more than 25 items, so one buy dropdown), Broker (corrupt one tier 3 or 4 item, while he is open), Sell (half the price back). Back goes to /base,
 // Hero to the hero screen.
 const SHOP_TABS = { weapon: 'Weapon', vitality: 'Vitality', spirit: 'Spirit', broker: 'Broker', sell: 'Sell' };
@@ -423,12 +423,12 @@ const itemText = (raw = '') => {
   return text.length > 700 ? `${text.slice(0, 700).replace(/\s+\S*$/, '')}...` : text;
 };
 // Every farm enemy counts as a hero for item effects (his standing call), so "an enemy Hero" is just "an enemy" here. A text that names
-// non-heroes really treats them differently (Ballistic Enchantment, Lifestrike ...) and is left as the game wrote it.
+// non-heroes really treats them differently (Ballistic Enchantment, Lifestrike...) and is left as the game wrote it.
 const anyEnemy = (text) => (/non-hero/i.test(text) ? text : text
   .replace(/\benemy heroes\b/gi, 'enemies').replace(/\ban enemy hero\b/gi, 'an enemy').replace(/\benemy hero\b/gi, 'enemy')
   .replace(/\b(a|one) hero\b/gi, 'an enemy').replace(/\bdifferent heroes\b/gi, 'different enemies').replace(/\bshooting heroes\b/gi, 'shooting enemies')
   .replace(/\bhero kill\b/gi, 'kill'));
-// Where an item works differently here than the game's text says (his calls, or nothing to aim with): one line under it.
+// Where an item works differently here than the game's text says (or nothing to aim with): one line under it.
 const ITEM_NOTES = {
   'Warp Stone': 'It fires on its own here: it teleports you out of the next enemy attack or blast, which then deals nothing.',
   Rebuttal: "Parries happen on their own here, against the front enemy's attacks (Walkers, the Mid-Boss, Shrines and Patrons can't be parried). A parry also stuns the attacker for 2.75s and it takes +25% damage meanwhile.",
@@ -440,7 +440,7 @@ const ITEM_NOTES = {
   'Stamina Mastery': 'There is no air jumping here: only its Stamina numbers count.',
 };
 
-// What an item does, the way the game's tooltip says it (tooltips.js; his ask, Oct 28): the always-on numbers, then each passive / active part
+// What an item does, the way the game's tooltip says it (tooltips.js): the always-on numbers, then each passive / active part
 // with its text and numbers. Precision is ours (ITEM_PRECISION), so it joins the always-on numbers. Without a tooltip: the card's text and stats.
 function itemLines(card) {
   const parts = tooltips.sections(card);
@@ -461,8 +461,8 @@ const itemSummary = (card) => {
   return parts.map((s) => s.stats.join(', ')).find(Boolean) || itemStats(card) || itemText(parts[0]?.text ?? card.Description).replace(/\*+/g, '');
 };
 // `picked` is the item chosen in the dropdown: its card is framed, its page (description, stats, price, souls left) is in the embed, and Buy confirms.
-// Items are paid with the hero's own souls (his call, Oct 11).
-// `room`: Buy was pressed with a full build, so the screen asks which item to sell for it (his call, Oct 22: no trip to the Sell tab).
+// Items are paid with the hero's own souls.
+// `room`: Buy was pressed with a full build, so the screen asks which item to sell for it (no trip to the Sell tab).
 async function shopView(member, record, tab = 'weapon', now = Date.now(), tier = 1, picked = null, room = false) {
   const balance = record.souls ?? 0;
   if (!SHOP_TABS[tab]) tab = 'weapon';
@@ -471,7 +471,7 @@ async function shopView(member, record, tab = 'weapon', now = Date.now(), tier =
   const held = SLOTS.flatMap((slot) => owned[slot]);
   const e = embed().setTitle(`Item Shop  -  ${SHOP_TABS[tab]}${SLOTS.includes(tab) ? `  -  ${fmt(TIER_PRICE[tier])}` : ''}`).setImage('attachment://shop.jpg').setThumbnail('attachment://thumb.png')
     .addFields({ name: `${record.hero}'s Souls`, value: fmt(balance), inline: true }, { name: 'Items', value: `${countItems(owned)} / ${MAX_ITEMS}`, inline: true });
-  const components = [row(...Object.entries(SHOP_TABS).map(([key, label]) => new ButtonBuilder().setCustomId(`${SHOPTAB_ID}:${member.id}:${key}:${tier}`).setLabel(label) // the price picked stays when the tab changes (his ask, Oct 22)
+  const components = [row(...Object.entries(SHOP_TABS).map(([key, label]) => new ButtonBuilder().setCustomId(`${SHOPTAB_ID}:${member.id}:${key}:${tier}`).setLabel(label) // the price picked stays when the tab changes
     .setStyle(key === tab ? ButtonStyle.Primary : ButtonStyle.Secondary).setDisabled(key === tab)))];
   let pic;
   let buy = null;
@@ -518,7 +518,7 @@ async function shopView(member, record, tab = 'weapon', now = Date.now(), tier =
       titleCase('Each item below lists what corrupting it changes. The drawback is rolled when you corrupt it.')];
     if (record.corrupted) lines.push(titleCase(`${record.hero} already has a corrupted item. Sell it to corrupt another.`));
     e.setDescription(lines.join('\n'));
-    // what corrupting each item changes (his ask, Oct 22), the corrupted one with its drawback; Discord allows 6,000 characters in all
+    // what corrupting each item changes, the corrupted one with its drawback; Discord allows 6,000 characters in all
     let room = 5000 - lines.join('\n').length;
     for (const name of choices.slice(0, 20)) {
       const value = record.corrupted?.name === name ? corruptionBlock(record.corrupted) : (bonusLines(name).join('\n') || 'None listed').slice(0, 1024);
@@ -586,7 +586,7 @@ const siegeCardData = (record, now) => ({
   }),
 });
 
-// Every target's screen is in Title Case (his call, Oct 3). A camp's has the minimap triangle as the author icon and one of its Haunts in the corner;
+// Every target's screen is in Title Case. A camp's has the minimap triangle as the author icon and one of its Haunts in the corner;
 // `family` is that Haunt's family (random unless given), and Send carries it so the fight is against the one shown.
 // A Guardian or Walker is its lane's (`variant` is the lane, York unless given): its screen says which lane, and when it is down or locked.
 async function targetView(member, key, record, now = Date.now(), variant = null) {
@@ -615,7 +615,7 @@ async function targetView(member, key, record, now = Date.now(), variant = null)
         { name: 'Cooldown', value: 'Once a day' },
         { name: 'Best Run', value: best ? `${plural(best, 'wave')} (${souls(wavesPay(best))})` : 'None yet' },
       ].map((f) => ({ ...f, inline: true })));
-    footer = `Every wave cleared pays, and nothing is lost when ${hero} falls. The run ends when ${hero} falls.`;
+    footer = `Every wave cleared pays. The run ends when ${hero} falls.`;
     pic = path.join(ICONS, 'trooper.png');
   } else {
     const t = TARGETS[key];
@@ -706,13 +706,13 @@ function fightView(run, frame) {
   return { embeds: [e], components: [], files: [soulsFile(), picture(enemyPicture(run, frame))], attachments: [] };
 }
 
-// The winner's voice line under a fight's result (his calls, Oct 16: every fight, text in the embed, said by the winner): one of the hero's lines
-// from deadlock.wiki that /trivia keeps (assets/trivia/trivia.json). Oct 16 (his call): the lines go with who was fought. Beating a hero
+// The winner's voice line under a fight's result (every fight, text in the embed, said by the winner): one of the hero's lines
+// from deadlock.wiki that /trivia keeps (assets/trivia/trivia.json). Oct 16: the lines go with who was fought. Beating a hero
 // (`beat`) uses the winner's kill lines about that hero, else its generic kill lines; a camp or a boss, lines that name no hero and
 // aren't a kill line about one (Oct 20: Wraith's 'Tch. "Savior of Spanish Harlem."' is about Ivy without naming her).
 // Nothing when the hero has no such lines yet.
-// Nov 5 (his ask: the right lines for the moment): a won fight or room uses the hero's Killstreak and generic kill lines, a cleared run or siege
-// (`win`) its Post-Game and Win MVP lines (else the fight ones). Never the page's other lines (picking the hero, item reminders, pain, dying ...).
+// Nov 5 (the right lines for the moment): a won fight or room uses the hero's Killstreak and generic kill lines, a cleared run or siege
+// (`win`) its Post-Game and Win MVP lines (else the fight ones). Never the page's other lines (picking the hero, item reminders, pain, dying...).
 function voiceLine(hero, beat, rng, win = false) {
   const all = triviaHeroes();
   const me = all.find((h) => h.name === hero);
@@ -721,7 +721,7 @@ function voiceLine(hero, beat, rng, win = false) {
   else {
     const names = new RegExp(`\\b(${all.flatMap((h) => h.name.split(/[\s&]+/)).filter((w) => w && w !== 'The').join('|')}|Doorman)\\b`);
     const aboutHero = new Set(Object.values(me?.kills?.heroes ?? {}).flat());
-    const fit = (list) => (list ?? []).filter((l) => !names.test(l) && !aboutHero.has(l) && !/rejuv/i.test(l)); // Oct 23 (his call): Rejuv lines left out, Rejuvs are barely used
+    const fit = (list) => (list ?? []).filter((l) => !names.test(l) && !aboutHero.has(l) && !/rejuv/i.test(l)); // Oct 23: Rejuv lines left out, Rejuvs are barely used
     const fight = fit([...(me?.kills?.streak ?? []), ...(me?.kills?.any ?? [])]);
     lines = win && fit(me?.kills?.win).length ? fit(me.kills.win) : fight;
   }
@@ -772,7 +772,7 @@ function resultView(run) {
 
 // ---- encounters: the duel with a rival hero (rules: encounter.js; the offer and the unlock: play.js) ----
 // The offer: a hero the member hasn't unlocked showed up (play.js meet) and waits OFFER_MS. Its own embed under the fight's result
-// (his call, Oct 10), in the rival's colour with its picture, and the Fight / Walk Away buttons, which name their rival (Oct 11: several can wait).
+//, in the rival's colour with its picture, and the Fight / Walk Away buttons, which name their rival (Oct 11: several can wait).
 async function withRival(view, rival, ownerId) {
   const { color } = await heroArt(slugOf(rival), 'icon');
   view.embeds.push(new EmbedBuilder().setColor(color).setTitle('A Rival Appears').setThumbnail('attachment://rival.png')
@@ -797,7 +797,7 @@ async function rivalFace(name, mood = null, wolf = false) {
   return file ? picture(file) : heroPicture(name);
 }
 
-// The rival's mood in a snapshot (his call, Oct 16): gloating while it has more of its health left than the member's hero, hurt while it has less.
+// The rival's mood in a snapshot: gloating while it has more of its health left than the member's hero, hurt while it has less.
 function rivalMood(frame) {
   const rival = frame.enemies[0];
   const ahead = rival.hp / rival.max - frame.hero.hp / frame.hero.max;
@@ -833,16 +833,16 @@ async function duelResultView(run) {
     { name: hero, value: barLine(last.hero.hp, last.hero.max) },
     ...enemyFields(last),
     { name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' },
-  ).setFooter({ text: run.won ? 'Switch any time. Each hero keeps its own souls, items and cooldowns.' : 'Another rival may show up after a won fight.' });
+  ).setFooter({ text: run.won ? 'Each hero keeps its own souls, items and cooldowns.' : 'Another rival may show up after a won fight.' });
   return { embeds: [e], components: [], files: [soulsFile(), await rivalFace(rival, run.won ? 'critical' : 'gloat', last.enemies[0].wolf)], attachments: [] };
 }
 
-// ---- Damage Breakdown (his ask, Oct 22): a button under a fight's or a duel's result, answered privately ----
+// ---- Damage Breakdown: a button under a fight's or a duel's result, answered privately ----
 // Every point of the hero's damage by what dealt it (engine.js damageBreakdown): the gun, melee, each ability and each item.
 const DAMAGE_ID = 'farm_damage'; // button "Damage Breakdown": farm_damage:<user id>:<fight id> (anyone may press it)
 const DAMAGETAB_ID = 'farm_dmgtab'; // buttons on the breakdown (a private message): farm_dmgtab:<fight id>:<damage | taken | heal | build | foes>
 const damageButton = (ownerId, id) => row(new ButtonBuilder().setCustomId(`${DAMAGE_ID}:${ownerId}:${id}`).setLabel('Damage Breakdown').setStyle(ButtonStyle.Secondary));
-// The breakdown's four pages (his ask, Oct 26): the hero's damage, the enemies' damage, and both builds as the fight started.
+// The breakdown's four pages: the hero's damage, the enemies' damage, and both builds as the fight started.
 function damageTabs(id, run, tab) {
   const tabs = [['damage', `${run.hero}'s Damage`], ['taken', 'Enemy Damage'], ['heal', 'Healing'], ['build', `${run.hero}'s Build`], ['foes', 'Enemy Build']];
   return row(...tabs.map(([key, label]) => new ButtonBuilder().setCustomId(`${DAMAGETAB_ID}:${id}:${key}`).setLabel(label.slice(0, 80))
@@ -862,7 +862,7 @@ function enemyDamageView(run) {
   if (taken.length) e.addFields(taken.slice(0, 25).map((x) => ({ name: `${x.name}  -  ${fmt(x.dealt)}  (${share(x.dealt)})`.slice(0, 256), value: splitField('', x.by.map((m) => `${named(m.name)}  -  ${fmt(m.dealt)}`))[0]?.value ?? '' })));
   return { embeds: [e], files: [soulsFile()] };
 }
-// What healed the hero, how much and when (his ask, Oct 26; `run.healing`: engine.js healBreakdown). Heals in back-to-back seconds read as one span.
+// What healed the hero, how much and when (`run.healing`: engine.js healBreakdown). Heals in back-to-back seconds read as one span.
 function whenText(times, max = 12) {
   const spans = [];
   for (const [t, n] of times) {
@@ -902,7 +902,7 @@ function damageView(run) {
 // How many Character Unlock Tokens a member holds, and where the next one comes from (the footer of the switch screens).
 const tokenText = (n) => (n > 0 ? `You have ${plural(n, 'Character Unlock Token')}.` : 'To earn a Hero Token, you must win the Base Siege.');
 
-// A hero's first siege win pays a Character Unlock Token (his call, Oct 2): its own message after the result, like a legendary drop.
+// A hero's first siege win pays a Character Unlock Token: its own message after the result, like a legendary drop.
 const TOKEN_COLOR = 0xa98be8; // the token's violet
 function tokenView(hero) {
   const e = embed(TOKEN_COLOR).setTitle('Character Unlock Token').setThumbnail('attachment://token.png')
@@ -912,7 +912,7 @@ Use it on the Switch Hero screen to unlock any hero.`)
   return { embeds: [e], files: [soulsFile(), new AttachmentBuilder(path.join(ICONS, 'unlock-token.png'), { name: 'token.png' })] };
 }
 
-// A legendary drop (levels.js rollLegendary) is its own gold message right after the fight result (his call, Oct 2): the item's name,
+// A legendary drop (levels.js rollLegendary) is its own gold message right after the fight result: the item's name,
 // every number on its card with the game's own labels, and its picture.
 // `equipped`: it went into the legendary slot (the hero's first); otherwise it is kept to change to on the hero screen.
 function legendaryView(name, equipped = true) {

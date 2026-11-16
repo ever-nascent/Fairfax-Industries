@@ -1,6 +1,6 @@
 // Go-live alerts: once a minute, ask Twitch and TikTok if each server's streamer is live and post in that server's alerts channel
 // (/stream-config: channel, Twitch and TikTok names, ping, description; Fairfax's start from config.js).
-// Twitch needs TWITCH_CLIENT_ID + TWITCH_CLIENT_SECRET in .env (setup.py twitch saves them).
+// Twitch needs TWITCH_CLIENT_ID + TWITCH_CLIENT_SECRET in.env (setup.py twitch saves them).
 // TikTok has no public API: this reads the same endpoint tiktok.com's own live page uses. Unofficial,
 // so TikTok can change or block it without warning.
 const { EmbedBuilder } = require('discord.js');

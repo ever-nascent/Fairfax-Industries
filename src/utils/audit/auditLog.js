@@ -1,5 +1,5 @@
 // Audit log: settings, the event list, filters, member history, and posting to the log channel.
-// Every decision is in server-plan.md ("Audit log").
+//
 const { AuditLogEvent, EmbedBuilder } = require('discord.js');
 const { setTimeout: sleep } = require('node:timers/promises');
 const { getStore } = require('../../storage');

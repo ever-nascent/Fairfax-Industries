@@ -1,4 +1,4 @@
-// One-time move to a per-server economy (his call, Oct 30, 2026: the bot goes public, every server has its own souls, XP and progress).
+// One-time move to a per-server economy (the bot goes public, every server has its own souls, XP and progress).
 // Until then member data was saved under the user id alone, because the bot served one server. Now it is saved under `<server id>:<user id>`
 // (storage/index.js), so everything saved so far becomes Fairfax's. Run once at startup, before anything reads the data:
 //   1. copy the files into data/pre-per-server-backup/<time>/ (if this fails nothing is changed and the bot does not start);

@@ -6,13 +6,13 @@
 //   stage 3 (6): it wakes: the plate turns to wet ink, both eyes burn, drips run off it (one all the way to the page, where it lands),
 //               and ink is flung off its outer edges in streaks, sprays and landed blots
 // In the icon the dragon is a cut-out of a dark book shape; the dark shape is what gets engraved. Each stage is drawn once and cached (the bot
-// draws the page on every guess), so after the first draw a stage costs one drawImage. No green aura, his call: only the eyes glow.
+// draws the page on every guess), so after the first draw a stage costs one drawImage. No green aura, only the eyes glow.
 // ctx: { art: { wyrm }, cx, y, size, stage, seeded, createCanvas, PAGE: { left, right, top, bottom }, SERIF }
 
 const K = 2;                 // the plate is worked at twice the page's resolution, then halved
 const PAD = 22;              // page px of working room around the drawing
 const FIT = 0.935;           // the drawing's size as a share of the box book.js gives (room for drips under it)
-const INK = [82, 56, 36], WET = [64, 40, 25]; // a faded brown ink, the colour of an old printed plate (his call Oct 21: it looked like solid black); the wake is its darkest, still a brown
+const INK = [82, 56, 36], WET = [64, 40, 25]; // a faded brown ink, the colour of an old printed plate (it looked like solid black); the wake is its darkest, still a brown
 const FADE = 0.9;            // the plate is laid on the page a little translucent, so the paper shows through the ink
 const HI = [255, 240, 218];  // the candle caught on wet ink
 const TO_LIGHT = [-0.55, -0.83]; // towards the candle, top left

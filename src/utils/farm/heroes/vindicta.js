@@ -96,7 +96,7 @@ class CrowFamiliar extends Ability {
 // weapon damage for the rest of the fight; the shot waits for an enemy it will kill in time. 2 charges, 2.5 s apart (the wiki's, ability.js),
 // and a headshot adds 20%. (The wiki's kill window is 4 s; KILL_WINDOW is his 3. It pierces in the game; here it hits only its target.)
 // T1: shorter cooldown. T2: a bigger bonus. T3: more weapon damage per kill. (The game's bonus souls for a kill are not paid here.)
-const KILL_WINDOW = 3; // seconds after the shot that its kill still counts (his call, Oct 29)
+const KILL_WINDOW = 3; // seconds after the shot that its kill still counts
 class Assassinate extends Ability {
   constructor(...args) {
     super(...args);
@@ -115,8 +115,8 @@ class Assassinate extends Ability {
   }
 
   // An enemy below half health that the shot, and what the hero deals after it, kills within KILL_WINDOW: only then does the kill count
-  // (his call, Oct 29), so the shot waits for one. The weakest such enemy first.
-  // Every charge in hand counts (Oct 29, his ask: she held both on a Walker at 1k of 4k): the next one fires a gap and a scope later, and its own
+  //, so the shot waits for one. The weakest such enemy first.
+  // Every charge in hand counts (she held both on a Walker at 1k of 4k): the next one fires a gap and a scope later, and its own
   // kill window starts then.
   prey(fight) {
     const low = this.data.LowHealthEnemyThresholdPct / 100;
@@ -140,7 +140,7 @@ class Assassinate extends Ability {
   }
 
   cast(fight) {
-    // the enemy it aimed at; if that one died while scoping, another below half health; never one above half (his call, Oct 29)
+    // the enemy it aimed at; if that one died while scoping, another below half health; never one above half
     const low = this.data.LowHealthEnemyThresholdPct / 100;
     const e = this.aim?.alive ? this.aim : this.prey(fight) ?? fight.foes.filter((f) => f.health < f.stats.maxHealth * low)[0];
     this.aim = null;

@@ -1,6 +1,6 @@
 // /trivia: Deadlock trivia rounds from the wiki data in assets/trivia (built by `tools/trivia-data.js`).
 // Solo: one question (4 answer buttons, a dropdown of items, or a typed answer), only the runner answers, one guess; right wins souls (more for a streak,
-// up to 10 paid answers a day: xp.js triviaAnswer). Rules: server-plan.md.
+// up to 10 paid answers a day: xp.js triviaAnswer)..
 const fs = require('node:fs');
 const path = require('node:path');
 const {
@@ -22,14 +22,14 @@ const COLOR_HEX = '#e0b560';
 const BUTTON_ID = 'trivia'; // custom id: trivia:<round id>:<choice index>
 const NEXT_ID = 'trivia_next'; // custom id: trivia_next:<mode> (no mode = mixed)
 const TYPE_ID = 'trivia_type'; // custom id: trivia_type:<round id> (the Type Your Answer button and its pop-up)
-const MENU_SIZE = 5; // dropdown choices (his call, Sept 28; Discord allows up to 25)
+const MENU_SIZE = 5; // dropdown choices (Discord allows up to 25)
 const SLOW_SECONDS = 30; // dropdown and typed questions take longer to answer than 4 buttons
 const MAX_LABEL = 80; // Discord's button label limit
 
 // Dynamo hosts (a professor): his Singularity icon top left, portrait/gloat/injured from deadlock.wiki in assets/dynamo.
 // Original lines modelled on his real ones (deadlock.wiki "Dynamo/Voice lines"): excitable ("Oooh", stretched words,
 // dropped g's), his class and students, term papers, tenure, Marla, science. He's an encouraging teacher: proud when
-// you get it right, never mocking when you don't (his call, Sept 28). One goes in the footer when the round ends.
+// you get it right, never mocking when you don't. One goes in the footer when the round ends.
 const DYNAMO = path.join(ASSETS, 'dynamo');
 const RIGHT_LINES = [
   "Remarkable! I'm telling the class about you on Monday!",
@@ -117,7 +117,7 @@ const TYPES = {
       hero,
       choices: choices.map((h) => ({ label: h.name, slug: h.slug })),
       answer: choices.indexOf(hero),
-      menu: true, // hero questions use a dropdown (his call, Sept 28)
+      menu: true, // hero questions use a dropdown
       placeholder: 'Pick the hero',
     };
   },

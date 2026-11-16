@@ -1,8 +1,10 @@
+// Event handler: clientReady, guildMemberRemove, channelDelete, guildMemberAdd.
+// Hideouts: make the category on startup; remake a Hideout channel deleted by hand; hide a Hideout while its owner
+// is gone, open it again when they're back.
+
 const { ownerLeftOrReturned, channelDeleted, reconcile } = require('../utils/shop/hideout');
 const { runInGuild } = require('../utils/guildContext');
 
-// Hideouts: make the category on startup; remake a Hideout channel deleted by hand; hide a Hideout while its owner
-// is gone, open it again when they're back.
 module.exports = [
   {
     name: 'clientReady',

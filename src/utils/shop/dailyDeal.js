@@ -1,4 +1,4 @@
-// Daily Deal (Shop, his pick Nov 13: a rotating shelf so there is a reason to open /shop every day): one thing a day at DEAL_OFF
+// Daily Deal (Shop, a rotating shelf so there is a reason to open /shop every day): one thing a day at DEAL_OFF
 // off, the same for everyone in a server, picked from the date (UTC midnight, like /urn and the quests). One per member per day.
 // The thing is one the Shop already sells (a Hero Card in either style, a Soul Boost, a Rejuv), so buying goes through the usual
 // buyCard / buyBoost / buyRejuv in xp.js at the deal's price. The screen: shop.js `dealView`; the button: components/shop.js.
@@ -6,7 +6,7 @@ const { createHash } = require('node:crypto');
 const { HEROES } = require('../heroes');
 const { updateUser, buyCard, buyBoost, buyRejuv } = require('../economy/xp');
 
-const DEAL_OFF = 0.25; // placeholder ("Gentle", his pick): his to tune
+const DEAL_OFF = 0.25; // placeholder ("Gentle"): to tune
 // What can be on the shelf: `key` is the price key in shopSettings ITEMS, `section` the Shop section it belongs to (a section staff
 // turned off is never the deal).
 const KINDS = [

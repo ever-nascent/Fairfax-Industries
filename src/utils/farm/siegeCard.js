@@ -1,4 +1,4 @@
-// The picture on the siege's details screen (his call, Oct 3: a drawn card, not a wall of text): the three lanes with their Walkers (the siege
+// The picture on the siege's details screen (a drawn card, not a wall of text): the three lanes with their Walkers (the siege
 // only opens while all three are down), then the five stages in the order the hero fights them. Same look as the home card (homeCard.js).
 const { createCanvas } = require('@napi-rs/canvas');
 const { halftone, grain, grainAndVignette, jpeg } = require('../art');

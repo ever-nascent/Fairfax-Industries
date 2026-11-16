@@ -1,5 +1,5 @@
 // Lady Geist's abilities (deadlock.wiki/Lady_Geist, checked Oct 5 2026; page updated that day). Numbers come from the wiki data through
-// Ability.value(); this file is only what each ability does. His calls (Oct 5): what Soul Exchange takes from an enemy is cut against NPCs like
+// Ability.value(); this file is only what each ability does. what Soul Exchange takes from an enemy is cut against NPCs like
 // every health share, and the health she gets from it is not under the heal cap.
 const { Ability } = require('./../ability');
 const { MELEE } = require('./../engine');
@@ -89,7 +89,7 @@ class Malice extends Ability {
 
 // 4. Soul Exchange: used when hurt and the front enemy is healthier: she walks up and swaps health levels with it (the wiki's rules: the enemy
 // first loses 30% of its level; if that is still above hers the levels are swapped, else it only loses that 30% and she gains as much; an enemy
-// is never taken below 30%). His calls: what the enemy loses is cut against NPCs like every health share, and her gain is not a capped heal.
+// is never taken below 30%). what the enemy loses is cut against NPCs like every health share, and her gain is not a capped heal.
 // T2: silences the enemies around. T3: spirit power, fire rate and spirit resist for a while.
 const HURT = 0.5;
 class SoulExchange extends Ability {

@@ -1,5 +1,5 @@
 // Run: node --test
-// Rebirth (rebirth.js, his idea Oct 30): ranks from the highest /descend ascension a hero cleared after winning a siege; +2% a rank in fights.
+// Rebirth (rebirth.js): ranks from the highest /descend ascension a hero cleared after winning a siege; +2% a rank in fights.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 process.env.FARM_FRAME_MS = '0';
 const test = require('./group')(__filename);

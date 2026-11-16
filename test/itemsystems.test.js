@@ -1,5 +1,5 @@
 // Run: node --test
-// Hero Farming: the systems that let every item work (his calls, Oct 3; server-plan.md "Every item in fights, corruption"): melee, dashes, charges,
+// Hero Farming: the systems that let every item work: melee, dashes, charges,
 // imbues, crowd control on the hero, silence and slows on enemies, healing, parries, souls items, corruption, the egg and Eternal Gift.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('./group')(__filename);
@@ -10,7 +10,7 @@ const { heroStats, HEROES, itemByName, corruptCard, effectValue, DRAWBACKS } = r
 const { brokerOpen, brokerNext, rollDrawback, sellPrice, ITEM_POOL } = require('../src/utils/farm/levels');
 const { getFarmUser, chooseHero, buyItem, sellItem, corruptItem, setImbue, hatchEgg, afterFight, updateFarmUser, setCooldowns, simulate } = require('../src/utils/farm/play');
 const views = require('../src/utils/farm/views');
-// the current hero's own souls (his call, Oct 11: farm souls are per hero, apart from the server balance)
+// the current hero's own souls (farm souls are per hero, apart from the server balance)
 const giveSouls = (id, n) => updateFarmUser(id, (r) => { r.souls += n; });
 const heroSouls = async (id) => (await getFarmUser(id)).souls;
 
@@ -237,7 +237,7 @@ test('heal amp: Healing Booster heals more; Toxic Bullets and Nullification Burs
 // ---- hits: parries, deflects, softening ----
 test('hits: Rebuttal parries and returns one, Plated Armor deflects some, Spellbreaker softens a big spirit hit, Juggernaut slows a shooter', () => {
   const r = setup(['Rebuttal'], { dps: 100 });
-  r.enemies[0].stats.meleeRange = 20; // its swings are melee: only those can be parried (his call, Oct 31)
+  r.enemies[0].stats.meleeRange = 20; // its swings are melee: only those can be parried
   r.hero.meleeAt = Infinity;
   const hp = r.hero.health;
   steps(r.fight, 10);

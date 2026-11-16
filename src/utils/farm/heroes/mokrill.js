@@ -100,7 +100,7 @@ class Combo extends Ability {
   keep() { return this.kills; }
   stackText() { return this.kills ? `${this.kills} kills: +${Math.round(this.kills * this.value('BonusHealthOnKill'))} Max Health` : null; }
 
-  // Waits until the front enemy would die in time (his ask, Oct 29): the hold's own damage, then the hero's within KILL_WINDOW after it.
+  // Waits until the front enemy would die in time: the hold's own damage, then the hero's within KILL_WINDOW after it.
   want(fight) {
     const e = fight.foes[0];
     const channel = this.value('AbilityChannelTime');

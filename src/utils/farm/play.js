@@ -1,8 +1,8 @@
 // Hero Farming, the member side: their farm record (hero, cooldowns, Rejuvs), and one trip. `play` claims the cooldown, runs the whole
-// fight at once, pays the souls, and hands back snapshots the command replays as a live message. Rules: server-plan.md ("Hero Farming").
+// fight at once, pays the souls, and hands back snapshots the command replays as a live message..
 //   record (data/farm.json, per member). The member's own: { hero (the current one), bestWave: the most waves cleared in one run,
 //   tokens: Character Unlock Tokens held, siegeTokens: [heroes whose siege win already paid a token] }
-//   Each hero's own (his calls, Oct 2 and Oct 11: "for longevity", so a member can switch heroes and keep playing): heroes: { <hero name>: {
+//   Each hero's own (and Oct 11: "for longevity", so a member can switch heroes and keep playing): heroes: { <hero name>: {
 //   souls: its own souls (trips, roams, egg hatches and sell-backs pay into them, its items and corruption are bought with them; never the server balance),
 //   earned: souls its trips have paid (hero level, levels.js), tiers: { <ability slot>: tier 0-3 },
 //   items: { weapon | vitality | spirit: [item names] } (the 12 slots), legendary (the one in the legendary slot), legendaries: [every legendary it
@@ -38,14 +38,14 @@ const { rollRival, rivalKit, duel, ENCOUNTER_CHANCE } = require('./encounter');
 const { specialFor } = require('./haunts');
 const { HAUNTS } = require('./refresh'); // the Haunt families live with the download list that fetches their pictures
 
-const MAX_REJUVS = 3; // like the game's 3 credits per Mid-Boss kill; placeholder until he decides
+const MAX_REJUVS = 3; // like the game's 3 credits per Mid-Boss kill; placeholder until decided
 const FRAME_STEPS = 30; // a snapshot every 3 seconds of fight
 const MAX_FRAMES = 14; // the live message plays back at most this many snapshots (3 s apart on screen)
 const DESCEND_SECONDS = 300; // a /descend room nobody has won by then counts as lost (descent.js)
 
 const farm = () => getStore('farm');
 const blankRecord = () => ({ hero: null, heroes: {}, tokens: 0, siegeTokens: [] });
-// Before the legendary slot (Oct 22) a legendary sat in one of the 12; it moves to its own slot.
+// Before the legendary slot a legendary sat in one of the 12; it moves to its own slot.
 const legendaryOut = (items) => Object.fromEntries(Object.entries(items).map(([slot, names]) => [slot, names.filter((n) => !LEGENDARY_NAMES.includes(n))]));
 // One hero's saved part -> the working copy, and back (empty parts are left out of the file).
 const heroPart = (mine = {}) => ({
@@ -56,33 +56,33 @@ const heroPart = (mine = {}) => ({
 });
 const HERO_KEYS = Object.keys(heroPart());
 const savedPart = (r) => Object.fromEntries(HERO_KEYS.map((k) => [k, r[k]]).filter(([k, v]) => ['earned', 'tiers', 'items'].includes(k) || (v && (typeof v !== 'object' || Object.keys(v).length))));
-// Shared by all of a member's heroes until Oct 11, each hero's own since (his call). What a member had then goes to Haze (his call: the only hero
+// Shared by all of a member's heroes until Oct 11, each hero's own since. What a member had then goes to Haze (the only hero
 // anyone had played), or to their current hero if they have no Haze.
 const SHARED_UNTIL_OCT_11 = ['cooldowns', 'down', 'clears', 'rejuvs', 'buffs', 'bridge'];
 const OLD_OWNER = 'Haze';
 // Saved record -> the one the code works with: the current hero's own part (`heroes[hero]`) is laid out on the record itself, so everything
-// else reads and edits it there (`r.souls`, `r.items`, `r.cooldowns` ...). (The storage hands out copies, so this may be edited freely.)
+// else reads and edits it there (`r.souls`, `r.items`, `r.cooldowns`...). (The storage hands out copies, so this may be edited freely.)
 function load(saved) {
   const { earned, tiers, items, midbossKills, switchedAt, ...rest } = saved ?? {}; // switchedAt: the once-a-day switch wait, gone since Oct 11
   const record = { ...blankRecord(), ...rest, heroes: { ...rest.heroes } };
-  // records from before progress was per hero (Oct 2) kept the current hero's level, tiers and items on the member
+  // records from before progress was per hero kept the current hero's level, tiers and items on the member
   if (record.hero && !record.heroes[record.hero]) record.heroes[record.hero] = { earned, tiers, items };
   const old = Object.fromEntries(SHARED_UNTIL_OCT_11.filter((k) => k in record).map((k) => [k, record[k]]));
   for (const k of SHARED_UNTIL_OCT_11) delete record[k];
   if (midbossKills) old.clears = { ...old.clears, 'mid-boss': midbossKills }; // the first version counted only the Mid-Boss
   const owner = record.heroes[OLD_OWNER] ? OLD_OWNER : record.hero;
   if (owner && Object.keys(old).length) record.heroes[owner] = savedPart(heroPart({ ...old, ...record.heroes[owner] }));
-  for (const [name, h] of Object.entries(record.heroes)) if (!h.sieged && (record.siegeTokens.includes(name) || h.clears?.siege > 0)) record.heroes[name] = { ...h, sieged: true }; // siege wins from before Rebirth (Oct 30)
+  for (const [name, h] of Object.entries(record.heroes)) if (!h.sieged && (record.siegeTokens.includes(name) || h.clears?.siege > 0)) record.heroes[name] = { ...h, sieged: true }; // siege wins from before Rebirth
   return { ...record, ...heroPart(record.heroes[record.hero]) };
 }
-// ... and back: the hero's part goes into `heroes[hero]`, the other heroes' progress is left as it was.
+//... and back: the hero's part goes into `heroes[hero]`, the other heroes' progress is left as it was.
 function unload(working) {
   const record = Object.fromEntries(Object.entries(working).filter(([k]) => !HERO_KEYS.includes(k)));
   if (record.hero) record.heroes[record.hero] = savedPart(working);
   return record;
 }
 const getFarmUser = async (id) => load(await farm().get(id));
-// One of the member's heroes' own part (souls, level, buffs ...) to read, whether or not it is the current one.
+// One of the member's heroes' own part (souls, level, buffs...) to read, whether or not it is the current one.
 const heroOf = (record, name) => (name === record.hero ? record : heroPart(record.heroes[name]));
 
 // Changes one member's record inside the store lock; `change(record)` edits the copy and returns what the caller wants.
@@ -121,13 +121,13 @@ let cooldownsOn = true;
 const setCooldowns = (on) => { cooldownsOn = on; };
 const cooldownsActive = () => cooldownsOn;
 
-// ---- more heroes (his calls, Oct 2): unlock each extra one once, then switch between the unlocked ones (any time, his call Oct 11) ----
+// ---- more heroes: unlock each extra one once, then switch between the unlocked ones (any time) ----
 const hasHero = (record, name) => record.hero === name || !!record.heroes?.[name];
-// A Character Unlock Token is only given while it can still be used (his call, Oct 28: 'If you have heroes to unlock'): the member has more heroes
+// A Character Unlock Token is only given while it can still be used ('If you have heroes to unlock'): the member has more heroes
 // left to unlock than tokens in hand. Every source asks this: a hero's first siege win, a Descend run reaching TOKEN_ROOM, each ascension cleared.
 const tokenUseful = (r) => roster().filter((n) => !hasHero(r, n)).length > (r.tokens ?? 0);
 
-// Unlocks another hero with a Character Unlock Token (his call, Oct 2: no souls price; a token comes from each hero's first siege win).
+// Unlocks another hero with a Character Unlock Token (no souls price; a token comes from each hero's first siege win).
 // It starts at level 0 with nothing (no souls, buffs or Rejuvs either) and doesn't switch.
 // Returns { ok: true } or { error: 'unknown' | 'no-hero' | 'owned' | 'token' }.
 const unlockHero = (userId, name) => updateFarmUser(userId, (r) => {
@@ -141,8 +141,8 @@ const unlockHero = (userId, name) => updateFarmUser(userId, (r) => {
   return { ok: true };
 });
 
-// Makes an unlocked hero the current one, any time (his call, Oct 11: no wait). The hero left behind keeps everything that is its own
-// (souls, level, abilities, items, cooldowns, buffs, Rejuvs ...) for when the member comes back.
+// Makes an unlocked hero the current one, any time (no wait). The hero left behind keeps everything that is its own
+// (souls, level, abilities, items, cooldowns, buffs, Rejuvs...) for when the member comes back.
 // Returns { ok: true } or { error: 'no-hero' | 'same' | 'locked' }.
 const switchHero = (userId, name) => updateFarmUser(userId, (r) => {
   if (!r.hero) return { error: 'no-hero' };
@@ -153,7 +153,7 @@ const switchHero = (userId, name) => updateFarmUser(userId, (r) => {
   return { ok: true };
 });
 
-// ---- the lanes (his calls, Oct 3; the rules are spelled out at LANES in targets.js) ----
+// ---- the lanes (the rules are spelled out at LANES in targets.js) ----
 // A Guardian or Walker exists once per lane, so its cooldown and its "down" time are kept under '<key>:<lane>' (its slot); other targets under their key.
 const PER_LANE = new Set([...LANED, 'waves']); // a wave run (`/lane run`) is per lane too, but nothing about it is ever "down" or locked
 const slotOf = (key, lane) => (PER_LANE.has(key) ? `${key}:${lane}` : key);
@@ -168,8 +168,8 @@ const cooldownLeft = (record, key, now = Date.now()) => (cooldownsOn ? Math.max(
 
 const familyName = (key) => key.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
 const CAMP_SIZE = { 'small-camp': 'small', 'medium-camp': 'medium', 'large-camp': 'large' };
-// Each Haunt in a camp rolls a trait (his call, Oct 2: random resistances): armoured ones shrug off bullets, warded ones spirit damage.
-// ponytail: the trait list and its sizes are placeholders.
+// Each Haunt in a camp rolls a trait (random resistances): armoured ones shrug off bullets, warded ones spirit damage.
+// the trait list and its sizes are placeholders.
 const TRAITS = [{ name: null, bullet: 0, spirit: 0 }, { name: 'Armored', bullet: 0.2, spirit: -0.1 }, { name: 'Warded', bullet: -0.1, spirit: 0.2 },
   { name: 'Ironclad', bullet: 0.1, spirit: 0.1 }, { name: 'Brittle', bullet: -0.1, spirit: -0.1 }];
 const resistClamp = (x) => Math.max(0, Math.min(0.9, x));
@@ -181,7 +181,7 @@ const hauntFile = (family, size) => path.join(ASSETS, 'farm', 'haunts', `${famil
 // `cleared` is how many waves were beaten and every one of them pays. Returns the run:
 //   { key, siege, hero, won, timedOut, cleared (stages beaten), stageNames, seconds, souls, rejuvsUsed, rejuvsEarned,
 //     family: { key, name, size } | null (camps), frames (snapshots to replay), log: [[seconds, text]] }
-const DESCEND_NPC = 0.5; // Monster Rounds' "vs. NPCs" bonuses in /descend, where every enemy is an NPC (his call Nov 2: halved; hero.js scaleNpc)
+const DESCEND_NPC = 0.5; // Monster Rounds' "vs. NPCs" bonuses in /descend, where every enemy is an NPC (halved; hero.js scaleNpc)
 function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = {}, bridge = [], boons = 0, items = [], tiers = {}, unlocked = 4, corrupted = null, imbues = {}, copies = null, kept = {}, clears = 0, family: wanted, walkersDown: fallen = 0, stages: rooms = null, health = null, healthScale = 1, enhanced = [], fragile = [], tempered = {}, rebirth = 0, tuning = 0, itemCd = {}, aura = 0, lesson = null, allies = [], minions = [], ffa = false, flee = 0, maxSeconds = null, echo = 0, plotArmor = false, venom = false } = {}) {
   const rnd = (n) => Math.floor(rng() * n);
   const isSiege = requested === 'siege';
@@ -192,9 +192,9 @@ function simulate(heroName, requested, { rng = Math.random, rejuvs = 0, buffs = 
   const kit = { buffs, bridge, boons, items, tiers, unlocked, corrupted, imbues, copies, kept, healthScale, enhanced, fragile, tempered, rebirth, tuning, itemCd, aura, lesson, npcScale: isDescend ? DESCEND_NPC : 1 };
   const startKit = { ...kit, items: [...items], tiers: { ...tiers }, kept: { ...kept } }; // the build as the fight started (the breakdown's Your Build): kill stacks change during it
   const hero = buildHero(heroName, kit);
-  hero.rejuvs = isSiege || isDescend ? rejuvs : 0; // Rejuvs are for the siege (his design) and a descent; the Mid-Boss gives them, never takes them
+  hero.rejuvs = isSiege || isDescend ? rejuvs : 0; // Rejuvs are for the siege and a descent; the Mid-Boss gives them, never takes them
   if (health != null) hero.health = Math.max(1, health * hero.stats.maxHealth);
-  // /descend's hero rooms and the Rift (his asks, Nov 6): the Rift's hero flees instead of dying, Sinclair's Assistant, Paige's Plot Armor
+  // /descend's hero rooms and the Rift: the Rift's hero flees instead of dying, Sinclair's Assistant, Paige's Plot Armor
   if (flee) hero.fleeAt = flee;
   if (echo) hero.echo = echo;
   if (plotArmor) hero.plotArmor = true;
@@ -295,8 +295,8 @@ function downsample(frames, n) {
 const fightKit = (r) => ({
   boons: progress(r.earned).level, unlocked: progress(r.earned).unlocks, points: progress(r.earned).points, tiers: r.tiers, items: [...Object.values(r.items).flat(), ...(r.legendary ? [r.legendary] : [])], corrupted: r.corrupted ?? null, imbues: r.imbues ?? {},
   buffs: Object.entries(r.gifts ?? {}).reduce((all, [k, n]) => ({ ...all, [k]: (all[k] ?? 0) + n }), { ...r.buffs }),
-  copies: roster().filter((n) => n !== r.hero && !!r.heroes?.[n]), // Sinclair copies the ultimate of one of the member's other unlocked heroes (his call, Oct 5)
-  kept: { ...r.kept }, // Glass Cannon's and Trophy Collector's kill stacks (his calls, Oct 22: kept until the hero dies)
+  copies: roster().filter((n) => n !== r.hero && !!r.heroes?.[n]), // Sinclair copies the ultimate of one of the member's other unlocked heroes
+  kept: { ...r.kept }, // Glass Cannon's and Trophy Collector's kill stacks (kept until the hero dies)
   rebirth: rankOf(r.rebirth),
 });
 
@@ -313,7 +313,7 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
     return { hero: r.hero, rejuvs: r.rejuvs, kit: { ...fightKit(r), clears: r.clears[key] ?? 0, walkersDown: key === 'walker' ? walkersDown(r, now) : 0 }, bridge: key === 'roam' ? [] : r.bridge.splice(0) }; // a fight uses up held bridge buffs
   });
   if (claim.error) return claim;
-  // everything is settled on the hero that went (claim.hero), its own souls included (his call, Oct 11)
+  // everything is settled on the hero that went (claim.hero), its own souls included
   const settle = (change) => updateHero(userId, claim.hero, (h, r) => { change(h, r); return h.souls; });
   const paid = (souls, after) => { if (souls) logSouls(userId, claim.hero, souls, 'farm', after); };
   try {
@@ -324,19 +324,19 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
     }
     const run = simulate(claim.hero, key, { rng, family, rejuvs: claim.rejuvs, bridge: claim.bridge, ...claim.kit });
     if (PER_LANE.has(key)) run.lane = lane;
-    if (run.waves) { // a wave run (a legendary roll per wave cleared, not per trooper: his call, Oct 25): no clears, nothing goes down; the member's furthest run is kept (his call, Oct 11: the member's, not the hero's)
+    if (run.waves) { // a wave run (a legendary roll per wave cleared, not per trooper): no clears, nothing goes down; the member's furthest run is kept (the member's, not the hero's)
       paid(run.souls, await settle((h, r) => { Object.assign(h.kept, run.kept); h.earned += run.souls; h.souls += run.souls; run.best = r.bestWave = Math.max(r.bestWave ?? 0, run.cleared); run.legendary = dropLegendary(h, run.cleared, rng); afterFight(h, run, rng); run.rival = meet(userId, r, run, rng, now); }));
       if (run.cleared) await track(userId, 'fight'); // quests
       return { run };
     }
     paid(run.souls, await settle((h, r) => {
-      h.earned += run.souls; h.souls += run.souls; run.legendary = run.siege ? dropLegendary(h, run.won ? 1 : 0, rng, SIEGE_LEGENDARY_CHANCE) : dropLegendary(h, run.kills, rng); afterFight(h, run, rng); // a won siege: one 5% roll, not one per kill (his call, Oct 22)
+      h.earned += run.souls; h.souls += run.souls; run.legendary = run.siege ? dropLegendary(h, run.won ? 1 : 0, rng, SIEGE_LEGENDARY_CHANCE) : dropLegendary(h, run.kills, rng); afterFight(h, run, rng); // a won siege: one 5% roll, not one per kill
       Object.assign(h.kept, run.kept);
       if (run.won && LANED.has(key)) h.down[slot] = now + cooldownSeconds(slot) * 1000;
       h.clears[key] = Math.max(0, Math.min(CLEAR_CAP, (h.clears[key] ?? 0) + (run.won ? 1 : -1)));
       h.rejuvs = Math.max(0, Math.min(MAX_REJUVS, h.rejuvs - run.rejuvsUsed + run.rejuvsEarned));
       if (run.siege && run.won) h.sieged = true; // unlocks Rebirth for this hero
-      if (run.siege && run.won && !r.siegeTokens.includes(claim.hero) && tokenUseful(r)) { r.siegeTokens.push(claim.hero); r.tokens += 1; run.token = true; } // each hero's first siege win (his call, Oct 2), while a hero is left to unlock
+      if (run.siege && run.won && !r.siegeTokens.includes(claim.hero) && tokenUseful(r)) { r.siegeTokens.push(claim.hero); r.tokens += 1; run.token = true; } // each hero's first siege win, while a hero is left to unlock
       run.rival = meet(userId, r, run, rng, now);
     }));
     if (run.won) await track(userId, 'fight'); // quests
@@ -347,9 +347,9 @@ async function play(userId, key, { now = Date.now(), rng, family, lane } = {}) {
   }
 }
 
-// ---- encounters (his calls, Oct 2-3; the rules are in encounter.js) ----
+// ---- encounters (the rules are in encounter.js) ----
 // After a won fight (not the siege; a roam isn't a fight) a hero the member hasn't unlocked may show up: the offer is kept here, in memory, for
-// OFFER_MS (his call: the rival leaves after 5 minutes; a restart just ends it). With the testing switch (cooldowns off) every won fight brings one.
+// OFFER_MS (the rival leaves after 5 minutes; a restart just ends it). With the testing switch (cooldowns off) every won fight brings one.
 // A member can have several rivals waiting at once, one per result message (Oct 11: one offer per member meant each new rival sent the last one
 // away early); each message's buttons name their own rival. A rival already waiting, or already unlocked, never shows up again.
 const OFFER_MS = 5 * 60 * 1000;
@@ -387,7 +387,7 @@ function walkAway(userId, rival, now = Date.now()) {
   if (!mine.size) offers.delete(who(userId));
   return was;
 }
-// Fight: the duel is played at once (like a trip) and a win unlocks the rival, at level 0 with nothing; a loss costs nothing but the Rejuvs it used (his call, Oct 10:
+// Fight: the duel is played at once (like a trip) and a win unlocks the rival, at level 0 with nothing; a loss costs nothing but the Rejuvs it used (
 // the member's Rejuvs work in a duel and are used up). Uses up the offer.
 // Nothing else changes: no cooldown, souls, bridge buffs or item time. Returns { run } or { error: 'gone' | 'owned' | 'no-hero' }.
 async function fightRival(userId, rival, { rng = Math.random, now = Date.now() } = {}) {
@@ -403,7 +403,7 @@ async function fightRival(userId, rival, { rng = Math.random, now = Date.now() }
 }
 
 // What a fight's time does for the hero's items (inside its record update): a Golden Goose Egg grows by its souls per minute, and every 15 s of fight
-// time with Eternal Gift is one of its permanent buffs (his calls, Oct 3; Oct 28: 15 s, "165s is kinda insane to get value from"; the game's is 2 s).
+// time with Eternal Gift is one of its permanent buffs (Oct 28: 15 s, "165s is kinda insane to get value from"; the game's is 2 s).
 // The buffs found are put on the run (`gifts`) for the result.
 const EGG = itemByName('Golden Goose Egg');
 const GIFT = itemByName('Eternal Gift');
@@ -434,7 +434,7 @@ function dropLegendary(r, kills, rng = Math.random, chance) {
   return { name, equipped };
 }
 
-// Puts another of the hero's legendaries in the legendary slot (his call, Oct 22: at will). Returns { ok: true } or { error: 'no-hero' | 'missing' }.
+// Puts another of the hero's legendaries in the legendary slot (at will). Returns { ok: true } or { error: 'no-hero' | 'missing' }.
 const equipLegendary = (userId, name) => updateFarmUser(userId, (r) => {
   if (!r.hero) return { error: 'no-hero' };
   if (!r.legendaries.includes(name)) return { error: 'missing' };
@@ -455,11 +455,11 @@ const upgradeAbility = (userId, slot) => updateFarmUser(userId, (r) => {
   return { ok: true, tier: tier + 1 };
 });
 
-// Buys one of ITEM_POOL with the hero's own souls (his call, Oct 11; it sells back for half, sellItem). A hero carries 12 items of any kind (MAX_ITEMS).
+// Buys one of ITEM_POOL with the hero's own souls (it sells back for half, sellItem). A hero carries 12 items of any kind (MAX_ITEMS).
 // An item the member owns a component of costs the difference, and the component is used up (priceFor in levels.js).
 // A component of an owned item can't be bought again (heldIn). Returns { ok: true, paid, used: [components] }, { error: 'inside', holder },
 // { error: 'corrupted', item }, or { error: 'unknown' | 'no-hero' | 'owned' | 'full' | 'souls' | 'missing' }.
-// `sell` (his call, Oct 22: a full build asks which item to sell for the new one): that item is sold first (sellItem's rules, its refund counts
+// `sell` (a full build asks which item to sell for the new one): that item is sold first (sellItem's rules, its refund counts
 // towards the price), all in one go: nothing is sold unless the buy goes through. Then also { sold, refund }.
 async function buyItem(userId, name, { sell = null } = {}) {
   const card = ITEM_POOL.includes(name) && itemByName(name);
@@ -525,7 +525,7 @@ async function sellItem(userId, name) {
   return sold;
 }
 
-// ---- corruption, imbues and the egg (his calls, Oct 3) ----
+// ---- corruption, imbues and the egg ----
 // The Broker corrupts one owned tier 3 or 4 item (one per hero) for its price again, while he is open (always, with the testing switch on).
 // The drawback is rolled once and kept. Returns { ok: true, paid, drawback, amount } or { error: 'unknown' | 'closed' (opens) | 'no-hero' | 'missing' | 'one' (name) | 'souls' }.
 async function corruptItem(userId, name, { now = Date.now(), rng = Math.random } = {}) {

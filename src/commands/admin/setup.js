@@ -29,7 +29,7 @@ const STEPS = [
   {
     key: 'welcome',
     title: 'Welcome Message',
-    text: 'New members get a welcome message in a channel you pick. You can change the text any time with `/welcome-config message`.\n\n**Pick the channel for it.**',
+    text: 'New members get a welcome message in a channel you pick. Change the text with `/welcome-config message`.\n\n**Pick the channel for it.**',
     pick: 'channel',
     apply: async (guild, channelId) => {
       await updateWelcome(guild.id, { on: true, channelId });
@@ -39,7 +39,7 @@ const STEPS = [
   {
     key: 'audit',
     title: 'Audit Log',
-    text: 'The bot can record deleted and edited messages, joins and leaves, role changes, voice activity, mod actions and more, in one channel. Make it private for your staff.\n\n**Pick the channel for it.** Nothing is recorded until you do.',
+    text: 'The bot can record deleted and edited messages, joins and leaves, role changes, voice activity, mod actions and more, in one channel. Make it private for your staff.\n\n**Pick the channel for it.**',
     pick: 'channel',
     apply: async (guild, channelId) => {
       await audit.updateSettings(guild.id, (s) => { s.channelId = channelId; });
@@ -84,7 +84,7 @@ const STEPS = [
   {
     key: 'hideouts',
     title: 'Hideouts',
-    text: 'In the Shop, members level **20** and up can buy a private voice and text channel for **64,000** Souls. You can change the price and level with `/shop-config`.\n\n**Pick the category** they are made in, or let me make one called **Hideouts**.',
+    text: 'In the Shop, members level **20** and up can buy a private voice and text channel for **64,000** Souls. The price and level are set with `/shop-config`.\n\n**Pick the category** they are made in, or let me make one called **Hideouts**.',
     pick: 'category',
     buttons: [
       { id: 'make', label: 'Make A Hideouts Category', style: ButtonStyle.Primary },
@@ -124,7 +124,7 @@ const STEPS = [
   {
     key: 'tournaments',
     title: 'Tournament Organizers',
-    text: 'People with **Manage Server** can always run tournaments. You can also let a role do it. Try it out first with `/tournament simulate`, which runs a fake tournament and touches nothing real.\n\n**Pick the organizer role.**',
+    text: 'People with **Manage Server** can always run tournaments. You can also let a role do it. `/tournament simulate` runs a practice tournament with fake teams.\n\n**Pick the organizer role.**',
     pick: 'role',
     apply: async (guild, roleId) => {
       await tournaments.setOrganizerRole(guild.id, roleId, true);
@@ -159,7 +159,7 @@ function stepView(run, index, done) {
 
 const summary = (done) => ({
   embeds: [replyEmbed(done.length ? done.join('\n') : 'Nothing was changed.').setTitle('Setup Finished')
-    .setFooter({ text: 'Run /setup again any time. It never undoes anything. /help lists every command.' })],
+    .setFooter({ text: 'Run /setup again to change something. /help lists every command.' })],
   components: [],
 });
 
@@ -178,7 +178,7 @@ module.exports = {
     let index = 0;
 
     const message = await interaction.reply({
-      embeds: [replyEmbed('I will go through the things this server can switch on. Each step has a **Skip** button, and **Finish** ends it early. Nothing here deletes anything.').setTitle('Server Setup')],
+      embeds: [replyEmbed('This setup allows you to modify what features the server has access to.\nEach step can be skipped and the setup can be finished early.').setTitle('Server Setup')],
       components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(customId(run, 'begin')).setLabel('Start').setStyle(ButtonStyle.Primary))],
       flags: MessageFlags.Ephemeral,
       withResponse: true,

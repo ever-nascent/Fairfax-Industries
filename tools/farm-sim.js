@@ -8,17 +8,17 @@
 //   lanes    the three Walkers (6000 / 9000 / 12000 health as the others fall) and the siege they open: what does a full lane run need?
 //   waves    how far typical and best kits of each stage get in a wave run (/lane run), and what it pays
 //   legendary  win rates of typical kits at each target's own stage with each legendary added, against none
-//   race     every hero (or --hero=) from level 0 with no items, +1 level then +1 item ...: the first step that wins each target, the fight's length, the souls it takes (--kits=6 --seeds=4)
+//   race     every hero (or --hero=) from level 0 with no items, +1 level then +1 item...: the first step that wins each target, the fight's length, the souls it takes (--kits=6 --seeds=4)
 //   retune   the HARDNESS at which the middle hero of the whole roster wins 55% at each target, and the spread around it (--target=<key> for one)
 //   roster   every hero's win rates at every target, weakest first (--f= for harder enemies)
 //   carry    what carries a hero: its win rates whole and without each ability in turn (--hero=, --f=)
 //   best     can this hero win with the right kit? its best kit of each stage against that stage's target (--hero=, --f=1,1.5)
 //   descend  /descend runs (descent.js): how deep a bot that picks at random gets, against one that picks well (tries each choice on the next room);
 //            median, quarters and what ended the runs (--seeds=20 runs each; --hero=, or --hero=all for the roster, random and good medians only)
-//   check    the gate for a new hero: a typical kit of each target's own stage must win at least 35% (heroes may differ, his call Oct 2: above 75% is only noted as easy)
+//   check    the gate for a new hero: a typical kit of each target's own stage must win at least 35% (heroes may differ, above 75% is only noted as easy)
 // Options: --hero=Abrams (default Haze; tune and check every hero before it goes in the roster), --kits=24 --seeds=5 (kits x seeds fights per number).
 // A "kit" is what a member would have at a stage: level, ability points spent in order, items, permanent buffs, Rejuvs. The stages are in STAGES.
-try { require('node:os').setPriority(0, require('node:os').constants.priority.PRIORITY_LOW); } catch {} // idle priority (Nov 2, his ask: the sims took his whole CPU)
+try { require('node:os').setPriority(0, require('node:os').constants.priority.PRIORITY_LOW); } catch {} // idle priority (the sims took his whole CPU)
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-sim-'));
 const path = require('node:path');
 const ROOT = path.join(__dirname, '..', 'src', 'utils', 'farm');
@@ -205,7 +205,7 @@ ${HERO} passes every target.`);
   process.exitCode = bad ? 1 : 0;
 }
 
-// The same typical kits at each target's own stage, without a legendary and with each one added (in the legendary slot, on top of the 12; his call, Oct 22).
+// The same typical kits at each target's own stage, without a legendary and with each one added (in the legendary slot, on top of the 12).
 function legendary() {
   const { LEGENDARY_NAMES } = require(path.join(ROOT, 'levels'));
   const keys = KEYS.slice(1);
@@ -219,7 +219,7 @@ ${''.padEnd(22)}${keys.map((k) => k.replace('-camp', '').padEnd(10)).join('')}`)
   }
 }
 
-// Every hero from nothing, one step at a time (his ask, Oct 5): level 0 with no items, then a level, then an item, then a level ... (12 items by
+// Every hero from nothing, one step at a time: level 0 with no items, then a level, then an item, then a level... (12 items by
 // level 12, then levels only up to 35). Items come three of each tier, tier 1 first, any kind, at random (--kits orders x --seeds fights a step).
 // No permanent buffs, no clears; the siege gets 3 Rejuvs. A hero "wins" a target at the first step where at least half the fights are won.
 // Souls needed = what the hero's trips must have paid to reach that level + the shop price of the items.
@@ -263,7 +263,7 @@ function race() {
   Object.entries(summary).map(([h, ns]) => [h, ns.reduce((a, b) => a + (b === Infinity ? LAST + 1 : b), 0)]).sort((a, b) => a[1] - b[1]).forEach(([h, total], i) => console.log(`  ${String(i + 1).padEnd(4)}${h.padEnd(14)}${total}`));
 }
 
-// The roster-wide tune (his call, Oct 5: the enemies were tuned on Haze, one of the weakest heroes): the HARDNESS at which the MIDDLE hero of the
+// The roster-wide tune (the enemies were tuned on Haze, one of the weakest heroes): the HARDNESS at which the MIDDLE hero of the
 // roster wins --wins (55%) with typical kits of each target's own stage, and how the whole roster then spreads around it.
 // --target=walker does one target (they can run side by side); --at=0.25 tunes on the hero a quarter of the way up instead of the middle one;
 // --kits=8 --seeds=2 fights per hero per try.
@@ -346,7 +346,7 @@ function descend() {
   for (const k of ['health', 'dps', 'growth', 'knee', 'late', 'hpLate']) if (opt(k)) D.TUNE[k] = Number(opt(k)); // try other numbers without editing descent.js
   for (const k of ['boss-health', 'boss-dps']) if (opt(k)) D.BOSS[k.slice(5)] = Number(opt(k));
   if (opt('tuning')) for (const hero of roster()) D.TUNING[hero] = Number(opt('tuning')); // --tuning=0.2: try a Descend tuning (descent.js TUNING) on the hero(es) run
-  // A build to try (his ask, Oct 29): --build=Item,Item takes those whenever offered (else the bot's own picks), --focus=<slot> puts ability points into that ability first,
+  // A build to try: --build=Item,Item takes those whenever offered (else the bot's own picks), --focus=<slot> puts ability points into that ability first,
   // --legendary=Name takes that legendary when offered.
   const BUILD = String(opt('build', '')).split(',').map((x) => x.trim()).filter(Boolean);
   const FOCUS = arg('focus', 0);
@@ -372,7 +372,7 @@ function descend() {
   // dummy and a 1e7-health Brute, so share-of-health items (Siphon Bullets, Toxic Bullets, Decay) came out on top for every hero.
   let TABLE = {};
   try { TABLE = require(path.join(__dirname, '..', 'assets', 'farm', 'descendValues.json')); } catch {}
-  // Nov 14 (his ask: "use the finished builds as examples"): the builds of real cleared runs (assets/farm/descendBuilds.json, from the run log). The good bot
+  // Nov 14 ("use the finished builds as examples"): the builds of real cleared runs (assets/farm/descendBuilds.json, from the run log). The good bot
   // leans towards its hero's own finished builds' Items and takes their legendary when offered.
   let BUILDS = {};
   try { BUILDS = require(path.join(__dirname, '..', 'assets', 'farm', 'descendBuilds.json')); } catch {}
@@ -380,7 +380,7 @@ function descend() {
   const PROVEN_WORTH = 0.1;
   // --decline=ghouls,rest,wounded: the bots turn these deals / events down and never take their door (to measure what one is worth)
   const DECLINE = String(opt('decline', '')).split(',').filter(Boolean);
-  const ENHANCED_WORTH = 1.25; // ponytail: an enhanced copy counted a quarter better; measure enhanced items in descend-values.js if picks hinge on it
+  const ENHANCED_WORTH = 1.25; // an enhanced copy counted a quarter better; measure enhanced items in descend-values.js if picks hinge on it
   const worth = (hero, name, enhanced = false) => {
     const measured = TABLE[hero]?.[name];
     if (measured !== undefined) return measured * (enhanced ? ENHANCED_WORTH : 1) + (proven(hero, name) ? PROVEN_WORTH : 0);
@@ -475,7 +475,7 @@ function descend() {
     for (;;) {
       const spec = D.specOf(d);
       const forced = force && !force.used && force.room === d.room ? force : null;
-      if (spec.kind === 'doors') { // Two Doors (Nov 13): a random bot takes any door; a good one a named no-fight door when hurt, else a room with a pick
+      if (spec.kind === 'doors') { // Two Doors: a random bot takes any door; a good one a named no-fight door when hurt, else a room with a pick
         const hurt = d.health < 0.45;
         const want = (x) => (!good ? rng() : x.kind === 'rest' ? (hurt ? 5 : 0.5) : x.noPick && x.kind !== 'rift' ? (hurt ? 4 : 1) : x.mystery ? 3 : x.kind === 'fight' ? 2 : 1.5);
         const scores = spec.doors.map((x) => (DECLINE.includes(x.kind) ? -1 : want(x)));
@@ -491,7 +491,7 @@ function descend() {
       if (spec.kind === 'broker') { const [name] = D.corruptibles(d); if (!(good && !declined && name && D.corrupt(d, name)?.ok)) d.room += 1; continue; } // a good bot corrupts its first tier 3-4 item, as a player would
       if (D.EVENT_KINDS.includes(spec.kind) || spec.kind === 'visit') { // an event room or a hero room; then its pick, like a won room's (EVENT_PICK)
         if (declined) D.eventAct(d, 'leave');
-        else if (spec.kind === 'visit') { // a hero room (Nov 6): a random bot takes what needs no Item, a good one plays the deal (deal)
+        else if (spec.kind === 'visit') { // a hero room: a random bot takes what needs no Item, a good one plays the deal (deal)
           if (!(good ? deal(d, spec) : D.eventAct(d, 'accept').ok)) D.eventAct(d, 'leave');
         } else if (spec.kind === 'breather') D.breakCrates(d);
         else if (spec.kind === 'rest') { // a good bot tinkers its dearest item while it has health to spare, else rests; a random one flips a coin
@@ -508,7 +508,7 @@ function descend() {
       } else {
         if (spec.kind === 'rival' && (declined || (good && [0, 1, 2].filter(() => D.fightRoom(structuredClone(d), spec, rng).won).length < 2))) { D.walkAway(d); continue; } // Flee a duel it would usually lose, as a player can (from Ascension 3 it costs health)
         const run = D.fightRoom(d, spec, rng);
-        if (!run.won && spec.kind === 'rift') { D.fleeRift(d, run); continue; } // the Rift lost: the hero flees, the run goes on (Nov 6)
+        if (!run.won && spec.kind === 'rift') { D.fleeRift(d, run); continue; } // the Rift lost: the hero flees, the run goes on
         if (!run.won && D.canRescue(d, spec)) { D.rescue(d, run); continue; } // Ivy's Rescue (the bots never used it before Nov 14)
         if (!run.won) return { rooms: d.room - 1, end: spec.kind, level: d.level };
         D.afterWin(d, run);
@@ -530,7 +530,7 @@ function descend() {
   }
   const stat = (list) => { const r = list.map((x) => x.rooms).sort((a, b) => a - b); const q = (f) => r[Math.min(r.length - 1, Math.floor(f * r.length))]; return { med: q(0.5), lo: q(0.25), hi: q(0.75), max: r.at(-1) }; };
   const floor = (rooms) => `room ${rooms} (floor ${Math.min(D.FLOORS, D.floorOf(rooms + 1))})`;
-  // --ascension=all: how many good-pick runs clear the descent at each ascension (the bar, his ask Oct 26: every level still beatable)
+  // --ascension=all: how many good-pick runs clear the descent at each ascension (the bar, every level still beatable)
   if (String(opt('ascension', '')).toLowerCase() === 'all') {
     console.log(`${runs} good-pick runs per ascension: cleared, median rooms`);
     for (let a = 0; a <= D.MAX_ASCENSION; a++) {

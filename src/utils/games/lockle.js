@@ -1,7 +1,7 @@
 // /lockle: guess the hero from a real Ascendant+ ranked build (match data from deadlock-api.com, unofficial).
 // 6 guesses: the first shows 2 items (in buy order), each wrong guess shows 2 more; the Time field is the match
 // clock when the last one shown was bought; the 6th also shows the player's souls. Daily = one build a day for everyone, private, pays DAILY_PAY by guess.
-// Practice = a new build each time, public, pays nothing. Rules: server-plan.md ("Lockle").
+// Practice = a new build each time, public, pays nothing..
 const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const fs = require('node:fs');
@@ -93,7 +93,7 @@ const slim = (m) => ({
 });
 
 // Recent Ascendant+ ranked matches with every player's items. Cached 30 min so Practice doesn't refetch each time.
-// ponytail: one pool of 50 matches (~600 builds); widen the time window if the API returns too few.
+// one pool of 50 matches (~600 builds); widen the time window if the API returns too few.
 let pool;
 async function recentMatches() {
   if (pool && Date.now() - pool.at <= 30 * 60 * 1000) return pool.matches;

@@ -57,12 +57,12 @@ function limits(payload, what) {
         for (;;) {
           const spec = D.specOf(d);
           problems.push(...limits(await V.roomView(member, d), `${hero} room ${d.room}`));
-          if (D.doorwayOpen(d).length && rng() < 0.7) { // the Doorman's Doorway (Nov 13): step back and play the door left behind
+          if (D.doorwayOpen(d).length && rng() < 0.7) { // the Doorman's Doorway: step back and play the door left behind
             const back = d.room - 1;
             if (!D.stepBack(d, 0).ok || d.room !== back || !D.specOf(d).doorway || d.doorway) fail('the Doorway refused');
             continue;
           }
-          if (spec.kind === 'doors') { // Two Doors (Nov 13): a random door
+          if (spec.kind === 'doors') { // Two Doors: a random door
             d.phase = 'ready';
             if (new Set(spec.doors.map((x) => (x.mystery ? 'mystery' : x.kind === 'fight' ? D.roomLine(x) : x.kind))).size !== spec.doors.length) fail('two doors alike');
             if (!D.chooseDoor(d, Math.floor(rng() * spec.doors.length)).ok || D.specOf(d).kind === 'doors') fail('a door refused');
@@ -78,14 +78,14 @@ function limits(payload, what) {
             if (spec.kind === 'breather') r = D.breakCrates(d);
             else if (spec.kind === 'rest') r = can.length && rng() < 0.5 ? D.restStop(d, 'tinker', any(can)) : D.restStop(d, 'rest');
             else if (spec.kind === 'rift') r = D.eventAct(d, 'leave');
-            else if (spec.kind === 'visit') { // a hero room (Nov 6): its deal with a random item, or Turn Down
+            else if (spec.kind === 'visit') { // a hero room: its deal with a random item, or Turn Down
               const items = { replica: D.replicables, upgrade: D.upgradeables, turret: D.parts, castling: D.castleables, capsule: D.capsulables, helper: D.fuseables }[spec.deal]?.(d);
-              if (spec.deal === 'lesson') { // Dynamo (Nov 7): an enemy kind of the next floor to study, or Turn Down
+              if (spec.deal === 'lesson') { // Dynamo: an enemy kind of the next floor to study, or Turn Down
                 r = rng() < 0.2 ? D.eventAct(d, 'leave') : D.eventAct(d, 'lesson', any(D.lessonKinds(spec.room)));
-              } else if (spec.deal === 'travel') { // Mirage (Nov 7): a room type for the next room, or Turn Down
+              } else if (spec.deal === 'travel') { // Mirage: a room type for the next room, or Turn Down
                 const kinds = D.travelKinds(d, spec.room);
                 r = rng() < 0.2 || !kinds.length ? D.eventAct(d, 'leave') : D.eventAct(d, 'travel', any(kinds));
-              } else if (spec.deal === 'stoke') { // Infernus (Nov 13): an Item, 1 to 4 Stokes, then Take It Back (or it burns, or Turn Down)
+              } else if (spec.deal === 'stoke') { // Infernus: an Item, 1 to 4 Stokes, then Take It Back (or it burns, or Turn Down)
                 const can = D.stokeables(d);
                 r = rng() < 0.2 || !can.length ? D.eventAct(d, 'leave') : D.eventAct(d, 'item', any(can));
                 const name = d.stoke?.name;
@@ -99,7 +99,7 @@ function limits(payload, what) {
                   if (r.burned ? after !== before - 1 : after !== before || d.tempered?.[name] !== r.stokes) fail(`a Stoke left ${name} wrong (${JSON.stringify(r)})`);
                   if (d.stoke) fail('an Item was left in the fire');
                 }
-              } else if (spec.deal === 'fuse') { // Victor (Nov 7): two Items, then Stitch (or Turn Down)
+              } else if (spec.deal === 'fuse') { // Victor: two Items, then Stitch (or Turn Down)
                 const two = D.fuseables(d);
                 r = rng() < 0.2 || two.length < 2 ? D.eventAct(d, 'leave') : D.eventAct(d, 'fuseA', any(two));
                 if (r.pick) {
@@ -108,11 +108,11 @@ function limits(payload, what) {
                   problems.push(...limits(await V.roomView(member, d), `${hero} fuse stitch ${d.room}`));
                   r = D.eventAct(d, 'fuse');
                 }
-              } else if (spec.deal === 'harrow') { // Nurse Harrow (Nov 14): heal while there are Perma-Buffs to pay with, then Done (or Turn Down before the first)
+              } else if (spec.deal === 'harrow') { // Nurse Harrow: heal while there are Perma-Buffs to pay with, then Done (or Turn Down before the first)
                 let n = 0;
                 while (rng() < 0.7 && D.eventAct(d, 'heal').ok) { n += 1; problems.push(...limits(await V.roomView(member, d), `${hero} harrow ${d.room}`)); }
                 r = D.eventAct(d, n ? 'done' : 'leave');
-              } else if (spec.deal === 'burrow') { // Mo & Krill (Nov 14): refused with the Urn or too close to the boss, then Turn Down
+              } else if (spec.deal === 'burrow') { // Mo & Krill: refused with the Urn or too close to the boss, then Turn Down
                 r = rng() < 0.8 ? D.eventAct(d, 'accept') : { error: 'none' };
                 if (!r.ok) r = D.eventAct(d, 'leave');
               } else
@@ -149,7 +149,7 @@ function limits(payload, what) {
           }
           const run = D.fightRoom(d, spec, rng);
           if (!(run.health >= 0 && run.health <= 1)) fail(`health after the fight is ${run.health}`);
-          if (spec.kind === 'rift' && !run.won) { // the Rift lost: the hero flees, the run goes on (Nov 6)
+          if (spec.kind === 'rift' && !run.won) { // the Rift lost: the hero flees, the run goes on
             if (!run.fled && !run.timedOut) fail('the Rift was lost without fleeing');
             if (d.room % 2 === 0) problems.push(...limits(await V.fightView(run, run.frames.at(-1)), `${hero} rift ${d.room}`));
             D.fleeRift(d, run);
@@ -170,7 +170,7 @@ function limits(payload, what) {
             D.rerollChoice(d);
             problems.push(...limits(await V.offerView(member, d, { animate: true }), `${hero} reroll ${d.room - 1}`));
           }
-          for (let n = 0; D.helperOf(d) && d.offer.kind === 'items' && !d.offer.rival && d.offer.choices.length > 1 && n < 2 && rng() < 0.7; n++) { // Rem's Lil Helper (Nov 7): feed it the ones not taken
+          for (let n = 0; D.helperOf(d) && d.offer.kind === 'items' && !d.offer.rival && d.offer.choices.length > 1 && n < 2 && rng() < 0.7; n++) { // Rem's Lil Helper: feed it the ones not taken
             const f = D.feedOffer(d, Math.floor(rng() * d.offer.choices.length));
             if (!f.ok) fail(`feed: ${f.error}`);
             problems.push(...limits(await V.offerView(member, d), `${hero} fed ${d.room - 1}`));

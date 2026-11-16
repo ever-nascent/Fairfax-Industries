@@ -1,6 +1,8 @@
+// Event handler: voiceStateUpdate.
+// Fires when someone joins, leaves or moves between voice channels.
+
 const { onVoiceChange } = require('../utils/server/lfg');
 
-// Fires when someone joins, leaves or moves between voice channels.
 module.exports = {
   name: 'voiceStateUpdate',
   async execute(oldState, newState, client) {

@@ -1,4 +1,4 @@
-// Victor's Abomination (Descend; his pick Nov 7 of a design panel's 4 templates, "D"): two Items sewn into one tile.
+// Victor's Abomination (Descend; of a design panel's 4 templates, "D"): two Items sewn into one tile.
 // One fixed template for every pair: a curved scar from the top edge to the bottom, Item A's picture on its left, Item B's on its right, each over its own kind's tile colours, then the scar drawn over the join:
 // a dark groove with bruised edges and a faint electric green glow in it, dark surgical sutures across it with their needle holes, and two
 // metal staples. The scar layer is drawn once per tile size and kept (the "template"); a tile is then two clipped pictures and one drawImage.

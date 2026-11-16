@@ -33,7 +33,7 @@ const DBVIEW_ID = 'farm_dbview'; // select "View Item" (the Broker's stall): far
 const DFRAGILE_ID = 'farm_dfragile'; // buttons (the Broker's stall): farm_dfragile:<user id>:<room>:take|mend
 const DCORRUPT_ID = 'farm_dcorrupt'; // select (the Broker's stall): farm_dcorrupt:<user id>:<room>, value = item to corrupt
 const DTAKE_ID = 'farm_dtake'; // button (the pick): farm_dtake:<user id>:<room>:<choice 0-2>; a rival's build is a select: farm_dtake:<user id>:<room>, value = choice
-const the = (hero) => (hero === 'Lash' ? 'The Lash' : hero); // his call Nov 5: only Lash is called "The", like the game
+const the = (hero) => (hero === 'Lash' ? 'The Lash' : hero); // only Lash is called "The", like the game
 const DRECRUIT_ID = 'farm_drecruit'; // button "Recruit <rival>" under a beaten rival's pick: farm_drecruit:<user id>:<room>
 const DSKIP_ID = 'farm_dskip'; // button "Skip": farm_dskip:<user id>:<room>
 const DREROLL_ID = 'farm_dreroll'; // button "Reroll": farm_dreroll:<user id>:<room>
@@ -57,15 +57,15 @@ const DVIEW_ID = 'farm_dview'; // select "View Item" (an item or legendary pick)
 
 const TOKEN_ICON = path.join(ASSETS, 'farm', 'icons', 'unlock-token.png');
 const KIND_NAME = { Weapon: 'Weapon', Armor: 'Vitality', Tech: 'Spirit' };
-// The author line (his call, Oct 26): "Descend  -  Ascension N" on a run's screens, "Descend" where there is no run.
+// The author line: "Descend  -  Ascension N" on a run's screens, "Descend" where there is no run.
 const dembed = (color, ascension = null) => embed(color).setAuthor({ name: ascension == null ? 'Descend' : `Descend  -  Ascension ${ascension}`, iconURL: 'attachment://souls.png' });
 const button = (id, label, style = ButtonStyle.Secondary) => new ButtonBuilder().setCustomId(id).setLabel(label.slice(0, 80)).setStyle(style);
 const slugOf = (name) => HEROES.find((h) => h.name === name).slug;
 const abilityName = (hero, slot) => ABILITIES[HERO_DATA[hero].BoundAbilities[slot].Key].Name;
 const EVENT_TITLE = { urn: 'The Soul Urn', wounded: 'A Wounded Rival', dealer: 'The Curiosity Dealer', patron: "A Patron's Favor", teleporter: 'Teleporter', rift: 'The Rift', visit: 'A Hero' };
-const RIFT_PICTURE = path.join(ASSETS, 'farm', 'icons', 'unstable-rift.png'); // the wiki's Unstable Rift icon (the thumbnail, his ask Nov 6)
+const RIFT_PICTURE = path.join(ASSETS, 'farm', 'icons', 'unstable-rift.png'); // the wiki's Unstable Rift icon (the thumbnail)
 const pct = (x) => `${Math.round(x * 100)}%`;
-// A hero room (Nov 6): what the hero offers or asks for, in full (the room screen), and the items each deal can take.
+// A hero room: what the hero offers or asks for, in full (the room screen), and the items each deal can take.
 function visitLines(guild, d, spec) {
   const who = `${heroText(guild, spec.hero)}**${the(spec.hero)}**`;
   const [m1, m2] = [D.MINIONS.ghoul, D.MINIONS.turret];
@@ -176,7 +176,7 @@ function visitLines(guild, d, spec) {
     "She can't help with a boss, the Patron or the first room of a Floor."];
   return [`${who} opens her book. "Every hero deserves a happy ending."`, '', `**Plot Armor:** once you have no Rejuv left, the next time you would die this run you live at **${Math.round(require('./engine').PLOT_ARMOR.health * 100)}%** health instead, and nothing can hurt you for **${require('./engine').PLOT_ARMOR.safe}** seconds. Once.`];
 }
-// A give-up dropdown's options: each held item once, and Violet's copy of one as its own '<item> (Replica)' option (his ask, Nov 7).
+// A give-up dropdown's options: each held item once, and Violet's copy of one as its own '<item> (Replica)' option.
 const giveUp = (d, names, opt) => names.flatMap((n) => {
   const count = SLOTS.reduce((s, slot) => s + d.items[slot].filter((x) => x === n).length, 0);
   const reps = Math.min(count, (d.replicas ?? []).filter((x) => x === n).length);
@@ -185,7 +185,7 @@ const giveUp = (d, names, opt) => names.flatMap((n) => {
   return [...(count > reps ? [plainOpt] : []), ...(reps ? [{ ...opt(n), label: n + D.REPLICA, value: n + D.REPLICA }] : [])];
 }).slice(0, 25);
 const itemOpt = (n) => ({ label: n, value: n, description: `${KIND_NAME[itemByName(n).Slot]}, Tier ${itemByName(n).Tier}` });
-// The room types Mirage can take you to (his ask, Nov 7): [name, what is there].
+// The room types Mirage can take you to: [name, what is there].
 const TRAVEL_ROOMS = { rest: ['A Rest Stop', 'Heal, or Tinker with an Item'], breather: ['A Quiet Corner', 'Break the crates for a find'], broker: ["The Broker's Stall", 'Corrupt an Item'], urn: ['The Soul Urn', 'Carry it for permanent buffs'], wounded: ['A Wounded Rival', 'Recruit a hero as an ally'], dealer: ['The Curiosity Dealer', 'Swap an Item up, or sell one to heal'] };
 const VISIT_ITEMS = { replica: (d) => (d.replicaPick ? null : D.replicables(d)), upgrade: () => null, turret: D.parts, castling: D.castleables, capsule: D.capsulables, helper: (d) => (D.helperOf(d) ? [] : D.fuseables(d)) };
 const VISIT_PROMPT = { replica: 'Lend Violet an Item to copy', upgrade: 'Have McGinnis upgrade an Item', turret: 'Give McGinnis a Tier 1 or 2 Item', castling: 'Castle an Item', capsule: 'Seal an Item in the Capsule', helper: 'Feed the Lil Helper an Item' };
@@ -198,7 +198,7 @@ const roomTitle = (spec) => `Floor ${spec.floor}  -  Room ${spec.room}${spec.kin
 const healthLine = (d, hero = buildHero(d.hero, D.runKit(d))) => barLine(d.health * hero.stats.maxHealth, hero.stats.maxHealth);
 const boldHealthLine = (d) => healthLine(d).replace(/(\d[\d,]* \/ \d[\d,]*)$/, '**$1**');
 const bestText = (best) => (best?.rooms ? `${plural(best.rooms, 'room')} (${best.hero}${best.ascension ? `, Ascension ${best.ascension}` : ''})` : 'None yet');
-// "Ascension 3" (no names, his call Oct 29) and what it adds (every level keeps the ones below it).
+// "Ascension 3" (no names) and what it adds (every level keeps the ones below it).
 const ascensionName = (a) => (a ? `Ascension ${a}` : 'No Ascension');
 const ascensionText = (a) => (a ? `${D.ASCENSIONS[a].text}${a > 1 ? `\nPlus every level below it (1-${a - 1}).` : ''}` : 'The descent as it is.')
 const sentence = (text) => `${text[0].toUpperCase()}${text.slice(1)}${/[.!?]$/.test(text) ? '' : '.'}`;
@@ -221,7 +221,7 @@ const enhancedEffect = (base, card) => Object.keys(base.PropertyUpgrades ?? {}).
   const after = propertyText(card, key);
   return before && after ? `${before.name}: **${before.value} → ${after.value}**` : null;
 }).filter(Boolean).join('; ');
-// A choice in full (his ask, Oct 28: every item says exactly what it does, nothing cut): each choice is a field of its own (1,024 characters).
+// A choice in full (every item says exactly what it does, nothing cut): each choice is a field of its own (1,024 characters).
 const choiceText = (lines) => {
   const text = lines.filter(Boolean).join('\n');
   return text.length > 1024 ? `${text.slice(0, 1021).replace(/\s+\S*$/, '')}...` : text;
@@ -231,7 +231,7 @@ const choiceText = (lines) => {
 function runFields(d) {
   const left = D.pointsLeft(d);
   const r = D.rules(d);
-  const stacks = stackLines(buildHero(d.hero, D.runKit(d))); // abilities' and items' stacks, kept for the run (his ask, Oct 28)
+  const stacks = stackLines(buildHero(d.hero, D.runKit(d))); // abilities' and items' stacks, kept for the run
   return [
     { name: d.hero, value: boldHealthLine(d) },
     ...(stacks.length ? [{ name: 'Stacks', value: stacks.join('\n').slice(0, 1024) }] : []),
@@ -271,11 +271,11 @@ function pointMenu(userId, d) {
 
 // The room's picture: a boss's icon, the trooper render of its first enemy, a rival's face.
 const roomFile = async (spec, mood = null, wolf = false, stage = 0) => (spec.kind === 'rival' ? rivalFace(spec.rival, mood, wolf) : spec.kind === 'rift' ? picture(RIFT_PICTURE) : picture(D.roomPicture(spec, stage)));
-// The run's hero while playing (his ask, Oct 28): the gloat portrait above half health, the beat-up one at or below it (the pick screen keeps the icon).
+// The run's hero while playing: the gloat portrait above half health, the beat-up one at or below it (the pick screen keeps the icon).
 const runFace = (d) => rivalFace(d.hero, d.health > 0.5 ? 'gloat' : 'critical');
 
 // ---- the start screen: rules, the member's best, and which hero to descend with ----
-// `ascension`: the level picked (default: the highest unlocked); it is fixed once the run starts (his call, Oct 26).
+// `ascension`: the level picked (default: the highest unlocked); it is fixed once the run starts.
 async function startView(member, record, selected = null, ascension = null) {
   const guild = member.guild;
   const top = D.ascensionOf(record);
@@ -284,7 +284,7 @@ async function startView(member, record, selected = null, ascension = null) {
   const runs = Object.entries(record.descentBest ?? {}).filter(([, rooms]) => rooms > 0).sort((a, b) => b[1] - a[1]);
   const best = record.bestDescent?.rooms ? [record.bestDescent.hero, record.bestDescent.rooms, record.bestDescent.ascension] : runs[0];
   const runLine = ([hero, rooms, a]) => `${heroText(guild, hero)}${hero}  -  **${plural(rooms, 'Room')}**${a ? `  -  Ascension ${a}` : ''}`;
-  // his own wording and line breaks (Oct 28)
+  // his own wording and line breaks
   const e = dembed(undefined, top ? asc : null).setDescription([
     'Traverse the depths of the Soul',
     'Sanctum with one of your Heroes.',
@@ -332,7 +332,7 @@ const BROKER_LINES = [
   'I never sold you nothing. We just had a nice chat.',
   'Drink some water. Cursed items dry you out.',
 ];
-// How a wounded hero is found (Nov 14, his ask: 5 variations). Each finishes "<emoji> <Hero> ...".
+// How a wounded hero is found (5 variations). Each finishes "<emoji> <Hero>...".
 const WOUNDED_LINES = [
   'lies injured against the wall.',
   'staggers into the room from behind you.',
@@ -346,7 +346,7 @@ const brokerLine = (seed, room) => BROKER_LINES[Math.floor(D.dice(seed, room, 'b
 // What corrupting `name` changes, in full (the Broker's View Item dropdown).
 const brokerAbout = (name) => `**${name}**\n${(bonusLines(name).join('\n') || 'None listed').slice(0, 960)}`;
 
-// ---- Two Doors (Nov 13): the doors a run stands before, what each one shows, and a button per door ----
+// ---- Two Doors: the doors a run stands before, what each one shows, and a button per door ----
 const DOOR_ROOMS = { ...TRAVEL_ROOMS, teleporter: ['A Teleporter', 'Step In and land in a room with no fight'] };
 const doorNames = (doors) => doors.map((x, i) => (x.travel ? "Mirage's Door" : (doors.filter((y) => !y.travel).length === 2 ? ['Left Door', 'Right Door'] : ['Left Door', 'Middle Door', 'Right Door'])[i]));
 function doorLines(door) {
@@ -383,7 +383,7 @@ async function roomView(member, d, { note = null, quit = false, viewing = null }
   if (quit) lines.push(`**Abandon the run?** It ends here with ${plural(d.room - 1, 'room')} cleared. Your best is kept.`);
   else if (spec.final) {
     const [patron, weak] = patronNames(spec);
-    // his wording (Nov 5): the other Patron grants your wish; a run from before Nov 4 has no side, so it keeps the plain line
+    // the other Patron grants your wish; a run from before Nov 4 has no side, so it keeps the plain line
     const side = D.patronOf(d);
     const wish = (who) => (side ? `Defeat ${who}, and the **${D.BOSSES[D.otherPatron(side)].name}** will grant your wish.` : 'Win and the descent is cleared.');
     if (spec.siege) lines.push(`**The whole siege** waits at the bottom of the descent: the **Base Guardian**, the **Shrine**, the **${patron}** and the **${weak}**.`, wish('them all'));
@@ -498,7 +498,7 @@ async function roomView(member, d, { note = null, quit = false, viewing = null }
       components.push(row(act, button(`${DBUILD_ID}:${member.id}`, 'Your Build'), button(`${DQUIT_ID}:${member.id}`, 'Abandon Run')));
       return { embeds: [e], components, files: [soulsFile(), spec.kind === 'breather' ? picture(path.join(ASSETS, 'farm', 'icons', 'golden-statue.png')) : await runFace(d)] };
     }
-    if (spec.kind === 'visit') { // a hero room (Nov 6): Accept, or a dropdown of the Items its deal takes, and Turn Down
+    if (spec.kind === 'visit') { // a hero room: Accept, or a dropdown of the Items its deal takes, and Turn Down
       const act = (action, label, style = ButtonStyle.Success, disabled = false) => button(`${DREST_ID}:${member.id}:${d.room}:${action}`, label, style).setDisabled(disabled);
       const items = VISIT_ITEMS[spec.deal]?.(d);
       const opt = (n) => ({ label: n, value: n, description: `${KIND_NAME[itemByName(n).Slot]}, Tier ${itemByName(n).Tier}${spec.deal === 'capsule' && n === d.legendary ? ', Legendary' : ''}${visitChance(spec.deal, n)}`.slice(0, 100) });
@@ -507,7 +507,7 @@ async function roomView(member, d, { note = null, quit = false, viewing = null }
         components.push(row(new StringSelectMenuBuilder().setCustomId(`${DDEAL_ID}:${member.id}:${d.room}:replace`).setPlaceholder(`Give up an Item for the ${d.replicaPick} replica`.slice(0, 150)).addOptions(giveUp(d, give, opt))));
       } else if (spec.deal === 'upgrade' && d.upgradePick) {
         components.push(row(new StringSelectMenuBuilder().setCustomId(`${DDEAL_ID}:${member.id}:${d.room}:into`).setPlaceholder(`Upgrade your ${d.upgradePick} into...`.slice(0, 150)).addOptions(D.upgradesOf(d, d.upgradePick).slice(0, 25).map(itemOpt))));
-      } else if (spec.deal === 'upgrade' && !d.upgradePick) { // McGinnis (his ask, Nov 7): one dropdown of Items, then Enhance It / Upgrade Item / Repair the Item
+      } else if (spec.deal === 'upgrade' && !d.upgradePick) { // McGinnis: one dropdown of Items, then Enhance It / Upgrade Item / Repair the Item
         const note = (n) => (D.fragileOf(d).includes(n) ? ', Fragile' : (d.enhanced ?? []).includes(n) ? ', Enhanced' : '');
         const options = D.workables(d).slice(0, 25).map((n) => ({ label: n, value: n, default: n === d.tinkerPick, description: `${KIND_NAME[itemByName(n).Slot]}, Tier ${itemByName(n).Tier}${note(n)}` }));
         if (options.length) components.push(row(new StringSelectMenuBuilder().setCustomId(`${DDEAL_ID}:${member.id}:${d.room}:item`).setPlaceholder('Select an Item to Tinker with').addOptions(options)));
@@ -520,7 +520,7 @@ async function roomView(member, d, { note = null, quit = false, viewing = null }
       } else if (spec.deal === 'travel') { // Mirage: one dropdown of the room types, the pick is the choice
         const kinds = D.travelKinds(d, spec.room);
         if (kinds.length) components.push(row(new StringSelectMenuBuilder().setCustomId(`${DDEAL_ID}:${member.id}:${d.room}:travel`).setPlaceholder('Pick the Next Room').addOptions(kinds.map((k) => ({ label: TRAVEL_ROOMS[k][0], value: k, description: TRAVEL_ROOMS[k][1] })))));
-      } else if (spec.deal === 'fuse') { // Victor (his ask, Nov 7): the first Item, then the second, then Stitch Them Together
+      } else if (spec.deal === 'fuse') { // Victor: the first Item, then the second, then Stitch Them Together
         const { a, b } = d.fusePick ?? {};
         const loose = D.fuseables(d);
         if (loose.length >= 2) {
@@ -531,7 +531,7 @@ async function roomView(member, d, { note = null, quit = false, viewing = null }
       } else if (items?.length) components.push(row(new StringSelectMenuBuilder().setCustomId(`${DDEAL_ID}:${member.id}:${d.room}:${spec.deal}`).setPlaceholder(VISIT_PROMPT[spec.deal]).addOptions(items.slice(0, 25).map(opt))));
       const tinker = spec.deal === 'upgrade' && d.tinkerPick && !d.upgradePick ? (D.fragileOf(d).includes(d.tinkerPick) ? [act('repair', 'Repair the Item')]
         : [act('enhance', 'Enhance It', ButtonStyle.Success, !D.tinkerables(d).includes(d.tinkerPick)), act('upgrade', 'Upgrade Item', ButtonStyle.Success, !D.upgradeables(d).includes(d.tinkerPick))]) : []; // (the picked Item decides)
-      const accept = tinker.length ? tinker : spec.deal === 'ghouls' ? [act('ghoul', `Summon a ${D.MINIONS.ghoul.name}`)] // one a click, up to the third (his call, Nov 7)
+      const accept = tinker.length ? tinker : spec.deal === 'ghouls' ? [act('ghoul', `Summon a ${D.MINIONS.ghoul.name}`)] // one a click, up to the third
         : spec.deal === 'fuse' ? [act('fuse', 'Stitch Them Together', ButtonStyle.Success, !(d.fusePick?.a && d.fusePick?.b))]
           : spec.deal === 'stoke' ? [act('stoke', 'Stoke', ButtonStyle.Success, !d.stoke)]
           : spec.deal === 'harrow' ? [act('heal', 'Treat Me', ButtonStyle.Success, D.buffTotal(d) < D.HARROW.cost)]
@@ -544,11 +544,11 @@ async function roomView(member, d, { note = null, quit = false, viewing = null }
       components.push(row(...accept, summoned || treated ? act('done', 'Done') : stoked ? act('done', 'Take It Back', ButtonStyle.Secondary) : act('leave', 'Turn Down', ButtonStyle.Danger), ...tail));
       return { embeds: [e], components, files: [soulsFile(), await rivalFace(spec.hero)] };
     }
-    if (spec.kind === 'rift') { // the Rift (Nov 6): fight for it or walk past
+    if (spec.kind === 'rift') { // the Rift: fight for it or walk past
       components.push(row(button(`${DFIGHT_ID}:${member.id}:${d.room}`, 'Fight for the Rift', ButtonStyle.Danger), button(`${DREST_ID}:${member.id}:${d.room}:leave`, 'Walk Past'), button(`${DBUILD_ID}:${member.id}`, 'Your Build'), button(`${DQUIT_ID}:${member.id}`, 'Abandon Run')));
       return { embeds: [e], components, files: [soulsFile(), picture(RIFT_PICTURE)] }; // the Rift's icon as the thumbnail
     }
-    if (D.EVENT_KINDS.includes(spec.kind)) { // the second batch of event rooms (Nov 4)
+    if (D.EVENT_KINDS.includes(spec.kind)) { // the second batch of event rooms
       const act = (action, label, style = ButtonStyle.Success, disabled = false) => button(`${DREST_ID}:${member.id}:${d.room}:${action}`, label, style).setDisabled(disabled);
       const leave = act('leave', spec.kind === 'teleporter' ? 'Walk Past' : spec.kind === 'patron' ? 'Refuse' : 'Leave', ButtonStyle.Danger);
       if (spec.kind === 'dealer') {
@@ -593,12 +593,12 @@ async function fightView(run, frame) {
   const e = dembed(undefined, spec.ascension ?? 0).setTitle(roomTitle(spec)).setThumbnail('attachment://thumb.png')
     .addFields(
       { name: run.hero, value: `${barLine(frame.hero.hp, frame.hero.max)}${frame.hero.respawning ? '  -  Respawning' : ''}\nRejuvs Remaining: ${rejuvIcon()}${frame.rejuvs}` },
-      ...(frame.allies ?? []).map((a) => ({ name: `${a.name} (Ally)`, value: a.hp > 0 ? barLine(a.hp, a.max) : 'Down' })), // a recruited rival (Nov 4)
-      ...(frame.minions?.length ? splitField('Minions', minionLines(frame.minions)) : []), // Rift Troopers, Ghouls, a Mini Turret (Nov 6)
+      ...(frame.allies ?? []).map((a) => ({ name: `${a.name} (Ally)`, value: a.hp > 0 ? barLine(a.hp, a.max) : 'Down' })), // a recruited rival
+      ...(frame.minions?.length ? splitField('Minions', minionLines(frame.minions)) : []), // Rift Troopers, Ghouls, a Mini Turret
       ...enemyFields(frame),
       ...require('./icons').loadoutFields(frame),
       { name: 'Battle Log', value: frame.log.length ? frame.log.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Empty' },
-    ).setFooter({ text: `Total Time Elapsed: ${clock(frame.t)}` }); // no "one death ends the run" while fighting (his ask, Oct 29)
+    ).setFooter({ text: `Total Time Elapsed: ${clock(frame.t)}` }); // no "one death ends the run" while fighting
   return { embeds: [e], components: [], files: [soulsFile(), await roomFile(spec, spec.kind === 'rival' ? rivalMood(frame) : null, false, frame.stage)], attachments: [] };
 }
 
@@ -639,7 +639,7 @@ function choiceAbout(d, i) {
 const upgradeCost = (ev) => ` It cost you **${pct(ev.from)}** to **${pct(ev.to)}** Health.`;
 function eventText(ev, hero = 'You') {
   if (ev.action === 'rest') return `You rested and healed **${Math.round(ev.healed * 100)}%**.`;
-  // the hero rooms (Nov 6)
+  // the hero rooms
   if (ev.action === 'leave' && ev.kind === 'visit') return `You turned down **${the(ev.hero)}**.`;
   if (ev.action === 'leave' && ev.kind === 'rift') return 'You walked past the Rift and let them fight it out.';
   if (ev.action === 'burrow') return `**Mo & Krill** dug past **${plural(ev.rooms, 'room')}** to the boss. You gained **${plural(ev.rooms + 1, 'Level')}**.`;
@@ -673,7 +673,7 @@ function eventText(ev, hero = 'You') {
   const found = f.kind === 'little' ? `a **${buffText(f.key, 1)}** buff, permanent for this run` : f.kind === 'heal' ? `a moment's peace: you healed **${Math.round(f.healed * 100)}%**` : `a ${withIcon(powerupIcon(f.key), `**${BRIDGE[f.key].name} Bridge Buff**`)} (${BRIDGE[f.key].text}), until this Floor's boss`;
   return `You broke open the crates and the Golden Statue and found ${found}.`;
 }
-// Violet's try, on a screen of its own before the pick (his ask, Nov 7): what happened, then Continue.
+// Violet's try, on a screen of its own before the pick: what happened, then Continue.
 async function revealView(member, d) {
   const ev = d.event;
   const spec = D.specOf(d, ev.room);
@@ -693,7 +693,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   const spec = D.specOf(d, offer.room);
   const r = D.rules(d);
   const cleared = spec.kind === 'boss' ? `${D.bossName(spec, true)} Defeated` : spec.kind === 'rival' ? `${spec.rival} Defeated` : `Room ${spec.room} Cleared`;
-  const e = dembed(run ? WIN : undefined, d.ascension ?? 0).setThumbnail('attachment://thumb.png'); // the title is always the ascension (his ask Nov 5)
+  const e = dembed(run ? WIN : undefined, d.ascension ?? 0).setThumbnail('attachment://thumb.png'); // the title is always the ascension
   const lines = [];
   const addEvent = (text) => {
     if (lines.length) lines.push('');
@@ -705,7 +705,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     const unlocked = UNLOCKS(d.level) > UNLOCKS(d.level - 1) ? ` and unlocked **${abilityName(d.hero, UNLOCKS(d.level))}**` : '';
     addEvent(`${d.hero} reached **Level ${d.level}**${unlocked}${spec.kind === 'boss' ? `, and earnt +${rejuvIcon()}1 Rejuv` : ''}.`);
   }
-  if (d.event?.room === offer.room) addEvent(`${eventText(d.event, d.hero)}\n${d.hero} reached **Level ${d.level}**.`); // an event room (Nov 4): what happened there, then its pick
+  if (d.event?.room === offer.room) addEvent(`${eventText(d.event, d.hero)}\n${d.hero} reached **Level ${d.level}**.`); // an event room: what happened there, then its pick
   if (d.returned?.room === offer.room) addEvent(d.returned.legendary
     ? `Your Legendary **${d.returned.item}** shattered the Time Capsule. Its Cooldown was rerolled: **${Math.abs(Math.round((1 - d.returned.mult) * 100))}% ${d.returned.mult <= 1 ? 'shorter' : 'longer'}**.`
     : `The Time Capsule opened: your **${d.returned.item}** is back after **${plural(d.returned.rooms, 'room')}**, with a Cooldown **${Math.round((1 - d.returned.mult) * 100)}% shorter**.`);
@@ -725,7 +725,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
   else if (d.smash) addEvent(`**Smash and Grab:** Take All **${offer.choices.length}** Items, each Fragile. Or ${skipText}${D.smashNeed(d) ? ` You must give up **${D.smashNeed(d)}** of your Items to make room.` : ''}`);
   else addEvent(`Pick **1 of ${offer.choices.length}** items, or ${skipText}${D.slotsUsed(d) >= r.maxItems ? ' Your build is full: an upgrade takes its part\'s place, anything else replaces an Item.' : ''}`);
   e.setDescription(lines.join('\n'));
-  // what each choice does: buffs all at once; an item only once it is picked in View Item (his ask, Oct 28: three in full was too much to read)
+  // what each choice does: buffs all at once; an item only once it is picked in View Item (three in full was too much to read)
   const about = offer.kind === 'buffs' ? offer.choices.map((n, i) => choiceAbout(d, i)) : [VIEW_PROMPT];
   // buffs are short, so they share one field, a line each (a field per buff left a blank row between them)
   const fields = offer.kind === 'buffs' ? [{ name: 'Buff Choices', value: about.join('\n') }] : about.map((value, i) => ({ name: i ? '​' : 'Item Choices', value }));
@@ -749,7 +749,7 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     const points = pointMenu(member.id, d);
     if (points) components.push(points);
     const short = (n) => (offer.kind === 'buffs' ? buffText(n, r.bossBuffs) : n);
-    // a rival's whole build is too many for buttons: a dropdown (his ask, Oct 29)
+    // a rival's whole build is too many for buttons: a dropdown
     const need = D.smashOpen(d) ? D.smashNeed(d) : 0;
     if (need) components.push(row(new StringSelectMenuBuilder().setCustomId(`${DSMASH_ID}:${member.id}:${offer.room}`).setPlaceholder(titleCase(`Give up ${need} ${need === 1 ? 'Item' : 'Items'} to Take All`)).setMinValues(need).setMaxValues(need)
       .addOptions(giveUp(d, [...new Set(SLOTS.flatMap((s) => d.items[s]))], itemOpt))));
@@ -761,13 +761,13 @@ async function offerView(member, d, { run = null, animate = false, replace = nul
     const actions = [button(`${DSKIP_ID}:${member.id}:${offer.room}`, offer.kind === 'buffs' ? `Skip ; Heal ${Math.round(r.skipHeal * 100)}%` : offer.kind === 'legendaries' ? `Skip ; Gain ${D.LEGEND_SKIP_BUFFS} Perma-Buffs` : `Skip ; Heal ${Math.round(r.skipHeal * 100)}% and gain ${r.skipBuffs} Buffs`, ButtonStyle.Danger), button(`${DBUILD_ID}:${member.id}`, 'Your Build')];
     if (offer.recruit) actions.push(button(`${DRECRUIT_ID}:${member.id}:${offer.room}`, `Recruit ${the(offer.recruit.hero)}`.slice(0, 80), ButtonStyle.Success).setDisabled(!!d.ally));
     if (offer.kind === 'items' && !offer.rival) actions.push(button(`${DREROLL_ID}:${member.id}:${offer.room}`, `Reroll (${d.rerolls ?? r.rerolls} Left)`, ButtonStyle.Success).setDisabled((d.rerolls ?? r.rerolls) <= 0));
-    if (D.helperOf(d) && offer.kind === 'items' && !offer.rival && offer.choices.length > 0) { // Rem's Lil Helper (his ask, Nov 7): the Items you are not taking can go to it
+    if (D.helperOf(d) && offer.kind === 'items' && !offer.rival && offer.choices.length > 0) { // Rem's Lil Helper: the Items you are not taking can go to it
       components.push(row(new StringSelectMenuBuilder().setCustomId(`${DFEED_ID}:${member.id}:${offer.room}`).setPlaceholder('Feed the Lil Helper an Item')
         .addOptions(offer.choices.map((n, i) => ({ label: n, value: String(i), description: `${KIND_NAME[itemByName(n).Slot]}, Tier ${itemByName(n).Tier}: ${feedGain(n)}`.slice(0, 100) })))));
     }
     components.push(row(...picks), row(...actions));
   }
-  return { embeds: [e], components, files: [soulsFile(), await runFace(d), file] }; // always the hero's own face: a visiting hero's (Violet's, McGinnis') stays on their own screens (his ask, Nov 7)
+  return { embeds: [e], components, files: [soulsFile(), await runFace(d), file] }; // always the hero's own face: a visiting hero's (Violet's, McGinnis') stays on their own screens
 }
 
 // ---- the run's build: the hero card (heroCard.js) with the run's level, abilities, items and stats ----
@@ -776,7 +776,7 @@ async function buildView(member, d) {
   const e = dembed(undefined, d.ascension ?? 0).setTitle(`${d.hero}  -  Level ${d.level}  -  This Run`).setImage('attachment://hero.jpg').setThumbnail('attachment://thumb.png');
   const buffs = Object.entries(d.buffs);
   if (buffs.length) e.addFields({ name: 'Permanent Buffs (This Run)', value: buffs.map(([k, n]) => buffText(k, n)).join('\n'), inline: true });
-  if (d.bridge?.length) e.addFields({ name: 'Big Buffs (This Floor)', value: d.bridge.map((k) => withIcon(powerupIcon(k), `${BRIDGE[k].name} — ${BRIDGE[k].text}`)).join('\n'), inline: true });
+  if (d.bridge?.length) e.addFields({ name: 'Big Buffs (This Floor)', value: d.bridge.map((k) => withIcon(powerupIcon(k), `${BRIDGE[k].name}: ${BRIDGE[k].text}`)).join('\n'), inline: true });
   if (d.enhanced?.length) e.addFields({ name: 'Enhanced Items', value: d.enhanced.join('\n'), inline: true });
   if (D.fragileOf(d).length) e.addFields({ name: 'Fragile Items', value: D.fragileOf(d).join('\n'), inline: true });
   const imbued = Object.keys(d.imbues);
@@ -790,7 +790,7 @@ async function buildView(member, d) {
 }
 
 // Descend owns its build, so an imbue item must ask here rather than borrowing the
-// farm hero's picker. There is no bypass: the run waits for this choice.
+// farm hero's picker. There is no bypass: the run waits for t.
 async function imbueView(member, d) {
   const name = d.imbuing;
   const slots = [1, 2, 3, 4].filter((slot) => slot <= UNLOCKS(d.level) && (!NO_ULT_IMBUE.has(name) || slot !== 4));
@@ -835,11 +835,11 @@ async function overView(member, run) {
     ...(d.ascension ? [{ name: 'Ascension', value: `${d.ascension}`, inline: true }] : []),
     { name: 'Your Best', value: bestText(run.best), inline: true },
     { name: 'Battle Log', value: lines.length ? lines.map(([t, text]) => `${clock(t)}   ${text}`).join('\n') : 'Nothing happened' },
-  ).setImage('attachment://hero.jpg'); // no footer (his call, Nov 6)
+  ).setImage('attachment://hero.jpg'); // no footer
   return { embeds: [e], components: [row(button(`${DAGAIN_ID}:${member.id}`, 'Descend Again', ButtonStyle.Success))], files: [soulsFile(), await roomFile(spec, spec.kind === 'rival' ? 'gloat' : null, false, run.cleared), new AttachmentBuilder(await runCard(d), { name: 'hero.jpg' })], attachments: [] };
 }
 
-// ---- the descent cleared: the Patron and the Weakened Patron beaten in the last room (his call, Oct 24: nothing more than this and the leaderboard) ----
+// ---- the descent cleared: the Patron and the Weakened Patron beaten in the last room (nothing more than this and the leaderboard) ----
 async function completeView(member, run) {
   const d = run.complete;
   const e = dembed(WIN, d.ascension ?? 0).setTitle('Descent Cleared').setThumbnail('attachment://thumb.png')
@@ -847,7 +847,7 @@ async function completeView(member, run) {
     .addFields(
       ...(d.reborn?.to ? [{ name: 'Reborn', value: `${d.hero} is reborn as **${rankText(member.guild, d.reborn.to)}**: +${Math.round(BONUS * d.reborn.to * 100)}% Health, Weapon Damage and Spirit Power, for good, in the farm and in Descend.` }]
         : d.reborn?.locked ? [{ name: 'Rebirth', value: `To unlock Rebirth's, you must clear a Siege with ${d.hero}.\nUse /farm to start your journey! All Ascension's that you've won with a Hero will count towards your Rebirth!` }] : []),
-      ...(d.token ? [{ name: 'Character Unlock Token', value: `Clearing Ascension ${d.ascension} for the first time earnt you a Character Unlock Token!\nUse it on the Switch Hero screen of \`/base\` to unlock a hero of your choice!` }] : []), // his call, Oct 28
+      ...(d.token ? [{ name: 'Character Unlock Token', value: `Clearing Ascension ${d.ascension} for the first time earnt you a Character Unlock Token!\nUse it on the Switch Hero screen of \`/base\` to unlock a hero of your choice!` }] : []),
       { name: 'Level', value: `${d.level}`, inline: true },
       { name: 'Fight Time', value: clock(run.seconds), inline: true },
       { name: 'Descents Cleared', value: `${d.clears}`, inline: true },
@@ -864,7 +864,7 @@ function tokenView(hero) {
 }
 
 // ---- /descend leaderboard ----
-// /descend stats (his ask, Nov 4; private): the member's records (kept all along) and the run counters (counted from Nov 4, `descentStats`).
+// /descend stats (private): the member's records (kept all along) and the run counters (counted from Nov 4, `descentStats`).
 function statsView(member, record, rows) {
   const s = record.descentStats ?? {};
   const place = rows.findIndex((r) => r.id === member.id);
@@ -904,7 +904,7 @@ function leaderboardView(member, rows, record) {
   return { embeds: [e], components: [], files: [soulsFile()] };
 }
 
-// A Buff found in the room just left: a window of its own between the pick and the next room (his ask, Nov 10). Not a room, no fight, just Continue.
+// A Buff found in the room just left: a window of its own between the pick and the next room. Not a room, no fight, just Continue.
 function findView(member, d, { note = null } = {}) {
   const f = d.finding;
   const little = f.kind === 'little';

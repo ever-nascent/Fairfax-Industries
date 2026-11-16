@@ -1,4 +1,4 @@
-// Tickets (the tickets.bot features, built in steps; his ask Nov 16): staff roles, the blacklist, panels, opening / closing / claiming a ticket, transcripts.
+// Tickets (the tickets.bot features, built in steps): staff roles, the blacklist, panels, opening / closing / claiming a ticket, transcripts.
 // Built: channel and thread tickets, forms, close requests, tags, feedback ratings, auto-close, stats, reopen. Not built: knowledge base, notes.
 // Commands: commands/general/ticket.js (members and staff in a ticket), commands/admin/ticket-config.js (setup, panels, staff, blacklist); buttons: components/tickets.js.
 const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, MessageFlags, ModalBuilder, PermissionFlagsBits: P, TextInputBuilder, TextInputStyle } = require('discord.js');

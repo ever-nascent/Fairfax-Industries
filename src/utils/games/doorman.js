@@ -1,5 +1,5 @@
 // /guess-the-door, the Doorman's game at The Baroness Hotel: three rooms, one holds the souls. Pick a room, the Doorman
-// opens an empty one, then stay or switch. A win pays 1.425x the bet (always switching returns 95%, like the other games). Rules: server-plan.md ("Games").
+// opens an empty one, then stay or switch. A win pays 1.425x the bet (always switching returns 95%, like the other games)..
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
@@ -361,7 +361,7 @@ function pickView(id, game) {
   });
 }
 
-// Every door opens. The template every game follows (his pick Oct 22): one bold line, the rooms in fields, the money under
+// Every door opens. The template every game follows: one bold line, the rooms in fields, the money under
 // them, green or red.
 function resultView(id, game, final, won, balance) {
   return view({

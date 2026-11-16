@@ -1,4 +1,4 @@
-// Each hero's /descend tuning (Nov 2, his ask: "find a way once and for all to balance the modes, so Ascension 20 is beatable for all characters"):
+// Each hero's /descend tuning ("find a way once and for all to balance the modes, so Ascension 20 is beatable for all characters"):
 // the health and damage share (descent.js TUNING) at which the good-pick bot of tools/farm-sim.js clears `--target` of its Ascension 20 runs.
 //   node tools/descend-tuning.js [--hero=Name,Name|all] [--target=0.4] [--runs=12] [--jobs=2] [--redo=1]
 // Saved to assets/farm/descendTuning.json one hero at a time (a stopped run carries on; `--redo=1` measures again). Every try plays the same seeds, so two

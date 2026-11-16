@@ -1,3 +1,7 @@
+// Event handler: messageCreate.
+// Chat XP: one counted message per cooldown, random XP between min and max (chatCounts has what doesn't count).
+// Every counted message (cooldown or not) can also drop a Soul Bag.
+
 const { PermissionFlagsBits } = require('discord.js');
 const { getSettings, addXp, announceLevelUp, chatCounts } = require('../utils/economy/xp');
 const { findPhrase, getPhrases } = require('../utils/server/censor');
@@ -5,8 +9,6 @@ const { shouldDrop, dropBag } = require('../utils/economy/soulBag');
 const { track } = require('../utils/economy/quests');
 const { runInGuild } = require('../utils/guildContext');
 
-// Chat XP: one counted message per cooldown, random XP between min and max (chatCounts has what doesn't count).
-// Every counted message (cooldown or not) can also drop a Soul Bag.
 module.exports = {
   name: 'messageCreate',
   async execute(message) {

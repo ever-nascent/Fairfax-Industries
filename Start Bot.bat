@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 title Fairfax Industries Bot
-rem First the latest version from GitHub (his call, Oct 16): main is pulled, then this file starts again so its new version runs.
+rem First the latest version from GitHub main is pulled, then this file starts again so its new version runs.
 rem The pull and the restart sit in one ( ) block: cmd reads a block whole, so a pull that changes this file can't mix old and new lines.
 rem Only a fast-forward: anything changed or committed on this PC is never overwritten; the bot then starts with the files here.
 set "GIT=git"

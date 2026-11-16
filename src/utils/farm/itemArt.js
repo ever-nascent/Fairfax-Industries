@@ -7,9 +7,9 @@ const { ITEM_POOL, LEGENDARY_NAMES } = require('./levels');
 
 const DIR = path.join(ASSETS, 'lockle', 'items');
 const slug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-// What the game lays over a corrupted item's picture (the wiki's Item frame corrupted, 300 x 300, transparent in the middle; his ask, Oct 30: every corrupted item looks like this everywhere).
+// What the game lays over a corrupted item's picture (the wiki's Item frame corrupted, 300 x 300, transparent in the middle; every corrupted item looks like this everywhere).
 const CORRUPTED_FRAME = path.join(ASSETS, 'farm', 'ui', 'item_frame_corrupted.png');
-// What the wiki lays over an enhanced item's picture (his paste of its CSS, Oct 30): linear-gradient(45deg, rgba(63,220,255,0.56) 20%, transparent 80%),
+// What the wiki lays over an enhanced item's picture (of its CSS, Oct 30): linear-gradient(45deg, rgba(63,220,255,0.56) 20%, transparent 80%),
 // i.e. blue in the bottom-left fading out towards the top-right. Fills the square at (x, y), `w` x `h`, on a canvas context.
 function enhancedOverlay(g, x, y, w, h) {
   const half = ((w + h) * Math.SQRT1_2) / 2 * Math.SQRT1_2; // half the CSS gradient line's length, split into x and y

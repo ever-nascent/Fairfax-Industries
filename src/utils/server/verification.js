@@ -1,5 +1,5 @@
 // Tournament player verification: what the bot can look up about a Steam account, what is wrong with it, and the review staff see.
-// Sources: steamcommunity.com (the profile, is it public), the Steam Web API (Deadlock hours; needs STEAM_API_KEY in .env and public game details),
+// Sources: steamcommunity.com (the profile, is it public), the Steam Web API (Deadlock hours; needs STEAM_API_KEY in.env and public game details),
 // deadlock-api.com (rank, most played heroes, win rates; unofficial, the data Statlocker and the other trackers build on).
 // The team side (who is pending, approving, denying): utils/server/tournaments.js. Buttons: components/tournament.js.
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');

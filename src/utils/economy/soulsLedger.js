@@ -1,7 +1,7 @@
 // The souls ledger: one line for every change to a member's souls (who, how much, the balance after, why).
 // Append-only JSON lines in data/soulsLedger.jsonl (one older file kept), so a wrong balance can be traced, a staff slip
 // undone from the old value, and the economy checked: what each faucet pays and each sink takes.
-// A Hero Farming hero's own souls (his call, Oct 11: separate per hero, not the server balance) are logged here too, tagged with the hero (`h`);
+// A Hero Farming hero's own souls (separate per hero, not the server balance) are logged here too, tagged with the hero (`h`);
 // their `b` is that hero's souls after the change.
 const fs = require('node:fs');
 const path = require('node:path');

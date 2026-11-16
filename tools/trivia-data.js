@@ -25,7 +25,7 @@ const ALIASES = {
   'The Doorman': ['Doorman'],
 };
 // Sections of a "<Hero>/Voice lines" page that aren't the hero talking (or aren't in the game).
-// 'hero-specific' (Oct 29, his ask): lines said about one other hero ("Thanks for the assist, Ivy", "Fern", "the Sandman") are
+// 'hero-specific': lines said about one other hero ("Thanks for the assist, Ivy", "Fern", "the Sandman") are
 // not general lines; kills about a hero are kept separately by killLines.
 const SKIP_SECTIONS = ['conversation', 'other character', 'hero-specific', 'removed', 'unused', 'navigation'];
 const SLOTS = { Weapon: 'Weapon', Armor: 'Vitality', Tech: 'Spirit' };
@@ -66,10 +66,10 @@ function saidOn(rows, i) {
   return cleanWikiText(said) || null;
 }
 
-// What a hero says on a kill (his call, Oct 16: a duel's winner speaks about the hero it beat): `any` from the Generic rows of "Kill Enemy Hero",
+// What a hero says on a kill (a duel's winner speaks about the hero it beat): `any` from the Generic rows of "Kill Enemy Hero",
 // `heroes[<name>]` from the "Kill" rows under "Hero-Specific Voice Lines > Enemies".
-// Also `streak` (the "Killstreak" rows) and `win` ("Post-Game" pings and "Win MVP"): Nov 5, his ask, so a won fight and a cleared run speak
-// lines meant for that moment instead of any line on the page (a death groan, an item reminder ...).
+// Also `streak` (the "Killstreak" rows) and `win` ("Post-Game" pings and "Win MVP"): so a won fight and a cleared run speak
+// lines meant for that moment instead of any line on the page (a death groan, an item reminder...).
 function killLines(text) {
   const kills = { any: [], heroes: {}, streak: [], win: [] };
   const rows = text.split('\n');
@@ -96,7 +96,7 @@ function killLines(text) {
     }
     const line = saidOn(rows, i);
     if (!line || '(['.includes(line[0]) || line.includes('[')) return;
-    if (part === 'any') { if (kind === 'generic') kills.any.push(line); } // not melee, assist, revenge ...
+    if (part === 'any') { if (kind === 'generic') kills.any.push(line); } // not melee, assist, revenge...
     else if (part === 'streak' || part === 'win') { if (!kills[part].includes(line)) kills[part].push(line); }
     else if (part === 'situational') { if (kind === 'win mvp' && !kills.win.includes(line)) kills.win.push(line); }
     else if (hero && kind === 'kill') (kills.heroes[hero] ??= []).push(line);

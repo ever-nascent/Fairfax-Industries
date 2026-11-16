@@ -17,7 +17,7 @@ const normalize = (s) => s.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase(
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // The first phrase found in `text` as a whole word / phrase ("ass" doesn't catch "class"), or null.
-// ponytail: whole words only, so "fucking" needs its own entry; add wildcards if that gets tedious.
+// whole words only, so "fucking" needs its own entry; add wildcards if that gets tedious.
 function findPhrase(text, phrases) {
   const t = normalize(text);
   return phrases.find((p) => new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegex(p)}(?![\\p{L}\\p{N}])`, 'u').test(t)) ?? null;

@@ -1,5 +1,5 @@
 // McGinnis' abilities (deadlock.wiki/McGinnis, checked Oct 5 2026; page updated Oct 3). Numbers come from the wiki data through Ability.value();
-// this file is only what each ability does. Ally abilities work on the hero alone (his call, Oct 2): the Specter heals her.
+// this file is only what each ability does. Ally abilities work on the hero alone: the Specter heals her.
 // Her turrets are not units: they are kept on Mini Turret, deal her damage and can't be hurt (taken by me: enemies only shoot at her).
 const { Ability, spinUp, anyReady } = require('./../ability');
 const { isBoss, summonScale } = require('./../items');
@@ -8,7 +8,7 @@ const { HEROES } = require('./../stats');
 const find = (unit, Cls) => unit.abilities.find((a) => a instanceof Cls);
 
 // 1. Mini Turret: a turret that shoots the front enemy for spirit damage until its time is up; less to NPCs, bosses included (the wiki's
-// "troopers and objectives": bosses aren't objectives here, his call Oct 31). T1: more damage. T2: two more charges. T3: it fires faster and lasts longer.
+// "troopers and objectives": bosses aren't objectives here, ). T1: more damage. T2: two more charges. T3: it fires faster and lasts longer.
 // The gun's own rule lives here too (slot 1 is never locked): it spins up while she fires, from the stat sheet's fire rate to the wiki's fire
 // rate at full spin over 2 s, and winds down while she doesn't (a reload).
 class MiniTurret extends Ability {
@@ -31,7 +31,7 @@ class MiniTurret extends Ability {
       const e = fight.foes[0];
       if (!e || fight.time + 1e-9 < t.next) continue;
       t.next = fight.time + this.data.TickRate;
-      const share = e.team === 'hero' ? 1 : this.data.NonHeroDamagePercentOutgoing / 100; // a boss is no objective here (his call Oct 31): it takes the NPC share
+      const share = e.team === 'hero' ? 1 : this.data.NonHeroDamagePercentOutgoing / 100; // a boss is no objective here: it takes the NPC share
       fight.damage(u, e, ((this.value('TurretDPS') * this.value('AttackSpeedMult')) / 100) * this.data.TickRate * share * summonScale(u, e), 'spirit');
     }
   }
@@ -77,7 +77,7 @@ class HeavyBarrage extends Ability {
     this.loaded = 0; // rockets due
   }
 
-  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, MiniTurret, SpectralWall); } // combo first (his ask, Nov 6): the turret and the wall go down first
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, MiniTurret, SpectralWall); } // combo first: the turret and the wall go down first
   status(fight) { return fight && fight.time < this.until ? 'Firing' : super.status(fight); }
 
   cast(fight) {

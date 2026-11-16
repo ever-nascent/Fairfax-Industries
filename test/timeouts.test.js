@@ -1,4 +1,4 @@
-// Run: node --test. A game nobody clicks for 5 minutes is finished for the player, not refunded (his call, Oct 5),
+// Run: node --test. A game nobody clicks for 5 minutes is finished for the player, not refunded,
 // unless nothing had been revealed yet. Throwaway data folder, never the live data/.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 process.env.NO_QUESTS = '1'; // quests would pay souls into the balances these tests count

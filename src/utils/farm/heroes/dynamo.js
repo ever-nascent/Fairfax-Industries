@@ -1,5 +1,5 @@
 // Dynamo's abilities (deadlock.wiki/Dynamo, checked Oct 3 2026). Numbers come from the wiki data through Ability.value(); this file is only
-// what each ability does. His calls (Oct 3): Quantum Entanglement's tier 1 (range, useless here) makes enemies lose him for a second after he
+// what each ability does. Quantum Entanglement's tier 1 (range, useless here) makes enemies lose him for a second after he
 // returns. Ally parts work on Dynamo alone (his earlier call).
 const { Ability } = require('./../ability');
 const { MELEE } = require('./../engine');
@@ -22,7 +22,7 @@ class KineticPulse extends Ability {
 }
 
 // 2. Quantum Entanglement: gone for a moment (can't be targeted, doesn't attack) and a stamina charge back. Like Mina's Sanguine Retreat it slips
-// an enemy's blast as it lands; in a fight without blasts it is used when hurt. T1 (his call): enemies can't find him for LOST more seconds after
+// an enemy's blast as it lands; in a fight without blasts it is used when hurt. T1: enemies can't find him for LOST more seconds after
 // he is back. T3: halves the debuffs on him and gives Kinetic Pulse a charge back.
 const LOST = 1;
 const HURT = 0.5;

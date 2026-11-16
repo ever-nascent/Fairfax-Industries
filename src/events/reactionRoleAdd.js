@@ -1,6 +1,8 @@
+// Event handler: messageReactionAdd.
+// Reacting on a menu gives the role. Single-choice menus also take back the member's other choice.
+
 const { menuReaction, emojiKey, SELF_PICKED } = require('../utils/server/reactionRoles');
 
-// Reacting on a menu gives the role. Single-choice menus also take back the member's other choice.
 module.exports = {
   name: 'messageReactionAdd',
   async execute(reaction, user) {

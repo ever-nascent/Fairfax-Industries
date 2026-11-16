@@ -1,4 +1,4 @@
-// Weekly Jackpot (his picks, Nov 13: the second Souls sink from the economy review). Members buy tickets with server Souls; every
+// Weekly Jackpot (the second Souls sink from the economy review). Members buy tickets with server Souls; every
 // Monday at midnight UTC (like the weekly quests) one ticket is drawn and its owner takes the pot. The pot is what the tickets cost
 // minus HOUSE, which is removed for good. One record per server in data/jackpot.json:
 //   { week (the Monday these tickets are for), tickets: { user id: count }, last: { week, winner, pot, mine, sold } | null, channelId }
@@ -12,8 +12,8 @@ const { weekOf } = require('./quests');
 const { boldSouls, soulsText } = require('../format');
 const { REPLY_COLOR } = require('../../config');
 
-const TICKET = 100 * SCALE; // his pick: 1,000 Souls
-const HOUSE = 0.1; // the share of every ticket removed for good (his pick)
+const TICKET = 100 * SCALE; // 1,000 Souls
+const HOUSE = 0.1; // the share of every ticket removed for good
 const MAX_TICKETS = 20; // per member per week
 const WEEK_MS = 7 * 86_400_000;
 
@@ -25,7 +25,7 @@ const drawAt = (now = Date.now()) => Date.parse(weekOf(now)) + WEEK_MS;
 
 // Draws last week's winner if the week has turned and nobody has yet. Returns the draw ({ week, winner, pot, mine, sold }) the
 // first time, else null. The winner is picked and the tickets cleared in one locked step, so it can only happen once; the pot is
-// paid after. ponytail: a crash between the two loses that pot (the ledger shows no 'jackpot' win for the week); add a paid flag if it ever happens.
+// paid after. a crash between the two loses that pot (the ledger shows no 'jackpot' win for the week); add a paid flag if it ever happens.
 async function settle(guildId, now = Date.now(), randomInt = crypto.randomInt) {
   const week = weekOf(now);
   let drawn = null;

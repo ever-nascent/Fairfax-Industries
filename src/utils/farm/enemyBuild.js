@@ -1,4 +1,4 @@
-// View Enemy Build (his ask, Oct 26): before a fight, in Hero Farming and /descend, a private message with what the enemy fights with.
+// View Enemy Build: before a fight, in Hero Farming and /descend, a private message with what the enemy fights with.
 // Camps, bosses, lane enemies and Descend's enemies: health, damage, resists, range, and every blast, crowd control and special with its timing,
 // then what answers it. A rival hero: its drawn hero card (level, ability tiers, items, stats) like the member's own Build screen.
 const { AttachmentBuilder } = require('discord.js');
@@ -17,7 +17,7 @@ const DAMAGE = { spirit: 'spirit', melee: 'melee', mixed: 'half weapon, half spi
 const num = (n) => +n.toFixed(1);
 const cap = (text) => text[0].toUpperCase() + text.slice(1);
 
-// What one enemy unit does: a bullet point each, "**Label:** what", in Title Case (his ask, Oct 28). Seconds and metres are written "8s" / "20m"
+// What one enemy unit does: a bullet point each, "**Label:** what", in Title Case. Seconds and metres are written "8s" / "20m"
 // so titleCase leaves them small.
 function unitLines(unit) {
   const s = unit.stats;
@@ -35,7 +35,7 @@ function unitLines(unit) {
   if (s.antiHeal) lines.push(['Anti-Heal', `its hits cut your healing by ${Math.round(s.antiHeal.cut * 100)}% for ${num(s.antiHeal.seconds)}s`]);
   return lines.map(([label, text]) => `- **${label}:** ${titleCase(text)}`);
 }
-// What answers their curses and crowd control: its own field (Oct 28, his ask: it read oddly jammed into the footer).
+// What answers their curses and crowd control: its own field (it read oddly jammed into the footer).
 const COUNTERS = ['Unstoppable', 'Cloak of Opportunity', 'Reactive Barrier', 'Indomitable', 'Dispel Magic', 'Counterspell', 'Debuff Resist'];
 const counters = (units) => (units.some((u) => u.stats.blast || u.stats.controls?.length || u.stats.special)
   ? { name: 'Counters', value: COUNTERS.map((c) => `- ${c}`).join('\n') } : null);

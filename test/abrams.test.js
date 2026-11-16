@@ -18,7 +18,7 @@ const idOf = (payload) => payload.components[0].components[0].data.custom_id.spl
 const first = (n) => 0 * n; // a "random" int that always picks the first: Abrams (the first hero) is the culprit
 
 test('every hero has an answer to every question, and no two heroes answer alike', () => {
-  assert.ok(QUESTIONS.length >= 25, 'at least 25 questions (his call)');
+  assert.ok(QUESTIONS.length >= 25, 'at least 25 questions');
   assert.deepStrictEqual(Object.keys(ANSWERS).sort(), HEROES.map((h) => h.name).sort());
   for (const [hero, row] of Object.entries(ANSWERS)) assert.match(row, new RegExp(`^[YN]{${QUESTIONS.length}}$`), hero);
   const seen = new Map();

@@ -9,8 +9,8 @@
 const { Ability, anyReady } = require('./../ability');
 const { DT } = require('./../engine');
 
-const LEECH_RETURN = 1; // ponytail: seconds a fed leech takes to crawl back to her; placeholder
-const NEEDLES_BELOW = 0.6; // ponytail: the share of her max health below which she loads her syringes; placeholder
+const LEECH_RETURN = 1; // seconds a fed leech takes to crawl back to her; placeholder
+const NEEDLES_BELOW = 0.6; // the share of her max health below which she loads her syringes; placeholder
 const boons = (a) => a.unit.boons ?? 0;
 // a "power_increase" number: what the wiki data adds per boon (Ability.value() doesn't read it)
 const perBoon = (field) => [].concat(field?.Scale ?? []).find((s) => s.Type === 'power_increase')?.Value ?? 0;
@@ -207,7 +207,7 @@ class HealingNeedles extends Ability {
     if (!this.loaded) this.putAway(fight);
   }
 
-  // ponytail: a status keeps no length of its own, so the cap is what was left of it the first time it was stretched
+  // a status keeps no length of its own, so the cap is what was left of it the first time it was stretched
   stretch(fight) {
     for (const s of this.unit.statuses) {
       if (s.debuff || s.ult || s.until === Infinity || s.until - fight.time < 0.5) continue;
@@ -248,7 +248,7 @@ class LurkingTerrors extends Ability {
     this.terror = new Map(); // enemy -> seconds looked at her this cast, or 'feared'
   }
 
-  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, LeechTherapy); } // combo first (his ask, Nov 6): the leeches go first: the fear lasts longer with every one she keeps
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, LeechTherapy); } // combo first: the leeches go first: the fear lasts longer with every one she keeps
   status(fight) { return fight && fight.time < this.until ? 'Channeling' : super.status(fight); }
 
   reach(fight) {

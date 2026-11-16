@@ -1,4 +1,4 @@
-// Which server the code is running for. Player data (XP, souls, farm, quests ...) is kept per server, and the stores in
+// Which server the code is running for. Player data (XP, souls, farm, quests...) is kept per server, and the stores in
 // storage/index.js read this to pick the server's part. Set it where work begins: an interaction, a message, a timer.
 // Anything started inside inherits it (timeouts, detached promises, the storage lock). Asking for it when none is set
 // throws, so a missed entry point fails loudly instead of touching the wrong server's data.

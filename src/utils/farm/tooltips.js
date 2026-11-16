@@ -1,4 +1,4 @@
-// The game's own item tooltips (his ask, Oct 28: every item says exactly what it does, never "effect only"): each section (innate, passive,
+// The game's own item tooltips (every item says exactly what it does, never "effect only"): each section (innate, passive,
 // active) with its text and the numbers the game shows under it, labels and units included ("+20% Weapon Damage within Range", "15m Close Range").
 // From deadlock-api.com (unofficial), saved in assets/farm/tooltips.json by the corruption labels' weekly download (corruption.js).
 // A number is read from the item's own card when it has it, so an enhanced or corrupted card shows its own numbers.
@@ -21,7 +21,7 @@ function fromApi(items) {
       return {
         type: s.section_type ?? 'passive', // the game leaves a plain passive section unnamed
         text: (s.section_attributes ?? []).map((a) => a.loc_string).filter(Boolean).join(' '),
-        stats: keys.map((key) => ({ key, p: i.properties?.[key] })).filter(({ p }) => p?.label && p.value !== undefined) // status names (StatusEffectStun ...) have no label or number
+        stats: keys.map((key) => ({ key, p: i.properties?.[key] })).filter(({ p }) => p?.label && p.value !== undefined) // status names (StatusEffectStun...) have no label or number
           .map(({ key, p }) => ({ key, label: p.label, value: String(p.value), prefix: p.prefix ?? '', postfix: p.postfix ?? '', conditional: p.conditional ?? null })),
       };
     });
@@ -44,7 +44,7 @@ function statText(stat, card) {
 }
 const HIDDEN = new Set(['Eternal Gift:BuffFrequency']); // the game's number, not this one's (views.js ITEM_NOTES)
 
-// card -> [{ type, text (raw, with the game's markup), stats: ['+20% Weapon Damage within Range', ...] }]; [] when the file has nothing for it.
+// card -> [{ type, text (raw, with the game's markup), stats: ['+20% Weapon Damage within Range',...] }]; [] when the file has nothing for it.
 const sections = (card) => (read()[card?.Name] ?? []).map((s) => ({ type: s.type, text: s.text, stats: s.stats.filter((st) => !HIDDEN.has(`${card.Name}:${st.key}`)).map((st) => statText(st, card)).filter(Boolean) }));
 
 module.exports = { FILE, fromApi, save, sections, setTooltips: (d) => { data = d; } };

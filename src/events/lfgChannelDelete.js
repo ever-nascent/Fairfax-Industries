@@ -1,6 +1,8 @@
+// Event handler: channelDelete.
+// If staff delete a lobby voice channel by hand, clean up its record and #lfg post.
+
 const { onChannelDeleted } = require('../utils/server/lfg');
 
-// If staff delete a lobby voice channel by hand, clean up its record and #lfg post.
 module.exports = {
   name: 'channelDelete',
   async execute(channel, client) {

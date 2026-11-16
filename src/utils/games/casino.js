@@ -66,7 +66,7 @@ const mention = (id) => `<@${id}>`;
 const pot = (game) => game.bet * 2;
 const versusLine = (game) => `${mention(game.userId)} vs ${mention(game.opponentId)}, ${boldSouls(game.bet)} each.`;
 
-// The money row of a finished game (the template, his calls Oct 22): Bet / Won (Lost: the bet, when nothing came back) /
+// The money row of a finished game (the template): Bet / Won (Lost: the bet, when nothing came back) /
 // New Balance, the new balance as a plain number.
 const resultFields = (bet, won, balance) => [['Bet', bet], won ? ['Won', won] : ['Lost', bet], ['New Balance', balance]];
 const playAgainButton = (againId, bet, userId) => [`${againId}:${bet}:${userId}`, `Play Again (${fmt(bet)})`, ButtonStyle.Success];
@@ -245,7 +245,7 @@ function markTimedOut(payload) {
 }
 
 // Every game with no click for TIME_LIMIT_MINUTES (also ones that ran out while the bot was off) ends.
-// **A timeout finishes the game, it doesn't undo it** (his call, Oct 5: waiting out a losing hand was a free refund):
+// **A timeout finishes the game, it doesn't undo it** (waiting out a losing hand was a free refund):
 // a module's `finishOnTimeout(id, game)` returns { pays: [[user id, souls, other member (a duel's loser)?]], view: (balance) => message }
 // (no side effects; this function pays), or null when nothing has been revealed yet. Only then is everything staked
 // given back, with the host's time's-up message.

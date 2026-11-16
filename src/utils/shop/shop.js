@@ -1,6 +1,6 @@
 // The Shop. `/shop` opens on the first screen (banner + a section dropdown); the Hero Cards section lets
 // members preview any hero's card (with their own level and souls) before buying, in either style.
-// Rules are in server-plan.md ("The Shop").
+// Rules are in.
 const path = require('node:path');
 const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
 const { getUser, progress, MAX_LEVEL, REJUV_MAX } = require('../economy/xp');
@@ -126,7 +126,7 @@ async function heroCardsView(member, slug = null, style = 'portrait') {
   const equipped = key === user.card;
   const file = `card_${hero ? `${hero.slug}_${style}` : 'plain'}.png`; // a new name per card so Discord doesn't reuse the old image
 
-  // The Shopkeeper's words (awaiting his OK, Sept 28).
+  // The Shopkeeper's words.
   const card = hero && `**${hero.name}** card (${STYLES[style].label})`;
   const embed = new EmbedBuilder()
     .setColor(art ? cardColor(art.color) : CARD_COLOR)

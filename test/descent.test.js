@@ -648,7 +648,7 @@ test('View Item: the owner\'s Item Choices text becomes that item; anyone else s
   assert.match(other.log[0][1].content, /^\*\*Close Quarters\*\*/);
 });
 
-test('floors (his calls, Oct 29): 1 lane troopers, 2 small Haunts, 3 medium and small, 4 large and medium, 5 camps and troopers, 6 the base, 7 the base and troopers, 8 everything', () => {
+test('floors: 1 lane troopers, 2 small Haunts, 3 medium and small, 4 large and medium, 5 camps and troopers, 6 the base, 7 the base and troopers, 8 everything', () => {
   const seen = Array.from({ length: D.FLOORS }, () => new Set());
   for (let seed = 1; seed <= 150; seed++) for (let room = 1; room < D.LAST_ROOM; room++) {
     const spec = D.roomSpec(seed, room, 'Haze');
@@ -678,7 +678,7 @@ test('floors (his calls, Oct 29): 1 lane troopers, 2 small Haunts, 3 medium and 
   for (const [size, families] of Object.entries(D.FAMILIES)) for (const f of families) assert.ok(require('node:fs').existsSync(D.groupPicture({ type: size, family: f })), `${f} ${size}`);
 });
 
-test('a beaten rival offers any one of its own items from a dropdown (his ask, Oct 29), no reroll; nothing it can take: the usual 3', async () => {
+test('a beaten rival offers any one of its own items from a dropdown, no reroll; nothing it can take: the usual 3', async () => {
   const d = { ...D.newRun('Haze', 7), room: 4, level: 3, phase: 'offer' };
   d.items.weapon.push('Headshot Booster');
   const spec = { room: 3, floor: 1, kind: 'rival', rival: 'Abrams' };
@@ -710,7 +710,7 @@ test('a rival has as many enhanced items as the hero; a beaten rival\'s enhanced
   assert.deepStrictEqual([D.takeChoice(e, 1).enhanced, e.enhanced], [true, ['Mystic Burst']]);
 });
 
-test('the Broker\'s stall (his ask, Oct 30): from room 6, never a boss room or beside a rival or another stall, at most 3 a run; corrupting costs health and can be done again', async () => {
+test('the Broker\'s stall: from room 6, never a boss room or beside a rival or another stall, at most 3 a run; corrupting costs health and can be done again', async () => {
   const stalls = [];
   let most = 0;
   for (let seed = 1; seed <= 400; seed++) {
@@ -771,7 +771,7 @@ test('the Broker\'s stall (his ask, Oct 30): from room 6, never a boss room or b
   assert.strictEqual(D.corrupt(d, name).error, 'item', 'nothing left to corrupt');
 });
 
-test('Fragile Items (his ask, Oct 30): a stall forces one on a hero with no tier 3 or 4 item, it is weaker, a Rejuv shatters it, a later stall mends it into an Enhanced one', async () => {
+test('Fragile Items: a stall forces one on a hero with no tier 3 or 4 item, it is weaker, a Rejuv shatters it, a later stall mends it into an Enhanced one', async () => {
   const { buildHero } = require('../src/utils/farm/hero');
   const { FRAGILE_BREAK } = require('../src/utils/farm/stats');
   let seed = 1;

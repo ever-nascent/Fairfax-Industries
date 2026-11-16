@@ -1,5 +1,5 @@
 // /blackjack, Wraith's Table: blackjack against Wraith with her Card Trick deck. Hit, Stand, Double Down,
-// Split. One Joker in the deck: whoever draws it wins the hand outright. Rules: server-plan.md ("Games").
+// Split. One Joker in the deck: whoever draws it wins the hand outright..
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
@@ -473,7 +473,7 @@ function chips(g, center, y, bet) {
 // The label and colour of a hand's total pill.
 function handPill(hand, playing) {
   const total = score(hand.cards);
-  const text = { joker: 'JOKER', blackjack: 'BLACKJACK', bust: 'BUST' }[hand.result] ?? String(total); // no number on a bust (his call Oct 22)
+  const text = { joker: 'JOKER', blackjack: 'BLACKJACK', bust: 'BUST' }[hand.result] ?? String(total); // no number on a bust
   if (!hand.result) return [text, GOLD];
   if (playing) return [text, GOLD];
   return [text, { win: GREEN, joker: GREEN, blackjack: GREEN, push: LAV }[hand.result] ?? RED];
@@ -526,7 +526,7 @@ async function renderTable(game, name) {
 
 const MOVE_LABELS = { hit: 'Hit', stand: 'Stand', double: 'Double Down', split: 'Split' };
 const listOr = (words) => (words.length > 1 ? `${words.slice(0, -1).join(', ')} or ${words.at(-1)}` : words[0]);
-// A hand's score for the fields: no number on a bust (his call Oct 22), the Joker and a blackjack by name.
+// A hand's score for the fields: no number on a bust, the Joker and a blackjack by name.
 const handScore = (hand) => ({ joker: 'Joker', blackjack: 'Blackjack', bust: 'Bust' })[hand.result] ?? String(score(hand.cards));
 function wraithScore(game) {
   if (!game.reveal) return `**${score([game.dealer[0]])}** + ?`;
@@ -536,7 +536,7 @@ function wraithScore(game) {
   return d > 21 ? '**Bust**' : `**${d}**`;
 }
 
-// The game is Wraith's, not the Shopkeeper's. The template every game follows (his pick Oct 22, "Template C"): one line,
+// The game is Wraith's, not the Shopkeeper's. The template every game follows ("Template C"): one line,
 // then the score in fields (You / Wraith / Bet), the money under it once it's over (Won / New Balance), green or red at the end.
 async function view(id, game, name) {
   const file = `table_${id}_${game.version}_${Date.now()}.jpg`; // new name each step so Discord doesn't reuse the old image

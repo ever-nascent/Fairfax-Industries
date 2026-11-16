@@ -1,5 +1,5 @@
 // Rat King's abilities (deadlock.wiki/Rat_King, checked Oct 10 2026; page updated that day). Numbers come from the wiki data through
-// Ability.value(); this file is only what each ability does. His calls (Oct 10): Rat Swarm's rats are dealt round the enemies in reach, one each
+// Ability.value(); this file is only what each ability does. Rat Swarm's rats are dealt round the enemies in reach, one each
 // from the front; the banner is slammed right after the charge-up; Royal Pestments goes on whenever it is ready.
 const { Ability } = require('./../ability');
 const { DT } = require('./../engine');
@@ -28,7 +28,7 @@ class ScrapGrenade extends Ability {
   }
 }
 
-// 2. Rat Swarm: a swarm of rats leaps onto the enemies in reach, dealt round from the front (his call), at most so many on one enemy. Each rat
+// 2. Rat Swarm: a swarm of rats leaps onto the enemies in reach, dealt round from the front, at most so many on one enemy. Each rat
 // bites once a second while it hangs on: spirit damage and a little bullet resist off, which lasts a while and is refreshed by every bite.
 // The banner's rats (Rule, Ratannia!) are kept here too. T1: a second charge. T2: a bigger swarm, the resist loss lasts longer.
 // T3: more damage and more resist off per bite.
@@ -72,7 +72,7 @@ class RatSwarm extends Ability {
 
 // 3. Royal Pestments: scrap armour: a barrier worth a share of his max health. While it holds, every weapon hit on him has a chance to be sent
 // back at the attacker for its full damage (the hit still lands on the barrier). The barrier gets nothing from his resists (the wiki: `raw`).
-// Put on whenever ready (his call). T1: longer.
+// Put on whenever ready. T1: longer.
 // T2: shorter cooldown, a better chance. T3: a bigger barrier, and no hit deals more than a set amount while it holds.
 class RoyalPestments extends Ability {
   armor() { return this.unit.statuses.find((s) => s.id === 'pestments' && s.barrier > 0); }
@@ -93,7 +93,7 @@ class RoyalPestments extends Ability {
   }
 }
 
-// 4. Rule, Ratannia!: a charge-up without shooting, then the banner is slammed down at once (his call): bullet damage and a knock-up to the
+// 4. Rule, Ratannia!: a charge-up without shooting, then the banner is slammed down at once: bullet damage and a knock-up to the
 // enemies in reach. While it stands he is faster and takes less damage, the enemies in reach are slowed, and a rat jumps out every moment
 // onto one of them in turn, biting like Rat Swarm's. T1: faster still. T2: stands longer, reaches further. T3: more damage, more protection.
 class RuleRatannia extends Ability {

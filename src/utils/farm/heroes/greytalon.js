@@ -1,5 +1,5 @@
 // Grey Talon's abilities (deadlock.wiki/Grey_Talon, checked Oct 5 2026; page updated Sept 30). Numbers come from the wiki data through
-// Ability.value(); this file is only what each ability does. His call (Oct 5): Guided Owl's tier 3 execute is cut against NPCs like every health
+// Ability.value(); this file is only what each ability does. Guided Owl's tier 3 execute is cut against NPCs like every health
 // share. Guided Owl's spirit power counts any enemy and lasts the fight only, like the other heroes' growing bonuses.
 const { Ability } = require('./../ability');
 const { DT } = require('./../engine');
@@ -74,8 +74,8 @@ class SpiritSnare extends Ability {
 
 // 4. Guided Owl: he stops shooting for the cast, then the owl hits: spirit damage around the front enemy and a stun. Every enemy that dies within
 // KILL_WINDOW seconds of the hit (the wiki's note) adds spirit power for the rest of the fight. T3: after the hit, an enemy below a share of its
-// health dies (pure damage; his call: the share is cut against NPCs like every health share). The owl waits until it will kill someone in time.
-// ponytail: the owl lands when the cast ends; the wiki gives no owl speed.
+// health dies (pure damage; the share is cut against NPCs like every health share). The owl waits until it will kill someone in time.
+// the owl lands when the cast ends; the wiki gives no owl speed.
 const KILL_WINDOW = 4;
 class GuidedOwl extends Ability {
   constructor(...args) {
@@ -89,7 +89,7 @@ class GuidedOwl extends Ability {
   keep() { return this.kills; }
   stackText() { return this.kills ? `${this.kills} kills: +${+(this.kills * this.data.BonusTechPowerPerKill).toFixed(1)} Spirit Power` : null; }
 
-  // Waits until the owl would kill someone in time (his ask, Oct 29: an ability whose stack needs timing is used then): an enemy in its blast
+  // Waits until the owl would kill someone in time (an ability whose stack needs timing is used then): an enemy in its blast
   // that the hit, the T3 execute, or the hero's damage within KILL_WINDOW after it would finish.
   dies(fight, e) {
     const left = e.health - this.value('Damage');

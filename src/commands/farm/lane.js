@@ -4,7 +4,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const { openTarget } = require('../../utils/farm/commands');
 const { LANES } = require('../../utils/farm/targets');
 
-// every lane has its own Guardian and Walker (his call, Oct 3)
+// every lane has its own Guardian and Walker
 const lane = (o) => o.setName('lane').setDescription('Which lane').setRequired(true).addChoices(...Object.entries(LANES).map(([value, l]) => ({ name: `${l.name} (${l.color})`, value })));
 
 module.exports = {

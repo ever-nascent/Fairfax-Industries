@@ -1,7 +1,7 @@
-// Shotgun Roulette, Silver's game, modelled on Buckshot Roulette (core loop, no items: removed Oct 22, his call): a shotgun
+// Shotgun Roulette, Silver's game, modelled on Buckshot Roulette (core loop, no items: removed): a shotgun
 // with a shown mix of live and blank shells, shoot the other player or yourself, a blank on yourself keeps your turn,
 // empty chamber = reload, last one with charges wins. Against Silver (a win pays PAYOUT) or a member (both stake, winner
-// takes the pot). Rules: server-plan.md ("Games").
+// takes the pot)..
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
 const { getStore } = require('../../storage');
@@ -23,9 +23,9 @@ const { takeBet, pay, openGame } = forGame(BUTTON_ID); // souls go through these
 const AGAIN_ID = 'roulette_again'; // custom id: roulette_again:<bet>:<player id>[:<other player's id>]
 const winnings = (bet) => Math.floor(bet * PAYOUT);
 
-// Every line the game says is in Title Case (his ask Oct 22); her footer lines are speech.
+// Every line the game says is in Title Case; her footer lines are speech.
 // Original lines in Silver's voice: broke, sarcastic, tired, a bounty hunter (deadlock.wiki "Silver/Voice lines").
-// Rougher since Oct 22 (his ask: swear like she does in the game: damn, hell, shit, bastard); none copied from her voice lines.
+// Rougher since Oct 22 (swear like she does in the game: damn, hell, shit, bastard); none copied from her voice lines.
 const WIN_LINES = [
   'Damn, that was easy. Pay the lady.',
   'Hell yeah. Drinks are on you, technically.',
@@ -139,7 +139,7 @@ const view = (message) => ({ ...gameMessage(HOST, { title: 'Shotgun Roulette', .
 const quote = (lines) => lines.map((l) => `> ${l}`);
 const bolts = (n) => SHELLS.charge.emoji.repeat(n) + SHELLS.lost.emoji.repeat(CHARGES - n);
 
-// The charges left, one field per player (the template every game follows, his pick Oct 22: one line, the state in fields).
+// The charges left, one field per player (the template every game follows, one line, the state in fields).
 const chargeFields = (game) => game.players.map((p) => [nameOf(game, p), bolts(game.charges[p])]);
 
 function inviteView(id, game) {

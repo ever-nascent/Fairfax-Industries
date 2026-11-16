@@ -80,7 +80,7 @@ class AuraOfSuffering extends Ability {
 
   dps(name) { return [this.data, ...this.data.Upgrades.slice(0, this.tier)].reduce((sum, x) => sum + (x[name]?.Value ?? x[name] ?? 0) + (x[name]?.Scale?.Value ?? 0) * this.spirit(), 0); }
   want(fight) { return fight.foes.length > 0 && fight.time >= this.until && this.unit.health > this.unit.stats.maxHealth * AURA_ON; }
-  status(fight) { return fight && fight.time < this.until ? 'Active' : super.status(fight); } // 'Active' while held (Nov 4, his ask: it said "Suffering")
+  status(fight) { return fight && fight.time < this.until ? 'Active' : super.status(fight); } // 'Active' while held (it said "Suffering")
 
   cast(fight) {
     this.from = fight.time;

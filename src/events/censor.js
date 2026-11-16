@@ -1,3 +1,6 @@
+// Event handler: messageCreate, messageUpdate.
+// Deletes messages containing a censored phrase and warns the author. Staff (Manage Messages) are exempt.
+
 const { PermissionFlagsBits } = require('discord.js');
 const { replyEmbed } = require('../utils/embeds');
 const { pickRandom } = require('../utils/random');
@@ -5,7 +8,6 @@ const { WARN_LINES, findPhrase, getPhrases } = require('../utils/server/censor')
 
 const WARNING_LIFETIME_MS = 15_000; // the warning cleans itself up so it doesn't clutter the channel
 
-// Deletes messages containing a censored phrase and warns the author. Staff (Manage Messages) are exempt.
 module.exports = [
   {
     name: 'messageCreate',

@@ -1,5 +1,5 @@
 // Infernus' abilities (deadlock.wiki/Infernus, checked Oct 5 2026; page updated Sept 30). Numbers come from the wiki data through
-// Ability.value(); this file is only what each ability does. His call (Oct 5): Flame Dash's trail burns every enemy for the whole trail time
+// Ability.value(); this file is only what each ability does. Flame Dash's trail burns every enemy for the whole trail time
 // (enemies here stand still). A bullet is a headshot with the chance the headshot items use (his "treat it as a crit" call for Holliday).
 const { Ability } = require('./../ability');
 const { DT, MELEE, LIFESTEAL_VS_NPC } = require('./../engine');
@@ -23,8 +23,8 @@ class Napalm extends Ability {
   }
 }
 
-// 2. Flame Dash: a dash through the enemies that leaves a burning trail under all of them for the whole trail time (his call): spirit damage
-// every tick, the same to bosses (the game's "less to objectives" doesn't apply: bosses, Walkers and Shrines aren't objectives here, his call Oct 31). He is right among them while he dashes. T2: a hotter, longer trail. T3: two charges.
+// 2. Flame Dash: a dash through the enemies that leaves a burning trail under all of them for the whole trail time: spirit damage
+// every tick, the same to bosses (the game's "less to objectives" doesn't apply: bosses, Walkers and Shrines aren't objectives here). He is right among them while he dashes. T2: a hotter, longer trail. T3: two charges.
 class FlameDash extends Ability {
   constructor(...args) {
     super(...args);
@@ -53,7 +53,7 @@ class FlameDash extends Ability {
 // 3. Afterburn (passive): bullets build up on an enemy (a headshot more, a heavy melee a lot); a full bar sets it on fire: spirit damage every
 // tick for the base burn time. While it burns, bullets add time (up to the maximum) and his abilities' damage sets it back to the base time.
 // T1: a hotter burn. T2: burning enemies deal less spirit damage. T3: a longer maximum.
-// ponytail: the build-up's falloff beyond 18 m isn't simulated (every enemy stands within 20 m).
+// the build-up's falloff beyond 18 m isn't simulated (every enemy stands within 20 m).
 const MELEE_BUILD = 35; // a heavy melee's build-up, % (the wiki's note)
 class Afterburn extends Ability {
   get passive() { return true; }

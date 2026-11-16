@@ -1,6 +1,6 @@
 // /borrowed-time, Paradox's game: higher or lower on a clock. The hand lands on an hour (I-XII, never the same
 // hour twice in a row); call Higher or Lower for the next spin. Each right call multiplies the prize, Cash Out any
-// time, one wrong call loses the bet. Rules: server-plan.md ("Games").
+// time, one wrong call loses the bet..
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { ButtonStyle } = require('discord.js');
@@ -60,7 +60,7 @@ const outs = (hour, call) => (call === 'higher' ? 12 - hour : hour - 1);
 // The fair odds of a call: 11 possible hours over the ones that make it right.
 const fairOdds = (hour, call) => 11 / outs(hour, call);
 // What a right call multiplies the prize by, rounded down to 2 decimals (shown on the buttons). The cut comes out
-// of the first call only (his call, Oct 5: taking it on every call returned 84% after three calls, 72% after six).
+// of the first call only (taking it on every call returned 84% after three calls, 72% after six).
 const multiplier = (hour, call, first = true) => Math.floor((first ? RTP : 1) * fairOdds(hour, call) * 100 + 1e-6) / 100;
 // The fair odds of all the right calls so far (games saved before `odds` existed: worked back from their prize).
 const oddsOf = (game) => game.odds ?? (game.prize > game.bet ? game.prize / game.bet / RTP : 1);
@@ -327,7 +327,7 @@ async function view(id, game) {
   const [, right, call] = game.history[game.history.length - 1];
   const cashedOut = game.done && !game.lost;
 
-  // The template every game follows (his pick Oct 22): one plain line and the state in fields while playing; one bold line,
+  // The template every game follows: one plain line and the state in fields while playing; one bold line,
   // the money in fields and green / red once it's over. The line never repeats a field.
   let color;
   if (!game.done) {

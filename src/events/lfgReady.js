@@ -1,7 +1,9 @@
+// Event handler: clientReady.
+// On startup: create any missing LFG roles/channels, then tidy up lobbies left from before the restart.
+
 const { ourGuild } = require('../utils/guild');
 const { ensureInfrastructure, reconcile } = require('../utils/server/lfg');
 
-// On startup: create any missing LFG roles/channels, then tidy up lobbies left from before the restart.
 module.exports = {
   name: 'clientReady',
   once: true,

@@ -1,11 +1,11 @@
-// Hero Farming: hero levels (boons), ability points and the 12 item slots (his calls, Oct 1-2; server-plan.md "Hero Farming").
+// Hero Farming: hero levels (boons), ability points and the 12 item slots.
 // A hero levels up from the souls its trips have paid out (`earned` on the member's farm record), at the game's own thresholds (the wiki's
 // Boon page) scaled by the same PAYOUT_SCALE as the payouts, so a level takes about as many trips as it takes a match's worth of farming.
 // Each level is one boon (stats: heroStats `boons`). Ability unlocks and points follow the game's table.
 const { PAYOUT_SCALE } = require('./targets');
 const { ITEMS, LEGENDARIES, DRAWBACKS } = require('./stats');
 
-// total souls (the game's scale) for level 0, 1, 2 ... 35. Level 0 is the 600 souls every player starts a match with.
+// total souls (the game's scale) for level 0, 1, 2... 35. Level 0 is the 600 souls every player starts a match with.
 const THRESHOLDS = [600, 800, 1100, 1500, 2000, 2600, 3200, 3800, 4500, 5200, 5900, 6600, 7400, 8200, 9000, 9800, 10700, 11600, 12500, 13400,
   14400, 15500, 16700, 18000, 19500, 21200, 23100, 25200, 27500, 30000, 32700, 35600, 38700, 42000, 45500, 49200];
 const MAX_LEVEL = THRESHOLDS.length - 1;
@@ -15,7 +15,7 @@ const POINTS = (level) => (level >= 8 ? level - 3 : [0, 1, 1, 2, 2, 3, 4, 4][lev
 const TIER_COSTS = [1, 2, 5]; // points to buy tier 1, 2, 3 of an ability
 const MAX_TIER = TIER_COSTS.length;
 
-// Camps pay more as the hero levels. ponytail: +3% per level (x2 at the max) is a placeholder, he hasn't said how much.
+// Camps pay more as the hero levels. +3% per level (x2 at the max) is a placeholder, not final.
 const CAMP_BONUS_PER_LEVEL = 0.03;
 const campMultiplier = (level) => 1 + CAMP_BONUS_PER_LEVEL * level;
 
@@ -39,29 +39,29 @@ const pointsSpent = (tiers = {}) => Object.values(tiers).reduce((sum, t) => sum 
 // The level at which the nth ability unlocks (for "Unlocks at level N").
 const unlockLevel = (slot) => [0, 0, 2, 4, 7][slot];
 
-// ---- items: 12 slots for any mix of weapon, vitality and spirit items, like the game (his correction, Oct 3); wiki prices, paid from the server balance ----
-// The pool is every shop item: each one's card is in fights (stats.js stats, items.js effects; his call, Oct 3).
+// ---- items: 12 slots for any mix of weapon, vitality and spirit items, like the game; wiki prices, paid from the server balance ----
+// The pool is every shop item: each one's card is in fights (stats.js stats, items.js effects).
 const SLOTS = ['weapon', 'vitality', 'spirit'];
 const MAX_ITEMS = 12;
 const countItems = (items) => SLOTS.reduce((n, slot) => n + (items[slot]?.length ?? 0), 0);
 const SLOT_OF = { Weapon: 'weapon', Armor: 'vitality', Tech: 'spirit' }; // the wiki's slot names
-const SELL_BACK = 0.5; // an item sells for half its price, like the game (his call, Oct 2: changing a build costs souls)
-// A corrupted item sells for half of what it cost: its price and the corruption's (his call, Oct 3).
+const SELL_BACK = 0.5; // an item sells for half its price, like the game (changing a build costs souls)
+// A corrupted item sells for half of what it cost: its price and the corruption's.
 const sellPrice = (card, corrupted = null) => Math.round(card.Cost * (corrupted?.name === card.Name ? 2 : 1) * SELL_BACK);
 // in the wiki data but taken out of the game's shop (deadlock-api.com); the wiki's Tier 5 items are Street Brawl only, not in its data. Silencer was
-// here Oct 2 - Oct 22 (disabled in the game then; back since, his call to sell it again).
+// here Oct 2 - Oct 22 (disabled in the game then; back since, to sell it again).
 const RETIRED = new Set();
 const POOL = Object.fromEntries(SLOTS.map((slot) => [slot, ITEMS
   .filter((c) => SLOT_OF[c.Slot] === slot && c.Cost > 0 && !RETIRED.has(c.Name))
   .sort((a, b) => a.Tier - b.Tier || a.Cost - b.Cost || a.Name.localeCompare(b.Name))
   .map((c) => c.Name)]));
 const ITEM_POOL = SLOTS.flatMap((slot) => POOL[slot]);
-// Items a hero can't buy (the wiki: Deadman Danny can't buy Ricochet; his call Oct 29). Shop, buyItem, Descend's offers and a rival's kit all ask canBuy.
+// Items a hero can't buy (the wiki: Deadman Danny can't buy Ricochet). Shop, buyItem, Descend's offers and a rival's kit all ask canBuy.
 const NO_BUY = { 'Deadman Danny': new Set(['Ricochet', 'Headshot Booster']), Graves: new Set(['Headshot Booster']) }; // Headshot Booster: neither can deal critical damage (the wiki)
 const canBuy = (hero, name) => !NO_BUY[hero]?.has(name);
 
-// ---- corruption (his calls, Oct 3): The Broker corrupts one owned tier 3 or 4 item per hero, for its price again, while he is open ----
-// Open 30 minutes every 3 hours (UTC: 00:00-00:30, 03:00-03:30 ...), the same for everyone.
+// ---- corruption: The Broker corrupts one owned tier 3 or 4 item per hero, for its price again, while he is open ----
+// Open 30 minutes every 3 hours (UTC: 00:00-00:30, 03:00-03:30...), the same for everyone.
 const BROKER = { every: 3 * 3600 * 1000, open: 30 * 60 * 1000 };
 const brokerOpen = (now = Date.now()) => now % BROKER.every < BROKER.open;
 const brokerNext = (now = Date.now()) => (brokerOpen(now) ? now : now - (now % BROKER.every) + BROKER.every); // when it next opens (now if open)
@@ -80,7 +80,7 @@ function rollDrawback(card, rng = Math.random) {
   return { drawback, amount };
 }
 
-// Upgrade paths, like the game (his call, Oct 3): an item's price includes its components, so a member who owns one pays the difference and the
+// Upgrade paths, like the game: an item's price includes its components, so a member who owns one pays the difference and the
 // component is used up (its slot is the new item's). A held lower component counts even when an intermediate component is missing (for example,
 // Compress Cooldown -> Transcendent Cooldown). priceFor gives { price, used: [component names owned] } for a member's items.
 const BY_KEY = new Map(ITEMS.map((c) => [c.Key, c]));
@@ -92,22 +92,22 @@ function priceFor(card, items) {
   return { price: card.Cost - used.reduce((sum, c) => sum + c.Cost, 0), used: used.map((c) => c.Name) };
 }
 // The owned item that already holds `name` as a component, at any depth (an upgrade keeps its components' stats, so a second copy is refused;
-// his call, Oct 3), or undefined.
+// ), or undefined.
 const BY_NAME = new Map(ITEMS.map((c) => [c.Name, c]));
 const builtFrom = (card, name) => componentsOf(card).some((c) => c.Name === name || builtFrom(c, name));
 function heldIn(name, items) {
   return SLOTS.flatMap((slot) => items[slot] ?? []).find((owned) => BY_NAME.has(owned) && builtFrom(BY_NAME.get(owned), name));
 }
-// Whether two items are in one upgrade line (either is built from the other, at any depth): no build holds both (his rule, Nov 5).
+// Whether two items are in one upgrade line (either is built from the other, at any depth): no build holds both.
 const sameLine = (a, b) => BY_NAME.has(a) && BY_NAME.has(b) && (builtFrom(BY_NAME.get(a), b) || builtFrom(BY_NAME.get(b), a));
 
-// Legendaries (his calls, Oct 2): all 17 of the game's Tier 5 items (Street Brawl's) can drop. Every enemy killed in a fight the hero wins
-// (a wave run: the waves it cleared) has a 0.5% chance (his call, Oct 25); a legendary can't be sold.
-// The legendary slot (his call, Oct 22): a 13th slot of its own, not one of the 12, that shows once the hero has a legendary and always holds
+// Legendaries: all 17 of the game's Tier 5 items (Street Brawl's) can drop. Every enemy killed in a fight the hero wins
+// (a wave run: the waves it cleared) has a 0.5% chance; a legendary can't be sold.
+// The legendary slot: a 13th slot of its own, not one of the 12, that shows once the hero has a legendary and always holds
 // one (record `legendary`, the one equipped). Every legendary the hero gets is kept (`legendaries`, each at most once per hero), and the member
 // can change which one is in the slot at will (play.js equipLegendary).
 const LEGENDARY_CHANCE = 0.005;
-const SIEGE_LEGENDARY_CHANCE = 0.05; // a won siege rolls this once instead of the per-kill chance (his call, Oct 22)
+const SIEGE_LEGENDARY_CHANCE = 0.05; // a won siege rolls this once instead of the per-kill chance
 const LEGENDARY_NAMES = LEGENDARIES.map((c) => c.Name);
 // The legendary `kills` kills bring (one roll of `chance` each), never one in `owned`, or null.
 function rollLegendary(kills, rng = Math.random, owned = [], chance = LEGENDARY_CHANCE) {

@@ -1,7 +1,7 @@
-// Hero Farming: the Haunts' special attacks (his calls, Oct 10: "why can't enemies apply debuffs too"; Haunt camps only for now, on top of
+// Hero Farming: the Haunts' special attacks ("why can't enemies apply debuffs too"; Haunt camps only for now, on top of
 // their normal hits). The wiki's Haunt page (checked Oct 10 2026, updated Oct 6) says what each family's special does and that only medium and
-// large Haunts have one; the game data gives a Haunt's ability a 10% chance. Everything else here is a placeholder he approved as a preview:
-// the wiki and the game files give no damage or durations; the debuffs were made harsher the same day (his call: longer and stronger). Damage is sized from the Haunt's own damage per second, so it follows the camp's
+// large Haunts have one; the game data gives a Haunt's ability a 10% chance. Everything else here is a placeholder:
+// the wiki and the game files give no damage or durations; the debuffs were made harsher the same day (longer and stronger). Damage is sized from the Haunt's own damage per second, so it follows the camp's
 // hardness and growth. What lands on the hero is a real debuff: debuff resist shortens it, a cleanse removes it, Unstoppable ignores the sleep,
 // and a silenced Haunt can't use its special. The engine rolls and runs these (engine.js `special`).
 const CHANCE = 0.1; // each second, on top of the normal hit (the game data's AbilityChance01)

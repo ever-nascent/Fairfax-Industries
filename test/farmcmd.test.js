@@ -22,7 +22,7 @@ require('../src/utils/games/trivia').loadStreakEmojis({
 });
 const member = (id) => ({ id, guild, toString: () => `<@${id}>` });
 const seeded = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
-// the current hero's own souls (his call, Oct 11: farm souls are per hero, apart from the server balance)
+// the current hero's own souls (farm souls are per hero, apart from the server balance)
 const giveSouls = (id, n) => changeRecord(id, (r) => { r.souls += n; });
 const heroSouls = async (id) => (await getFarmUser(id)).souls;
 const KEYS = ['small-camp', 'medium-camp', 'large-camp', 'guardian', 'walker', 'mid-boss', 'siege'];
@@ -148,7 +148,7 @@ test("only the owner can use a member's buttons", async () => {
   await route('Back button').execute(other);
   assert.strictEqual(other.log[0][0], 'reply');
   assert.match(other.log[0][1].content, /^Only <@owner> can go back on this screen\. Open your own farm with `\/base`\.$/);
-  // each button says what it does (his ask, Oct 26), never one line for the whole farm
+  // each button says what it does, never one line for the whole farm
   const said = [];
   for (const [label, id] of [['Send button', 'farm_send:owner:small-camp'], ['Buy item', 'farm_buy:owner:weapon:1:Extra Health'], ['Rival Walk Away button', 'farm_walk:owner:Haze'], ['Descend fight button', 'farm_dfight:owner:1'], ['Descend abandon button', 'farm_dquit:owner:yes']]) {
     const i = fake('intruder', id);
@@ -175,7 +175,7 @@ test('Send plays the fight as a live message, pays once, and the cooldown blocks
   const edits = send.log.filter((l) => l[0] === 'editReply').map((l) => l[1]);
   assert.ok(edits.length >= 2, 'the frames');
   assert.ok(edits.every((p) => /is fighting/.test(p.embeds[0].toJSON().description)), 'the fight message stays on the fight');
-  const result = send.log.find((l) => l[0] === 'followUp')[1].embeds[0].toJSON(); // the result is a new message (his call, Oct 16)
+  const result = send.log.find((l) => l[0] === 'followUp')[1].embeds[0].toJSON(); // the result is a new message
   assert.match(result.title, /Cleared|Defeated/);
   if (result.title.endsWith('Cleared')) assert.match(result.description, /\*\*Haze:\*\* \*"[^"]+"\*$/, "Haze's voice line when Haze wins");
   else assert.doesNotMatch(result.description, /\*"/, 'no voice line when the camp wins');
@@ -284,7 +284,7 @@ test('cooldowns can be switched off for testing, and back on', async () => {
   assert.strictEqual((await play(id, 'roam', { now: now + 4000 })).error, 'cooldown', 'on again: the first roam is still cooling down');
 });
 
-test('more heroes: unlock once with a token, switch any time, and each hero keeps its own souls, progress, cooldowns and buffs (his calls, Oct 11)', async () => {
+test('more heroes: unlock once with a token, switch any time, and each hero keeps its own souls, progress, cooldowns and buffs', async () => {
   const { unlockHero, switchHero, updateFarmUser, buyItem } = require('../src/utils/farm/play');
   const id = 'sw1';
   const labels = (p) => p.components.at(-1).toJSON().components.map((b) => [b.label, !!b.disabled]);
@@ -305,7 +305,7 @@ test('more heroes: unlock once with a token, switch any time, and each hero keep
   assert.deepStrictEqual(labels(list), [['Unlock Hero', false], ['Back', false]]);
   assert.match(list.embeds[0].toJSON().description, /\*\*Haze\*\* {2}- {2}Level \d+ {2}- {2}Current Hero/);
   assert.doesNotMatch(list.embeds[0].toJSON().description, /Abrams/, 'Switch lists unlocked heroes only');
-  assert.match(list.embeds[0].toJSON().footer.text, /^You can switch any time\./);
+  assert.match(list.embeds[0].toJSON().footer.text, /^Switching is free\./);
   const unlockList = (await press('Switch Hero button', `farm_switch:${id}:unlock`)).log.at(-1)[1];
   checkLimits(unlockList, 'unlock list');
   assert.strictEqual(unlockList.embeds[0].toJSON().title, 'Unlock Hero');
@@ -344,7 +344,7 @@ test('more heroes: unlock once with a token, switch any time, and each hero keep
   assert.ok(abramsRun);
   assert.strictEqual(await heroSouls(id), abramsRun.souls, "Abrams' trip pays Abrams");
 
-  // no wait to switch back (his call, Oct 11): Haze has everything it had, and Abrams keeps what it earned
+  // no wait to switch back: Haze has everything it had, and Abrams keeps what it earned
   assert.deepStrictEqual(await switchHero(id, 'Haze'), { ok: true });
   assert.strictEqual((await switchHero(id, 'Haze')).error, 'same');
   const haze = await getFarmUser(id);
@@ -480,7 +480,7 @@ test('lane screens: the dropdown lists every lane, a Walker shows its lane, heal
   const home = await views.homeView(member(id), record, now);
   checkLimits(home, 'home with lanes');
   const options = home.components[0].toJSON().components[0].options;
-  assert.deepStrictEqual(options.map((o) => o.value), ['small-camp', 'medium-camp', 'large-camp', 'guardian:york', 'guardian:broadway', 'guardian:park', 'walker:york', 'walker:broadway', 'walker:park', 'waves:york', 'waves:broadway', 'waves:park', 'mid-boss', 'siege', 'shop']); // the item shop is the last option (his call, Oct 3)
+  assert.deepStrictEqual(options.map((o) => o.value), ['small-camp', 'medium-camp', 'large-camp', 'guardian:york', 'guardian:broadway', 'guardian:park', 'walker:york', 'walker:broadway', 'walker:park', 'waves:york', 'waves:broadway', 'waves:park', 'mid-boss', 'siege', 'shop']); // the item shop is the last option
   const said = (value) => options.find((o) => o.value === value).description.split('  -  ')[0];
   assert.deepStrictEqual(['guardian:york', 'guardian:park', 'walker:york', 'walker:broadway', 'walker:park', 'siege'].map(said),
     ['Down, back in 12h 0m', 'Ready', 'Ready', 'Down, back in 20h 0m', 'Locked', 'Locked']);
@@ -737,7 +737,7 @@ test('Damage Breakdown: every point of damage counted by what dealt it; a button
   const e = p.embeds[0].toJSON();
   assert.strictEqual(e.title, "Haze's Damage Breakdown");
   assert.ok(e.fields.some((f) => f.name.startsWith('Weapon & Melee')));
-  // its pages (his ask, Oct 26): the enemies' damage, healing, and both builds as the fight started; anyone may turn them
+  // its pages: the enemies' damage, healing, and both builds as the fight started; anyone may turn them
   const tabs = p.components[0].toJSON().components;
   assert.deepStrictEqual(tabs.map((c) => c.label), ["Haze's Damage", 'Enemy Damage', 'Healing', "Haze's Build", 'Enemy Build']);
   assert.ok(tabs[0].disabled && !tabs[1].disabled);

@@ -66,7 +66,7 @@ class ShadowTransformation extends Ability {
     this.until = 0;
   }
 
-  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, PowerSlash, FlyingSlash, CrimsonSlash); } // combo first (his ask, Nov 6): the slashes go first, so the form makes them ready again
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, PowerSlash, FlyingSlash, CrimsonSlash); } // combo first: the slashes go first, so the form makes them ready again
   status(fight) { return fight && fight.time < this.until ? 'Shadow Form' : super.status(fight); }
 
   cast(fight) {

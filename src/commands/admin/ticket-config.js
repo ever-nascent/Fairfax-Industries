@@ -1,4 +1,4 @@
-// /ticket-config (Manage Server): set tickets up (`setup`), make and post panels (`panel-*`), choose staff (`addadmin`, `addsupport`, ...), the blacklist and the transcript channel.
+// /ticket-config (Manage Server): set tickets up (`setup`), make and post panels (`panel-*`), choose staff (`addadmin`, `addsupport`,...), the blacklist and the transcript channel.
 // A slash command. `data` is what Discord shows (name, description, options); `execute` runs when someone uses it. Rules and messages: utils/server/tickets.js.
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { requirePermission } = require('../../utils/permissions');

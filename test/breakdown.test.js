@@ -1,5 +1,5 @@
 // Run: node --test
-// The Damage Breakdown's new pages (his ask, Oct 26): what each enemy dealt the hero (engine.js enemyDamage) and what healed the hero, and when (healBreakdown).
+// The Damage Breakdown's new pages: what each enemy dealt the hero (engine.js enemyDamage) and what healed the hero, and when (healBreakdown).
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('./group')(__filename);
 const assert = require('node:assert');

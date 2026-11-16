@@ -1,4 +1,4 @@
-// The Patron's troopers (Nov 6): a summoner calls in waves on its schedule, up to its cap, and can't be hurt while one stands.
+// The Patron's troopers: a summoner calls in waves on its schedule, up to its cap, and can't be hurt while one stands.
 const test = require('./group')(__filename);
 const assert = require('node:assert');
 const { Fight, Unit, enemy, guarded } = require('../src/utils/farm/engine');

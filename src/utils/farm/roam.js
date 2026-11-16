@@ -1,7 +1,7 @@
-// Hero Farming: `/jungle roam` (his design, Oct 1). Every 30 minutes the hero goes roaming and comes back with a list of what it picked up:
+// Hero Farming: `/jungle roam`. Every 30 minutes the hero goes roaming and comes back with a list of what it picked up:
 // Crates, Tough Crates ("heavy boxes"), Sinner's Sacrifices, and Golden Statues, which can drop a permanent buff from today's buffs
 // (buffs.js: they rotate every day). Nothing fights back, so a roam can't fail.
-// ponytail: placeholders, he hasn't set these yet: how many finds (4-7), how common each is, a Sinner's Sacrifice giving 1 buff.
+// placeholders, not final: how many finds (4-7), how common each is, a Sinner's Sacrifice giving 1 buff.
 //   wiki facts used: a Crate gives 23 souls (60% of the time), a Tough Crate 46, a Sinner's Sacrifice 155 (+ buffs), a Golden Statue
 //   drops one buff 50% of the time.
 const path = require('node:path');

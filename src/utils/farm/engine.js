@@ -1,57 +1,57 @@
 // Hero Farming: the fight engine. Fixed 0.1 s steps; heroes shoot, melee, dash, reload and cast their abilities on their own
 // (idle farming, nobody steers), enemies hit the first hero they can see. Everything a hero's ability or item can do to the
 // fight goes through the Fight methods below (damage, heal, status, cc, at), so ability and item files stay small and the rules
-// (resists, lifesteal, evasion, wake-on-damage, healing, crowd control) live in one place. Rules: server-plan.md ("Hero Farming").
+// (resists, lifesteal, evasion, wake-on-damage, healing, crowd control) live in one place..
 const DT = 0.1;
 const REJUV_DELAY = 3; // seconds before a Rejuv revive gets up
-// Healing is capped so lifesteal, regen and heals can't stack into an unkillable hero (his call, Oct 2): a hero heals from a pool that holds
+// Healing is capped so lifesteal, regen and heals can't stack into an unkillable hero: a hero heals from a pool that holds
 // HEAL_POOL of its max health and refills at HEAL_RATE of it per second; healing beyond what the pool has is lost. Lifesteal from an NPC is
-// weaker too. ponytail: 12% / 25% a second and half strength are placeholders, tuned with the enemy damage (targets.js HARDNESS).
+// weaker too. 12% / 25% a second and half strength are placeholders, tuned with the enemy damage (targets.js HARDNESS).
 const HEAL_RATE = 0.12;
 const HEAL_POOL = 0.25;
 const LIFESTEAL_VS_NPC = 0.5; // a hero ability's own lifesteal (Silver, Viscous, Mo & Krill, Infernus) off an NPC
-// Bullet and spirit lifesteal (the stats) off a non-hero: the wiki's Lifesteal page (his call, Oct 22)
+// Bullet and spirit lifesteal (the stats) off a non-hero: the wiki's Lifesteal page
 const BULLET_LIFESTEAL_VS_NPC = 0.6;
 const SPIRIT_LIFESTEAL_VS_NPC = 0.4;
 const OUT_OF_COMBAT = 5; // seconds without taking damage before out-of-combat regen starts (guess; the wiki doesn't say)
-// Enemies hit once a second (the same damage per second as a steady stream), so items that react to a "hit" have one (Oct 3).
+// Enemies hit once a second (the same damage per second as a steady stream), so items that react to a "hit" have one.
 const ATTACK_EVERY = 1;
-// Melee (his call, Oct 3): the hero heavy-melees the front enemy when it has a reason (wantMelee). The swing takes the gun's time unless it is
-// reloading anyway, and afterwards the hero stands close to that enemy for a moment (close-range items count). ponytail: all placeholders.
+// Melee: the hero heavy-melees the front enemy when it has a reason (wantMelee). The swing takes the gun's time unless it is
+// reloading anyway, and afterwards the hero stands close to that enemy for a moment (close-range items count). all placeholders.
 const MELEE = { every: 1.5, busy: 0.8, closeDistance: 3, closeFor: 3 };
-// Movement (his call, Oct 3): the hero dash-jumps whenever it has stamina (the wiki's stamina and recharge), is airborne a moment after each,
-// and slides now and then. ponytail: the gap, air time and slide timing are placeholders.
-const MOVE = { dashGap: 1, airTime: 1, slideEvery: 6, slideTime: 1, dodge: 1 }; // dodge (his call, Oct 28: stamina helps dodge): a dash-jump makes the next enemy attack or blast within this many seconds miss
-// Hero against hero (an encounter's duel; his call, Oct 3: "half damage plus 25% miss"): heroes deal `damage` of their damage to each other and
+// Movement: the hero dash-jumps whenever it has stamina (the wiki's stamina and recharge), is airborne a moment after each,
+// and slides now and then. the gap, air time and slide timing are placeholders.
+const MOVE = { dashGap: 1, airTime: 1, slideEvery: 6, slideTime: 1, dodge: 1 }; // dodge (stamina helps dodge): a dash-jump makes the next enemy attack or blast within this many seconds miss
+// Hero against hero (an encounter's duel; "half damage plus 25% miss"): heroes deal `damage` of their damage to each other and
 // `miss` of their gun shots at a hero miss, so a duel lasts about half a minute instead of ten seconds and no pairing is decided before it starts.
 // Nothing here touches a fight against NPCs.
 const DUEL = {
   damage: 0.5, miss: 0.25,
   parryChance: 0.20, parryWithRebuttal: 0.45,
-  // His call: a missed parry locks the defender out for two melee cycles, and
+  // a missed parry locks the defender out for two melee cycles, and
   // a successful one stuns the attacker for the same two cycles.
   parryMissCooldown: MELEE.every * 2, parryStun: MELEE.every * 2,
 };
-// Shotguns (his call, Oct 3: "shotguns have to have chances for some to miss"): each pellet of a spread shot rolls on its own. Standing close
+// Shotguns ("shotguns have to have chances for some to miss"): each pellet of a spread shot rolls on its own. Standing close
 // (within `full` metres, e.g. right after a melee hit) every pellet lands; the chance falls to `far` of them landing at `at` metres and beyond.
-// A gun that deals one shot's damage however many pellets hit (Drifter) has nothing to miss. ponytail: the wiki has no spread numbers; his to tune.
+// A gun that deals one shot's damage however many pellets hit (Drifter) has nothing to miss. the wiki has no spread numbers; to tune.
 const PELLETS = { full: 5, at: 15, far: 0.7 };
-// Precision (his call, Oct 22: a flat stat, 25 to start, +1% a point, raised by permanent buffs): a bullet is a headshot with `precision` percent
-// chance, and every point above the base adds a percentage point to a spread pellet landing (never above all of them). ponytail: the base adds
-// nothing to pellets, so shotguns are as accurate as before until something raises it; his to say otherwise.
-// Overflow (his call, Oct 29): past `full` (every pellet lands at 15 m, no single shot misses, a duel's misses are gone) each point adds `parry` to a
-// duel's parry chance on top and pushes weapon falloff out by `range` (like attack range). ponytail: both amounts are my placeholders.
-const PRECISION = { base: 25, full: 55, parry: 0.01, range: 0.01, maxParry: 0.8 }; // maxParry: a duel's parry chance never above it (my pick)
+// Precision (a flat stat, 25 to start, +1% a point, raised by permanent buffs): a bullet is a headshot with `precision` percent
+// chance, and every point above the base adds a percentage point to a spread pellet landing (never above all of them). the base adds
+// nothing to pellets, so shotguns are as accurate as before until something raises it.
+// Overflow: past `full` (every pellet lands at 15 m, no single shot misses, a duel's misses are gone) each point adds `parry` to a
+// duel's parry chance on top and pushes weapon falloff out by `range` (like attack range). both amounts are placeholders.
+const PRECISION = { base: 25, full: 55, parry: 0.01, range: 0.01, maxParry: 0.8 }; // maxParry: a duel's parry chance never above it
 const overflow = (unit) => Math.max(0, unit.stat('precision') - PRECISION.full);
-const headshotChance = (unit) => (unit.stats?.noHeadshot ? 0 : clamp(unit.stat('headshot') / 100, 0, 1)); // Headshot Precision (his call, Oct 28: its own stat)
-// A headshot's bonus bullet damage (his ask, Nov 6: "what's the point of building headshot builds"): +65% (deadlock.wiki/Headshot), each hero's own
-// CritDamageBonusPercent added (Drifter -45 ... ; the stat sheet's headshotBonus). It lands on every target, like the headshot items always have here
+const headshotChance = (unit) => (unit.stats?.noHeadshot ? 0 : clamp(unit.stat('headshot') / 100, 0, 1)); // Headshot Precision (its own stat)
+// A headshot's bonus bullet damage ("what's the point of building headshot builds"): +65% (deadlock.wiki/Headshot), each hero's own
+// CritDamageBonusPercent added (Drifter -45...; the stat sheet's headshotBonus). It lands on every target, like the headshot items always have here
 // (the game: only troopers, neutrals, Lane Guardians and heroes have a weak spot).
 const HEADSHOT_BONUS = 0.65;
 // Was this bullet hit a headshot? A gun shot rolls once (fireWeapon sets opts.headshot), so the bonus, the headshot items and abilities agree; any
 // other bullet (an ability's) rolls here. A ricochet can't headshot (the wiki).
 const isHeadshot = (fight, unit, p) => !p?.opts?.ricochet && (p?.opts?.headshot ?? fight.rng() < headshotChance(unit));
-// Misses (his ask, Oct 28: "Single bullet guns never missing is a big problem, same with Melees"; the numbers left to me: "a good mix of balance and
+// Misses ("Single bullet guns never missing is a big problem, same with Melees"; the numbers left to me: "a good mix of balance and
 // challenge"): a single bullet or a melee misses MISS.npc of the time against an NPC (big, slow targets) and MISS.hero against a hero (a duel),
 // at the base Precision; each point above it takes a percentage point off. A shotgun's pellets against an NPC have their own spread instead.
 const MISS = { npc: 0.1, hero: DUEL.miss };
@@ -61,20 +61,20 @@ const { stackResist } = require('./buffs');
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const CC_TAGS = ['sleep', 'curse', 'stun', 'disarm', 'silence', 'immobilize'];
 const STOPS = ['sleep', 'curse', 'stun']; // what interrupts a lasting ultimate
-const CANT_ACT = ['sleep', 'curse', 'stun', 'void', 'hold']; // sleep and curse are separate: both stop actions, but only sleep wakes on damage and curse cannot be cleansed; a stun also interrupts a cast or channel (Oct 28, his call)
-const DEBUFF_CAP = 0.5; // an enemy debuffing attack can't take more than this much of the hero's fire rate or movement from all enemies together (his call)
+const CANT_ACT = ['sleep', 'curse', 'stun', 'void', 'hold']; // sleep and curse are separate: both stop actions, but only sleep wakes on damage and curse cannot be cleansed; a stun also interrupts a cast or channel
+const DEBUFF_CAP = 0.5; // an enemy debuffing attack can't take more than this much of the hero's fire rate or movement from all enemies together
 const ADAPT = { every: 3, step: 0.05, resist: 0.4, parry: 0.3, damage: 0.3 }; // /descend's Adaptive: every `every` s, if hurt, it picks one of three: `step` more resist against the damage type it took most, more parry chance, or more damage dealt (each up to its cap)
 const OWN_EVENTS =new Set(['dash', 'slide', 'reloadStart', 'reloadEnd', 'cast', 'melee', 'unstealth', 'heal', 'cc', 'ccLanded', 'blast']); // heard only by the hero they are about
 const HELPLESS =['stun', 'sleep', 'immobilize']; // an enemy that can't hit back: worth walking up to and meleeing
-// Ability Range (his call, Oct 3): the enemies of a group stand one behind the other, SPREAD metres apart on average (each gap is rolled, half to one and a
+// Ability Range: the enemies of a group stand one behind the other, SPREAD metres apart on average (each gap is rolled, half to one and a
 // half times that), and an area ability or item only reaches the ones within its radius of the front one (Fight.near). Members never see the distances.
-// ponytail: 4 m is a placeholder; weapon falloff still uses the target's own `distance`.
+// 4 m is a placeholder; weapon falloff still uses the target's own `distance`.
 const SPREAD = 4;
-// Movement Speed (his call, Oct 3): a hero can get out of the way of an enemy's blast (the Patron's curse, the Walker's stomp): a chance per m/s above
-// `from`, up to `max`. A slowed enemy's blast is easier still: its slow is added (his call, Oct 3). A dodged blast does nothing.
-// ponytail: all three numbers are placeholders.
+// Movement Speed: a hero can get out of the way of an enemy's blast (the Patron's curse, the Walker's stomp): a chance per m/s above
+// `from`, up to `max`. A slowed enemy's blast is easier still: its slow is added. A dodged blast does nothing.
+// all three numbers are placeholders.
 const DODGE = { from: 6, per: 0.1, max: 0.6 };
-// A slow on the hero itself (a Haunt's spores, a rival hero's slow; his call, Oct 10): that much less move speed here, and stamina comes back that much slower (move()).
+// A slow on the hero itself (a Haunt's spores, a rival hero's slow): that much less move speed here, and stamina comes back that much slower (move()).
 const slowed = (unit) => clamp(unit.mod('slow') * (1 - clamp(unit.stat('slowResist'), 0, 1)), 0, 0.9); // slow resist (Enduring Speed, Juggernaut, Fleetfoot) takes its share off
 // /descend's floor on what the hero can take off an enemy's damage (its `outputFloor`, set in descent.js; Nov 2): slows (fewer attacks), "deals less
 // damage" and spirit power taken together leave it at least that share, like DEBUFF_CAP the other way round. The farm's enemies have none.
@@ -134,13 +134,13 @@ class Unit {
   }
 }
 
-const VENOM = { seconds: 4, share: 0.004 }; // Vyper's poisoned weapon (Nov 14; my numbers, his to set): each bullet poisons for 4 s, 0.4% of the enemy's max Health a second (half on a boss)
+const VENOM = { seconds: 4, share: 0.004 }; // Vyper's poisoned weapon (Nov 14): each bullet poisons for 4 s, 0.4% of the enemy's max Health a second (half on a boss)
 const GNAW = { shred: 0.04, seconds: 5 }; // a Rat's bite (the Rat King, /descend): that much Bullet Resist off the enemy for that long (each Rat's own, so several add up)
-const PLOT_ARMOR = { safe: 2, health: 0.25 }; // seconds nothing hurts the hero after Paige's Plot Armor saves it (Nov 7, his ask: "keep you alive for a brief period"; my number)
+const PLOT_ARMOR = { safe: 2, health: 0.25 }; // seconds nothing hurts the hero after Paige's Plot Armor saves it ("keep you alive for a brief period"; my number)
 const ECHO = { name: 'Spectral Assistant' }; // what the Assistant's shots count under in the Damage Breakdown
 
 class Fight {
-  // `minions`: units that fight on the heroes' side (/descend: Rift Troopers, Graves' Ghouls, McGinnis' Mini Turret; his ask Nov 6). Each hits the
+  // `minions`: units that fight on the heroes' side (/descend: Rift Troopers, Graves' Ghouls, McGinnis' Mini Turret). Each hits the
   // front enemy once a second; enemies may pick one to attack instead of the hero. `ffa`: every rival hero among the enemies fights everyone (the Rift).
   constructor({ heroes, enemies, minions = [], ffa = false, rng = Math.random, time = 0 }) {
     this.heroes = heroes;
@@ -153,10 +153,10 @@ class Fight {
     this.log = []; // [{ t, who, what }] casts, for tests and later a recap
     this.dealt = new Map(); // unit -> damage it dealt
     this.breakdown = new Map(); // hero -> Map(what dealt it: 'Gun' | 'Heavy Melee' | an ability or item name -> damage) (the Damage Breakdown button)
-    this.taken = new Map(); // NPC enemy -> Map(what it dealt the hero with: 'Attack' | its blast | its special -> damage) (the breakdown's Enemy Damage, his ask Oct 26)
-    this.self = new Map(); // hero -> Map(ability or item -> health it cost the hero) (Victor's Aura of Suffering on Enemy Damage, his ask Nov 4)
+    this.taken = new Map(); // NPC enemy -> Map(what it dealt the hero with: 'Attack' | its blast | its special -> damage) (the breakdown's Enemy Damage)
+    this.self = new Map(); // hero -> Map(ability or item -> health it cost the hero) (Victor's Aura of Suffering on Enemy Damage)
     this.enemyMove = null; // the special an NPC is using right now (what its damage is counted under)
-    this.healed = new Map(); // hero -> Map(what healed it -> health) (the breakdown's Healing, his ask Oct 26)
+    this.healed = new Map(); // hero -> Map(what healed it -> health) (the breakdown's Healing)
     this.healedBy = new Map(); // hero -> Map(what -> Map(the item or ability behind a lifesteal heal -> health)): the lines under Bullet / Spirit Lifesteal
     this.madeOf = new Map(); // hero -> Map(what dealt it -> Map(item or 'Base' -> damage)): the lines under Gun and under spirit-scaled abilities and items
     this.healLog = []; // [{ t (whole seconds), unit, what, amount }]: when each heal landed (one entry per source per second; plain regen left out)
@@ -207,7 +207,7 @@ class Fight {
   distance(hero, target) { return hero.close === target && hero.closeUntil > this.time ? MELEE.closeDistance : target.stats.distance ?? 15; }
 
   // The source's damage multiplier: its own "deals more / less damage", and for an enemy's spirit damage the spirit power taken from it (1% less a point,
-  // his call Oct 3); never under the enemy's `outputFloor` together with its slowed attacks (attackRate).
+  // ); never under the enemy's `outputFloor` together with its slowed attacks (attackRate).
   output(source, type, opts = {}) {
     let out = Math.max(0, 1 + (source.stats.damageDealt ?? 0) + source.mod('damageDealt'));
     if (type === 'spirit' && source.team === 'enemy') out *= Math.max(0, 1 + source.mod('spirit') / 100);
@@ -224,7 +224,7 @@ class Fight {
     unit.statuses.push({ mods: {}, tags: [], from: this.casting, ...status, until: this.time + duration }); // from: the ability that put it on (interrupt)
   }
 
-  // A stun, sleep or curse cuts the hero's lasting ultimate short (his call, Oct 28): what it put on the hero ends, and so does its own clock.
+  // A stun, sleep or curse cuts the hero's lasting ultimate short: what it put on the hero ends, and so does its own clock.
   interrupt(hero) {
     const ult = hero.locking;
     hero.lockedUntil = 0;
@@ -299,10 +299,10 @@ class Fight {
     if (target.stats.parry && source.team === 'hero' && (type === 'bullet' || type === 'melee') && this.rng() < target.stats.parry) return 0; // Adaptive's parry
     if (source.team === 'hero' && target.team === 'hero' && source !== target) amount *= DUEL.damage; // a duel
     if (source.team === 'hero' && this.casting) opts.ability ??= this.casting;
-    // the wiki (Close Quarters' page, Oct 28): an ability that scales with melee damage gets 50% of the Weapon Damage bonus (Bebop's Uppercut, Yamato's Flying Slash ...)
+    // the wiki (Close Quarters' page, Oct 28): an ability that scales with melee damage gets 50% of the Weapon Damage bonus (Bebop's Uppercut, Yamato's Flying Slash...)
     if (type === 'melee' && source.team === 'hero' && this.by?.meleeScaled) amount *= Math.max(0, 1 + 0.5 * this.weaponBonus(source, target));
     // a dash-jump's dodge (MOVE.dodge) takes the next attack: both halves of a mixed one (they share opts), never a hit that can't miss
-    // an enemy's `accuracy` (0-1, /descend's, his ask Oct 29: "hit harder and more accurately") is the share of its hits a dodge or evasion would have taken that land anyway
+    // an enemy's `accuracy` (0-1, /descend's, "hit harder and more accurately") is the share of its hits a dodge or evasion would have taken that land anyway
     const sure = !opts.unavoidable && source.team === 'enemy' && source.stats.accuracy > 0 && this.rng() < source.stats.accuracy;
     if ((opts.attack || opts.special) && !opts.unavoidable && !sure && this.dashDodge(target)) { opts.dodged = true; return 0; }
     if (type === 'bullet' && !opts.unavoidable && !sure && !opts.noEvade && this.rng() < target.mod('evasion')) return 0; // unavoidable (Armor Piercer), noEvade (Lucky Shot's bonus)
@@ -334,7 +334,7 @@ class Fight {
     }
     let dealt = Math.min(target.health, incoming);
     if (dealt >= target.health && (opts.nonLethal || (target.fleeAt && !(target.rejuvs > 0)) || target.abilities.some((a) => a.preventDeath?.(this)) || target.items.some((it) => it.preventDeath?.(this)))) dealt = Math.max(0, target.health - 1); // a hit that can't kill (Danny's own; the Rift, where the hero flees instead), Victor's Shocking Reanimation (the wiki), then Cheat Death
-    else if (dealt >= target.health && this.plotArmor(target)) { dealt = 0; target.health = Math.max(target.health, target.stats.maxHealth * PLOT_ARMOR.health); } // then Paige's Plot Armor: the hit is turned aside and the hero is back at a quarter of its health (his call, Nov 7; it was 1 health)
+    else if (dealt >= target.health && this.plotArmor(target)) { dealt = 0; target.health = Math.max(target.health, target.stats.maxHealth * PLOT_ARMOR.health); } // then Paige's Plot Armor: the hit is turned aside and the hero is back at a quarter of its health (it was 1 health)
     target.health -= dealt;
     if (dealt > 0) target.lastHit = this.time;
     if (dealt > 0 && target.stats.adaptive && source.team === 'hero') (target.adapted ??= {})[type] = (target.adapted[type] || 0) + dealt;
@@ -398,8 +398,8 @@ class Fight {
     return dealt;
   }
 
-  // Paige's Plot Armor (/descend, his approval Nov 6): the next hit that would kill the hero is turned aside and leaves it at PLOT_ARMOR.health of its health instead, once a run (`plotArmor` on the unit).
-  // Nov 7, his calls: it waits until the hero has no Rejuv left (a Rejuv takes the death first), then nothing hurts the hero for PLOT_ARMOR.safe s.
+  // Paige's Plot Armor (/descend): the next hit that would kill the hero is turned aside and leaves it at PLOT_ARMOR.health of its health instead, once a run (`plotArmor` on the unit).
+  // it waits until the hero has no Rejuv left (a Rejuv takes the death first), then nothing hurts the hero for PLOT_ARMOR.safe s.
   plotArmor(unit) {
     if (!unit.plotArmor || unit.rejuvs > 0) return false;
     unit.plotArmor = false;
@@ -457,7 +457,7 @@ class Fight {
   }
 
   // A lifesteal heal of `amount`, shared out by who gave the lifesteal (the sheet's per item `<key>By`, statuses by what put them on, `extra` off the
-  // target) so the Healing page can name Leech, Vampiric Burst ... under Bullet / Spirit Lifesteal. `key` null: only `extra` (a melee hit).
+  // target) so the Healing page can name Leech, Vampiric Burst... under Bullet / Spirit Lifesteal. `key` null: only `extra` (a melee hit).
   lifesteal(unit, amount, key, extra, label) {
     if (unit.team !== 'hero') return this.heal(unit, amount, 'lifesteal', label);
     const parts = new Map();
@@ -506,7 +506,7 @@ class Fight {
     else this.healLog.push({ t, unit, what, amount });
   }
 
-  // A heal over time (Healing Nova, Healing Rite ...): counts as one cast heal when it starts.
+  // A heal over time (Healing Nova, Healing Rite...): counts as one cast heal when it starts.
   regen(unit, id, perSecond, duration) {
     this.addStatus(unit, { id, duration, regen: perSecond, by: this.by?.name });
     this.emit('heal', { target: unit, amount: perSecond * duration });
@@ -528,7 +528,7 @@ class Fight {
       : d >= f.end * far ? f.endScale : f.startScale + (f.endScale - f.startScale) * ((d - f.start * far) / ((f.end - f.start) * far));
   }
 
-  // The hero's bonus Weapon Damage against `target` (0.2 = +20%): its stat, buffs, and items' distance, target health, build-up ... bonuses.
+  // The hero's bonus Weapon Damage against `target` (0.2 = +20%): its stat, buffs, and items' distance, target health, build-up... bonuses.
   weaponBonus(hero, target) {
     const npcOnly = target.team === 'hero' ? hero.stats.npcWeapon ?? 0 : 0; // Monster Rounds' "vs. NPCs" damage does nothing to a rival hero
     return hero.stats.weaponDamageMult - 1 - npcOnly + hero.mod('weaponDamage') + hero.items.reduce((sum, it) => sum + it.weaponBonus(this, target), 0);
@@ -564,10 +564,10 @@ class Fight {
         opts.landed = landed / pellets; // build-up items scale with it (items.js)
       }
       for (const it of hero.items) for (const [k, v] of Object.entries(it.shotOpts(this, target))) opts[k] ||= v; // one item's "no" never undoes another's "yes"
-      opts.headshot = this.rng() < headshotChance(hero); // ponytail: one roll per shot, a shotgun's pellets share it (same average); per pellet if it matters
+      opts.headshot = this.rng() < headshotChance(hero); // one roll per shot, a shotgun's pellets share it (same average); per pellet if it matters
       const shot = this.shotDamage(hero, target) * (opts.landed ?? 1) * (opts.headshot ? 1 + hero.stats.headshotBonus : 1);
       const dealt = this.damage(hero, target, shot, 'bullet', opts);
-      // Sinclair's Spectral Assistant, lent in /descend (his pick, Nov 6): every shot that lands is followed by one at `echo` of its damage
+      // Sinclair's Spectral Assistant, lent in /descend: every shot that lands is followed by one at `echo` of its damage
       if (dealt > 0 && hero.echo && target.alive) this.as(ECHO, () => this.damage(hero, target, shot * hero.echo, 'bullet', { events: false }));
     }
     if (w.clip <= 0 && !infinite) this.reload(hero);
@@ -580,7 +580,7 @@ class Fight {
     this.emit('reloadStart', { source: hero });
   }
 
-  // Melee (his call, Oct 3): only with a reason: the front enemy can't hit back, the gun is reloading anyway, or an item or ability wants a swing.
+  // Melee: only with a reason: the front enemy can't hit back, the gun is reloading anyway, or an item or ability wants a swing.
   wantMelee(hero, target) {
     return this.time >= hero.meleeAt && (HELPLESS.some((t) => target.has(t)) || hero.weapon.reloadLeft > 0
       || hero.items.some((it) => it.wantsMelee(this, target)) || hero.abilities.some((a) => a.wantsMelee?.(this, target)));
@@ -600,7 +600,7 @@ class Fight {
     // NPCs have their own Rebuttal behaviour and never choose a parry.
     if (kind === 'heavy' && hero.team === 'hero' && target.team === 'hero' && this.time >= (target.parryAt ?? 0)
       && !target.cantAct && !target.has('stun') && !target.has('blind') && !target.stats.noParry) { // noParry: the Soul Urn's carrier can't parry (the wiki)
-      const chance = Math.min(PRECISION.maxParry, (target.items.some((it) => it.name === 'Rebuttal') ? DUEL.parryWithRebuttal : DUEL.parryChance) + (target.stat('precision') - PRECISION.base) / 100 + overflow(target) * PRECISION.parry); // + Precision (his ask, Oct 28), more past full (Oct 29)
+      const chance = Math.min(PRECISION.maxParry, (target.items.some((it) => it.name === 'Rebuttal') ? DUEL.parryWithRebuttal : DUEL.parryChance) + (target.stat('precision') - PRECISION.base) / 100 + overflow(target) * PRECISION.parry); // + Precision, more past full
       if (this.rng() < chance) {
         opts.dodged = true;
         this.log.push({ t: +this.time.toFixed(1), who: target.name, target: hero.name, parry: true });
@@ -617,7 +617,7 @@ class Fight {
     }
   }
 
-  // Stamina and moving (his call, Oct 3): a dash-jump whenever a stamina charge is in hand (airborne a moment after), a slide now and then.
+  // Stamina and moving: a dash-jump whenever a stamina charge is in hand (airborne a moment after), a slide now and then.
   move(hero) {
     const recharge = (hero.stats.staminaCooldown ?? 5) * Math.max(0.1, 1 - hero.stat('staminaCdr')) / Math.max(0.1, 1 + hero.stat('staminaRegen')) / (1 - slowed(hero));
     const max = Math.max(0, Math.floor(hero.stat('stamina')));
@@ -650,7 +650,7 @@ class Fight {
     });
   }
 
-  // Runs `fn` with `ability` as the one dealing damage (so its damage is tagged with it: imbues, Lightning Scroll, Mystic Burst ...).
+  // Runs `fn` with `ability` as the one dealing damage (so its damage is tagged with it: imbues, Lightning Scroll, Mystic Burst...).
   running(ability, fn) {
     const before = this.casting;
     this.casting = ability;
@@ -680,7 +680,7 @@ class Fight {
         }
       }
       if (u.stats.oocRegen && this.time - u.lastHit > OUT_OF_COMBAT) this.heal(u, u.stats.oocRegen * DT, 'constant', 'Out-of-Combat Regen');
-      for (const st of u.statuses) if (st.regen) this.heal(u, st.regen * DT, 'regen', st.by ?? null); // heals over time (Healing Nova, Mystic Regeneration ...), counted under what started them
+      for (const st of u.statuses) if (st.regen) this.heal(u, st.regen * DT, 'regen', st.by ?? null); // heals over time (Healing Nova, Mystic Regeneration...), counted under what started them
       for (const st of u.statuses) { // damage over time carried by a status (a Haunt's fire, spores or puddle on the hero): gone with the status
         if (!st.dot || this.time + 1e-9 < st.dot.next || !u.alive) continue;
         st.dot.next += st.dot.every;
@@ -701,7 +701,7 @@ class Fight {
       // an enemy's stun, sleep or curse (not the ult's own void or hold: Return to Shadows, Hotel Guest) interrupts it
       if (hero.lockedUntil > view.time && hero.statuses.some((s) => s.debuff && s.tags.some((t) => STOPS.includes(t)))) view.interrupt(hero);
       if (hero.cantAct || hero.has('stun') || hero.has('blind') || !hero.alive) {
-        // Dispel Magic still works through any crowd control but a curse (his call, Oct 28)
+        // Dispel Magic still works through any crowd control but a curse
         if (hero.alive && !['curse', 'void', 'hold', 'noItems'].some((t) => hero.has(t))) for (const it of hero.items) if (it.whileControlled && it.cdLeft <= 0 && it.want(view)) view.useItem(it);
         continue;
       }
@@ -726,7 +726,7 @@ class Fight {
         if (m.ronnie && !target.rabid && !target.stats.ccResist && !target.abilities?.length && this.rng() < m.ronnie) { target.rabid = true; this.log.push({ t: +this.time.toFixed(1), who: target.name, what: 'Rabies', special: true }); }
       }
     }
-    // a rival with `flee` ({ at, chance }: the Rift's, his ask Nov 6) may run once it drops to `at` of its health: one roll, then it is out of the fight
+    // a rival with `flee` ({ at, chance }: the Rift's) may run once it drops to `at` of its health: one roll, then it is out of the fight
     for (const e of this.enemies) {
       if (!e.flee || e.fled || e.fleeRolled || !e.alive || e.health > e.flee.at * e.stats.maxHealth) continue;
       e.fleeRolled = true;
@@ -737,7 +737,7 @@ class Fight {
     }
     const minions = this.minions.filter((m) => m.alive);
     for (const enemy of this.enemies.filter((e) => e.team === 'enemy' && e.alive && !e.has('sleep') && !e.has('stun') && !e.has('blind'))) {
-      // a summoner calls in a wave every so often (the Patron's troopers, his call Oct 29), up to `cap` standing; a silenced one waits
+      // a summoner calls in a wave every so often (the Patron's troopers), up to `cap` standing; a silenced one waits
       const summon = enemy.stats.summon;
       if (summon && !enemy.has('silence') && this.time >= (enemy.summonAt ??= this.time + summon.first) - 1e-9) {
         enemy.summonAt = this.time + summon.every;
@@ -754,7 +754,7 @@ class Fight {
       const aimed = pool.length < 2 ? pool[0] : pool.includes(enemy.aim) ? enemy.aim : (enemy.aim = pool[Math.floor(this.rng() * pool.length)]);
       const target = aimed?.team === 'minion' ? (seenHeroes.includes(enemy.heroAim) ? enemy.heroAim : (enemy.heroAim = seenHeroes[0])) : aimed;
       if (!aimed) continue;
-      if (enemy.rabid) { // rabies: it turns on the other enemies, and goes back to the hero's side when none are left (his rules, Nov 14)
+      if (enemy.rabid) { // rabies: it turns on the other enemies, and goes back to the hero's side when none are left
         const prey = this.enemies.filter((o) => o !== enemy && o.alive && !o.fled && o.team === 'enemy' && !guarded(o));
         if (prey.length && !enemy.has('disarm')) {
           enemy.swing = (enemy.swing ?? 0) + DT * attackRate(enemy);
@@ -795,7 +795,7 @@ class Fight {
         this.asMove('Melee Slam', () => this.damage(enemy, target, (slam.damage + slam.maxHealthPct * target.stats.maxHealth) * (enemy.stats.dps / slam.dps), 'melee', { special: true }));
       }
       // a blast every so often: it hurts and leaves the hero unable to shoot, cast or use items for a moment, unless the hero gets out of its way or
-      // parries it. A silenced enemy holds its blast until the silence ends (his call, Oct 3).
+      // parries it. A silenced enemy holds its blast until the silence ends.
       const blast = enemy.stats.blast;
       if (blast && target.alive && !enemy.has('silence') && this.time >= (enemy.blastAt ??= this.time + blast.every)) {
         enemy.blastAt = this.time + blast.every;
@@ -818,7 +818,7 @@ class Fight {
           this.log.push({ t: +this.time.toFixed(1), who: enemy.name, what: control.verb, enemy: true, cc: true });
         }
       }
-      // a debuffing attack every so often (/descend, his ask Oct 29): a hit that, unless dodged, leaves a debuff on the hero (a resist shred, a slow,
+      // a debuffing attack every so often (/descend): a hit that, unless dodged, leaves a debuff on the hero (a resist shred, a slow,
       // a fire rate cut, poison). Each enemy keeps its own, so two Sharpshooters' shreds add up; debuff resist shortens it, a cleanse removes it.
       for (const d of enemy.stats.debuffs ?? []) {
         d.nextAt ??= this.time + d.every;

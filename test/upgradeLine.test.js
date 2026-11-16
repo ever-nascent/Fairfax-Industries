@@ -1,4 +1,4 @@
-// No build holds an item and its upgrade (his rule, Nov 5): a rival's rolled kit, and Descend's upgrade + BONUS offer.
+// No build holds an item and its upgrade: a rival's rolled kit, and Descend's upgrade + BONUS offer.
 process.env.DATA_DIR = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'fairfax-test-'));
 const test = require('./group')(__filename);
 const assert = require('node:assert');

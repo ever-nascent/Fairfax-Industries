@@ -1,6 +1,6 @@
 // The /shop first-screen banner: the in-game Curiosity Shop with the member's name, level flask and souls
 // on top, and below it a copy of the in-game shop page (FAIRFAX header, one panel per tier, item cards).
-// Every Shop price is a real in-game tier price. Design rules: server-plan.md ("/shop first screen").
+// Every Shop price is a real in-game tier price. Design rules.
 const { SCALE } = require('../economy/economy');
 const fs = require('node:fs');
 const path = require('node:path');

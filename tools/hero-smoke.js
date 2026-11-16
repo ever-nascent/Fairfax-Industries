@@ -1,6 +1,6 @@
 // Hero Farming: a bug sweep over every hero that has ability logic (`node tools/hero-smoke.js [hero]`; never touches data/: it runs in a temp
 // DATA_DIR). Run it after adding a hero or touching engine.js / ability.js. Five checks:
-//   1. tiers     every upgrade tier of every ability changes at least one fight (his rule: every tier does something); dead tiers are listed
+//   1. tiers     every upgrade tier of every ability changes at least one fight (every tier does something); dead tiers are listed
 //   2. fuzz      random kits (level, tiers, up to 12 items, a legendary, buffs) in the scenes below, with the fight's numbers checked every step:
 //                health between 0 and max, nothing NaN, charges / stamina / cooldowns in bounds, and the fight ends
 //   3. targets   every real target (camps, lanes, Mid-Boss, siege, waves) through play.simulate with random kits: frames and souls make sense
@@ -37,7 +37,7 @@ const SCENES = [
   () => ['slum_shroom', 'past_due', 'crabbage_pot', 'stage_hand'].map((family, i) => { const e = enemy(`Haunt ${i + 1}`, { maxHealth: 3000, dps: 14, distance: 10, souls: 181 }); e.stats.special = specialFor(family, false); return e; }),
 ];
 // Two long ones for the tiers check only (cooldown tiers of 100 s+ abilities need a fight long enough to cast twice; the hero keeps getting back up):
-// a lone sponge that blasts, a crowd of them, and (Oct 29) a long line of killable enemies: abilities that wait for a kill in time (Assassinate,
+// a lone sponge that blasts, a crowd of them, and a long line of killable enemies: abilities that wait for a kill in time (Assassinate,
 // Guided Owl, Combo) never fire on a sponge, so their cooldown tiers are measured on this one.
 const LONG = [
   Object.assign(() => Array.from({ length: 40 }, (_, i) => enemy(`Trooper ${i + 1}`, { maxHealth: 2500, dps: 12, distance: 8 + (i % 4) * 4, souls: 10 })), { seconds: 420, rejuvs: 99 }),

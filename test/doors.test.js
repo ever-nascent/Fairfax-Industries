@@ -1,4 +1,4 @@
-// Two Doors (Nov 13): a run from VERSION 8 picks its next room from doors. Where doors are, what they hold, and what taking one does.
+// Two Doors: a run from VERSION 8 picks its next room from doors. Where doors are, what they hold, and what taking one does.
 const test = require('./group')(__filename);
 const assert = require('node:assert');
 process.env.NO_QUESTS = '1';
@@ -95,7 +95,7 @@ test('Mystery Rooms: never a Rival right after a Rival, and the Broker at most B
     assert.ok(stalls <= D.BROKER_MAX, `seed ${seed}: ${stalls} stalls`);
   }
   assert.ok(rivals > 50);
-  // only the Broker gives no Level, so the Levels on the way down always reach the cap (his rule, Nov 13)
+  // only the Broker gives no Level, so the Levels on the way down always reach the cap
   assert.ok(D.LAST_ROOM - 1 - D.BROKER_MAX >= 35);
 });
 
@@ -130,7 +130,7 @@ test("on the member's record: a door is picked before the fight, an old screen's
   assert.strictEqual(typeof run.won, 'boolean', 'the room behind the door is fought');
 });
 
-// ---- Infernus' Stoke the Fire (Nov 13): a hero deal of door runs ----
+// ---- Infernus' Stoke the Fire: a hero deal of door runs ----
 const { buildHero } = require('../src/utils/farm/hero');
 const KIT = { weapon: ['Headshot Booster', 'Rapid Rounds'], vitality: ['Extra Health'], spirit: ['Extra Spirit', 'Mystic Burst'] };
 // A run standing in Infernus' room (behind a Mystery Room door).
@@ -220,7 +220,7 @@ test("Infernus: his room's screen", async () => {
   assert.match(view.embeds[0].data.description, /Your \*\*Extra Health\*\* is at \*\*\+15%\*\*/);
 });
 
-// ---- the Doorman's Doorway (Nov 13) ----
+// ---- the Doorman's Doorway ----
 test("the Doorman's Doorway: the door not taken stays open for one step back, then it is gone", () => {
   const d = Object.assign(D.newRun('Haze', 11), { room: 7, level: 5, items: structuredClone(KIT) });
   d.path = { 7: { room: 7, floor: 2, ascension: 0, kind: 'visit', mystery: true, hero: 'The Doorman', deal: 'doorway' } };
@@ -284,7 +284,7 @@ test("the Doorman's Doorway on the member's record: an old screen's Step Back is
   assert.strictEqual((await D.backThrough(id, 4, 0)).error, 'none', 'another room');
 });
 
-// ---- Billy's Smash and Grab (Nov 14) ----
+// ---- Billy's Smash and Grab ----
 test("Billy's Smash and Grab: accepting makes the Item pick that follows take every Item on it, all Fragile", () => {
   const d = Object.assign(D.newRun('Haze', 11), { room: 7, level: 5 });
   d.path = { 7: { room: 7, floor: 2, ascension: 0, kind: 'visit', mystery: true, hero: 'Billy', deal: 'smash' } };
@@ -315,7 +315,7 @@ test("Billy's Smash and Grab: a full build must name the Items it gives up", () 
   }
 });
 
-// ---- Mo & Krill, Nurse Harrow, Vyper, Rat King (Nov 14) ----
+// ---- Mo & Krill, Nurse Harrow, Vyper, Rat King ----
 const room7 = (hero, deal, seed = 11) => {
   const d = Object.assign(D.newRun('Haze', seed), { room: 7, level: 5 });
   d.path = { 7: { room: 7, floor: 2, ascension: 0, kind: 'visit', mystery: true, hero, deal } };

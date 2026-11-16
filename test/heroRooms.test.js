@@ -1,4 +1,4 @@
-// Descend's hero rooms and the Rift (his asks, Nov 6; server-plan.md "Hero Encounters"): who shows up, each approved deal, minions and the free-for-all.
+// Descend's hero rooms and the Rift: who shows up, each approved deal, minions and the free-for-all.
 process.env.DESCEND_V = '7'; // these checks are about the fixed rooms from before Two Doors (test/doors.test.js has the doors)
 const test = require('./group')(__filename);
 const assert = require('node:assert');
@@ -113,7 +113,7 @@ test('McGinnis: an upgrade you aim (10% of current health, win or fail) or the i
 });
 
 test('Graves, Sinclair, Paige, Solomon: Accept lends, Castling offers 3 of the same tier in another slot, Turn Down passes', () => {
-  for (const n of [1, 2, 3]) { // Graves: how many Ghouls, each 5% of the current health (his call, Nov 7)
+  for (const n of [1, 2, 3]) { // Graves: how many Ghouls, each 5% of the current health
     const g = Object.assign(visit('ghouls'), { health: 0.8 });
     const r = D.eventAct(g, `ghouls-${n}`);
     assert.ok(r.ok && g.minions[0].kind === 'ghoul' && g.minions[0].count === n && g.level === 11 && g.phase === 'offer');
@@ -236,7 +236,7 @@ test("Victor's Abomination: two Items, a chance by tiers; a success fuses them i
   assert.ok(D.takeChoice(picked, 0, 'Extra Spirit').ok && !picked.fused, 'the pick screen ends the fusion too (it used to stay and break the Hero card)');
 });
 
-test('a fused pair is drawn as his stitched template: A left of the scar, B right of it (fuseStitch.js, his pick Nov 7)', async () => {
+test('a fused pair is drawn as his stitched template: A left of the scar, B right of it (fuseStitch.js)', async () => {
   const { createCanvas } = require('@napi-rs/canvas');
   const { fusedTile } = require('../src/utils/farm/fuseStitch');
   const c = createCanvas(100, 100);
@@ -583,7 +583,7 @@ test('a replica never lists its item twice in a dropdown (Nov 7: Discord refused
   for (const list of [D.dealerItems(d), D.tinkerables(d)]) assert.strictEqual(new Set(list).size, list.length);
 });
 
-test("giving up Violet's replica takes her copy, not the original (Nov 7, his ask)", () => {
+test("giving up Violet's replica takes her copy, not the original", () => {
   const FILL = ['Rapid Rounds', 'Monster Rounds', 'Extended Magazine', 'Extra Health', 'Extra Regen', 'Extra Stamina', 'Extra Spirit', 'Mystic Burst', 'Spirit Sap', 'Spirit Strike'];
   const full = () => Object.assign(D.newRun('Haze', 1), { phase: 'bonus', pendingBonus: { name: 'Golden Goose Egg', upgraded: 'x', used: [] }, replicas: ['Headshot Booster'],
     items: { weapon: ['Headshot Booster', 'Headshot Booster', ...FILL.slice(0, 3)], vitality: FILL.slice(3, 6), spirit: FILL.slice(6) } });
@@ -636,7 +636,7 @@ test('a deal still running is not offered again: another deal, or a rival when n
   assert.ok(s.kind === 'visit' && ['replica', 'castling', 'upgrade', 'fuse', 'travel', 'capsule', 'helper', 'lesson'].includes(s.deal), 'the deals that are not held (the ones that take an Item, the Traveler, the Lesson) come instead');
 });
 
-test("Graves' Ghouls stay while they live, fight after fight, until the floor's boss is beaten (his call, Nov 7)", () => {
+test("Graves' Ghouls stay while they live, fight after fight, until the floor's boss is beaten", () => {
   const d = D.newRun('Haze', 1);
   d.minions = [{ kind: 'ghoul', count: 3, floor: 1 }];
   for (const room of [1, 2, 3, 4]) D.afterWin(d, { spec: D.specOf(d, room), health: 1, rejuvsUsed: 0, kept: {}, stacks: {}, minionsLeft: [true, true, room < 3] });

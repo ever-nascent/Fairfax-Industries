@@ -19,7 +19,7 @@ const dviews = require('../utils/farm/descentViews');
 const FRAME_MS = Number(process.env.FARM_FRAME_MS ?? 3000);
 
 // The farm's dropdowns and buttons redraw the member's own message. Only the member who opened it can use them; anyone else is told,
-// privately, what that button does and where to get their own (his ask, Oct 26: a line for each button, not one for the whole farm).
+// privately, what that button does and where to get their own (a line for each button, not one for the whole farm).
 const BASE = 'Open your own farm with `/base`.';
 const RUN = 'Start your own descent with `/descend run`.';
 const NOT_YOURS = {
@@ -48,7 +48,7 @@ async function mine(interaction) {
   await interaction.reply({ content: `Only <@${ownerId}> can ${NOT_YOURS[prefix] ?? `use this. ${BASE}`}`, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
   return false;
 }
-// A build screen pressed by someone else: the owner's, privately and read-only (his ask, Oct 26: anyone may look at builds, only the owner acts).
+// A build screen pressed by someone else: the owner's, privately and read-only (anyone may look at builds, only the owner acts).
 async function peek(interaction, view) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   const shown = await view();
@@ -58,7 +58,7 @@ async function peek(interaction, view) {
 // The rival a Fight / Walk Away button belongs to (farm_duel:<user id>:<rival>); buttons from before Oct 11 have none.
 const rivalOf = (interaction) => interaction.customId.split(':')[2];
 
-// The fights a Damage Breakdown button can still show (in memory: a restart forgets them). ponytail: the oldest go past MAX_BREAKDOWNS.
+// The fights a Damage Breakdown button can still show (in memory: a restart forgets them). the oldest go past MAX_BREAKDOWNS.
 // fight id -> { hero, rival?, seconds, damage, taken, healing, kit (the hero's build as the fight started), foes (the enemies as they started) | theirs (a rival's kit), title }
 const breakdowns = new Map();
 const MAX_BREAKDOWNS = 500;
@@ -78,7 +78,7 @@ function withBreakdown(view, run, ownerId) {
 const withoutRival = (interaction) => (interaction.message?.components ?? []).filter((r) => !r.components.some((c) => c.customId?.startsWith(`${DUEL_ID}:`) || c.customId?.startsWith(`${ENEMY_ID}:${interaction.user.id}:rival:`)));
 
 // Replays the fight the member just paid for (already settled when they pressed Send), then sends the result as a new message
-// (his call, Oct 16): the fight message stays on its last moment.
+//: the fight message stays on its last moment.
 async function replay(interaction, run) {
   for (const frame of run.frames) {
     await interaction.editReply(fightView(run, frame));
@@ -86,8 +86,8 @@ async function replay(interaction, run) {
   }
   if (run.rival) run.rival = holdOffer(interaction.user.id, run.rival); // its 5 minutes start now; it is dropped if it was unlocked meanwhile
   const result = resultView(run);
-  await interaction.followUp(withBreakdown(run.rival ? await withRival(result, run.rival, interaction.user.id) : result, run, interaction.user.id)); // its own embed with Fight / Walk Away (his call, Oct 10)
-  if (run.legendary) await interaction.followUp({ ...legendaryView(run.legendary.name, run.legendary.equipped), flags: MessageFlags.Ephemeral }); // its own message (his call, Oct 2)
+  await interaction.followUp(withBreakdown(run.rival ? await withRival(result, run.rival, interaction.user.id) : result, run, interaction.user.id)); // its own embed with Fight / Walk Away
+  if (run.legendary) await interaction.followUp({ ...legendaryView(run.legendary.name, run.legendary.equipped), flags: MessageFlags.Ephemeral }); // its own message
   if (run.token) await interaction.followUp({ ...tokenView(run.hero), flags: MessageFlags.Ephemeral });
 }
 
@@ -114,7 +114,7 @@ async function redraw(interaction, view) {
 // The hero pick: the first pick for a member with no hero, the switch / unlock screen for one who has a hero.
 const pickScreen = async (interaction, selected, mode) => pickView(interaction.member, selected, await getFarmUser(interaction.user.id), mode);
 
-// both show the current hero's own souls (his call, Oct 11)
+// both show the current hero's own souls
 const heroScreen = async (interaction, mode = 'main') => heroView(interaction.member, await getFarmUser(interaction.user.id), mode);
 const shopScreen = async (interaction, tab = 'weapon', tier = 1, picked = null, room = false) => shopView(interaction.member, await getFarmUser(interaction.user.id), tab, Date.now(), tier, picked, room);
 // 'hero:<mode>', 'shop:<tab>[:<tier>]' or 'shop:<tab>:<tier>:room:<item>' (a full build: which item to sell for it) -> that screen
@@ -153,7 +153,7 @@ function picked(result) {
   if (result.taken) return `Billy smashed the case. Took **${result.taken.join('**, **') || 'nothing'}**, all Fragile.${result.dropped?.length ? ` Gave up **${result.dropped.join('**, **')}**.` : ''}`;
   const name = `${result.enhanced ? 'Enhanced ' : ''}${result.name}`;
   if (result.kind === 'legendaries') return `**${name}** is in the legendary slot.`;
-  if (result.enhancedHeld) return `You Enhanced **${result.name}**.`; // the enhanced copy of an item already held (his wording, Nov 5)
+  if (result.enhancedHeld) return `You Enhanced **${result.name}**.`; // the enhanced copy of an item already held
   if (result.used?.length) return `Upgraded ${result.used.join(' + ')} into **${name}**.${result.bonus ? ` BONUS: **${result.bonus}**.` : ''}`;
   return result.replaced ? `Gave up ${result.replaced} for **${name}**.` : `Took **${name}**.`;
 }
@@ -179,11 +179,11 @@ async function descendFight(interaction) {
     await sleep(FRAME_MS);
   }
   if (run.over) return interaction.followUp(await dviews.overView(interaction.member, run));
-  if (run.fled) { // the Rift lost (Nov 6): the hero fled and the run goes on, to the next room
+  if (run.fled) { // the Rift lost: the hero fled and the run goes on, to the next room
     const record = await getFarmUser(interaction.user.id);
     return interaction.followUp(await dviews.screen(interaction.member, record, { note: `You fled the Rift with **${Math.round(record.descent.health * 100)}%** health. No Rift Troopers this time.` }));
   }
-  if (run.rescued) { // Ivy's Rescue (his ask, Nov 7): the fight is lost, the run goes on, back at a Rest Stop
+  if (run.rescued) { // Ivy's Rescue: the fight is lost, the run goes on, back at a Rest Stop
     const record = await getFarmUser(interaction.user.id);
     return interaction.followUp(await dviews.screen(interaction.member, record, { note: `**Ivy** dropped in and pulled you out of Room ${run.rescued.until}. She set you down at a Rest Stop in Room ${run.rescued.back} with **${Math.round(record.descent.health * 100)}%** Health.` }));
   }
@@ -212,7 +212,7 @@ async function breakdownPage(id, tab) {
 const descentRoutes = [
   {
     name: 'farm',
-    label: 'Descend view item select', // only the Item Choices text changes (his ask, Oct 28); anyone else sees that item privately
+    label: 'Descend view item select', // only the Item Choices text changes; anyone else sees that item privately
     matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DVIEW_ID}:`),
     async execute(interaction) {
       const d = (await getFarmUser(ownerOf(interaction))).descent;
@@ -289,7 +289,7 @@ const descentRoutes = [
   },
   {
     name: 'farm',
-    label: 'Descend door button', // Two Doors (Nov 13): take one of the doors the run stands before
+    label: 'Descend door button', // Two Doors: take one of the doors the run stands before
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DDOOR_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
       const which = interaction.customId.split(':')[3];
@@ -311,7 +311,7 @@ const descentRoutes = [
   },
   {
     name: 'farm',
-    label: 'Descend event button', // an event room's choices (Nov 4): rest, break, urn, recruit, bless, step (the Teleporter), leave
+    label: 'Descend event button', // an event room's choices: rest, break, urn, recruit, bless, step (the Teleporter), leave
     matches: (interaction) => interaction.isButton() && interaction.customId.startsWith(`${dviews.DREST_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
       const action = interaction.customId.split(':')[3];
@@ -328,7 +328,7 @@ const descentRoutes = [
   },
   {
     name: 'farm',
-    label: 'Descend dealer select', // the Curiosity Dealer: swap an item for a pick a tier higher, or sell one for a full heal (Nov 4)
+    label: 'Descend dealer select', // the Curiosity Dealer: swap an item for a pick a tier higher, or sell one for a full heal
     matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DDEAL_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
       const action = interaction.customId.split(':')[3];
@@ -418,7 +418,7 @@ const descentRoutes = [
   },
   {
     name: 'farm',
-    label: 'Descend feed select', // Rem's Lil Helper (Nov 7): feed it an offered Item you are not taking; the pick screen stays
+    label: 'Descend feed select', // Rem's Lil Helper: feed it an offered Item you are not taking; the pick screen stays
     matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${dviews.DFEED_ID}:`),
     execute: (interaction) => descentAction(interaction, async () => {
       const result = await descent.feed(interaction.user.id, roomOf(interaction), Number(interaction.values[0]));
@@ -601,11 +601,11 @@ module.exports = [
       const name = interaction.customId.split(':').slice(4).join(':');
       const result = await buyItem(interaction.user.id, name);
       const said = result.used?.length ? titleCase(`Upgraded ${result.used.join(' + ')} into ${name} for ${fmt(result.paid)} souls.`) : null;
-      if (result.imbue) return { say: said, where: `hero:imbue:${name}` }; // an imbue item asks which ability right away (his call, Oct 3)
+      if (result.imbue) return { say: said, where: `hero:imbue:${name}` }; // an imbue item asks which ability right away
       if (said) return said;
       if (result.error === 'inside') return titleCase(`You already have that in ${result.holder}.`);
       if (result.error === 'corrupted') return titleCase(`That would use up your corrupted ${result.item}. Sell it first.`);
-      if (result.error === 'full') return { say: null, where: `shop:${interaction.customId.split(':').slice(2, 4).join(':')}:room:${name}` }; // which item to sell for it (his call, Oct 22)
+      if (result.error === 'full') return { say: null, where: `shop:${interaction.customId.split(':').slice(2, 4).join(':')}:room:${name}` }; // which item to sell for it
       return { souls: "Your hero can't afford that item.", owned: 'You already have that item.', unknown: 'That item is not for sale.', banned: "Your hero can't buy that item." }[result.error];
     }, `shop:${interaction.customId.split(':').slice(2, 4).join(':')}`), // back on the tab and price it was bought from
   },
@@ -758,7 +758,7 @@ module.exports = [
     matches: (interaction) => interaction.isStringSelectMenu() && interaction.customId.startsWith(`${TARGET_ID}:`),
     execute: (interaction) => redraw(interaction, async () => { // a Guardian or Walker comes as '<key>:<lane>'
       const [key, lane] = interaction.values[0].split(':');
-      if (key === 'shop') return shopScreen(interaction); // the item shop is an option of the /base dropdown (his call, Oct 3)
+      if (key === 'shop') return shopScreen(interaction); // the item shop is an option of the /base dropdown
       return targetView(interaction.member, key, await getFarmUser(interaction.user.id), Date.now(), lane);
     }),
   },
@@ -781,7 +781,7 @@ module.exports = [
         await interaction.editReply({ components: withoutRival(interaction) });
         return interaction.followUp({ content: result.error === 'owned' ? `You already have ${rival} unlocked.` : 'That rival has already left.', flags: MessageFlags.Ephemeral });
       }
-      // The trip's result keeps its rival embed without the buttons; the duel plays in a message of its own, and its result is a new one (his call, Oct 16).
+      // The trip's result keeps its rival embed without the buttons; the duel plays in a message of its own, and its result is a new one.
       await interaction.editReply({ components: withoutRival(interaction) });
       const [first, ...rest] = result.run.frames;
       const live = await interaction.followUp(await duelView(result.run, first));

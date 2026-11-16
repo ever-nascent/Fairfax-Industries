@@ -1,7 +1,7 @@
 // The picture for Don't Wake the Bookwyrm (paige.js): an open storybook on a dark desk. The left page holds the Bookwyrm (paigeWyrm.js: it changes
 // every 2 wrong guesses and wakes on the 6th), the guesses left as souls icons and, once the game is over, a stamp; the right page holds the chapter
 // (Heroes / Abilities / Items), the word as blanks and the wrong letters as ink blots. Satin bookmark, leather cover, candlelight: all drawn here.
-// Everything that never changes (desk, cover, pages, ribbon) is drawn once and copied. Look: server-plan.md ("Games").
+// Everything that never changes (desk, cover, pages, ribbon) is drawn once and copied..
 const path = require('node:path');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const { ASSETS, loadSouls, seeded } = require('../art');
@@ -9,7 +9,7 @@ const wyrm = require('./paigeWyrm');
 const { drawBorder, damask } = require('./paigeOrnament');
 const { encodeGif } = require('../gif');
 
-// The lettering (his ask Oct 21: "make the text fancier"), open-licence fonts kept in assets/fonts (SIL OFL, see assets/CREDITS.txt) so it looks the
+// The lettering ("make the text fancier"), open-licence fonts kept in assets/fonts (SIL OFL, see assets/CREDITS.txt) so it looks the
 // same on any machine: Pinyon Script for headings and the ending (copperplate), Cinzel Decorative for the chapter's capital and the word (storybook
 // capitals), IM Fell for the small captions (antique book type).
 const fonts = path.join(ASSETS, 'fonts');
@@ -81,7 +81,7 @@ function pageShape(g, side, inset = 0) { // a page's outline: top and bottom edg
   g.closePath();
 }
 
-function cover(g) { // the leather cover round the pages: pebbled and worn, a damask pressed into it, gold tooling, metal corners (his ask Oct 21: texture)
+function cover(g) { // the leather cover round the pages: pebbled and worn, a damask pressed into it, gold tooling, metal corners (texture)
   const box = [B.left - 31, B.top - 27, B.right - B.left + 62, B.bottom - B.top + 66];
   const [bx, by, bw, bh] = box;
   g.save(); g.shadowColor = 'rgba(0,0,0,0.7)'; g.shadowBlur = 40; g.shadowOffsetY = 18;
@@ -259,7 +259,7 @@ function leftPage(g, { wrong, loaded, over }) {
   g.font = `${fitSize(g, title, SCRIPT, 29, 290)}px ${SCRIPT}`; g.fillStyle = woke ? RED_INK : INK; // script runs wide: it shrinks to fit inside the frame
   g.fillText(title, LEFT_CX, B.top + 72);
   g.strokeStyle = 'rgba(110,70,30,0.6)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(LEFT_CX - 90, B.top + 90); g.lineTo(LEFT_CX + 90, B.top + 90); g.stroke();
-  const size = 205; // a smaller drawing (his call Oct 21), centred between the heading and the souls row
+  const size = 205; // a smaller drawing, centred between the heading and the souls row
   wyrm.draw(g, { art: loaded, cx: LEFT_CX, y: B.top + 100 + 8, size, stage: Math.min(3, Math.floor(wrong / 2)), seeded, createCanvas, PAGE, SERIF });
   if (over) return; // the stamp takes the souls row's place
   const h = 34, w = (h * loaded.souls.width) / loaded.souls.height;
@@ -283,7 +283,7 @@ function blots(g, wrong, cx) {
   const gap = 46, wy = B.bottom - 50, startX = cx - ((wrong.length - 1) * gap) / 2;
   wrong.forEach((ch, i) => {
     const wx = startX + i * gap, rnd = seeded(31 + ch.charCodeAt(0) * 7);
-    g.fillStyle = BLOT; // the same faded brown as the Bookwyrm's ink (his call Oct 21: not black)
+    g.fillStyle = BLOT; // the same faded brown as the Bookwyrm's ink (not black)
     g.beginPath();
     for (let k = 0; k <= 20; k++) { const a = (k / 20) * Math.PI * 2, r = 17 + rnd() * 6; g.lineTo(wx + Math.cos(a) * r, wy - 12 + Math.sin(a) * r); }
     g.closePath(); g.fill();
@@ -293,7 +293,7 @@ function blots(g, wrong, cx) {
   });
 }
 
-// Lays the word out in blanks: letters (A-Z) get a slot with a line, anything else (space, ' - & , ! digits) is just printed. Words wrap onto
+// Lays the word out in blanks: letters (A-Z) get a slot with a line, anything else (space, ' - &, ! digits) is just printed. Words wrap onto
 // at most 3 lines, as large as will fit. Returns { size, lines: [[{ ch, x }]], width } with x measured from each line's left edge.
 function layout(word, avail) {
   const widths = (size) => (ch) => (/[A-Z]/.test(ch) ? size : size * 0.5);
@@ -324,7 +324,7 @@ function rightPage(g, { word, hits, wrong, category, over }) {
   const x0 = B.spine + 62, x1 = B.right - 62, cx = (x0 + x1) / 2;
   g.textAlign = 'center'; g.textBaseline = 'alphabetic';
   g.font = `16px ${CAPS_LIGHT}`; g.fillStyle = 'rgba(110,70,30,0.9)';
-  g.fillText('— CHAPTER —', cx, B.top + 64);
+  g.fillText('- CHAPTER -', cx, B.top + 64);
   g.font = `44px ${CAPS}`;
   const first = category[0], capW = g.measureText(first).width;
   g.font = `33px ${BOOK_ITALIC}`;
@@ -362,7 +362,7 @@ function rightPage(g, { word, hits, wrong, category, over }) {
 }
 
 // The ending, once the game is over, where the souls row was: a cream ribbon banner with swallow-tailed ends holding "TO BE CONTINUED" or "THE END" in
-// letter-spaced capitals between little diamonds (his pick, Oct 21: the spaced capitals of mock-up 5 on the banner of mock-up 3). The End in green ink, To Be
+// letter-spaced capitals between little diamonds (the spaced capitals of mock-up 5 on the banner of mock-up 3). The End in green ink, To Be
 // Continued in black. The banner is sized so its tails stay inside the page's border.
 function ending(g, won) {
   const word = won ? 'THE END' : 'TO BE CONTINUED', color = won ? '#2d6444' : '#1c1009', spacing = 4, cy = B.bottom - 66, h = 36;
@@ -393,7 +393,7 @@ function ending(g, won) {
 // Paige's green sparks: dots of light that drift and twinkle over the desk and the leather cover, behind the pages (never over the text). Every
 // one moves in whole loops, so the animation joins up with itself. Each frame is the book plus where the fireflies are at that moment.
 const FRAMES = 20;
-const FRAME_MS = 120; // the loop takes 2.4 s: slow, gentle drifting (his call Oct 21: fewer, and slower)
+const FRAME_MS = 120; // the loop takes 2.4 s: slow, gentle drifting (fewer, and slower)
 const FLIES = 14;
 
 let fliesData; // { flies: [{ x, y, ax, ay, kx, ky, px, py, size, kb, pb, hot }], hidden: a canvas that is opaque where the pages and bookmark cover the desk }

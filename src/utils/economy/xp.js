@@ -1,5 +1,5 @@
 // XP, levels and souls. Members earn XP by chatting (and optionally by sitting in voice);
-// every level-up pays souls, the server currency. Rules are in server-plan.md ("XP / levels").
+// every level-up pays souls, the server currency. Rules are in.
 const { EmbedBuilder } = require('discord.js');
 const { getStore } = require('../../storage');
 const { SCALE } = require('./economy');
@@ -32,10 +32,10 @@ const REJUV_PRICE = 3200 * SCALE; // Rejuv (Shop): saves a broken /urn streak; c
 const REJUV_MAX = 3;
 const TRIVIA_BASE = 25 * SCALE; // /trivia: a right answer pays this, +TRIVIA_STEP for each right answer in a row before it
 const TRIVIA_STEP = 5 * SCALE;
-const TRIVIA_MAX_STREAK = 10; // 25, 30 ... 70 at 10 in a row
+const TRIVIA_MAX_STREAK = 10; // 25, 30... 70 at 10 in a row
 const TRIVIA_DAILY = 10; // right answers that pay per UTC day; after that trivia is for fun
 
-// ponytail: a write rewrites data/xp.json (chat/voice XP is batched, see addXp). Fine for one community server; move to SQLite if it gets slow.
+// a write rewrites data/xp.json (chat/voice XP is batched, see addXp). Fine for one community server; move to SQLite if it gets slow.
 const users = () => getStore('xp'); // key: user id (the bot only serves one server)
 const settings = () => getStore('xpSettings'); // key: guild id
 
@@ -184,7 +184,7 @@ async function buyRejuv(userId, price = REJUV_PRICE) {
   return result;
 }
 
-// Adds `delta` souls (negative = spend). `meta` says why, for the souls ledger: a reason ('farm', 'hideout' ...,
+// Adds `delta` souls (negative = spend). `meta` says why, for the souls ledger: a reason ('farm', 'hideout'...,
 // see soulsLedger.js) or { reason, with }. Returns the updated user, or null if they can't afford it.
 async function changeSouls(userId, delta, meta = 'other') {
   const user = await updateUser(userId, (user) => {
@@ -304,14 +304,14 @@ async function totalSouls() {
 }
 
 // Staff: every member's server balance to 0 (a farm hero's own souls stay), one ledger line each. Returns { members, souls (taken) }.
-// ponytail: one file write per member; fine for a community server, batch it if the member count gets into the thousands.
+// one file write per member; fine for a community server, batch it if the member count gets into the thousands.
 async function resetAllSouls() {
   const { members, souls } = await totalSouls();
   for (const [userId, u] of Object.entries(await users().all())) if (u.souls > 0) await editUser(userId, { stat: 'souls', action: 'reset' });
   return { members, souls };
 }
 
-// Top `count` members by `by` ('xp' or 'souls'): [{ userId, ...user }].
+// Top `count` members by `by` ('xp' or 'souls'): [{ userId,...user }].
 async function leaderboard(count = 10, by = 'xp') {
   const all = await users().all();
   return Object.entries(all)

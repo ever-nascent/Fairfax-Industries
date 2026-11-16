@@ -1,4 +1,4 @@
-// What each Descend event, door and hero deal is worth (Nov 14, his ask: "ensure that an event is adequately powerful, or weaken them if they are too strong").
+// What each Descend event, door and hero deal is worth ("ensure that an event is adequately powerful, or weaken them if they are too strong").
 //   node tools/descend-events.js [--hero=Name,Name|all] [--ascension=10] [--seeds=12] [--jobs=7] [--events=1|deals]
 // Good-pick runs (farm-sim.js descend --events): at every door, Mystery Room and deal the run is played to its end both ways on the same dice (the door
 // taken or the other one; the deal taken or turned down). Listed: how often each way cleared the descent and the rooms it reached. `--events=deals`

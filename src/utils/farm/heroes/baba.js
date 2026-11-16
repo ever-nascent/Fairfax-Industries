@@ -1,5 +1,5 @@
 // Baba's abilities (deadlock.wiki/Baba, checked Oct 10 2026; page updated that day). Numbers come from the wiki data through Ability.value();
-// this file is only what each ability does. His calls (Oct 10): Threadsap's thread goes through every enemy; while Granny Long Legs is on she
+// this file is only what each ability does. Threadsap's thread goes through every enemy; while Granny Long Legs is on she
 // ground-pounds whenever her heavy melee is ready; each Baba's Brew is one of the three at random. Standing rules used: enemies stand still, so
 // Feed The Birds always lands at full strength (the Infernus rule); spirit power taken from an enemy cuts its spirit damage.
 const { Ability, anyReady } = require('./../ability');
@@ -57,7 +57,7 @@ class Threadsap extends Ability {
 }
 
 // 2. Granny Long Legs: the bench's legs extend for a while: faster, with debuff and melee resist, and her heavy melee is a ground pound: the
-// enemies around take the melee hit and spirit damage, are knocked up and slowed. She pounds whenever she can (his call), about a third as
+// enemies around take the melee hit and spirit damage, are knocked up and slowed. She pounds whenever she can, about a third as
 // often as a normal heavy melee (the wiki). Her light kick's knockback does nothing here. T1: faster still. T2: shorter cooldown.
 // T3: more of both resists, and her melee hits heal her (less from non-heroes: the game's own share).
 const POUND_GAP = 3; // x the usual time between heavy melees
@@ -94,7 +94,7 @@ class GrannyLongLegs extends Ability {
   }
 }
 
-// 3. Baba's Brew: a short channel without shooting, then one of three brews at random (his call): Soothing, a barrier on Baba; Silencing, the
+// 3. Baba's Brew: a short channel without shooting, then one of three brews at random: Soothing, a barrier on Baba; Silencing, the
 // enemies around the front one are silenced (a boss holds its blast, a rival hero can't cast); Scalding, they burn and lose spirit resist.
 // T1: wider. T2: shorter cooldown. T3: every brew a third stronger.
 const BREWS = ['Soothing', 'Silencing', 'Scalding'];
@@ -156,7 +156,7 @@ class FeedTheBirds extends Ability {
     this.fed = [];
   }
 
-  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, Threadsap, BabasBrew); } // combo first (his ask, Nov 6): the stolen spirit power and the brew go first
+  want(fight) { return fight.foes.length > 0 && !anyReady(this.unit, Threadsap, BabasBrew); } // combo first: the stolen spirit power and the brew go first
   status(fight) { return fight && fight.time < this.until ? 'Channelling' : super.status(fight); }
 
   cast(fight) {

@@ -1,5 +1,5 @@
 // Where all saved data lives: one JSON file per store in data/ (DATA_DIR, a temp folder in tests). Each file is kept in memory and
-// written through on every change (atomically: a .tmp file renamed over the old one), so a crash never leaves half a file.
+// written through on every change (atomically: a.tmp file renamed over the old one), so a crash never leaves half a file.
 // Use it through storage/index.js `getStore(name)`; never write data/ files by hand while the bot runs.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -52,7 +52,7 @@ const RENAME_RETRY_DELAYS_MS = [25, 50, 100, 200, 400];
 // Write to a temp file then rename so a crash mid-write can't truncate or
 // corrupt the live collection file (rename is atomic on the same filesystem).
 // On Windows the rename can transiently fail with EPERM/EBUSY while antivirus
-// or the search indexer holds the destination file — retry with backoff, then
+// or the search indexer holds the destination file: retry with backoff, then
 // fall back to a plain copy (non-atomic, but far better than losing the write
 // or crashing the caller).
 async function writeCollection(collection, data) {
@@ -79,7 +79,7 @@ async function writeCollection(collection, data) {
         try {
           fs.unlinkSync(tmpPath);
         } catch {
-          // Best-effort cleanup — the rename/copy failure below is the real
+          // Best-effort cleanup: the rename/copy failure below is the real
           // error, and a leftover temp file must not mask it.
         }
         throw error;

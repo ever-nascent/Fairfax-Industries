@@ -44,7 +44,7 @@ module.exports = {
 
   async execute(interaction) {
     if (!(await requirePermission(interaction, PermissionFlagsBits.ManageGuild))) return;
-    // Only `censor` exists so far; more groups (spam, links, ...) go beside it.
+    // Only `censor` exists so far; more groups (spam, links,...) go beside it.
     const sub = interaction.options.getSubcommand();
     const guildId = interaction.guildId;
 

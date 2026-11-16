@@ -1,6 +1,6 @@
 // Rem's Remling Race, Rem's game (a horse race): pick 1 of 5 Remlings, then the message is edited every couple of
 // seconds as they run along their lanes (emoji and dashes, no picture). A win pays your bet x that Remling's odds.
-// Rules: server-plan.md ("Games").
+//.
 const path = require('node:path');
 const { ActionRowBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const { getStore } = require('../../storage');
@@ -105,13 +105,13 @@ const lane = (i, pos, flag = '🏁') => `> **${i + 1}.** ${[...Array(pos).fill('
 const track = (positions, winner) => positions.map((p, i) => lane(i, p, i === winner ? '🏆' : '🏁')).join('\n');
 const backing = (game) => `You backed ${emoji[game.pick]} **${NAMES[game.pick]}** at **${game.odds[game.pick]}×**.`;
 
-// The template every game follows (his pick Oct 22): one line on top (plain while playing, bold once it's over), the
+// The template every game follows: one line on top (plain while playing, bold once it's over), the
 // track under it, the money in fields, green / red at the end.
 function startView(id, game) {
   return gameMessage(HOST, {
     lines: ['Pick your Remling, then watch them go!', '', track(game.frames[0])],
     fields: [['Bet', game.bet]],
-    // one dropdown, not five buttons: the buttons wrapped onto two rows on a phone (his call Oct 22)
+    // one dropdown, not five buttons: the buttons wrapped onto two rows on a phone
     rows: [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
       .setCustomId(`${BUTTON_ID}:${id}`)
       .setPlaceholder('Pick your Remling...')

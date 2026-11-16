@@ -614,9 +614,9 @@ test('shotguns: every pellet lands up close, about 70% of them from 15 m on; a h
   close(shoot('Abrams', 4), 1, 0.001);
   close(shoot('Abrams', 15), PELLETS.far, 0.03);
   close(shoot('Calico', 10), 0.85, 0.03);
-  close(shoot('Drifter', 15), 0.9, 0.03); // his ask, Oct 28: single bullets miss too (engine.js MISS.npc at base Precision)
+  close(shoot('Drifter', 15), 0.9, 0.03); // single bullets miss too (engine.js MISS.npc at base Precision)
   close(shoot('Haze', 15), 0.9, 0.03);
-  // Precision (his call, Oct 22): every point above the base 25 adds a percentage point to the far hit chance, up to all of them
+  // Precision: every point above the base 25 adds a percentage point to the far hit chance, up to all of them
   assert.deepStrictEqual([pelletChance(15, 25), pelletChance(15, 35), pelletChance(15, 80), pelletChance(10, 35)].map((x) => +x.toFixed(2)), [0.7, 0.8, 1, 0.95]);
 });
 
@@ -1892,7 +1892,7 @@ test('Vindicta: each ability does its job', () => {
   fa.run(2);
   assert.ok(!fa.log.length);
   assert.strictEqual(a.abilities[3].shot({ health: 500, stats: { maxHealth: 2000 } }), 90 + 45); // a quarter left: half way down from half health
-  weak.health = 500; // the shot can't kill it and the hero deals nothing else, so the kill wouldn't count: it waits (his call, Oct 29)
+  weak.health = 500; // the shot can't kill it and the hero deals nothing else, so the kill wouldn't count: it waits
   fa.run(1.3);
   assert.strictEqual(weak.health, 500);
   weak.health = 120; // now the shot kills it: it fires
@@ -2468,7 +2468,7 @@ test('Precision and Headshot Precision: 25 flat points each to start, a permanen
   assert.strictEqual(headshotChance({ stat: () => 250 }), 1, 'never above every bullet');
   const danny = buildHero('Deadman Danny', { items: ['Headshot Booster'] }); // the wiki: neither of his fire modes can headshot (CanCrit false)
   assert.strictEqual(headshotChance(danny), 0);
-  // items (his calls, Oct 29): the headshot items add Headshot Precision only; bullet velocity adds a lot of Precision and a little Headshot Precision
+  // items: the headshot items add Headshot Precision only; bullet velocity adds a lot of Precision and a little Headshot Precision
   const { heroStats: stats, itemByName } = require('../src/utils/farm/stats');
   const headshot = stats(HEROES.Haze, { items: ['Headshot Booster', 'Headhunter'] });
   assert.deepStrictEqual([headshot.headshot, headshot.precision], [25 + 5 + 5, 25]);
@@ -2480,7 +2480,7 @@ test('Precision and Headshot Precision: 25 flat points each to start, a permanen
   assert.deepStrictEqual([sharp.precision, sharp.headshot], [35, 28], 'Sharpshooter from its velocity only');
   assert.deepStrictEqual([stats(HEROES.Haze, { items: ['Extra Health'] }).precision, stats(HEROES.Haze, { items: ['Extra Health'] }).headshot], [25, 25]);
   assert.ok(itemByName('Infinite Rounds').Info1.Main.some((l) => l.Key === 'Precision' && l.Value === 33), 'a legendary shows it too (+200% velocity)');
-  // overflow (his call, Oct 29): Precision past full accuracy pushes weapon falloff out (and adds to a duel's parry chance)
+  // overflow: Precision past full accuracy pushes weapon falloff out (and adds to a duel's parry chance)
   const { overflow, PRECISION, Fight, enemy: foe } = require('../src/utils/farm/engine');
   const sharpEye = buildHero('Haze', { buffs: { precision: PRECISION.full - 25 + 20 } });
   assert.deepStrictEqual([overflow(base), overflow(sharpEye)], [0, 20]);
@@ -2489,7 +2489,7 @@ test('Precision and Headshot Precision: 25 flat points each to start, a permanen
   assert.ok(fo.shotDamage(sharpEye, far) > fo.shotDamage(base, far), 'less falloff at 30 m');
   const near = foe('Near', { distance: 10 });
   assert.strictEqual(fo.shotDamage(sharpEye, near), fo.shotDamage(base, near), 'nothing changes inside the falloff range');
-  assert.deepStrictEqual([stats(HEROES.Haze, { items: ['Infinite Rounds'] }).headshot, stats(HEROES.Haze, { items: ['Crippling Headshot'] }).headshot], [25 + 25, 25 + 15], 'Infinite Rounds beats every headshot item (his call)');
+  assert.deepStrictEqual([stats(HEROES.Haze, { items: ['Infinite Rounds'] }).headshot, stats(HEROES.Haze, { items: ['Crippling Headshot'] }).headshot], [25 + 25, 25 + 15], 'Infinite Rounds beats every headshot item');
 });
 
 test('Headshot Booster: 45 bonus damage (100 enhanced) that follows falloff; Graves cannot headshot', () => {
@@ -2572,7 +2572,7 @@ test("Patron's beam takes a share of max health, so tanking by raw health only g
   close(before - haze.health, (440 + 0.05 * haze.stats.maxHealth) * HARDNESS.siege * (1 - haze.stats.bulletResist), 0.05);
 });
 
-test('stamina dodges (his call, Oct 28): a dash-jump makes the next enemy attack within 1 s miss, then the dodge is used up', () => {
+test('stamina dodges: a dash-jump makes the next enemy attack within 1 s miss, then the dodge is used up', () => {
   const haze = buildHero('Haze', { unlocked: 0 });
   const brute = enemy('Brute', { maxHealth: 1e6, dps: 0 });
   const f = new Fight({ heroes: [haze], enemies: [brute], rng: () => 0.99 });
